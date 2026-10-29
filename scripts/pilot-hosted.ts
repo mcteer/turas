@@ -1,0 +1,291 @@
+import {recordHostedTrainingObservations} from './pilot-hosted-feedback';
+import {runHostedMembershipBoundary} from './pilot-hosted-membership';
+import {writeHostedCoreEvidence} from './pilot-hosted-core-evidence';
+import {prepareHostedPlanSourceBoundary,verifyHostedPlanSourceBoundary} from './pilot-hosted-plan-boundary';
+import {writeHostedPartnerEvidence} from './pilot-hosted-partner-evidence';
+import {writeHostedSdkEvidence} from './pilot-hosted-journey-evidence';
+import {composeHostedByteBoundary} from './pilot-hosted-byte-composition';
+import {hostedGeneratedFilesManifestSchema,hostedLinkedReferenceSchema,verifyHostedGeneratedFiles,type HostedLinkedReference} from './pilot-hosted-generated-files';
+import {verifyHostedMaximumFileDenials} from './pilot-hosted-file-access';
+import {hostedRuntimeConnection} from './pilot-hosted-connection';
+import {hostedMaximumFilesManifestSchema,verifyHostedMaximumFiles} from './pilot-hosted-maximum-files';
+import {runHostedLearningJourney,hostedLearningJourneyConfigurationSchema} from './pilot-hosted-learning-journey';
+import {createHostedLearningOwnerClient} from './pilot-hosted-learning-capture';
+import {Client,type QueryResultRow} from 'pg';
+import {runHostedRootBrowser} from './pilot-hosted-root-browser';
+import {hostedRootBudgetSchema} from '../lib/server/conversations/hosted-root-budget';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {randomUUID} from 'node:crypto';
+import {resolve,dirname,basename,join} from 'node:path';
+import {pathToFileURL} from 'node:url';
+import {pilotHostedScopeSchema,verifyHostedDeployment,hostedDeploymentLookupPath,type PilotHostedScope} from '../lib/contracts/pilot-hosted';
+import {pilotRunSchema} from '../lib/contracts/pilot-readiness';
+import {assertPilotDatabaseOnConnection} from '../lib/server/db/readiness';
+import {readEvidence,createEvidenceDirectory,writeEvidence,evidenceDigest} from './pilot-evidence';
+import {pilotSource} from './pilot-source';
+import {pilotProtectedSnapshot} from './pilot-preservation';
+import {runHostedReadChecks} from './pilot-hosted-http';
+import {runHostedMcpJourney} from './pilot-hosted-mcp';
+import {runHostedProfileReviewJourney} from './pilot-hosted-profile';
+import {runHostedConversationBoundary} from './pilot-hosted-conversations';
+import {runHostedConversationBrowser} from './pilot-hosted-browser';
+import {runHostedSupportBoundary} from './pilot-hosted-support';
+import {pilotHostedRequest,PilotHostedResponseError} from './pilot-hosted-request';
+import {runHostedExpansionBoundary} from './pilot-hosted-expansion';
+import {runHostedGapBoundary} from './pilot-hosted-gaps';
+import {runHostedPrimaryExclusion} from './pilot-hosted-primary';
+import {hostedConfigurationSchema} from '../lib/server/operations/hosted-configuration';
+import {verifyHostedInfrastructureAuthorization} from './pilot-hosted-authorization';
+import {runHostedLinkedJourney} from './pilot-hosted-linked';
+import {runHostedTrainingJourney} from './pilot-hosted-training';
+import {runHostedSourceWithdrawal} from './pilot-hosted-withdrawal';
+import {z} from 'zod';
+import {withHostedCatalogCancellation} from '../lib/server/operations/recovery-cancellation';
+const execute=promisify(execFile);
+export async function platformDeployment(scope:PilotHostedScope,origin=false,signal?:AbortSignal){
+ const endpoint=hostedDeploymentLookupPath(scope,origin);
+ // Fixed GET transport, no shell, arbitrary commands, login, linking or deploy.
+ const result=await execute('vercel',['api',endpoint,'--raw'],{timeout:30000,signal,maxBuffer:1024*1024,env:Object.fromEntries(['PATH','HOME','TMPDIR','LANG','LC_ALL'].flatMap(key=>process.env[key]===undefined?[]:[[key,process.env[key]]])) as NodeJS.ProcessEnv});
+ return verifyHostedDeployment(JSON.parse(result.stdout),scope);
+}
+function explicitRuntimeUrl(env:NodeJS.ProcessEnv){return hostedRuntimeConnection(env.TURAS_PILOT_HOSTED_DATABASE_URL);}
+
+/** Read-only admission before any authenticated hosted journey. Completion here
+ * is not the hosted catalog, file processing, participant proof or readiness. */
+export async function pilotHosted(args=process.argv.slice(2)){
+ if(![8,10,12,14,16].includes(args.length)||args[0]!=='--scope'||args[2]!=='--run'||args[4]!=='--configuration'||args[6]!=='--authorization')throw Error('Explicit private hosted scope, run, configuration and infrastructure authorization required');
+ process.umask(0o077);
+ process.env.VERCEL_BLOB_RETRIES='0';
+ const scopePath=resolve(args[1]),runPath=resolve(args[3]);
+ const scope=pilotHostedScopeSchema.parse(await readEvidence(dirname(scopePath),basename(scopePath)));
+ const run=pilotRunSchema.parse(await readEvidence(dirname(runPath),basename(runPath)));
+ if(run.attempts.length||run.receipts.length||run.selectedAttempts.length||run.gateVerifications?.length)throw Error('Fresh original hosted run required before any dispatch');
+ const configurationPath=resolve(args[5]);
+ const configuration=hostedConfigurationSchema.parse(await readEvidence(dirname(configurationPath),basename(configurationPath)));
+ if(configuration.environmentMarker!==scope.environmentMarker||configuration.projectId!==scope.projectId||configuration.teamId!==scope.teamId||!configuration.dispatcherEnabled)throw Error('Hosted configuration target or enabled dispatcher differs');
+ const authorizationPath=resolve(args[7]),rawAuthorization=await readEvidence(dirname(authorizationPath),basename(authorizationPath)),authorization=verifyHostedInfrastructureAuthorization(rawAuthorization,scope),authorizationDigest=authorization.authorizationDigest;
+ if(authorization.environmentMarker!==scope.environmentMarker||authorization.projectId!==scope.projectId||authorization.teamId!==scope.teamId||authorization.maximumSandboxJobs!==configuration.maximumSandboxDispatches||Date.parse(authorization.approvedAt)>Date.now()||Date.parse(authorization.expiresAt)<=Date.now())throw Error('Fresh applicable exact-target infrastructure authority required');
+ const extras=new Map<string,string>();for(let i=8;i<args.length;i+=2){if(!['--root-binding','--learning','--maximum-files','--generated-files'].includes(args[i])||extras.has(args[i])||!args[i+1])throw Error('Exact unique hosted extra configuration required');extras.set(args[i],resolve(args[i+1]));}
+ const learningPath=extras.get('--learning'),learningConfiguration=learningPath?hostedLearningJourneyConfigurationSchema.parse(await readEvidence(dirname(learningPath),basename(learningPath))):null;
+ const maximumPath=extras.get('--maximum-files'),maximumManifest=maximumPath?hostedMaximumFilesManifestSchema.parse(await readEvidence(dirname(maximumPath),basename(maximumPath))):null;
+ const generatedPath=extras.get('--generated-files'),generatedManifest=generatedPath?hostedGeneratedFilesManifestSchema.parse(await readEvidence(dirname(generatedPath),basename(generatedPath))):null;
+ const rootBindingPath=extras.get('--root-binding')??null;
+ const rootBinding=rootBindingPath?hostedRootBudgetSchema.parse(await readEvidence(dirname(rootBindingPath),basename(rootBindingPath))):null;
+ if(rootBinding&&rootBinding.conversationIds.length!==2)throw Error('Two original root conversations required for desktop and mobile');
+ const source=await pilotSource();
+ if(run.id!==scope.runId||run.environmentMarker!==scope.environmentMarker||run.scopeDigest!==evidenceDigest(JSON.stringify(scope)))throw Error('Hosted run and scope differ');
+ for(const key of ['sourceCommit','sourceDigest','catalogDigest'] as const)if(run[key]!==scope[key]||scope[key]!==source[key])throw Error('Hosted source or catalog differs');
+ const protectedBefore=await pilotProtectedSnapshot(),id=randomUUID(),root=join(dirname(runPath),'hosted-'+id);
+ await createEvidenceDirectory(root);
+ const startedAt=new Date().toISOString();
+ // This finite catalog may wait for multiple independently bounded 300s jobs.
+ // Their original deadlines/concurrency remain unchanged; authority expiry also
+ // cancels the whole operator run, rather than extending a job or approval.
+ return withHostedCatalogCancellation(Math.max(1,Math.min(7200000,Date.parse(authorization.expiresAt)-Date.now())),async parentSignal=>{
+ const connectionLoss=new AbortController(),signal=AbortSignal.any([parentSignal,connectionLoss.signal]);
+ let stage='preflight';
+ let paidDispatchPossible=false;
+ try{
+  const dirty=await execute('git',['status','--porcelain','--untracked-files=all'],{timeout:10000,maxBuffer:1024*1024});
+  if(dirty.stdout.trim())throw Error('Hosted verification requires committed source');
+  const deployment=await platformDeployment(scope,false,signal),resolvedOrigin=await platformDeployment(scope,true,signal);
+  if(JSON.stringify(resolvedOrigin)!==JSON.stringify(deployment))throw Error('Hosted origin targets another deployment');
+  const db=new Client({connectionString:explicitRuntimeUrl(process.env),connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});
+  db.on('error',error=>connectionLoss.abort(error));
+  let schemaLedgerDigest:string;
+  let connected=false;
+  try{
+   await db.connect();connected=true;
+   await db.query('BEGIN READ ONLY');
+   await db.query("SET LOCAL transaction_timeout='15s'");
+   await assertPilotDatabaseOnConnection(scope.environmentMarker,<Row extends QueryResultRow=QueryResultRow>(sql:string,values:readonly unknown[]=[])=>db.query<Row>(sql,[...values]));
+   const workspace=(await db.query("SELECT classification,pilot_environment_id,active FROM workspaces WHERE id=$1",[scope.workspaceId])).rows[0];
+   if(workspace?.classification!=='synthetic_pilot'||workspace.pilot_environment_id!==scope.environmentMarker||workspace.active!==true)throw Error('Exact active hosted pilot workspace required');
+   schemaLedgerDigest=evidenceDigest(JSON.stringify((await db.query('SELECT name FROM turas_migrations ORDER BY name')).rows));
+   await db.query('COMMIT');
+  }catch(error){if(connected)await db.query('ROLLBACK');throw error;}finally{await db.end();}
+  if(JSON.stringify(await platformDeployment(scope,true,signal))!==JSON.stringify(deployment)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Hosted identity or protected checkout changed');
+  const receipt={contract:'pilot-hosted-preflight-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,startedAt,completedAt:new Date().toISOString(),state:'pass',deployment,origin:scope.origin,schemaVersion:80,schemaLedgerDigest,runtimeGrantsVerified:true,syntheticWorkspaceVerified:true,readOnly:true,paidCalls:0,authenticatedJourneysVerified:false,hostedCatalogVerified:false,restorationReady:false};
+  await writeEvidence(root,'preflight.json',receipt);
+  const credentials=['TURAS_PILOT_HOSTED_ADMIN_PASSWORD','TURAS_PILOT_HOSTED_MEMBER_PASSWORD','TURAS_PILOT_HOSTED_PARTNER_PASSWORD'];
+  if(credentials.some(key=>!process.env[key])){
+   await writeEvidence(root,'blocked.json',{id,runId:run.id,...source,state:'blocked',safeFailure:'explicit_hosted_role_credentials_required',hostedCatalogVerified:false});
+   console.info(JSON.stringify({preflight:'pass',roleReads:'blocked',hostedCatalog:'blocked',paidCalls:0}));process.exitCode=1;return receipt;
+  }
+  stage='role_reads';
+  const readDb=new Client({connectionString:explicitRuntimeUrl(process.env),connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000});
+  readDb.on('error',error=>connectionLoss.abort(error));
+  let reads:Awaited<ReturnType<typeof runHostedReadChecks>>;
+  const sdkJourneys:(Awaited<ReturnType<typeof runHostedMcpJourney>>&{role:string;startedAt:string;completedAt:string})[]=[];
+  const profileJourneys:Awaited<ReturnType<typeof runHostedProfileReviewJourney>>[]=[];
+  const conversationJourneys:(Awaited<ReturnType<typeof runHostedConversationBoundary>>&{role:string})[]=[];
+  const browserJourneys:(Awaited<ReturnType<typeof runHostedConversationBrowser>>&{role:string})[]=[];
+  const supportJourneys:Awaited<ReturnType<typeof runHostedSupportBoundary>>[]=[];
+  const expansionJourneys:Awaited<ReturnType<typeof runHostedExpansionBoundary>>[]=[];
+  const gapJourneys:Awaited<ReturnType<typeof runHostedGapBoundary>>[]=[];
+  const trainingJourneys:Awaited<ReturnType<typeof runHostedTrainingJourney>>[]=[];
+  let membershipBoundary:Awaited<ReturnType<typeof runHostedMembershipBoundary>>|undefined;
+  const roleIntervals:{role:string;startedAt:string;completedAt:string}[]=[];
+  const linkedJourneys:HostedLinkedReference[]=[];
+  const learningJourneys:Awaited<ReturnType<typeof runHostedLearningJourney>>[]=[];
+  const maximumFileDenials:Awaited<ReturnType<typeof verifyHostedMaximumFileDenials>>[]=[];
+  const maximumFiles:Awaited<ReturnType<typeof verifyHostedMaximumFiles>>[]=[];
+  try{await readDb.connect();reads=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async context=>{
+    const roleStartedAt=new Date().toISOString();
+    if(maximumManifest)maximumFileDenials.push(await verifyHostedMaximumFileDenials({scope,headers:context.headers,role:context.role,manifest:maximumManifest,signal,evidenceDirectory:root}));
+    if(context.role==='internal-admin'){
+     // The reader verified the actual version-bound diagnostic before this hook.
+     stage='configuration_boundary';
+     await writeEvidence(root,'configuration.json',{contract:'pilot-hosted-configuration-readback-v1',runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),configuration,configurationDigest:evidenceDigest(JSON.stringify(configuration)),actualReadbackVerified:true,providerPermissionVerified:false,hostedCatalogVerified:false});
+     if(maximumManifest){stage='maximum_file_retention';maximumFiles.push(await verifyHostedMaximumFiles({scope,db:readDb,headers:context.headers,configuration,evidenceDirectory:root,manifest:maximumManifest,signal}));}
+    }
+    if(context.role==='internal-admin'&&rootBinding){
+     stage='root_transport';
+     const diagnostic=z.object({data:z.object({rootAcceptanceConfiguration:z.unknown()})}).parse(await pilotHostedRequest({scope,headers:context.headers,signal})('/api/operations/status','GET'));
+     const {bindingDigest,...actual}=hostedRootBudgetSchema.extend({bindingDigest:z.string().regex(/^[a-f0-9]{64}$/)}).parse(diagnostic.data.rootAcceptanceConfiguration);
+     if(bindingDigest!==evidenceDigest(JSON.stringify(rootBinding)))throw Error('Actual root authority digest differs');
+     if(JSON.stringify(actual)!==JSON.stringify(rootBinding))throw Error('Actual deployed root authority differs');
+     const raw=process.env.TURAS_PILOT_HOSTED_OWNER_DATABASE_URL;if(!raw)throw Error('Explicit original owner accounting connection required');
+     const url=new URL(raw);
+     if(!['postgres:','postgresql:'].includes(url.protocol)||!url.hostname.endsWith('.neon.tech')||url.hostname.includes('-pooler.')||url.searchParams.get('sslmode')!=='verify-full')throw Error('Explicit direct Neon verify-full accounting required');
+     const runtimeTarget=new URL(explicitRuntimeUrl(process.env));
+     const endpoint=(value:URL)=>JSON.stringify([value.hostname.replace('-pooler.','.'),value.port||'5432',decodeURIComponent(value.pathname)]);
+     if(endpoint(url)!==endpoint(runtimeTarget))throw Error('Owner accounting target differs from actual hosted runtime');
+     const ownerDb=createHostedLearningOwnerClient(raw);ownerDb.on('error',error=>connectionLoss.abort(error));
+     try{
+      await ownerDb.connect();
+      const owner=(await ownerDb.query("SELECT current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='parity_evaluation_budgets'::regclass)) AS owner")).rows[0];
+      const target=(await ownerDb.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[scope.environmentMarker])).rows;
+      if(target.length!==1||target[0].schema_version!==80||owner?.owner!==true||!process.env.AI_GATEWAY_API_KEY)throw Error('Actual owner accounting and Gateway lookup required before sends');
+      paidDispatchPossible=true;
+      for(const [index,conversationId] of rootBinding.conversationIds.entries()){
+       const proof=await runHostedRootBrowser({scope,db:readDb,ownerDb,headers:context.headers,binding:rootBinding,conversationId,signal,mobile:index===1,evidenceDirectory:root});
+       await writeEvidence(root,'root-transport-'+(index===1?'mobile':'desktop')+'.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,deployment,completedAt:new Date().toISOString(),proof});
+      }
+     }finally{await ownerDb.end();}
+    }
+    stage='conversation_boundary';
+    conversationJourneys.push({...await runHostedConversationBoundary({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],signal,foreignConversationIds:conversationJourneys.map(row=>row.conversationId)}),role:context.role});
+    await writeEvidence(root,'conversation-'+context.role+'.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...conversationJourneys.at(-1)});
+    stage='browser_boundary';
+    browserJourneys.push({...await runHostedConversationBrowser({scope,headers:context.headers,conversationId:conversationJourneys.at(-1)!.conversationId,foreignConversationIds:conversationJourneys.slice(0,-1).map(row=>row.conversationId),signal}),role:context.role});
+    await writeEvidence(root,'browser-'+context.role+'.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...browserJourneys.at(-1)});
+    stage='profile_boundary';
+    if(context.role==='internal-admin'){
+     const profileCustomer=generatedManifest?context.customerIds.find(id=>id!==generatedManifest.reference.customerId):context.customerIds[0];if(!profileCustomer)throw Error('Separate synthetic profile exercise customer required before reusing original reports');
+     profileJourneys.push(await runHostedProfileReviewJourney({scope,db:readDb,headers:context.headers,customerId:profileCustomer,signal}));
+    }
+    if(context.role==='internal-admin'){
+     stage='linked_chain';
+     paidDispatchPossible=true;
+     const owner=(await readDb.query("SELECT m.id FROM memberships m JOIN principals p ON p.id=m.principal_id WHERE m.workspace_id=$1 AND m.active AND m.kind='internal' AND m.role='admin' AND p.active AND p.login_name='mcteer'",[scope.workspaceId])).rows;
+     if(owner.length!==1)throw Error('Exact active linked reviewer required');
+     let linkedJourney:HostedLinkedReference|undefined;
+     if(generatedManifest&&generatedPath){
+      if(!context.partnerCustomerIds.includes(generatedManifest.reference.customerId))throw Error('Original linked customer assignment changed');
+      linkedJourney=await verifyHostedGeneratedFiles({scope,db:readDb,headers:context.headers,configuration,evidenceDirectory:root,signal,manifest:generatedManifest,originalEvidenceDirectory:dirname(generatedPath)});
+      if(maximumManifest)await composeHostedByteBoundary({scope,configuration,maximumManifest,generatedManifest,componentDirectory:dirname(runPath),evidenceDirectory:root,signal});
+     }else{
+     await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async author=>{
+      if(author.role==='internal-member'){const journey=await runHostedLinkedJourney({scope,db:readDb,headers:context.headers,customerId:context.partnerCustomerIds[0],ownerMembershipId:owner[0].id,configuration,authorizationDigest,authorizationExpiresAt:authorization.expiresAt,authorization:rawAuthorization,signal,authorRequest:pilotHostedRequest({scope,headers:author.headers,signal})});await writeEvidence(root,'linked-execution.json',{scope,journey});linkedJourney=hostedLinkedReferenceSchema.parse(journey);}
+     },configuration);
+     }
+     if(!linkedJourney)throw Error('Separate actual baseline author unavailable');linkedJourneys.push(linkedJourney);
+     await writeEvidence(root,'linked-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...linkedJourneys.at(-1)});
+     const linked=linkedJourneys.at(-1)!;stage='training_chain';
+     trainingJourneys.push(await runHostedTrainingJourney({scope,db:readDb,headers:context.headers,configuration,customerId:linked.customerId,engagementId:linked.plan.engagementId,baselineId:linked.plan.baselineId,acceptedRevisionId:linked.plan.revisionId,sourceRevisionId:linked.source.profileRevisionId,signal}));
+     await writeEvidence(root,'training-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...trainingJourneys.at(-1)});
+     await recordHostedTrainingObservations({directory:root,scope,db:readDb,signal});
+     if(learningConfiguration){
+      stage='learning_chain';const rawOwner=process.env.TURAS_PILOT_HOSTED_OWNER_DATABASE_URL;if(!rawOwner)throw Error('Explicit original hosted learning owner required');const ownerDb=createHostedLearningOwnerClient(rawOwner);ownerDb.on('error',error=>connectionLoss.abort(error));
+      try{await ownerDb.connect();await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async author=>{if(author.role==='internal-member')learningJourneys.push(await runHostedLearningJourney({scope,db:readDb,ownerDb,headers:context.headers,authorRequest:pilotHostedRequest({scope,headers:author.headers,signal}),contributionId:linked.knowledge.contributionId,publicationId:linked.knowledge.publicationId,sourceRevisionId:linked.source.profileRevisionId,configuration:learningConfiguration,evidenceDirectory:root,signal}));},configuration);if(learningJourneys.length!==1)throw Error('Exact ordinary separately authored hosted learning exercise required');}finally{await ownerDb.end();}
+     }
+
+    }
+    const positive=(await readDb.query(`SELECT c.id FROM customer_references c WHERE c.workspace_id=$1 AND c.synthetic AND c.id=ANY($2::uuid[])
+     AND EXISTS(SELECT 1 FROM profile_records p WHERE p.customer_id=c.id AND p.current_accepted_revision_id IS NOT NULL)
+     AND EXISTS(SELECT 1 FROM delivery_plans p WHERE p.workspace_id=c.workspace_id AND p.customer_id=c.id AND p.audience='delivery' AND p.accepted_revision_id IS NOT NULL)
+     AND EXISTS(SELECT 1 FROM report_scopes s JOIN report_publications p ON p.report_id=s.id JOIN report_revision_states st ON st.revision_id=p.revision_id WHERE s.workspace_id=c.workspace_id AND s.customer_id=c.id AND s.audience='delivery' AND st.state='published')
+     AND ($3::uuid IS NULL OR c.id=$3)
+     ORDER BY c.id LIMIT 1`,[scope.workspaceId,context.customerIds,linkedJourneys[0]?.customerId??null])).rows[0]?.id;
+    const denied=context.allCustomerIds.find(id=>id!==positive);
+    if(!positive||!denied)throw Error('Ordinarily accepted hosted SDK chain required');
+    if(context.role==='assigned-partner'&&learningJourneys.length===1){stage='partner_learning_privacy';const startedAt=new Date().toISOString();let denied=false;try{await pilotHostedRequest({scope,headers:context.headers,signal})('/api/learning/evaluations/'+learningJourneys[0].evaluationId,'GET');}catch(error){if(error instanceof PilotHostedResponseError&&error.releaseMatches&&[403,404].includes(error.status))denied=true;else throw error;}if(!denied)throw Error('Internal learning evaluation disclosed to partner');await writeEvidence(root,'learning-partner-boundary.json',{scope,evaluationId:learningJourneys[0].evaluationId,role:context.role,startedAt,completedAt:new Date().toISOString(),internalEvaluationWithheld:true});}
+    stage='sdk_boundary';const sdkStartedAt=new Date().toISOString();
+    sdkJourneys.push({...await runHostedMcpJourney({scope,db:readDb,headers:context.headers,customerId:String(positive),deniedCustomerId:denied,signal,expectedEvidenceRevisionId:linkedJourneys[0].source.profileRevisionId,expectedPublicationId:linkedJourneys[0].knowledge.publicationId,expectedPlanId:linkedJourneys[0].plan.planId,sourceBoundary:context.role==='assigned-partner'?async()=>{
+     stage='current_source_boundary';const linked=linkedJourneys[0];let withdrawal:Awaited<ReturnType<typeof runHostedSourceWithdrawal>>|undefined;
+     const roles=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async reviewer=>{
+      if(reviewer.role==='internal-admin'){
+       const request=pilotHostedRequest({scope,headers:reviewer.headers,signal});
+       const planScope=z.object({workload_id:z.uuid(),owner_membership_id:z.uuid()}).parse((await readDb.query('SELECT workload_id,owner_membership_id FROM delivery_plans WHERE id=$1 AND workspace_id=$2 AND customer_id=$3',[linked.plan.planId,scope.workspaceId,linked.customerId])).rows[0]);
+       const intent=await prepareHostedPlanSourceBoundary({scope,customerId:linked.customerId,workloadId:planScope.workload_id,ownerMembershipId:planScope.owner_membership_id,citationId:linked.citationId,sourceRevisionId:linked.source.profileRevisionId,request,signal});
+       await writeEvidence(root,'plan-source-boundary-intent.json',intent);
+       withdrawal=await runHostedSourceWithdrawal({scope,db:readDb,headers:reviewer.headers,customerId:linked.customerId,versionId:linked.source.versionId,lifecycleGeneration:linked.source.lifecycleGeneration,citationId:linked.citationId,publicationId:linked.knowledge.publicationId,artifactIds:linked.artifactIds,signal});
+       const boundary=await verifyHostedPlanSourceBoundary({intent,scope,db:readDb,request,signal});
+       await writeEvidence(root,'plan-source-boundary.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,...boundary});
+      }
+     },configuration);
+     if(!withdrawal)throw Error('Ordinary current source withdrawal incomplete');
+     const training=trainingJourneys[0].training,request=pilotHostedRequest({scope,headers:context.headers,signal});
+     const changed=z.object({data:z.object({availability:z.literal('source_unavailable'),progress:z.null(),checkpoints:z.array(z.object({attempts:z.array(z.object({attemptId:z.uuid(),currentCredit:z.boolean()}))}))})}).parse(await request('/api/partners/assignments/'+training.assignmentId,'GET')).data;
+     if(!changed.checkpoints.some(row=>row.attempts.some(attempt=>attempt.attemptId===training.attemptId&&!attempt.currentCredit)))throw Error('Withdrawn source retained partner learning credit');
+     await writeEvidence(root,'current-source-withdrawal.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),withdrawal,roles,trainingAssignmentId:training.assignmentId,trainingAttemptId:training.attemptId,partnerCreditWithheld:true,fullHostedCatalogVerified:false});
+    }:undefined,grantBoundary:context.role==='assigned-partner'?async()=>{
+     stage='current_grant_boundary';const current=(await readDb.query(`SELECT g.membership_id,g.revision FROM customer_grants g JOIN memberships m ON m.id=g.membership_id AND m.workspace_id=g.workspace_id AND m.active JOIN principals p ON p.id=m.principal_id AND p.active WHERE g.workspace_id=$1 AND g.customer_id=$2 AND g.state='active' AND m.kind='partner' AND p.login_name='partner'`,[scope.workspaceId,positive])).rows;if(current.length!==1)throw Error('Exact current synthetic partner grant required');
+     const body={state:'revoked',expectedRevision:Number(current[0].revision),requestKey:randomUUID()};await writeEvidence(root,'sdk-grant-revocation-intent.json',{scope,customerId:positive,membershipId:current[0].membership_id,body});
+     const roles=await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async reviewer=>{const response=z.object({data:z.object({revision:z.number().int(),state:z.literal('revoked')})}).parse(await pilotHostedRequest({scope,headers:reviewer.headers,signal})('/api/admin/grants/'+current[0].membership_id+'/'+positive,'PUT',body));if(response.data.revision!==body.expectedRevision+1)throw Error('Normal grant revision differs');},configuration,['internal-admin']);
+     const revoked=(await readDb.query('SELECT state,revision FROM customer_grants WHERE workspace_id=$1 AND membership_id=$2 AND customer_id=$3',[scope.workspaceId,current[0].membership_id,positive])).rows;if(revoked.length!==1||revoked[0].state!=='revoked'||Number(revoked[0].revision)!==body.expectedRevision+1)throw Error('Actual normal partner grant revocation unverified');await writeEvidence(root,'sdk-grant-revoked.json',{scope,customerId:positive,membershipId:current[0].membership_id,revision:body.expectedRevision+1,requestKey:body.requestKey,roles,completedAt:new Date().toISOString(),automaticRetries:0});
+    }:undefined}),role:context.role,startedAt:sdkStartedAt,completedAt:new Date().toISOString()});
+    if(context.role==='internal-admin'){
+     stage='support_boundary';
+     const linked=(await readDb.query(`SELECT p.id AS plan_id,p.accepted_revision_id,p.workload_id,p.engagement_id,m.id AS owner_id
+      FROM delivery_plans p JOIN customer_workloads w ON w.id=p.workload_id AND w.workspace_id=p.workspace_id AND w.customer_id=p.customer_id AND w.lifecycle='active'
+      JOIN memberships m ON m.workspace_id=p.workspace_id AND m.active AND m.kind='internal' AND m.role='admin'
+      JOIN principals a ON a.id=m.principal_id AND a.active AND a.login_name='mcteer'
+      WHERE p.workspace_id=$1 AND p.customer_id=$2 AND p.audience='delivery' AND p.accepted_revision_id IS NOT NULL AND p.engagement_id IS NOT NULL
+       AND NOT EXISTS(SELECT 1 FROM support_scopes s JOIN support_records r ON r.scope_id=s.id WHERE s.workspace_id=p.workspace_id AND s.customer_id=p.customer_id AND s.workload_id=p.workload_id AND r.audience='delivery')
+      ORDER BY p.id LIMIT 1`,[scope.workspaceId,positive])).rows[0];
+     if(!linked)throw Error('Fresh ordinarily accepted support baseline required');
+     const request=pilotHostedRequest({scope,headers:context.headers,signal});
+     await runHostedReadChecks(scope,readDb,signal,fetch,process.env,async author=>{
+      if(author.role!=='internal-member')return;
+      const authorRequest=pilotHostedRequest({scope,headers:author.headers,signal});
+     supportJourneys.push(await runHostedSupportBoundary({scope,db:readDb,customerId:String(positive),workloadId:linked.workload_id,planId:linked.plan_id,revisionId:linked.accepted_revision_id,engagementId:linked.engagement_id,ownerMembershipId:linked.owner_id,authorRequest,reviewerRequest:request,signal}));
+     await writeEvidence(root,'support-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...supportJourneys.at(-1)});
+     stage='expansion_boundary';
+     expansionJourneys.push(await runHostedExpansionBoundary({scope,db:readDb,customerId:String(positive),workloadId:linked.workload_id,planId:linked.plan_id,revisionId:linked.accepted_revision_id,engagementId:linked.engagement_id,ownerMembershipId:linked.owner_id,authorRequest,reviewerRequest:request,signal}));
+     await writeEvidence(root,'expansion-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...expansionJourneys.at(-1)});
+     stage='gap_boundary';
+     gapJourneys.push(await runHostedGapBoundary({scope,db:readDb,customerId:String(positive),workloadId:linked.workload_id,planId:linked.plan_id,revisionId:linked.accepted_revision_id,engagementId:linked.engagement_id,ownerMembershipId:linked.owner_id,authorRequest,reviewerRequest:request,signal,waitForReport:async reportId=>{
+      const until=Date.now()+300000;
+      for(;;){signal.throwIfAborted();const result=await request('/api/product-gaps/reports/'+reportId,'GET') as {data?:{job?:{state?:unknown};availability?:unknown}};if(result.data?.job?.state==='prepared'&&result.data.availability==='eligible')return;if(['failed','cancelled'].includes(String(result.data?.job?.state))||Date.now()>=until)throw Error('Actual normally scheduled gap report unavailable');await new Promise<void>((done,reject)=>{const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);done();},2000);const abort=()=>{clearTimeout(timer);reject(signal.reason);};signal.addEventListener('abort',abort,{once:true});});}
+     },verifyPrimaryIsolation:async(gapIds,reportId,query)=>{
+      const proof=await runHostedPrimaryExclusion({scope,db:readDb,gapIds,reportId,query,signal});await writeEvidence(root,'primary-gap-exclusion.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,deployment,completedAt:new Date().toISOString(),...proof});
+     },readExport:async artifact=>{
+      const response=await fetch(new URL('/api/product-gaps/reports/'+artifact.reportId+'/exports/'+artifact.exportId,scope.origin),{headers:context.headers,redirect:'manual',cache:'no-store',signal:AbortSignal.any([signal,AbortSignal.timeout(30000)])});
+      if(response.status!==200||response.headers.get('x-turas-code-version')!==scope.sourceCommit){await response.body?.cancel();throw Error('Exact private gap export unavailable or release differs');}
+      const reader=response.body?.getReader();if(!reader)throw Error('Actual private gap export body required');const parts:Uint8Array[]=[];let size=0;
+      try{for(;;){const next=await reader.read();if(next.done)break;size+=next.value.byteLength;if(size>artifact.sizeBytes||size>5242880)throw Error('Private gap export exceeds bound');parts.push(next.value);}}finally{await reader.cancel().catch(()=>undefined);reader.releaseLock();}return Buffer.concat(parts);
+     }}));
+     await writeEvidence(root,'gaps-internal-admin.json',{runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,completedAt:new Date().toISOString(),...gapJourneys.at(-1)});
+     },configuration);
+    }
+    roleIntervals.push({role:context.role,startedAt:roleStartedAt,completedAt:new Date().toISOString()});
+   },configuration);stage='membership_boundary';membershipBoundary=await runHostedMembershipBoundary({scope,db:readDb,signal,evidenceDirectory:root});await writeEvidence(root,'membership-boundary.json',membershipBoundary);}finally{await readDb.end();}
+  if(JSON.stringify(await platformDeployment(scope,true,signal))!==JSON.stringify(deployment)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Hosted identity or protected checkout changed');
+  await writeEvidence(root,'reads.json',{contract:'pilot-hosted-role-boundaries-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,deployment,startedAt,completedAt:new Date().toISOString(),roleReads:reads,roleIntervals,membershipBoundary,sdkJourneys,profileJourneys,conversationJourneys,browserJourneys,supportJourneys,expansionJourneys,gapJourneys,linkedJourneys,trainingJourneys,learningJourneys,maximumFiles,maximumFileDenials,normalProfileCommands:profileJourneys.reduce((sum,row)=>sum+row.normalProfileCommands,0),normalConversationCommands:conversationJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalSupportCommands:supportJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalExpansionCommands:expansionJourneys.reduce((sum,row)=>sum+row.normalCommands,0),normalGapCommands:gapJourneys.reduce((sum,row)=>sum+row.normalCommands,0),fullHostedCatalogVerified:false});
+  stage='sdk_evidence';const sdkRun=await writeHostedSdkEvidence({directory:root,scope,run,schemaLedgerDigest});
+  let currentRun=sdkRun;
+  if(learningJourneys.length===1){stage='partner_evidence';currentRun=await writeHostedPartnerEvidence({directory:root,scope,run:sdkRun});}else await writeEvidence(root,'hosted-run.json',sdkRun);
+  if(rootBinding&&maximumManifest&&generatedManifest){stage='core_evidence';await writeHostedCoreEvidence({directory:root,scope,run:currentRun});}
+  // Remaining gate producers are separate: do not return full acceptance success.
+  await writeEvidence(root,'blocked.json',{id,runId:run.id,...source,state:'blocked',safeFailure:'hosted_core_journey_catalog_not_complete',hostedCatalogVerified:false});
+  console.info(JSON.stringify({preflight:'pass',roleReads:reads.passedCases,sdkCases:sdkJourneys.reduce((sum,row)=>sum+row.passedCases,0),hostedCatalog:'blocked',paidCalls:linkedJourneys.reduce((sum,row)=>sum+row.source.providerCalls+row.workforce.providerCalls+row.reports.providerCalls,0)}));process.exitCode=1;return receipt;
+ }catch{
+  await writeEvidence(root,'failure.json',{id,runId:run.id,...source,startedAt,completedAt:new Date().toISOString(),state:'fail',safeFailure:'hosted_'+stage+'_incomplete',hostedCatalogVerified:false,paidCalls:paidDispatchPossible?null:0,paidDispatchPossible,scopedCostLedgerReviewRequired:paidDispatchPossible});
+  throw Error('Hosted preflight failed; inspect private target prerequisites');
+ }
+ });
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)pilotHosted().catch(()=>{console.error('Hosted catalog incomplete; no runtime acceptance established.');process.exitCode=1;});

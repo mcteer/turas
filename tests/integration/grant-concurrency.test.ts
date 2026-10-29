@@ -14,7 +14,7 @@ describe("partner grant concurrency", () => {
     process.env.DATABASE_URL = process.env.TURAS_TEST_DATABASE_URL;
     process.env.TURAS_ENVIRONMENT_ID = process.env.TURAS_TEST_ENVIRONMENT_ID;
     await runFile(process.execPath, ["--experimental-strip-types", "scripts/bootstrap-demo.ts"], {
-      cwd: process.cwd(), env: process.env,
+      cwd: process.cwd(), env: {...process.env,DATABASE_URL_UNPOOLED:process.env.TURAS_TEST_DATABASE_URL},
     });
     const client = new Client({ connectionString: process.env.TURAS_TEST_DATABASE_URL });
     await client.connect();

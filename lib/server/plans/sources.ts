@@ -207,7 +207,7 @@ export async function currentPlanSourceDigest(client:PoolClient,actor:CurrentRea
       await lockOriginalHeader(client,kind as SourceReference["kind"],
         source.source_revision_id);
     }
-    if (!await originalCurrent(client,source)) {
+    if (!await originalCurrent(client,source,actor.workspaceId)) {
       throw new HttpFailure(409,"plan_source_changed",
         "Plan evidence changed; review its sources again");
     }

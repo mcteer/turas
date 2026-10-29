@@ -11,7 +11,7 @@ export async function installStaffingNativeFixture(environment: StaffingEvalEnvi
     new URL(process.env.DATABASE_URL!).pathname !== `/${environment.databaseName}`) throw new Error("Owned app fixture required");
   const path = join(root, "agent/agent.ts"), source = await readFile(path, "utf8");
   const target = "wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode";
-  if (source.split(target).length !== 2 || !source.includes('const selectedModel = "spacexai/grok-4.7";') || !source.includes('reasoning: "low"')) throw new Error("Native fixture model shape changed");
+  if (source.split(target).length !== 2 || !source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";') || !source.includes('reasoning: "low"')) throw new Error("Native fixture model shape changed");
   const fixture = source.replace(target, "wrapStaffingModel(createStaffingNativeFixtureModel(principal, identity), admitted.mode")
     .replace("return wrapStaffingModel(createStaffingNativeFixtureModel(principal, identity), admitted.mode, {",
       "return { model: wrapStaffingModel(createStaffingNativeFixtureModel(principal, identity), admitted.mode, {")

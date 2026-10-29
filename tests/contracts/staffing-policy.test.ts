@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from '../fixtures/bound-session';
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { withTransaction } from "../../lib/server/db/client";
@@ -36,8 +37,7 @@ describe("current singleton staffing authority", () => {
           [principalId, `synthetic_${principalId}`]);
         await db.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','admin')",
           [membershipId, principalId, DEMO_IDS.workspace]);
-        await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",
-          [sessionId, principalId, "a".repeat(64)]);
+        await insertBoundFixtureSession(db,{id:sessionId,principalId,membershipId,workspaceId:DEMO_IDS.workspace,tokenHash:'a'.repeat(64),expiresAt:new Date(Date.now()+3600000)});
         const actor = { principalId, membershipId, sessionId, workspaceId: DEMO_IDS.workspace,
           kind: "internal" as const, role: "admin" as const, loginName: "mcteer", displayName: "Synthetic",
           token: "fixture", expiresAt: new Date(Date.now() + 3_600_000) };

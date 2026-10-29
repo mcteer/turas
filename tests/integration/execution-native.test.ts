@@ -30,7 +30,18 @@ it("withdraws saved history, reconnect and exact POST replay after a consumed so
     const usage=(await query("SELECT to_jsonb(u) AS row FROM execution_advice_usage u WHERE attempt_id=$1 ORDER BY step_id",[f.reserved.attemptId])).rows;
     await f.withdrawEvidence();
     await query("UPDATE execution_cleanup_jobs SET ineligible_at=now()-interval '31 days',due_at=now()-interval '1 day' WHERE engagement_id=$1",[f.source.engagementId]);
-    expect((await runExecutionCleanupTick()).purged).toBeGreaterThan(0);
+    // The owned runtime's maintenance worker may claim these jobs first.
+    // Verify the exact retained content is retired, regardless of worker ownership.
+    await runExecutionCleanupTick();
+    await expect.poll(async () => (await query(`SELECT
+      EXISTS(SELECT 1 FROM execution_advice_context_payloads WHERE attempt_id=$1) AS context_present,
+      EXISTS(SELECT 1 FROM execution_advice_instruction_payloads WHERE attempt_id=$1) AS instructions_present,
+      EXISTS(SELECT 1 FROM execution_advice_read_payloads p JOIN execution_advice_reads r ON r.id=p.receipt_id WHERE r.attempt_id=$1) AS reads_present,
+      EXISTS(SELECT 1 FROM execution_advice_retirements WHERE attempt_id=$1) AS retired,
+      EXISTS(SELECT 1 FROM execution_cleanup_jobs WHERE payload_kind='advice' AND revision_id=$1 AND state='done') AS cleanup_done`,
+      [f.reserved.attemptId])).rows[0], {timeout: 10000}).toEqual({
+        context_present: false, instructions_present: false, reads_present: false, retired: true, cleanup_done: true,
+      });
     expect((await query("SELECT 1 FROM execution_advice_context_payloads WHERE attempt_id=$1",[f.reserved.attemptId])).rowCount).toBe(0);
     expect((await query("SELECT 1 FROM execution_advice_read_payloads p JOIN execution_advice_reads r ON r.id=p.receipt_id WHERE r.attempt_id=$1",[f.reserved.attemptId])).rowCount).toBe(0);
     expect((await query("SELECT to_jsonb(u) AS row FROM execution_advice_usage u WHERE attempt_id=$1 ORDER BY step_id",[f.reserved.attemptId])).rows).toEqual(usage);

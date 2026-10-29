@@ -1,3 +1,7 @@
+import {readFileSync} from "node:fs";
+import {stripTypeScriptTypes} from "node:module";
+import {HttpFailure} from "../../lib/contracts/http";
+import {insertBoundFixtureSession} from "../fixtures/bound-session";
 import { createHash, randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import type { CurrentSession } from "../../lib/server/auth/sessions";
@@ -9,6 +13,7 @@ import { consumeResearchRun, reserveResearchOperation,
   dispatchResearchOperation,finishResearchRun,hasSubmittedContentOrigin } from
   "../../lib/server/research/execution";
 import { assertResearchAttemptCurrent } from "../../lib/server/research/fences";
+import { hasBoundResearchAttemptInTransaction } from "../../lib/server/research/instruction-scope";
 import { ownResearchGenerationIsCurrent } from "../../lib/server/research/context-generation";
 import { captureAttemptContext } from "../../lib/server/profiles/attempt-context";
 import { ingestCheckedObservation } from "../../lib/server/research/ingest";
@@ -19,10 +24,41 @@ import {assertRetrievalDependenciesCurrent,exactRetrievalOriginalCurrent} from "
 import { runRetrievalCleanupTick } from "../../lib/server/retrieval/cleanup";
 import { listDueResearch,markDueResearch,recordResearchRefresh } from "../../lib/server/research/refresh";
 
+import * as transactionModule from "../../lib/server/db/client";
+import { authoredTool as readResearchTool } from "../../agent/tools/read_research";
+import { researchReadCitationPresentation } from "../../agent/lib/research-read-citation-presentation";
+
 const sha = (value: string) => createHash("sha256").update(value).digest("hex");
 
 describe("owned bounded research admission", () => {
   it("keeps preview inert and admits one exact owned turn with replay and cancellation", async () => {
+    // Exercise the authored R11 setup loop without running its CLI/model/DB path.
+    const r11Source=readFileSync(new URL('../../scripts/eval-research.ts',import.meta.url),'utf8');
+    const loopStart=r11Source.indexOf('    for (const [index,url] of urls.slice(0,3).entries()) {');
+    const guard='    if (!attributed) throw new Error("R11 had no checked retained public finding");';
+    const loopEnd=r11Source.indexOf(guard,loopStart)+guard.length;
+    expect(loopStart).toBeGreaterThan(0);expect(loopEnd).toBeGreaterThan(loopStart);
+    const setupBody=stripTypeScriptTypes('async function setup(){let completedFetches=0;let attributed=false;'+r11Source.slice(loopStart,loopEnd)+'return{completedFetches,attributed};}',{mode:'strip'});
+    const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+    const runSetup=new AsyncFunction('urls','prepared','executeResearchFetch','withTransaction','ingestCheckedObservation','HttpFailure',setupBody+';return setup();') as (...args:unknown[])=>Promise<{completedFetches:number;attributed:boolean}>;
+    const exercise=(fetchCandidate:(index:number)=>Promise<string|undefined>,ingest:(id:string)=>Promise<{attributed:boolean}>)=>{
+      const indices:number[]=[];
+      const result=runSetup(['first','second','third','never-fourth'],{actor:{},runId:'synthetic'},async(_actor:unknown,_runId:string,index:number)=>{indices.push(index);return fetchCandidate(index);},async(callback:(db:unknown)=>Promise<unknown>)=>callback({}),async(_db:unknown,_actor:unknown,id:string)=>ingest(id),HttpFailure);
+      return{indices,result};
+    };
+    let probe=exercise(async index=>{if(index===0)throw new HttpFailure(422,'source_unverified','Synthetic rejected source');return String(index);},async()=>({attributed:true}));
+    await expect(probe.result).resolves.toEqual({completedFetches:1,attributed:true});expect(probe.indices).toEqual([0,1]);
+    probe=exercise(async index=>String(index),async id=>{if(id==='0')throw new HttpFailure(409,'research_source_unverified','Synthetic rejected observation');return{attributed:true};});
+    await expect(probe.result).resolves.toEqual({completedFetches:2,attributed:true});expect(probe.indices).toEqual([0,1]);
+    probe=exercise(async()=>{throw new HttpFailure(422,'source_unverified','Synthetic rejected source');},async()=>({attributed:true}));
+    await expect(probe.result).rejects.toThrow('R11 had no checked retained public finding');expect(probe.indices).toEqual([0,1,2]);
+    for(const error of[new HttpFailure(403,'forbidden','Synthetic denial'),new HttpFailure(413,'research_budget','Synthetic budget limit'),new HttpFailure(503,'provider_unconfirmed','Synthetic uncertain request'),new HttpFailure(409,'source_unverified','Wrong status'),Object.assign(new Error('Synthetic timeout'),{name:'TimeoutError'}),new Error('Synthetic unknown'),{status:422,code:'source_unverified'}]){
+      probe=exercise(async()=>{throw error;},async()=>({attributed:true}));await expect(probe.result).rejects.toBe(error);expect(probe.indices).toEqual([0]);
+    }
+    for(const error of[new HttpFailure(422,'research_source_unverified','Wrong status'),new HttpFailure(403,'forbidden','Synthetic denial'),new Error('Synthetic unknown')]){
+      probe=exercise(async()=> 'observation',async()=>{throw error;});await expect(probe.result).rejects.toBe(error);expect(probe.indices).toEqual([0]);
+    }
+
     const environment = process.env.TURAS_TEST_ENVIRONMENT_ID!;
     for (const [key,value] of Object.entries({
       DATABASE_URL: "postgres://localhost/turas_unused",
@@ -49,8 +85,7 @@ describe("owned bounded research admission", () => {
             [principal,`research-${principal}`]);
           await client.query(`INSERT INTO memberships(id,principal_id,workspace_id,kind,role)
             VALUES($1,$2,$3,'internal','member')`,[membership,principal,workspace]);
-          await client.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-            VALUES($1,$2,$3,now()+interval '1 hour')`,[sessionId,principal,sha(sessionId)]);
+          await insertBoundFixtureSession(client,{id:sessionId,principalId:principal,membershipId:membership,workspaceId:workspace,tokenHash:sha(sessionId),expiresAt:new Date(Date.now()+3600000)});
           await client.query(`INSERT INTO customer_references(id,workspace_id,display_name,synthetic)
             VALUES($1,$2,'Synthetic public identity',true)`,[customer,workspace]);
           await client.query(`INSERT INTO conversations
@@ -68,6 +103,47 @@ describe("owned bounded research admission", () => {
             workspaceId: workspace,kind: "internal",role: "member",token: "synthetic",
             loginName: "synthetic",displayName: "Researcher",
             expiresAt: new Date(Date.now()+3_600_000) };
+          await client.query("SAVEPOINT recon_admission");
+          const reconInput = { idempotencyKey: "recon-preview",customerId: customer,
+            conversationId: conversation,mode: "recon",publicName: "Vercel",
+            publicDomain: "vercel.com",identityConfirmed: true,submittedUrls: [] };
+          await expect(createResearchPreview(client,actor,{
+            ...reconInput,sourcePolicy: "public-subject-v2" }))
+            .rejects.toMatchObject({ status: 422 });
+          const reconPreview = await createResearchPreview(client,actor,reconInput);
+          expect(reconPreview.publicFields).toMatchObject({
+            sourcePolicy: "public-subject-v2",identityConfirmed: true });
+          const reconCommand = { idempotencyKey: "recon-start",
+            expectedRevision: reconPreview.revision,expectedDigest: reconPreview.digest };
+          const reconStart = await startResearch(client,actor,reconPreview.id,reconCommand);
+          expect(reconStart.replayed).toBe(false);
+          const researchPrincipal = { principalId: principal,
+            attributes: { turasAttemptId: reconStart.attemptId } };
+          expect(await hasBoundResearchAttemptInTransaction(client,researchPrincipal)).toBe(true);
+          expect(await hasBoundResearchAttemptInTransaction(client,{
+            ...researchPrincipal,principalId: randomUUID() })).toBe(false);
+          expect(await hasBoundResearchAttemptInTransaction(client,{
+            principalId: principal,attributes: { turasAttemptId: randomUUID() } })).toBe(false);
+          expect(await hasBoundResearchAttemptInTransaction(client,null)).toBe(false);
+          vi.stubEnv('TURAS_ENVIRONMENT_ID',environment+'-other');
+          try { expect(await hasBoundResearchAttemptInTransaction(client,researchPrincipal)).toBe(false); }
+          finally { vi.stubEnv('TURAS_ENVIRONMENT_ID',environment); }
+          await client.query('SAVEPOINT research_instruction_states');
+          for (const state of ['running','completed','partial','failed','cancelled','unconfirmed']) {
+            await client.query('UPDATE research_runs SET state=$2 WHERE id=$1',[reconStart.runId,state]);
+            expect(await hasBoundResearchAttemptInTransaction(client,researchPrincipal))
+              .toBe(['running','completed','partial'].includes(state));
+          }
+          await client.query('ROLLBACK TO SAVEPOINT research_instruction_states');
+          await client.query('RELEASE SAVEPOINT research_instruction_states');
+          expect((await startResearch(client,actor,reconPreview.id,reconCommand)).replayed).toBe(true);
+          expect((await readResearchPreview(client,actor,reconPreview.id)).publicFields)
+            .toMatchObject({ sourcePolicy: "public-subject-v2",identityConfirmed: true });
+          expect((await consumeResearchRun(client,actor,reconStart.attemptId)).mode).toBe("recon");
+          expect((await client.query("SELECT 1 FROM research_operations WHERE run_id=$1",
+            [reconStart.runId])).rowCount).toBe(0);
+          await client.query("ROLLBACK TO SAVEPOINT recon_admission");
+          await client.query("RELEASE SAVEPOINT recon_admission");
           await client.query("SAVEPOINT local_fit_mode");
           const fitReceipt = randomUUID();
           await client.query(`INSERT INTO retrieval_receipts
@@ -264,6 +340,73 @@ describe("owned bounded research admission", () => {
           await client.query("ROLLBACK TO SAVEPOINT submitted_origin_index");await client.query("RELEASE SAVEPOINT submitted_origin_index");
           await client.query("ROLLBACK TO SAVEPOINT real_customer_index");await client.query("RELEASE SAVEPOINT real_customer_index");
           expect(ingested.attributed).toBe(true);
+          // Real bound read tool, fresh context and current eligibility; no provider call.
+          await client.query("SAVEPOINT prior_run_citation_presentation");
+          const useThisTransaction: typeof transactionModule.withTransaction = async work => work(client);
+          const readTransaction = vi.spyOn(transactionModule,"withTransaction")
+            .mockImplementation(useThisTransaction);
+          try {
+            const summaryConversation=randomUUID(),summaryMessage=randomUUID(),summaryAttempt=randomUUID();
+            await client.query(`INSERT INTO conversations
+              (id,environment_id,workspace_id,customer_id,owner_principal_id,
+               eve_session_id,creation_operation_id,binding_state,title,context_audience,
+               context_generation,context_snapshot_schema,context_login_session_id,context_membership_id)
+              VALUES($1,$2,$3,$4,$5,$6,$7,'bound','Synthetic earlier-run summary',
+                'internal',$8,'customer-context-v1',$9,$10)`,
+              [summaryConversation,environment,workspace,customer,principal,
+                `wrun_${randomUUID().replaceAll("-","")}`,randomUUID(),generationAfter,sessionId,membership]);
+            await client.query(`INSERT INTO submitted_messages
+              (id,conversation_id,request_key,body_digest,text)
+              VALUES($1,$2,$3,$4,'Summarize my earlier research run')`,
+              [summaryMessage,summaryConversation,randomUUID(),sha("Synthetic earlier-run summary")]);
+            await client.query(`INSERT INTO response_attempts
+              (id,conversation_id,message_id,input_digest,dispatch_state,response_state)
+              VALUES($1,$2,$3,$4,'prepared','pending')`,
+              [summaryAttempt,summaryConversation,summaryMessage,sha("Synthetic earlier-run summary")]);
+            await captureAttemptContext(client,actor,summaryConversation,summaryAttempt,customer);
+            const summaryPrincipal={principalId:principal,attributes:{turasAttemptId:summaryAttempt}};
+            const toolContext={session:{auth:{current:summaryPrincipal}}} as never;
+            expect(await hasBoundResearchAttemptInTransaction(client,summaryPrincipal)).toBe(false);
+            for(const state of ["running","completed","partial","cancelled"]){
+              await client.query("UPDATE research_runs SET state=$2 WHERE id=$1",[admitted.runId,state]);
+              const actual=await readResearchTool.execute({runId:admitted.runId},toolContext);
+              if(Symbol.asyncIterator in actual)throw new Error("Research read must return its bounded result directly");
+              expect(actual.receipt.state).toBe(state);
+              expect(actual.findings.some(item=>item.sourceRevisionId===ingested.sourceRevisionId)).toBe(true);
+              expect(actual.checkedCitationPresentation?.citations).toContainEqual({
+                sourceRevisionId:ingested.sourceRevisionId,marker:`[${ingested.sourceRevisionId}]`});
+              expect(JSON.stringify(actual.checkedCitationPresentation)).not.toContain(observationId);
+              expect(JSON.stringify(actual.checkedCitationPresentation)).not.toContain(admitted.runId);
+              const eligibleBefore=structuredClone(actual.findings);
+              for(const mode of ["recon","practices"]){
+                const presentation=researchReadCitationPresentation(mode,actual.findings);
+                expect(presentation?.version).toBe("research-read-source-citations-v1");
+                expect(presentation?.citations.map(item=>item.marker))
+                  .toEqual(actual.findings.slice(0,3).map(item=>`[${item.sourceRevisionId}]`));
+              }
+              expect(researchReadCitationPresentation("fit",actual.findings)).toBeNull();
+              expect(researchReadCitationPresentation("unknown",actual.findings)).toBeNull();
+              expect(researchReadCitationPresentation("practices",[])?.citations).toEqual([]);
+              const repeatedEligible=Array.from({length:4},()=>actual.findings[0]);
+              expect(researchReadCitationPresentation("recon",repeatedEligible)?.citations).toHaveLength(3);
+              expect(actual.findings).toEqual(eligibleBefore);
+            }
+            await expect(readResearchTool.execute({runId:admitted.runId},
+              {session:{auth:{current:{...summaryPrincipal,principalId:randomUUID()}}}} as never))
+              .rejects.toMatchObject({status:404});
+            await expect(readResearchTool.execute({runId:randomUUID()},toolContext))
+              .rejects.toMatchObject({status:404});
+            await client.query("UPDATE retrieval_sources SET lifecycle_state='retired' WHERE source_revision_id=$1",[ingested.sourceRevisionId]);
+            const unavailable=await readResearchTool.execute({runId:admitted.runId},toolContext);
+            if(Symbol.asyncIterator in unavailable)throw new Error("Research read must return its bounded result directly");
+            expect(unavailable.findings).toHaveLength(0);
+            expect(unavailable.checkedCitationPresentation?.citations).toEqual([]);
+          } finally {
+            readTransaction.mockRestore();
+            await client.query("ROLLBACK TO SAVEPOINT prior_run_citation_presentation");
+            await client.query("RELEASE SAVEPOINT prior_run_citation_presentation");
+          }
+
           const verified = await client.query<{ supported_claim: string;
             quality_input: { R: number; D: number } }>(`
             SELECT supported_claim,quality_input FROM evidence_source_revisions
@@ -464,9 +607,7 @@ describe("owned bounded research admission", () => {
             { idempotencyKey: "cancel-1" })).replayed).toBe(true);
           expect((await readResearchRun(client,actor,admitted.runId)).state).toBe("cancelled");
           const laterSessionId = randomUUID();
-          await client.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-            VALUES($1,$2,$3,now()+interval '1 hour')`,
-          [laterSessionId,principal,sha(laterSessionId)]);
+          await insertBoundFixtureSession(client,{id:laterSessionId,principalId:principal,membershipId:membership,workspaceId:workspace,tokenHash:sha(laterSessionId),expiresAt:new Date(Date.now()+3600000)});
           expect((await readResearchRun(client,{ ...actor,sessionId: laterSessionId },
             admitted.runId)).state).toBe("cancelled");
           const cancelledAttempt = await client.query<{ dispatch_state: string;

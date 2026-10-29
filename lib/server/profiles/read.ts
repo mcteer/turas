@@ -262,7 +262,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
     // bounded quotations. Full documents are retained for retrieval separately.
     const learned=researchSchema>=60 ? await recallPublicLearning(
       {...actor,userId:actor.principalId,environmentId:getServerConfig().TURAS_ENVIRONMENT_ID},
-      customerId,"",new AbortController().signal,false,client) : [];
+      customerId,"",new AbortController().signal,false,client,actor) : [];
 
     const research = await client.query<{
       id: string; title: string; location: string; supported_claim: string;

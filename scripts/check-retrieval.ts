@@ -29,12 +29,20 @@ async function main(): Promise<void> {
         floor(extract(epoch FROM now()-min(created_at)))::text AS oldest_seconds
       FROM retrieval_jobs WHERE environment_id=$1 GROUP BY state ORDER BY state`,
     [environmentId]);
+    // Indexing has separate paid admission and is not the shared cleanup lane.
+    const indexJobs = await client.query<{ state: string; count: string; oldest_seconds: string | null }>(`
+      SELECT state,count(*)::text AS count,
+        floor(extract(epoch FROM now()-min(created_at)))::text AS oldest_seconds
+      FROM retrieval_jobs WHERE environment_id=$1 AND kind='index'
+      GROUP BY state ORDER BY state`, [environmentId]);
     const operations = await client.query<{ state: string; count: string }>(`
       SELECT state,count(*)::text AS count FROM retrieval_embedding_operations
       WHERE environment_id=$1 GROUP BY state ORDER BY state`, [environmentId]);
     console.log(JSON.stringify({ kind: "turas_retrieval_status",
       intakeEnabled: true,
       jobs: jobs.rows.map((row) => ({ state: row.state,count: Number(row.count),
+        oldestSeconds: Number(row.oldest_seconds ?? 0) })),
+      indexJobs: indexJobs.rows.map((row) => ({ state: row.state,count: Number(row.count),
         oldestSeconds: Number(row.oldest_seconds ?? 0) })),
       embeddingOperations: operations.rows.map((row) => ({ state: row.state,
         count: Number(row.count) })) }));

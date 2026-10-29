@@ -8,7 +8,7 @@ import {learningNativeDraftOutput} from './native';
 function fixture(){requireOwnedLearningDatabase(process.env);if(process.env.TURAS_LEARNING_NATIVE_FIXTURE_READY!=='1'||process.env.TURAS_TEST_MODEL_MODE!=='deterministic')throw Error('Owned learning native fixture required');}
 export function createLearningNativeFixtureModel(principal:unknown,identity:{nativeSessionId:string;responseAttemptId:string;turnId:string;stepIndex:number}){
  fixture();if(!principal)throw Error('Owned native identity required');let mode='normal',purpose='';
- const model=mockModel({provider:'turas-owned-learning-fixture',modelId:'spacexai/grok-4.7',respond:async({tools,toolResults})=>{
+ const model=mockModel({provider:'turas-owned-learning-fixture',modelId:'anthropic/claude-sonnet-5.5',respond:async({tools,toolResults})=>{
   const row=(await query(`SELECT a.purpose,coalesce(f.mode,'normal') AS mode FROM learning_attempts a LEFT JOIN learning_native_fixture_modes f ON f.customer_id=a.customer_id WHERE a.response_attempt_id=$1`,[identity.responseAttemptId])).rows[0];if(!row)throw Error('Learning fixture binding required');purpose=row.purpose;mode=row.mode;
   const expected=purpose==='draft'?['learning_summary','learning_evidence','load_skill']:[];
   if(JSON.stringify(tools.map(t=>t.name).sort())!==JSON.stringify(expected.sort()))throw Error('Learning native tool catalog mismatch');

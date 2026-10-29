@@ -28,7 +28,7 @@ const results=await withMcpEnvironment(async environment=>{
    if(category==='profiles'){await mcpAcceptedFact(db,browser,reviewer,customerId);tool='turas_profile_read_v1';args={customerId,section:'facts',limit:20};}
    else if(category==='evidence'){
     const fact=await mcpAcceptedFact(db,browser,reviewer,customerId);await materializeCurrentProjection(db,'accepted_profile',fact.revisionId,'internal');
-    const passage=(await db.query('SELECT p.id FROM retrieval_passages p JOIN retrieval_sources s ON s.id=p.source_id WHERE s.source_revision_id=$1 ORDER BY p.id LIMIT 1',[fact.revisionId])).rows[0];
+    const passage=(await db.query(`SELECT p.id FROM retrieval_passages p JOIN retrieval_sources s ON s.id=p.source_id WHERE s.source_revision_id=$1 AND s.audience='internal' ORDER BY p.id LIMIT 1`,[fact.revisionId])).rows[0];
     tool='turas_evidence_read_v1';args={customerId,revisionId:fact.revisionId,passageId:passage.id};
    }else if(category==='knowledge'){
     const practice=await mcpPublishedKnowledge(db,browser,reviewer,customerId);tool='turas_knowledge_read_v1';args={publicationId:practice.publicationId};

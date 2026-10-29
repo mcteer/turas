@@ -9,11 +9,14 @@ export const ordinaryConversationOutputLimit=20000;
  * its full hold; a steering correction cannot spend it again. */
 export async function reserveOrdinaryOutput(db:PoolClient,conversationId:string,attemptId:string,requested:number){
  await db.query('SELECT id FROM conversations WHERE id=$1 FOR UPDATE',[conversationId]);
- await db.query(`INSERT INTO ordinary_conversation_allowances(conversation_id,baseline_output_tokens)
+ // Captured immutable allowances have permanent replay fences. Reading an
+ // existing allowance must not repeat its original INSERT, even as a no-op.
+ if(!(await db.query('SELECT 1 FROM ordinary_conversation_allowances WHERE conversation_id=$1',[conversationId])).rowCount)await db.query(`INSERT INTO ordinary_conversation_allowances(conversation_id,baseline_output_tokens)
   SELECT $1,COALESCE(sum(output_tokens),0)::integer FROM response_attempts WHERE conversation_id=$1
   ON CONFLICT(conversation_id) DO NOTHING`,[conversationId]);
- const used=Number((await db.query(`SELECT allowance.baseline_output_tokens+COALESCE((SELECT sum(COALESCE(actual_tokens,ceiling_tokens))
-  FROM ordinary_model_operations WHERE conversation_id=$1),0) AS used FROM ordinary_conversation_allowances allowance WHERE conversation_id=$1`,[conversationId])).rows[0].used);
+ const usage=(await db.query('SELECT turas_ordinary_output_used($1) AS used',[conversationId])).rows[0]?.used;
+ if(usage==null)throw hiddenRecord();
+ const used=Number(usage);
  if(!Number.isSafeInteger(used) || used>=ordinaryConversationOutputLimit)throw new HttpFailure(429,'conversation_budget','Conversation output allowance exhausted');
  const ceiling=Math.min(requested,ordinaryConversationOutputLimit-used);
  if(!Number.isSafeInteger(ceiling) || ceiling<1)throw new HttpFailure(429,'conversation_budget','Conversation output allowance exhausted');

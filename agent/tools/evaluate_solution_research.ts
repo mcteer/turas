@@ -1,3 +1,4 @@
+import {objectToolInput} from "../lib/object-tool-input";
 import {normalChatTool} from "../lib/normal-chat-tool";
 import { sourceFreshness, contextFreshness } from "../../lib/server/research/specialists/solution-research/freshness-report";
 import { defineTool } from "eve/tools";
@@ -16,10 +17,16 @@ import { evaluateDecisionWorkflow, decisionModel, decisionFailureDiagnostic } fr
 import { calculateProcessImpact } from "../../lib/server/research/specialists/solution-research/process-impact";
 import { customerResearchCitations } from "../../lib/server/research/specialists/solution-research/citations";
 import { resolveResearchHandoff, sessionResearchReferenceSchema } from "../lib/legacy-research/research-handoff";
+// Providers require an object at the tool boundary; the pipe retains the exact
+// reference-or-signed-receipt validation before execution.
+export const inputSchema = objectToolInput(
+  sessionResearchReferenceSchema.merge(researchReceiptSchema).partial().strict(),
+  z.union([sessionResearchReferenceSchema, researchReceiptSchema]),
+);
 const authoredTool=defineTool({
   description:
     "For solution research prepared in this chat, supply accountId only and omit researchId: the server loads the exact bound result. An explicit {accountId,researchId} remains supported for a prior authorized artifact. Evaluate it through the primary model's typed decision assessment. Loads exact signed evidence from Postgres; never reconstruct its payload. Rechecks caller/customer evidence, evaluates eight atomic prerequisites, and combines them using fixed evidence and uncertainty gates. Returns the actual model used, advisory route, retrieved sources and unresolved evidence blockers. Not research, financial calculation or approval. Legacy signed receipts remain accepted. No writes.",
-  inputSchema: z.union([sessionResearchReferenceSchema, researchReceiptSchema]),
+  inputSchema,
   outputSchema: decisionOutputSchema,
   async execute(input, ctx) {
     const empty = {

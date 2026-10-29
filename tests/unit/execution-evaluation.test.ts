@@ -12,7 +12,7 @@ function verificationFixture(){
   const preflightDigest=put("preflight",preflight);
   const captures=EXECUTION_EVAL_IDS.map((caseId,i)=>{
     const interrupted=caseId==="E04"||caseId==="E08",context={syntheticVerifierFixture:true},tools:unknown[]=[],dependencies=[{id:randomUUID()}],captured={prompt:[],tools:[]},turnId=`turn_${i}`;
-    return {version:"execution-live-v1",runId,caseId,sourceDigest,provenance:"native-eve-stream",model:"spacexai/grok-4.7",reasoning:"low",role:"panel",
+    return {version:"execution-live-v1",runId,caseId,sourceDigest,provenance:"native-eve-stream",model:"anthropic/claude-sonnet-5.5",reasoning:"low",role:"panel",
       attemptId:randomUUID(),conversationId:randomUUID(),nativeSessionId:`wrun_test_${i}`,turnId,startedAt:iso(base+i*1000),finishedAt:iso(base+i*1000+500),deadlineAt:iso(base+i*1000+120000),
       initialDispatches:1,automaticPaidRetries:0,state:interrupted?"cancelled":"completed",outputReadable:!interrupted,response:interrupted?"":"Synthetic verifier text",responseDigest:sha(interrupted?"":"Synthetic verifier text"),
       inputDigest:executionValueDigest({context,tools,dependencies}),context,tools,dependencies,contextBytes:100,readCalls:0,dependencyCount:1,

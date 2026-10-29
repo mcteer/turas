@@ -1,3 +1,4 @@
+import {withOperationalProviderIo} from '../../../operations/admission';
 export {publicLearningSchema,recallPublicLearning} from "./public-learning-read";
 import { z } from "zod";
 import type { AppIdentity } from "../identity";
@@ -61,7 +62,7 @@ export async function latestPublicLearningDate(identity: Pick<AppIdentity, "envi
 }
 // Use the existing authenticated maintenance job. Bounded public page checks, no
 // autonomous model sessions, internal connector access or customer writes.
-export async function refreshPublicLearning(environmentId:string,signal:AbortSignal) {
+async function refreshPublicLearningWithinFence(environmentId:string,signal:AbortSignal) {
   const sql = await evidenceDatabase();
   const due = z.array(z.object({ workspace_id: z.string(), account_id: z.string(), url: z.string() })).parse(await sql.query(`
     WITH candidates AS (
@@ -104,4 +105,8 @@ export async function hasNewPublicSources(identity: AppIdentity, accountId: stri
     AND account_id=$3 AND first_seen>$4::timestamptz AND NOT(url=ANY($5::text[])) LIMIT 1`,
     [identity.environmentId, identity.workspaceId, accountId, researchedAt, knownUrls]);
   return rows.length > 0;
+}
+
+export async function refreshPublicLearning(environmentId:string,signal:AbortSignal) {
+ return withOperationalProviderIo(()=>refreshPublicLearningWithinFence(environmentId,signal),signal);
 }

@@ -1,10 +1,14 @@
+import {configureOwnedNextDependencyRoot} from './owned-next-config';
+import {stopOwnedAppProcesses} from './plan-eval-environment';
+import {copyOwnedEvalFiles} from './eval-owned-copy';
+import {qualityChildEnvironment} from "./pilot-quality-runtime";
 import { randomUUID } from "node:crypto";
 import { execFileSync,spawn,type ChildProcess } from "node:child_process";
 import { chmod,cp,mkdir,mkdtemp,rm,symlink,writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { join,resolve } from "node:path";
 import { Client } from "pg";
-import { requireTestDatabaseUrl } from "../tests/fixtures/database";
+import { requireEvaluationSourceDatabase } from "./eval-source-database";
 import { closeRuntimePool } from "../lib/server/db/client";
 
 async function freePort(): Promise<number> {
@@ -37,7 +41,7 @@ export type RetrievalEvalControl = { appRoot: string;storeRoot: string;
 /** Run a 005 evaluation on a cloned marked database, private store and Eve state. */
 export async function withRetrievalEvalEnvironment<T>(
   run: (control: RetrievalEvalControl) => Promise<T>): Promise<T> {
-  const sourceUrl = new URL(requireTestDatabaseUrl());
+  const sourceUrl = new URL(requireEvaluationSourceDatabase());
   const sourceName = decodeURIComponent(sourceUrl.pathname.slice(1));
   const databaseUser = decodeURIComponent(sourceUrl.username || "postgres");
   const marker = process.env.TURAS_TEST_ENVIRONMENT_ID!;
@@ -85,11 +89,13 @@ export async function withRetrievalEvalEnvironment<T>(
     await writeFile(join(store,".turas-artifact-store.json"),
       JSON.stringify({ environmentId: marker }),{ mode: 0o600 });
     await chmod(join(store,".turas-artifact-store.json"),0o600);
-    for (const name of ["app","agent","lib","migrations","scripts","public","evals","tests",
-      "next.config.ts","next-env.d.ts","tsconfig.json","package.json"]) {
-      await cp(resolve(name),join(app,name),{ recursive: true });
+    for (const name of ["app","agent","lib","migrations","scripts","public","evals","infra","tests","packages",
+      "report-renderer","report-templates","next.config.ts","next-env.d.ts","tsconfig.json","package.json"]) {
+      copyOwnedEvalFiles(resolve(name),join(app,name),{excludeRuntime:true});
     }
     await symlink(resolve("node_modules"),join(app,"node_modules"));
+    await symlink(resolve("packages/artifact-extractor/node_modules"),join(app,"packages/artifact-extractor/node_modules"));
+    await configureOwnedNextDependencyRoot(app);
     if (adminUrl) {
       const admin = new Client({ connectionString: adminUrl.toString() });
       await admin.connect();
@@ -140,7 +146,7 @@ export async function withRetrievalEvalEnvironment<T>(
     async function startDev(): Promise<void> {
       startupOutput = "";
       dev = spawn(process.execPath,["scripts/dev.mjs"],{
-        cwd: app,env: { ...process.env,PORT: String(port),NODE_OPTIONS: "" },
+        cwd: app,env: { ...process.env,NODE_ENV:"development",PORT: String(port),...await qualityChildEnvironment() },
         stdio: ["ignore","pipe","pipe"] });
       dev.stdout?.on("data",capture);dev.stderr?.on("data",capture);
       const started = Date.now();
@@ -180,6 +186,7 @@ export async function withRetrievalEvalEnvironment<T>(
       restart: async () => { await stop(dev);dev = null;await startDev(); } });
   } finally {
     await stop(dev);
+    await stopOwnedAppProcesses(app);
     await closeRuntimePool();
     for (const [key,value] of Object.entries(old)) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;

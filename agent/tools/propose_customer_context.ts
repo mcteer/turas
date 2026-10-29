@@ -43,7 +43,7 @@ function stableRequestKey(attemptId: string, callId: string): string {
 }
 
 export const authoredTool = defineTool({
-  description: "Submit one assistant-authored Pending customer proposal for human review. For a human-requested claim from selected artifact text, input only artifactSourceNumber 1–5 and a claim payload with sourceType manual; do not pass coverage, source objects, citations or paths. Exact selected units supply the citation. A claim citing the current user's message instead needs its exact message ID, span and SHA-256 digest. This tool cannot accept facts or select a trusted origin.",
+  description: "Submit one assistant-authored Pending customer proposal for human review. For an ordinary uncited assistant proposal, a manual claim may omit sourceMessageId, sourceSpanDigest, sourceExcerpt and sourceUrl; no message-span citation is required. The server records an unverified agent_proposal, not accepted context. For a human-requested claim from selected artifact text, input only artifactSourceNumber 1–5 and a claim payload with sourceType manual; do not pass coverage, source objects, citations or paths. Exact selected units supply the citation. A claim citing the current user's message instead needs its exact message ID, span and SHA-256 digest. This tool cannot accept facts or select a trusted origin.",
   inputSchema,
   async execute(input, ctx) {
     return withTransaction(async (client) => {

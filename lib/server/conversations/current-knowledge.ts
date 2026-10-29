@@ -46,7 +46,7 @@ export async function refreshOrdinaryKnowledge(db:PoolClient,actor:CurrentSessio
  const retired:string[]=[];
  for(const d of dependencies){
   if(d.valid_until.getTime()<=Date.now() || await confirmedConflictAfter(db,d.source_kind,d.source_revision_id,d.receipt_as_of)
-   || !await originalCurrent(db,d))retired.push(d.id);
+   || !await originalCurrent(db,d,actor.workspaceId))retired.push(d.id);
  }
  const packet={contractVersion:'ordinary-current-knowledge-v1',asOf:new Date().toISOString(),contexts,
   retiredHistoricalEvidence:retired.length,retiredNamedCitations:retiredNamed,

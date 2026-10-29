@@ -4,7 +4,7 @@ import { withTestDatabase } from "../fixtures/database";
 import { createProfileTestSession } from "../fixtures/profiles";
 import { createArtifactDatabaseFixture } from "../fixtures/artifact-database";
 import { DEMO_IDS } from "../fixtures/identities";
-import { claimArtifactRun, heartbeatArtifactRun, publishArtifactRun } from "../../lib/server/artifacts/jobs";
+import { claimArtifactRun, heartbeatArtifactRun, publishArtifactRun, failArtifactRun } from "../../lib/server/artifacts/jobs";
 
 describe("artifact leases and publication", () => {
   it("publishes one digest-bound run and fences stale tokens and generations", async () => {
@@ -65,4 +65,26 @@ describe("artifact leases and publication", () => {
       });
     } finally { process.env.TURAS_ENVIRONMENT_ID = old; }
   });
+  it("retries transient failure through the allowed failed state and stops after three attempts",async()=>{
+    const old=process.env.TURAS_ENVIRONMENT_ID;process.env.TURAS_ENVIRONMENT_ID=process.env.TURAS_TEST_ENVIRONMENT_ID;
+    try{await withTestDatabase(async client=>{await client.query('BEGIN');try{
+      const actor=await createProfileTestSession(client,'mcteer');const fixture=await createArtifactDatabaseFixture(client,actor,DEMO_IDS.sharedCustomer);
+      let originalDeadline:string|undefined;
+      for(let attempt=1;attempt<=3;attempt++){
+        const claim=await claimArtifactRun(client);expect(claim?.runId).toBe(fixture.runId);originalDeadline??=claim!.deadlineAt;expect(claim!.deadlineAt).toBe(originalDeadline);expect(await failArtifactRun(claim!,'scan_unavailable',true,client)).toBe(true);
+        const run=(await client.query('SELECT state,attempt_number FROM artifact_extraction_runs WHERE id=$1',[fixture.runId])).rows[0];
+        expect(run.state).toBe(attempt<3?'queued':'failed');expect(run.attempt_number).toBe(Math.min(3,attempt+1));
+        expect((await client.query('SELECT state FROM artifact_versions WHERE id=$1',[fixture.versionId])).rows[0].state).toBe('failed');
+        await client.query("UPDATE artifact_extraction_runs SET next_attempt_at=now()-interval '1 second' WHERE id=$1",[fixture.runId]);
+      }
+      expect(await claimArtifactRun(client)).toBeNull();
+      const expired=await createArtifactDatabaseFixture(client,actor,DEMO_IDS.sharedCustomer);
+      const initial=await claimArtifactRun(client);expect(initial?.runId).toBe(expired.runId);
+      await failArtifactRun(initial!,'scan_unavailable',true,client);
+      await client.query("UPDATE artifact_extraction_runs SET next_attempt_at=now()-interval '1 second',started_at=now()-interval '121 seconds',deadline_at=now()-interval '1 second' WHERE id=$1",[expired.runId]);
+      expect(await claimArtifactRun(client)).toBeNull();
+      expect((await client.query('SELECT state FROM artifact_extraction_runs WHERE id=$1',[expired.runId])).rows[0].state).toBe('cancelled');
+    }finally{await client.query('ROLLBACK');}});}finally{process.env.TURAS_ENVIRONMENT_ID=old;}
+  });
+
 });

@@ -10,7 +10,7 @@ function provider() {
   const generate = vi.fn(async () => ({ content: [{ type: "text", text: "Synthetic output" }], finishReason: "stop",
     usage: { inputTokens: { total: 1 }, outputTokens: { total: 1 } }, warnings: [] }));
   const stream = vi.fn(async () => ({ stream: new ReadableStream({ start(controller) { controller.close(); } }) }));
-  return { model: { specificationVersion: "v4", provider: "synthetic", modelId: "spacexai/grok-4.7", supportedUrls: {},
+  return { model: { specificationVersion: "v4", provider: "synthetic", modelId: "anthropic/claude-sonnet-5.5", supportedUrls: {},
     doGenerate: generate, doStream: stream } as unknown as Model, generate, stream };
 }
 beforeEach(() => {

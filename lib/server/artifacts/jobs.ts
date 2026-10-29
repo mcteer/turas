@@ -23,6 +23,7 @@ type Candidate = {
   attempt_number: number;
   state: "queued" | "leased" | "published" | "failed" | "cancelled";
   lease_expires_at: Date | null;
+  deadline_at: Date | null;
   attempt_token: string | null;
   submitted_at: Date | null;
   created_at: Date;
@@ -47,8 +48,9 @@ function scope(row: Candidate): ArtifactScope & { submittedAt: Date | null } {
     submittedAt: row.submitted_at };
 }
 
-/** Claim one oldest eligible run. The DB unique index enforces one active local job. */
-export async function claimArtifactRun(existingClient?: PoolClient): Promise<ArtifactJobClaim | null> {
+/** Claim one oldest eligible run, optionally restricted to an exact internal
+ * worker identity. The same authorization, source and lease checks always apply. */
+export async function claimArtifactRun(existingClient?: PoolClient, exactRunId?: string): Promise<ArtifactJobClaim | null> {
   const environmentId = getServerConfig().TURAS_ENVIRONMENT_ID;
   const execute = async (client: PoolClient): Promise<ArtifactJobClaim | null> => {
     const candidates = await client.query<Candidate>(`
@@ -57,10 +59,10 @@ export async function claimArtifactRun(existingClient?: PoolClient): Promise<Art
         r.parser_policy_version,r.parser_image_digest,r.attempt_number,r.state,r.lease_expires_at,
         v.submitted_at,r.created_at
       FROM artifact_extraction_runs r JOIN artifact_versions v ON v.id=r.version_id
-      WHERE r.environment_id=$1 AND (r.state='queued' AND r.next_attempt_at <= now()
+      WHERE r.environment_id=$1 AND ($2::uuid IS NULL OR r.id=$2) AND (r.state='queued' AND r.next_attempt_at <= now()
         OR r.state='leased' AND r.lease_expires_at <= now())
       ORDER BY CASE WHEN r.state='leased' THEN 0 ELSE 1 END,r.created_at,r.id LIMIT 20
-    `, [environmentId]);
+    `, [environmentId, exactRunId ?? null]);
     for (const candidate of candidates.rows) {
       const authorized = await lockArtifactWorkerAuthority(client, scope(candidate), candidate.initiating_principal_id);
       const version = await client.query<{ lifecycle_generation: string; sha256_digest: string; state: string }>(`
@@ -77,7 +79,7 @@ export async function claimArtifactRun(existingClient?: PoolClient): Promise<Art
       if (!authorized || !["quarantined", "processing", "failed"].includes(version.rows[0].state) ||
           version.rows[0].lifecycle_generation !== row.lifecycle_generation ||
           version.rows[0].sha256_digest !== row.original_digest ||
-          (expiredLease && row.attempt_number >= 3)) {
+          (expiredLease && row.attempt_number >= 3) || (row.deadline_at && row.deadline_at.getTime() <= Date.now())) {
         await client.query(`UPDATE artifact_extraction_runs SET state='cancelled',attempt_token=NULL,
           lease_expires_at=NULL,heartbeat_at=NULL,started_at=NULL,deadline_at=NULL,
           safe_error_code='cancelled',updated_at=now() WHERE id=$1`, [row.id]);
@@ -88,8 +90,8 @@ export async function claimArtifactRun(existingClient?: PoolClient): Promise<Art
       if (row.attempt_number > 1) recordArtifactMetric("retry_count",row.attempt_number-1);
       const claimed = await client.query<{ deadline_at: Date }>(`
         UPDATE artifact_extraction_runs SET state='leased',attempt_token=$2,
-          attempt_number=attempt_number+$3,heartbeat_at=now(),started_at=now(),
-          lease_expires_at=now()+interval '30 seconds',deadline_at=now()+interval '120 seconds',
+          attempt_number=attempt_number+$3,heartbeat_at=now(),started_at=COALESCE(started_at,now()),
+          lease_expires_at=LEAST(now()+interval '30 seconds',COALESCE(deadline_at,now()+interval '120 seconds')),deadline_at=COALESCE(deadline_at,now()+interval '120 seconds'),
           updated_at=now() WHERE id=$1 RETURNING deadline_at
       `, [row.id, token, expiredLease ? 1 : 0]);
       await client.query(`UPDATE artifact_versions SET state='processing',updated_at=now()
@@ -210,12 +212,12 @@ export async function failArtifactRun(claim: ArtifactJobClaim, safeErrorCode: st
         run.rows[0].state !== "leased" || run.rows[0].attempt_token !== claim.attemptToken) return false;
     const retry = transient && run.rows[0].attempt_number < 3 && Date.parse(claim.deadlineAt) > Date.now();
     await client.query(`UPDATE artifact_extraction_runs SET state=$2,attempt_token=NULL,
-      lease_expires_at=NULL,heartbeat_at=NULL,started_at=NULL,deadline_at=NULL,
-      safe_error_code=$3,next_attempt_at=now()+($4::integer * interval '1 second'),updated_at=now()
+      lease_expires_at=NULL,heartbeat_at=NULL,
+      safe_error_code=$3,next_attempt_at=now()+($4::integer * interval '1 second'),attempt_number=attempt_number+$5,updated_at=now()
       WHERE id=$1`, [claim.runId, retry ? "queued" : "failed", safeErrorCode,
-      [10,30,90][Math.min(2,run.rows[0].attempt_number - 1)]]);
+      [10,30,90][Math.min(2,run.rows[0].attempt_number - 1)],retry?1:0]);
     await client.query(`UPDATE artifact_versions SET state=$2,safe_error_code=$3,updated_at=now()
-      WHERE id=$1`, [claim.versionId, retry ? "quarantined" : "failed", safeErrorCode]);
+      WHERE id=$1`, [claim.versionId, "failed", safeErrorCode]);
     return true;
   };
   return existingClient ? execute(existingClient) : withTransaction(execute);

@@ -16,14 +16,19 @@ export function supportUiGlobalDiagnostic(raw: unknown) {
 }
 
 /** Diagnose case failures without returning model, fixture or browser prose. */
-export function supportUiCaseDiagnostic(raw: unknown, feature: "support" | "execution" = "support") {
-  const filePattern = feature === "execution"
+export function supportUiCaseDiagnostic(raw: unknown, feature: "support" | "execution" | "expansion" = "support") {
+  const filePattern = feature === "expansion"
+    ? /(?:^|\/)tests\/ui\/(expansion-(?:authoring|decisions|review-queue|advice)\.spec\.ts)$/
+    : feature === "execution"
     ? /(?:^|\/)tests\/ui\/(execution-(?:records|time|changes|handoff|advisory)\.spec\.ts)$/
     : /(?:^|\/)tests\/ui\/(support-(?:readiness|advice)\.spec\.ts)$/;
-  const stackPattern = feature === "execution"
+  const stackPattern = feature === "expansion"
+    ? /tests\/ui\/(expansion-(?:authoring|decisions|review-queue|advice)\.spec\.ts):(\d{1,6}):(\d{1,6})/g
+    : feature === "execution"
     ? /tests\/ui\/(execution-(?:records|time|changes|handoff|advisory)\.spec\.ts):(\d{1,6}):(\d{1,6})/g
     : /tests\/ui\/(support-(?:readiness|advice)\.spec\.ts):(\d{1,6}):(\d{1,6})/g;
   const statuses = new Set<string>(), categories = new Set<string>(), locations = new Set<string>();
+  const phases=new Set<string>(),knownPhases=new Set(['Authenticate and open expansion','Create the initial proposal','Edit and save structured benefit','Reopen and verify persisted benefit','Check accessibility and capture editor']);
   let failedResults = 0, visited = 0;
   function walk(value: unknown, depth = 0): void {
     if (++visited > 10000 || depth > 20 || !value || typeof value !== "object") return;
@@ -33,6 +38,10 @@ export function supportUiCaseDiagnostic(raw: unknown, feature: "support" | "exec
       const row = result as Record<string, unknown>;
       if (row.status === "passed") continue;
       failedResults++;
+      if(feature==='expansion'){
+        const steps=Array.isArray(row.steps)?row.steps.slice(0,1000):[];
+        for(let inspected=0;steps.length&&inspected<1000;inspected++){const step=steps.shift();if(!step||typeof step!=='object')continue;const entry=step as Record<string,unknown>;if(entry.error&&typeof entry.title==='string'&&knownPhases.has(entry.title))phases.add(entry.title);if(Array.isArray(entry.steps))steps.push(...entry.steps.slice(0,1000-steps.length));}
+      }
       statuses.add(["failed", "timedOut", "interrupted", "skipped"].includes(String(row.status)) ? String(row.status) : "unknown");
       const errors = Array.isArray(row.errors) ? row.errors : row.error ? [row.error] : [];
       for (const error of errors.slice(0, 50)) {
@@ -58,5 +67,5 @@ export function supportUiCaseDiagnostic(raw: unknown, feature: "support" | "exec
       for (const child of node[key].slice(0, 1000)) walk(child, depth + 1);
   }
   walk(raw);
-  return { failedResults, statuses: [...statuses].sort(), categories: [...categories].sort(), locations: [...locations].sort() };
+  return { failedResults, statuses: [...statuses].sort(), categories: [...categories].sort(), locations: [...locations].sort(),...(feature==='expansion'?{phases:[...phases].sort()}:{}) };
 }

@@ -1,3 +1,4 @@
+import {assertHistoricalNamedContentRetained} from './named-content';
 import {practiceCitationPrefix,practiceSnapshotIsCurrent} from './practice-consumption';
 import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
@@ -10,7 +11,7 @@ import { readEligibleContext } from "../profiles/context";
 import { unsupportedProfileRevisionIds } from "../profiles/eligibility";
 import { retrievalSourceHasMaterialConflict } from "../retrieval/search";
 import { authorizeRetrievalScope } from "../retrieval/policy";
-import { assertRetrievalDependenciesCurrent } from "../retrieval/fences";
+import { assertRetrievalContentRetained, assertRetrievalDependenciesCurrent } from "../retrieval/fences";
 import {readPublicInventoryReference} from '../profiles/public-inventory-reference';
 import {assertOperationsReadsCurrent} from '../ordinary-operations/consumption';
 
@@ -116,6 +117,8 @@ export async function assertCustomerQuestionReads(db: PoolClient, actor: Current
   // concurrent ordinary chats deadlock on the same membership. Shared locks
   // still fence revocation and source mutations until this transaction ends.
   for (const scope of retrievalScopes) await authorizeRetrievalScope(db,actor,scope.scope,scope.customer_id,undefined,true);
+  await assertRetrievalContentRetained(db,conversationId);
+  await assertHistoricalNamedContentRetained(db,actor,conversationId);
   if(validateSources)await assertRetrievalDependenciesCurrent(db,conversationId);
   const reads = (await db.query(`SELECT s.* FROM general_customer_read_scopes s
     JOIN response_attempts a ON a.id=s.attempt_id JOIN conversations c ON c.id=a.conversation_id

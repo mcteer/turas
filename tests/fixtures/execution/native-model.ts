@@ -15,7 +15,7 @@ export function assertExecutionNativeFixture() {
 export function createExecutionNativeFixtureModel(principal: unknown, identity: { nativeSessionId: string; responseAttemptId: string; turnId: string; stepIndex: number }) {
   assertExecutionNativeFixture(); if (!principal) throw new Error("Owned native principal required");
   let abortSignal: AbortSignal | undefined;
-  const model = mockModel({ provider: "turas-owned-execution-fixture", modelId: "spacexai/grok-4.7", respond: async ({ tools, toolResults }) => {
+  const model = mockModel({ provider: "turas-owned-execution-fixture", modelId: "anthropic/claude-sonnet-5.5", respond: async ({ tools, toolResults }) => {
     const row = (await query(`SELECT b.scenario,b.released FROM execution_native_fixture_barriers b JOIN execution_advice_attempts a ON a.id=b.advice_attempt_id
       WHERE a.response_attempt_id=$1`, [identity.responseAttemptId])).rows[0];
     if (!row) throw new Error("Missing owned native case");

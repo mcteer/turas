@@ -1,10 +1,9 @@
-import {gateway} from 'ai';
 import {randomUUID,createHash} from 'node:crypto';
 import {mkdir,mkdtemp,readFile,writeFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {withExpansionEvalEnvironment} from './expansion-eval-environment';
 import {featureSourceDigest} from './execution-source-digest';
-import {expansionLiveBudgetSchema,expansionLivePricing,expansionCaseReservation,admitExpansionLiveCase} from './expansion-live-budget';
+import {expansionLiveBudgetSchema,resolveExpansionLivePricing,expansionCaseReservation,admitExpansionLiveCase} from './expansion-live-budget';
 import {expansionEvaluationCases,expansionReviewCriteria} from '../tests/fixtures/expansion/evaluation';
 import {buildExpansionLiveScenario} from '../tests/fixtures/expansion/live-scenarios';
 import {createExpansionActors} from '../tests/fixtures/expansion/seed';
@@ -23,7 +22,7 @@ function check(value:unknown,message:string):asserts value{if(!value)throw Error
 async function main(){
  const fixture=process.argv.length===3&&process.argv[2]==='--fixture';if(fixture)assertDeterministicTestMode();else check(process.argv.length===5&&process.argv[2]==='--live'&&process.argv[3]==='--budget-usd'&&process.env.TURAS_ALLOW_LIVE_MODEL_TESTS==='1'&&process.env.AI_GATEWAY_API_KEY&&!process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY,'Explicit live opt-in and positive operator budget required');
  const budgetUsd=fixture?100:expansionLiveBudgetSchema.parse(Number(process.argv[4])),agent=await readFile('agent/agent.ts','utf8'),model=agent.match(/const selectedModel = "([^"]+)";/)?.[1];check(model,'Configured model unavailable');const sourceDigest=await featureSourceDigest('011'),rootAgentDigest=createHash('sha256').update(agent).digest('hex'),promptDigest=createHash('sha256').update(expansionAdvicePrompt).digest('hex'),cohortDigest=expansionHash(expansionEvaluationCases);
- const pricing=fixture?{inputUsdPerToken:.000001,outputUsdPerToken:.000001}:expansionLivePricing((await gateway.getAvailableModels()).models.find(item=>item.id===model)?.pricing),reservationUsd=expansionCaseReservation(pricing);admitExpansionLiveCase(budgetUsd,[],reservationUsd);
+ const pricing=fixture?{inputUsdPerToken:.000001,outputUsdPerToken:.000001}:await resolveExpansionLivePricing(model),reservationUsd=expansionCaseReservation(pricing);admitExpansionLiveCase(budgetUsd,[],reservationUsd);
  await mkdir('local-artifacts/011',{recursive:true,mode:0o700});const directory=await mkdtemp(resolve(`local-artifacts/011/${fixture?'eval-fixture':'live'}-`));await writeFile(resolve(directory,'operator-budget.json'),JSON.stringify({budgetUsd,model,pricing,reservationUsd,pricingRetrievedAt:new Date().toISOString(),sourceDigest,rootAgentDigest,actualConfiguredProvider:!fixture}),{mode:0o600});const costs:(number|null)[]=[],cases:unknown[]=[];
  for(const scenario of expansionEvaluationCases){const admitted=admitExpansionLiveCase(budgetUsd,costs,reservationUsd);await withExpansionEvalEnvironment(async environment=>{let attemptId:string|undefined,dispatched=false;const priorFlag=process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY,priorBudget=process.env.TURAS_EXPANSION_LIVE_BUDGET_USD,priorPricing=process.env.TURAS_EXPANSION_LIVE_PRICING_JSON;try{
   await createExpansionActors(environment.appRoot);const input=await buildExpansionLiveScenario(scenario.id);if(fixture){await installExpansionNativeFixture(environment);process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY='1';}process.env.TURAS_EXPANSION_LIVE_BUDGET_USD=String(admitted.remainingUsd);process.env.TURAS_EXPANSION_LIVE_PRICING_JSON=JSON.stringify({input:String(pricing.inputUsdPerToken),output:String(pricing.outputUsdPerToken)});await installExpansionLiveObservation(environment);const runtimeUrl=new URL(process.env.DATABASE_URL!);runtimeUrl.searchParams.set('options','-c role=turas_runtime');for(const key of ['DATABASE_URL','DATABASE_URL_UNPOOLED','TURAS_TEST_DATABASE_URL'])process.env[key]=runtimeUrl.toString();await closeRuntimePool();check((await query('SELECT current_user AS role')).rows[0].role==='turas_runtime','Owned runtime role unavailable');await environment.start();

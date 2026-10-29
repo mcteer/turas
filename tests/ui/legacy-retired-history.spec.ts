@@ -98,7 +98,8 @@ test('active failed history survives empty SDK resume, reload, a later send atte
  await expect(page.getByText('retired.png',{exact:true})).toBeVisible();
  await expect(page.locator('.chat-message-assistant')).toHaveCount(2);
  await expect.poll(()=>emptyResumes).toBeGreaterThan(0);
- await page.reload();await expect(page.getByText('retired.png',{exact:true})).toBeVisible();
+ await test.step('Reload retained failed history',async()=>{await page.reload();});
+ await test.step('Verify retained file after reload',async()=>{await expect(page.getByText('retired.png',{exact:true})).toBeVisible();});
  await page.getByRole('textbox',{name:'Message Turi',exact:true}).fill('A subsequent synthetic turn');
  await expect(page.getByRole('button',{name:'Send message',exact:true})).toBeEnabled();
  await page.getByRole('button',{name:'Send message',exact:true}).click();

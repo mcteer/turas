@@ -1,3 +1,5 @@
+import {insertRetrievalProfileOrigin} from '../fixtures/retrieval-profile-origin';
+import {insertBoundFixtureSession} from "../fixtures/bound-session";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { withTestDatabase } from "../fixtures/database";
@@ -38,9 +40,7 @@ describe("retrieval ranking prefilter", () => {
             (id,principal_id,workspace_id,kind,partner_org_id,role)
             VALUES($1,$2,$3,'partner',$4,'member')`,
           [membershipId,principalId,workspaceId,organizationId]);
-          await client.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-            VALUES($1,$2,$3,now()+interval '1 hour')`,
-          [sessionId,principalId,"a".repeat(64)]);
+          await insertBoundFixtureSession(client,{id:sessionId,principalId:principalId,membershipId:membershipId,workspaceId:workspaceId,tokenHash:"a".repeat(64),expiresAt:new Date(Date.now()+3600000)});
           await client.query(`INSERT INTO customer_references(id,workspace_id,display_name,synthetic)
             VALUES($1,$2,'Synthetic scoped customer',true)`,[customerId,workspaceId]);
           const actor = { sessionId,principalId,membershipId,workspaceId,kind: "partner",
@@ -83,6 +83,7 @@ describe("retrieval ranking prefilter", () => {
           const sourceId = randomUUID();
           const revisionId = randomUUID();
           const digest = passageDigest(text);
+          await insertRetrievalProfileOrigin(client,{workspaceId:workspace,customerId:customer,revisionId,text,digest});
           await client.query(`INSERT INTO retrieval_sources
             (id,environment_id,workspace_id,customer_id,scope,source_kind,
              source_revision_id,audience,projection_contract,contract_digest,

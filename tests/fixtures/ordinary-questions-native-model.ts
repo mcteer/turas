@@ -6,7 +6,7 @@ import {assertDeterministicTestMode} from './runtime';
 export function createOrdinaryQuestionsNativeModel(attemptId:string){
  assertDeterministicTestMode();
  if(process.env.TURAS_ORDINARY_QUESTION_FIXTURE!=='1'||process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||!/^\/turas_test_010_eval_[a-f0-9]{12}$/.test(new URL(process.env.DATABASE_URL!).pathname))throw Error('Owned unpaid question fixture required');
- const model=mockModel({provider:'owned-native-question',modelId:'spacexai/grok-4.7',respond:async({messages,toolResults})=>{
+ const model=mockModel({provider:'owned-native-question',modelId:'anthropic/claude-sonnet-5.5',respond:async({messages,toolResults})=>{
   const original=(await query('SELECT m.text FROM response_attempts a JOIN submitted_messages m ON m.id=a.message_id WHERE a.id=$1',[attemptId])).rows[0]?.text;
   const prompts=['Request a basic question.','Request parallel basic questions.','Complete this unrelated follow-up.'];
   if(!prompts.includes(original)||!messages.some(message=>message.role==='user'&&message.text.includes(original)))throw Error('Actual synthetic question delivery missing');

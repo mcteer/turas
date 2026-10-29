@@ -100,6 +100,7 @@ describe("conversation persistence invariants", () => {
     const first = await claimBinding(session, conversation.id, key, start);
     expect(first.state).toBe("claimed");
     if (first.state !== "claimed") throw new Error("Expected binding claim");
+    expect(first.firstAttempt).toBe(true);
     const concurrent = await claimBinding(session, conversation.id, key, start);
     expect(concurrent.state).toBe("pending");
     await markBindingUncertain(session, conversation.id, first.claimToken);
@@ -108,6 +109,9 @@ describe("conversation persistence invariants", () => {
     expect(retried.state).toBe("claimed");
     if (retried.state !== "claimed") throw new Error("Expected retry claim");
     expect(retried.operationId).toBe(first.operationId);
+    expect(retried.firstAttempt).toBe(false);
+    await expect(bindNativeSession(session, conversation.id, first.claimToken, `wrun_${randomUUID()}`))
+      .rejects.toMatchObject({ code: "binding_conflict" });
     const nativeId = `wrun_${randomUUID()}`;
     const bound = await bindNativeSession(session, conversation.id, retried.claimToken, nativeId);
     expect(bound.eveSessionId).toBe(nativeId);

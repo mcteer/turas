@@ -14,7 +14,7 @@ export async function installSupportLiveObservation(environment: { appRoot: stri
   else if (process.env.TURAS_ALLOW_LIVE_MODEL_TESTS !== "1" || !process.env.AI_GATEWAY_API_KEY) throw new Error("Explicit live opt-in required");
   const base = mocked ? "createSupportNativeFixtureModel(principal, identity)" : "parityBudgetModel(gateway(selectedModel),selectedModel)";
   const target = `wrapStaffingModel(${base}, admitted.mode`;
-  if (source.split(target).length !== 2 || !source.includes('const selectedModel = "spacexai/grok-4.7";') || !source.includes('reasoning: "low"'))
+  if (source.split(target).length !== 2 || !source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";') || !source.includes('reasoning: "low"'))
     throw new Error("Support selected model shape changed");
   await query(`CREATE TABLE support_live_provider_observations(id uuid PRIMARY KEY,attempt_id uuid NOT NULL REFERENCES support_advice_attempts(id),
     response_attempt_id uuid NOT NULL REFERENCES response_attempts(id),step_id uuid NOT NULL UNIQUE REFERENCES support_model_step_receipts(id),

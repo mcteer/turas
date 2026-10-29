@@ -12,6 +12,7 @@ export type DemoIdentity = {
   workspaceId: string;
   kind: "internal" | "partner";
   role: "admin" | "member";
+  workspaceClassification?: "primary" | "synthetic_pilot";
 };
 
 export function verifyConfiguredCredentials(
@@ -34,24 +35,28 @@ export function verifyConfiguredCredentials(
   return match;
 }
 
-export async function authenticateDemoPrincipal(username: string, password: string): Promise<DemoIdentity | null> {
+export async function authenticateDemoPrincipal(username: string, password: string, workspaceSelection: "primary" | "pilot" = "primary"): Promise<DemoIdentity | null> {
+  if (!["primary", "pilot"].includes(workspaceSelection)) return null;
   const config = getServerConfig();
+  if (workspaceSelection === "pilot" && config.TURAS_PILOT_LOGIN_ENABLED !== "1") return null;
   const principalId = verifyConfiguredCredentials(username, password, config);
   if (!principalId) return null;
   const result = await query<{
     principal_id: string; login_name: string; display_name: string; membership_id: string;
-    workspace_id: string; kind: "internal" | "partner"; role: "admin" | "member";
+    workspace_classification: "primary" | "synthetic_pilot"; workspace_id: string; kind: "internal" | "partner"; role: "admin" | "member";
   }>(`
     SELECT p.id AS principal_id, p.login_name, p.display_name,
-           m.id AS membership_id, m.workspace_id, m.kind, m.role
+           m.id AS membership_id, m.workspace_id, m.kind, m.role, w.classification AS workspace_classification
     FROM principals p
     JOIN memberships m ON m.principal_id = p.id
     JOIN workspaces w ON w.id = m.workspace_id
     LEFT JOIN partner_organizations o ON o.id = m.partner_org_id AND o.workspace_id = m.workspace_id
     WHERE p.id = $1 AND p.login_name = $2 AND p.active AND m.active AND w.active
+      AND (($3='primary' AND w.id=$4 AND w.classification='primary') OR
+           ($3='pilot' AND w.classification='synthetic_pilot' AND w.pilot_environment_id=$5))
       AND (m.kind = 'internal' OR (m.kind = 'partner' AND o.active))
     LIMIT 1
-  `, [principalId, username]);
+  `, [principalId, username, workspaceSelection, DEMO_IDS.workspace, config.TURAS_ENVIRONMENT_ID]);
   const row = result.rows[0];
   return row ? {
     principalId: row.principal_id,
@@ -61,5 +66,6 @@ export async function authenticateDemoPrincipal(username: string, password: stri
     workspaceId: row.workspace_id,
     kind: row.kind,
     role: row.role,
+    workspaceClassification: row.workspace_classification,
   } : null;
 }

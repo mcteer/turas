@@ -30,6 +30,16 @@ jobs:
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: ${{ matrix.gate == 'recovery' && '0' || '1' }}
+      - name: Bound package repository connection and data waits
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -79,6 +89,20 @@ jobs:
       - name: Require complete evidence for the same source
         run: node --import tsx scripts/learning-ci-evidence.ts "${{ matrix.gate }}"
 
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
+      - name: Retain failed owned learning recovery diagnostics
+        if: failure() && matrix.gate == 'recovery'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: owned-learning-recovery-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ matrix.gate }}
+          retention-days: 1
+          if-no-files-found: ignore
+          path: |
+            local-artifacts/014/startup-*.log
+            local-artifacts/014/runtime-*.log
+
   partner-enablement:
     runs-on: ubuntu-latest
     timeout-minutes: 100
@@ -91,6 +115,16 @@ jobs:
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: ${{ matrix.gate == 'recovery' && '0' || '1' }}
+      - name: Bound package repository connection and data waits
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -134,13 +168,17 @@ jobs:
       - name: Require complete evidence for the same source
         run: node --import tsx scripts/partners-ci-evidence.ts "${{ matrix.gate }}"
 
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
+
   expansion:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        gate: [deterministic, native, recovery, benchmark, evaluation-fixture, regressions, webkit]
+        gate: [deterministic, native, recovery, benchmark, evaluation-fixture, regressions]
     services:
       postgres:
         image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
@@ -167,6 +205,16 @@ jobs:
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: ${{ matrix.gate == 'regressions' && '0' || '1' }}
+      - name: Bound package repository connection and data waits
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -223,12 +271,135 @@ jobs:
       - name: Governed earlier privacy, research, plan, execution and support regressions
         if: matrix.gate == 'regressions'
         run: npm run test:expansion:regressions
+
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
+
+  expansion-webkit-projects:
+    name: expansion WebKit (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [webkit-desktop-light, webkit-desktop-dark, webkit-mobile-light, webkit-mobile-dark]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/turas_test_011_source
+      DATABASE_URL_UNPOOLED: postgres://postgres:postgres@127.0.0.1:5432/turas_test_011_source
+      TURAS_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/turas_test_011_source
+      TURAS_ENVIRONMENT_ID: test-ci-expansion
+      TURAS_TEST_ENVIRONMENT_ID: test-ci-expansion
+      TURAS_APP_ORIGIN: http://127.0.0.1:3000
+      TURAS_DEMO_USERNAME: mcteer
+      PANEL_USERNAME: panel
+      PARTNER_USERNAME: partner
+      AI_GATEWAY_API_KEY: ''
+      TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+      - name: Bound package repository connection and data waits
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix packages/artifact-extractor
+      - name: Create private synthetic credentials
+        run: |
+          for key in TURAS_DEMO_PASSWORD PANEL_PASSWORD PARTNER_PASSWORD TURAS_MAINTENANCE_SECRET; do
+            value="$(openssl rand -hex 32)"
+            echo "::add-mask::$value"
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done
+          echo "TURAS_ARTIFACT_STORE_ROOT=${GITHUB_WORKSPACE}/local-artifacts/011/source-store" >> "$GITHUB_ENV"
+      - name: Initialize marked disposable source
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -c 'CREATE DATABASE turas_test_011_source'
+          psql -h 127.0.0.1 -U postgres -c 'CREATE ROLE turas_runtime NOLOGIN'
+          npm run db:init
+          npm run db:roles
+          mkdir -p "$TURAS_ARTIFACT_STORE_ROOT"
+          chmod 700 "$TURAS_ARTIFACT_STORE_ROOT"
+          node --input-type=module -e 'import {writeFileSync} from "node:fs";writeFileSync(`${process.env.TURAS_ARTIFACT_STORE_ROOT}/.turas-artifact-store.json`,JSON.stringify({environmentId:process.env.TURAS_ENVIRONMENT_ID}),{mode:0o600});'
+      - name: Separate application placeholders from the marked test source
+        run: |
+          echo "DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/turas_expansion_app_not_selected" >> "$GITHUB_ENV"
+          echo "DATABASE_URL_UNPOOLED=postgres://postgres:postgres@127.0.0.1:5432/turas_expansion_app_not_selected" >> "$GITHUB_ENV"
       - name: Install WebKit
-        if: matrix.gate == 'webkit'
         run: npx playwright install --with-deps webkit
-      - name: Complete expansion journeys across four WebKit projects
-        if: matrix.gate == 'webkit'
-        run: npm run expansion:ui:check
+      - name: Complete every expansion journey for this project
+        run: npm run expansion:ui:check -- --project "${{ matrix.project }}"
+      - name: Retain only safe successful case reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: expansion-webkit-${{ github.run_attempt }}-${{ matrix.project }}
+          path: local-artifacts/011/ci-webkit-${{ matrix.project }}/*.json
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 6
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
+
+  expansion-webkit-complete:
+    name: expansion (webkit)
+    if: always()
+    needs: expansion-webkit-projects
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      EXPANSION_PROJECT_JOBS_RESULT: ${{ needs.expansion-webkit-projects.result }}
+      AI_GATEWAY_API_KEY: ''
+      TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
+    steps:
+      - name: Require every project job to succeed
+        run: test "$EXPANSION_PROJECT_JOBS_RESULT" = success
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Bound package repository connection and data waits
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix packages/artifact-extractor
+      - name: Retrieve only this run attempt's complete reports
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: expansion-webkit-${{ github.run_attempt }}-*
+          path: local-artifacts/011/ci-webkit-input
+      - name: Verify the independently discovered four-project case union
+        run: node --import tsx scripts/verify-expansion-webkit-ci.ts --input local-artifacts/011/ci-webkit-input
 
   support-deterministic:
     runs-on: ubuntu-latest
@@ -263,6 +434,14 @@ jobs:
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Bound package repository connection and data waits
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -311,6 +490,10 @@ jobs:
         if: matrix.gate == 'webkit'
         run: npm run support:ui:check
 
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
+
   reporting:
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -328,11 +511,19 @@ jobs:
       TURAS_REPORT_DELIVERY_ENABLED: 'false'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Bound package repository connection and data waits
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
           cache: npm
-      - run: npm ci
+      - run: npm ci && npm ci --prefix packages/artifact-extractor
       - name: Create private disposable reporting credentials
         run: |
           for key in TURAS_DEMO_PASSWORD PANEL_PASSWORD PARTNER_PASSWORD TURAS_MAINTENANCE_SECRET; do
@@ -361,6 +552,10 @@ jobs:
         if: matrix.gate == 'webkit'
         run: npm run reports:ui:check
 
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
+
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -378,6 +573,14 @@ jobs:
           --health-retries 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Bound package repository connection and data waits
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -423,7 +626,7 @@ jobs:
           npm run db:bootstrap-demo
           DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:init
           DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:roles
-          DATABASE_URL="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:bootstrap-demo
+          DATABASE_URL="${TURAS_TEST_DATABASE_URL}" DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:bootstrap-demo
       - name: Prepare isolated artifact fixtures and images
         run: |
           echo "TURAS_ARTIFACT_STORE_ROOT=${GITHUB_WORKSPACE}/local-artifacts/004/store" >> "$GITHUB_ENV"
@@ -462,41 +665,51 @@ jobs:
         run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
       - name: Install WebKit
         run: |
-          # The Azure package mirror stalled at roughly 50 KB/s in review CI.
-          # Keep Ubuntu's suites and signing keys; use its primary HTTPS archive.
-          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
-            if [ -f "$apt_source" ]; then
-              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
-            fi
-          done
           npx playwright install --with-deps webkit
       - name: Exercise the local UI in WebKit
         env:
           TURAS_UI_LEGACY_ONLY: '1'
           TURAS_UI_PRODUCTION: '1'
-        run: npm run test:ui
+        run: npm run test:ui -- --trace=retain-on-failure --output=test-results/owned-legacy
       - name: Exercise 005 UI on isolated disposable Postgres
         env:
           TURAS_UI_PRODUCTION: '1'
         run: |
+          mkdir -p local-artifacts/005/ui-owned
           DATABASE_URL="$TURAS_TEST_DATABASE_URL" \
           DATABASE_URL_UNPOOLED="$TURAS_TEST_DATABASE_URL" \
           TURAS_ENVIRONMENT_ID="$TURAS_TEST_ENVIRONMENT_ID" \
           TURAS_UI_FIXTURE_DATABASE_URL="$TURAS_TEST_DATABASE_URL" \
           TURAS_UI_BASE_URL="$TURAS_APP_ORIGIN" \
-          npm run test:ui -- tests/ui/knowledge.spec.ts tests/ui/research.spec.ts tests/ui/retrieval.spec.ts
+          npm run --silent test:ui -- tests/ui/knowledge.spec.ts tests/ui/research.spec.ts tests/ui/retrieval.spec.ts --trace=retain-on-failure --reporter=json --output=test-results/owned-005 > local-artifacts/005/ui-owned/report.json
 
+      - name: Retain failed owned 005 browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: owned-005-browser-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+          retention-days: 1
+          if-no-files-found: ignore
+          path: |
+            local-artifacts/005/ui-owned/report.json
+            test-results/owned-005/**/trace.zip
+            test-results/owned-005/**/error-context.md
+            test-results/owned-legacy/**/trace.zip
+            test-results/owned-legacy/**/error-context.md
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
       - name: Check customer profile bug fixes in owned WebKit environments
         run: npm run profiles:ui:check
 
   execution:
     runs-on: ubuntu-latest
-    # Four-project WebKit acceptance can finish near 90 minutes; allow cleanup too.
+    # Each WebKit project keeps its full case inventory and owns a separate runner.
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        gate: [deterministic, regressions, webkit]
+        gate: [deterministic, regressions, webkit-desktop-light, webkit-desktop-dark, webkit-mobile-light, webkit-mobile-dark]
     services:
       postgres:
         image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
@@ -511,6 +724,16 @@ jobs:
           --health-retries 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: ${{ matrix.gate == 'deterministic' && '0' || '1' }}
+      - name: Bound package repository connection and data waits
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -556,7 +779,7 @@ jobs:
           npm run db:bootstrap-demo
           DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:init
           DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:roles
-          DATABASE_URL="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:bootstrap-demo
+          DATABASE_URL="${TURAS_TEST_DATABASE_URL}" DATABASE_URL_UNPOOLED="${TURAS_TEST_DATABASE_URL}" TURAS_ENVIRONMENT_ID="${TURAS_TEST_ENVIRONMENT_ID}" npm run db:bootstrap-demo
       - name: Prepare isolated artifact fixtures and images
         run: |
           echo "TURAS_ARTIFACT_STORE_ROOT=${GITHUB_WORKSPACE}/local-artifacts/004/store" >> "$GITHUB_ENV"
@@ -573,11 +796,11 @@ jobs:
       - name: Owned 002–007 regression cohorts
         if: matrix.gate == 'regressions'
         run: npm run test:execution:regressions
-      - name: Complete four-project execution UI matrix
-        if: matrix.gate == 'webkit'
+      - name: Complete execution UI project
+        if: startsWith(matrix.gate, 'webkit-')
         run: |
           npx playwright install --with-deps webkit
-          npm run execution:ui:check
+          npm run execution:ui:check -- "${{ matrix.gate }}"
 
       - name: Summarize owned startup failures without private output
         if: failure()
@@ -595,8 +818,34 @@ jobs:
             const log = await readFile(`local-artifacts/${feature}/eval-startup-failure.log`, 'utf8').catch(() => null);
             if (log !== null) console.log(JSON.stringify({ feature, startupFailure: true,
               signatures: signatures.filter(value => log.toLowerCase().includes(value.toLowerCase())) }));
+            const raw = await readFile(`local-artifacts/${feature}/eval-startup-failure.json`, 'utf8').catch(() => null);
+            if (raw !== null) {
+              try {
+                const diagnostic = JSON.parse(raw);
+                const keys = ['mode', 'elapsedMs', 'nextExitCode', 'nextExitSignal', 'eveExitCode',
+                  'eveExitSignal', 'lastAuthStatus', 'lastEveStatus', 'workerExitKinds', 'categories'];
+                console.log(JSON.stringify({ feature, kind: 'owned_startup_status',
+                  ...Object.fromEntries(keys.filter(key => Object.hasOwn(diagnostic, key)).map(key => [key, diagnostic[key]])) }));
+              } catch { console.log(JSON.stringify({ feature, kind: 'owned_startup_status_unreadable' })); }
+            }
           }
           JS
+
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
+
+  execution-webkit-complete:
+    name: execution (webkit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: execution
+    if: always()
+    steps:
+      - name: Require every execution project and core gate
+        env:
+          TURAS_EXECUTION_RESULT: ${{ needs.execution.result }}
+        run: test "$TURAS_EXECUTION_RESULT" = success
 
   product-gaps:
     runs-on: ubuntu-latest
@@ -610,6 +859,16 @@ jobs:
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: ${{ matrix.gate == 'recovery' && '0' || '1' }}
+      - name: Bound package repository connection and data waits
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -641,6 +900,21 @@ jobs:
         run: |
           npx playwright install --with-deps webkit
           npm run gaps:ui:check
+      - name: Retain failed owned Gaps browser diagnostics
+        if: failure() && matrix.gate == 'webkit'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: owned-gaps-browser-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ matrix.gate }}
+          retention-days: 1
+          if-no-files-found: ignore
+          path: |
+            local-artifacts/012/ui-*/*.json
+            local-artifacts/012/ui-*/*.log
+            local-artifacts/012/production-build-*.log
+            local-artifacts/012/startup-*.log
+            local-artifacts/012/failure-app-*.log
+            local-artifacts/012/ui-*/**/trace.zip
+            local-artifacts/012/ui-*/**/error-context.md
       - name: Empty and 047 forward recovery with real root supervisor
         if: matrix.gate == 'recovery'
         run: npm run gaps:recovery:check
@@ -652,6 +926,10 @@ jobs:
         run: npm run test:gaps:regressions
       - name: Require complete evidence with the same source fingerprint
         run: node --import tsx scripts/gaps-ci-evidence.ts "${{ matrix.gate }}"
+
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
 
   read-only-mcp:
     runs-on: ubuntu-latest
@@ -665,6 +943,14 @@ jobs:
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Bound package repository connection and data waits
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -714,6 +1000,10 @@ jobs:
       - name: Require complete evidence with the same source fingerprint
         run: node --import tsx scripts/mcp-ci-evidence.ts "${{ matrix.gate }}"
 
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts
+
   legacy-chat:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -729,6 +1019,14 @@ jobs:
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Bound package repository connection and data waits
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -746,3 +1044,83 @@ jobs:
       - name: Real Eve native-file preference save and fresh-session recall, isolation and removal
         if: matrix.flow == 'file-preferences'
         run: node scripts/check-legacy-parity-disposable.mjs --native-memory-files --native-files-only
+
+  pilot-hardening:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [deterministic, webkit, regressions]
+    env:
+      AI_GATEWAY_API_KEY: ''
+      TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
+      TURAS_PILOT_CI_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      TURAS_PILOT_UI_PREPARATION_FILE: ${{ github.workspace }}/local-artifacts/016/ci-images/preparation.json
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Bound package repository connection and data waits
+        run: |
+          sudo install -m 0644 infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
+          for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+            if [ -f "$apt_source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$apt_source"
+            fi
+          done
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix packages/artifact-extractor
+      - name: Validate current pilot design artifacts
+        env:
+          SPECIFY_FEATURE_DIRECTORY: specs/016-pilot-hardening
+          SPECIFY_FEATURE_NO_PERSIST: '1'
+        run: .specify/scripts/bash/check-prerequisites.sh --json --require-spec --require-tasks
+      - name: Prepare actual owned scanner, parser and renderer images
+        run: node --import tsx scripts/prepare-pilot-images.ts --output "${{ github.workspace }}/local-artifacts/016/ci-images"
+      - name: Install CLI WebKit dependencies
+        run: npx playwright install --with-deps webkit
+      - name: Diagnose original evaluation-source cases before the complete catalog
+        if: matrix.gate == 'deterministic'
+        # This is diagnostic coverage only; the complete catalog still runs all cases.
+        run: node --import tsx scripts/check-evaluation-source-preflight.ts
+      - name: Complete registered pilot catalog and exact CI evidence
+        if: matrix.gate == 'deterministic'
+        run: |
+          npm run typecheck:pilot
+          npm run check:docs
+          npm run test:pilot
+          npm run mcp:build:check
+      - name: Retain complete source-bound pilot CI catalog evidence
+        if: matrix.gate == 'deterministic' && success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pilot-catalog-${{ github.run_id }}-${{ github.run_attempt }}
+          path: local-artifacts/016/run-*/ci-*.json
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 6
+      - name: Retain original owned pilot catalog receipts
+        if: matrix.gate == 'deterministic' && success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pilot-owned-catalog-${{ github.run_id }}-${{ github.run_attempt }}
+          # Include the per-gate proof JSON referenced by run.json as well as
+          # run/execution/image/suite/process receipts and their CI envelopes.
+          path: local-artifacts/016/run-*/*.json
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 6
+      - name: Complete four-project pilot browser journeys
+        if: matrix.gate == 'webkit'
+        run: npm run pilot:ui:check
+      - name: Complete affected predecessor composition and fresh browser journeys
+        if: matrix.gate == 'regressions'
+        run: npm run pilot:regressions
+      - name: Bounded redacted failed-test diagnostics
+        if: failure()
+        run: node --import tsx scripts/print-ci-test-failures.ts

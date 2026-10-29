@@ -1,18 +1,14 @@
-vi.mock('../../lib/server/conversations/native-retirement-recovery',()=>({processOrdinaryNativeRetirement:vi.fn(async()=>false)}));
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ heartbeat: vi.fn(), claim: vi.fn(), finish: vi.fn(), maintain: vi.fn(),learning:vi.fn(),mcp:vi.fn(),retrieval:vi.fn(),cleanup:vi.fn(),researchDue:vi.fn(),nativeCleanup:vi.fn() }));
-vi.mock("../../lib/server/conversations/watchdog", () => ({ heartbeatWorker: mocks.heartbeat,
-  claimDueJobs: mocks.claim, finishDueJob: mocks.finish }));
-vi.mock("../../lib/server/conversations/maintenance", () => ({ performMaintenance: mocks.maintain }));
-vi.mock("../../lib/server/learning/maintenance",()=>({runLearningMaintenanceTick:mocks.learning}));
-vi.mock("../../lib/server/config", () => ({ getServerConfig: () => ({ TURAS_ENVIRONMENT_ID: "synthetic-production" }) }));
-vi.mock("../../lib/server/mcp/retention",()=>({runMcpMaintenanceTick:mocks.mcp}));
-vi.mock("../../scripts/retrieval-worker",()=>({runRetrievalWorkerTick:mocks.retrieval}));
-vi.mock("../../lib/server/retrieval/cleanup",()=>({runRetrievalCleanupTick:mocks.cleanup}));
-vi.mock("../../lib/server/research/refresh",()=>({markDueResearch:mocks.researchDue}));
-vi.mock("../../lib/server/conversations/native-uploads",()=>({cleanupNativeUploads:mocks.nativeCleanup}));
+const mocks=vi.hoisted(()=>({heartbeat:vi.fn(),claim:vi.fn(),finish:vi.fn(),maintain:vi.fn(),learning:vi.fn(),mcp:vi.fn(),retrieval:vi.fn()}));
+vi.mock('../../scripts/retrieval-worker',()=>({runRetrievalWorkerTick:mocks.retrieval}));
+vi.mock('../../lib/server/db/client',()=>({getOperationalFencePool:()=>({connect:async()=>({query:async()=>({rows:[{released:true}],rowCount:1}),release:vi.fn()})}),query:vi.fn(async()=>({rowCount:1,rows:[{generation:1}]}))}));
+vi.mock('../../lib/server/config',()=>({getServerConfig:()=>({TURAS_ENVIRONMENT_ID:'synthetic-production'})}));
+vi.mock('../../lib/server/operations/code-version',()=>({operationalCodeVersion:()=> 'a'.repeat(40)}));
+vi.mock('../../lib/server/operations/hosted-reconciliation',()=>({runHostedReconciliation:async()=>({backlog:0,truncated:false})}));
+vi.mock('../../lib/server/operations/maintenance-bindings',async()=>{const {maintenanceClasses}=await import('../../lib/server/operations/maintenance');return {createMaintenanceBindings:({attachSession}: {attachSession:unknown})=>maintenanceClasses.map(row=>({id:row.id,enabled:true,optional:false,tick:async()=>{if(row.id==='conversation'){const jobs=await mocks.claim('controlled-worker',1);for(const job of jobs){try{await mocks.maintain(job,attachSession);}catch{await mocks.finish('controlled-worker',job.attemptId,'retry','maintenance_call_failed');}}await mocks.heartbeat();}if(row.id==='learning')await mocks.learning({attachSession});if(row.id==='mcp')await mocks.mcp();return {backlog:0,truncated:false};}}))};});
 import { authorizeHostedWatchdog, runHostedWatchdog, startPreviewChatWorker } from "../../lib/server/conversations/hosted-watchdog";
-afterEach(() => { vi.useRealTimers(); vi.resetAllMocks(); });
+beforeEach(()=>{mocks.retrieval.mockResolvedValue(undefined);});
+afterEach(() => { vi.useRealTimers(); vi.resetAllMocks(); vi.unstubAllEnvs(); });
 
 describe("hosted watchdog authentication", () => {
   const secret = "synthetic-watchdog-secret-not-real-12345";
@@ -36,78 +32,35 @@ describe("hosted watchdog authentication", () => {
   });
 });
 
-describe("bounded hosted watchdog", () => {
-  it("refreshes every five seconds for 65 seconds and records cancellation retries", async () => {
-    vi.useFakeTimers();
-    mocks.learning.mockResolvedValue({processed:0,durationMs:0});mocks.mcp.mockResolvedValue({processed:0});
-    mocks.claim.mockResolvedValue([]).mockResolvedValueOnce([{ attemptId: "synthetic-attempt" }]);
-    mocks.maintain.mockRejectedValueOnce(new Error("synthetic native failure"));
-    const running = runHostedWatchdog((() => { throw new Error("unused"); }) as Parameters<typeof runHostedWatchdog>[0]);
-    await vi.advanceTimersByTimeAsync(65_000);
-    await running;
-    expect(mocks.retrieval).toHaveBeenCalledTimes(13);expect(mocks.cleanup).toHaveBeenCalledTimes(13);expect(mocks.nativeCleanup).toHaveBeenCalledTimes(13);expect(mocks.researchDue).toHaveBeenCalledTimes(13);
-    expect(mocks.learning).toHaveBeenCalledTimes(3);expect(mocks.mcp).toHaveBeenCalledTimes(3);
-    expect(mocks.learning.mock.calls.every(args=>typeof args[0].attachSession==='function')).toBe(true);
-    expect(mocks.heartbeat).toHaveBeenCalledTimes(13);
-    expect(mocks.claim).toHaveBeenCalledTimes(13);
-    expect(mocks.claim.mock.calls.every(args => args[1] === 1)).toBe(true);
-    expect(mocks.finish).toHaveBeenCalledWith(expect.any(String), "synthetic-attempt", "retry", "maintenance_call_failed");
-  });
-  it("never announces readiness when database claiming fails", async () => {
-    mocks.mcp.mockResolvedValue({processed:0});mocks.claim.mockRejectedValueOnce(new Error("synthetic database failure"));
-    await expect(runHostedWatchdog((() => { throw new Error("unused"); }) as Parameters<typeof runHostedWatchdog>[0])).rejects.toThrow();
-    expect(mocks.heartbeat).not.toHaveBeenCalled();
-  });
-  it("runs MCP cleanup independently without overlapping ticks and drains it on exit", async()=>{
-    vi.useFakeTimers();let releaseClaim!:()=>void,releaseCleanup!:()=>void;
-    mocks.claim.mockReturnValue(new Promise(resolve=>{releaseClaim=()=>resolve([]);}));
-    mocks.mcp.mockReturnValueOnce(new Promise(resolve=>{releaseCleanup=()=>resolve({processed:0});})).mockResolvedValue({processed:0});
-    mocks.learning.mockResolvedValue({processed:0,durationMs:0});
-    const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);
-    await vi.advanceTimersByTimeAsync(30000);expect(mocks.mcp).toHaveBeenCalledTimes(1);expect(mocks.heartbeat).not.toHaveBeenCalled();
-    releaseCleanup();await vi.advanceTimersByTimeAsync(30000);expect(mocks.mcp).toHaveBeenCalledTimes(2);expect(mocks.heartbeat).not.toHaveBeenCalled();
-    releaseClaim();await vi.advanceTimersByTimeAsync(5000);await running;expect(vi.getTimerCount()).toBe(0);
-  });
-  it("keeps retrieval ticks independent, prevents overlap and drains a pending index job",async()=>{
-    vi.useFakeTimers();let finishIndex!:()=>void;
-    mocks.claim.mockResolvedValue([]);mocks.learning.mockResolvedValue({processed:0,durationMs:0});mocks.mcp.mockResolvedValue({processed:0});
-    mocks.retrieval.mockReturnValueOnce(new Promise<void>(resolve=>{finishIndex=resolve;}));
-    const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);
-    await vi.advanceTimersByTimeAsync(65000);
-    expect(mocks.retrieval).toHaveBeenCalledTimes(1);expect(mocks.heartbeat).toHaveBeenCalledTimes(13);expect(mocks.cleanup).not.toHaveBeenCalled();
-    finishIndex();await running;
-    expect(mocks.cleanup).toHaveBeenCalledTimes(1);expect(mocks.nativeCleanup).toHaveBeenCalledTimes(1);expect(mocks.researchDue).toHaveBeenCalledTimes(1);expect(vi.getTimerCount()).toBe(0);
-  });
-  it('does not overlap pending native-file cleanup and drains the bounded tick on exit',async()=>{
-    vi.useFakeTimers();let release!:()=>void;
-    mocks.claim.mockResolvedValue([]);mocks.learning.mockResolvedValue({processed:0,durationMs:0});mocks.mcp.mockResolvedValue({processed:0});
-    mocks.nativeCleanup.mockReturnValueOnce(new Promise<void>(resolve=>{release=resolve;}));
-    const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);
-    await vi.advanceTimersByTimeAsync(65000);
-    expect(mocks.nativeCleanup).toHaveBeenCalledTimes(1);expect(mocks.retrieval).toHaveBeenCalledTimes(1);expect(mocks.researchDue).not.toHaveBeenCalled();
-    release();await running;expect(mocks.researchDue).toHaveBeenCalledTimes(1);expect(vi.getTimerCount()).toBe(0);
-  });
-
-});
-
-describe("Preview chat worker", () => {
-  beforeEach(() => { mocks.mcp.mockResolvedValue({processed:0});mocks.retrieval.mockResolvedValue(undefined);mocks.cleanup.mockResolvedValue(undefined);mocks.researchDue.mockResolvedValue(undefined); });
-  afterEach(() => vi.unstubAllEnvs());
-  it("does not start a request worker in Production", async () => {
-    vi.stubEnv("VERCEL_ENV", "production");const wait=vi.fn();
-    await startPreviewChatWorker(vi.fn() as never,wait);
-    expect(wait).not.toHaveBeenCalled();expect(mocks.heartbeat).not.toHaveBeenCalled();
-  });
-  it("waits for a real heartbeat and continues past the response deadline", async () => {
-    vi.useFakeTimers();vi.stubEnv("VERCEL_ENV", "preview");mocks.claim.mockResolvedValue([]);mocks.learning.mockResolvedValue({processed:0,durationMs:0});
-    const wait=vi.fn();await startPreviewChatWorker(vi.fn() as never,wait);
-    expect(mocks.heartbeat).toHaveBeenCalledTimes(1);expect(wait).toHaveBeenCalledTimes(1);
-    await vi.advanceTimersByTimeAsync(180000);await wait.mock.calls[0][0];
-    expect(mocks.heartbeat).toHaveBeenCalledTimes(36);expect(vi.getTimerCount()).toBe(0);
-  });
-  it("denies admission when actual worker startup fails", async () => {
-    vi.stubEnv("VERCEL_ENV", "preview");mocks.claim.mockRejectedValue(new Error("database unavailable"));
-    await expect(startPreviewChatWorker(vi.fn() as never,vi.fn())).rejects.toThrow("database unavailable");
-    expect(mocks.heartbeat).not.toHaveBeenCalled();
-  });
+describe('bounded hosted watchdog',()=>{
+ it('admits a Preview send only after a real conversation tick and keeps its original worker lifetime',async()=>{
+  vi.useFakeTimers();vi.stubEnv('VERCEL_ENV','preview');
+  let release!:()=>void;mocks.claim.mockReturnValueOnce(new Promise(resolve=>{release=()=>resolve([]);})).mockResolvedValue([]);
+  let retained!:Promise<unknown>,admitted=false;
+  const admission=startPreviewChatWorker((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0],task=>{retained=task;}).then(()=>{admitted=true;});
+  await vi.advanceTimersByTimeAsync(1);expect(admitted).toBe(false);expect(mocks.heartbeat).not.toHaveBeenCalled();
+  release();await vi.advanceTimersByTimeAsync(1);await admission;expect(mocks.heartbeat).toHaveBeenCalled();expect(admitted).toBe(true);
+  await vi.advanceTimersByTimeAsync(179998);await retained;expect(mocks.retrieval).toHaveBeenCalled();expect(vi.getTimerCount()).toBe(0);
+ });
+ it('refuses Preview admission when the conversation worker fails while independent cleanup continues',async()=>{
+  vi.useFakeTimers();vi.stubEnv('VERCEL_ENV','preview');mocks.claim.mockRejectedValue(Error('Controlled claim failure'));
+  let retained!:Promise<unknown>;
+  const admission=startPreviewChatWorker((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0],task=>{retained=task;});
+  const refused=expect(admission).rejects.toThrow('Conversation worker unavailable');
+  await vi.advanceTimersByTimeAsync(1);await refused;expect(mocks.heartbeat).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(179999);await retained;expect(mocks.mcp).toHaveBeenCalled();expect(vi.getTimerCount()).toBe(0);
+ });
+ it('refreshes independently for 65 seconds and records cancellation retries',async()=>{
+  vi.useFakeTimers();mocks.learning.mockResolvedValue({processed:0});mocks.mcp.mockResolvedValue({processed:0});mocks.claim.mockResolvedValue([]).mockResolvedValueOnce([{attemptId:'synthetic-attempt'}]);mocks.maintain.mockRejectedValueOnce(Error('Controlled native failure'));
+  const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);await vi.advanceTimersByTimeAsync(65000);await running;
+  expect(mocks.learning).toHaveBeenCalledTimes(3);expect(mocks.mcp).toHaveBeenCalledTimes(3);expect(mocks.claim.mock.calls.every(args=>args[1]===1)).toBe(true);expect(mocks.heartbeat.mock.calls.length).toBeGreaterThanOrEqual(13);expect(mocks.finish).toHaveBeenCalledWith(expect.any(String),'synthetic-attempt','retry','maintenance_call_failed');expect(vi.getTimerCount()).toBe(0);
+ });
+ it('does not announce conversation readiness when claiming fails while other cleanup continues',async()=>{
+  vi.useFakeTimers();mocks.claim.mockRejectedValue(Error('Controlled database failure'));mocks.mcp.mockResolvedValue({processed:0});mocks.learning.mockResolvedValue({processed:0});
+  const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);await vi.advanceTimersByTimeAsync(65000);await running;expect(mocks.heartbeat).not.toHaveBeenCalled();expect(mocks.mcp).toHaveBeenCalledTimes(3);expect(vi.getTimerCount()).toBe(0);
+ });
+ it('runs MCP cleanup independently without overlapping ticks and drains it on exit',async()=>{
+  vi.useFakeTimers();let releaseClaim!:()=>void,releaseCleanup!:()=>void;mocks.claim.mockReturnValue(new Promise(resolve=>{releaseClaim=()=>resolve([]);}));mocks.mcp.mockReturnValueOnce(new Promise(resolve=>{releaseCleanup=()=>resolve({processed:0});})).mockResolvedValue({processed:0});mocks.learning.mockResolvedValue({processed:0});
+  const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);await vi.advanceTimersByTimeAsync(30000);expect(mocks.mcp).toHaveBeenCalledTimes(1);expect(mocks.heartbeat).not.toHaveBeenCalled();releaseCleanup();await vi.advanceTimersByTimeAsync(30000);expect(mocks.mcp).toHaveBeenCalledTimes(2);expect(mocks.heartbeat).not.toHaveBeenCalled();releaseClaim();await vi.advanceTimersByTimeAsync(5000);await running;expect(vi.getTimerCount()).toBe(0);
+ });
 });

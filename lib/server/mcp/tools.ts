@@ -1,8 +1,9 @@
+import {HttpFailure} from '../../contracts/http';
 import { createHash,randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { McpServer } from '@modelcontextprotocol/server';
 import type { McpReadActor } from '../auth/read-actor';
-import { mcpToolNames,mcpToolInputs,mcpToolOutputs,mcpContractVersion,type McpToolName,type McpCategory } from '../../contracts/mcp';
+import { mcpToolNames,mcpToolCategoryScopes as scopes,mcpToolInputs,mcpToolOutputs,mcpContractVersion } from '../../contracts/mcp';
 import { projectMcpTool,unavailableMcp } from './projections';
 import { createMcpHandle,resolveMcpHandle } from './handles';
 import { lockProfileActor } from '../profiles/policy';
@@ -11,12 +12,7 @@ import { listMcpEvidence,readMcpEvidence,resolveMcpCitation } from './evidence';
 import { listMcpKnowledge,readMcpKnowledge } from './knowledge';
 import { listMcpPlans,readMcpPlan } from './plans';
 import { listMcpReports,readMcpReport } from './reports';
-const scopes:Readonly<Record<McpToolName,readonly McpCategory[]>>=Object.freeze({
-  turas_identity_v1:[],turas_customers_list_v1:['profiles','evidence','plans','reports'],turas_profile_read_v1:['profiles'],
-  turas_evidence_list_v1:['evidence'],turas_evidence_read_v1:['evidence'],turas_citation_resolve_v1:['evidence','knowledge'],
-  turas_knowledge_list_v1:['knowledge'],turas_knowledge_read_v1:['knowledge'],turas_plans_list_v1:['plans'],turas_plan_read_v1:['plans'],
-  turas_reports_list_v1:['reports'],turas_report_read_v1:['reports'],
-});
+
 async function customers(db:PoolClient,actor:McpReadActor,input:{limit:number;cursor?:string}){
   const category=actor.categories.find(value=>value!=='knowledge');
   if(!category)return unavailableMcp('not_found');
@@ -45,7 +41,7 @@ export function createMcpServer(db:PoolClient,actor:McpReadActor,signal:AbortSig
       const args=mcpToolInputs[name].parse(raw);
       const customerId='customerId' in args?args.customerId:undefined;
       const category=scopes[name].find(scope=>actor.categories.includes(scope));
-      return projectMcpTool(db,actor,name,category,customerId,async()=>{
+      try{return await projectMcpTool(db,actor,name,category,customerId,async()=>{
         signal.throwIfAborted();
         if(name==='turas_identity_v1')return {contractVersion:mcpContractVersion,status:'available',requestId:randomUUID(),nextCursor:null,
           data:{kind:actor.kind,workspaceId:actor.workspaceId,categories:actor.categories,expiresAt:actor.expiresAt.toISOString()}};
@@ -61,7 +57,13 @@ export function createMcpServer(db:PoolClient,actor:McpReadActor,signal:AbortSig
         if(name==='turas_reports_list_v1')return listMcpReports(db,actor,args);
         if(name==='turas_report_read_v1')return readMcpReport(db,actor,args);
         return unavailableMcp('unavailable');
-      });
+      });}catch(error){
+        // Scope refusal is a typed, non-disclosing read result. Preserve all
+        // other errors so an outage cannot masquerade as authorization proof.
+        if(!(error instanceof HttpFailure)||![403,404].includes(error.status))throw error;
+        const denied=unavailableMcp('not_found');
+        return {content:[{type:'text' as const,text:JSON.stringify(denied)}],structuredContent:denied};
+      }
     });
   }
   return server;

@@ -12,7 +12,7 @@ function syntheticReview() {
     cases: fixture.cases.map((item, index) => {
       const path = `synthetic/${item.id}.json`;
       const actual = { version: fixture.version, runId, caseId: item.id, provenance: "native-eve-stream",
-        model: "spacexai/grok-4.7", reasoning: "low", role: item.role, mode: item.mode,
+        model: "anthropic/claude-sonnet-5.5", reasoning: "low", role: item.role, mode: item.mode,
         attemptId: randomUUID(), conversationId: randomUUID(), nativeSessionId: `synthetic-${index}`, turnId: `synthetic-turn-${index}`,
         startedAt: `2026-10-01T12:0${index}:00Z`, finishedAt: `2026-10-01T12:0${index}:20Z`,
         initialDispatches: 1, automaticPaidRetries: 0, state: item.id === "S08" ? "cancelled" : "completed", terminalSource: "stream",

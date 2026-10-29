@@ -5,6 +5,7 @@ import { claimRetrievalJobs, finishRetrievalJob, renewRetrievalLease,
 import { embedRetrievalTexts } from "../lib/server/retrieval/embeddings";
 import { recordRetrievalMetric } from "../lib/server/retrieval/telemetry";
 import { exactRetrievalOriginalCurrent } from "../lib/server/retrieval/fences";
+import {readVerifiedResearchProjectionRows} from "../lib/server/retrieval/research-projection";
 import { retrievalIntakeEnabled } from "../lib/server/retrieval/policy";
 import type { PoolClient } from "pg";
 
@@ -33,8 +34,13 @@ export async function currentIndexPassages(claim: RetrievalJobClaim,
       WHERE link.source_revision_id=s.source_revision_id AND link.linkage_state='attributed'
         AND run.environment_id=s.environment_id AND run.workspace_id=s.workspace_id AND run.customer_id=s.customer_id)`: "false";
     const source = await client.query<{ synthetic: boolean | null; scope: string; public_batch:boolean; checked_research:boolean;
-      source_kind: string; source_revision_id: string; source_generation: string }>(`
-      SELECT c.synthetic,s.scope,s.source_kind,s.source_revision_id,s.source_generation,
+      source_kind: string; source_revision_id: string; source_generation: string; origin_workspace_id:string|null; workspace_id:string|null; customer_id:string|null; audience:string; research_lineage_required:boolean }>(`
+      SELECT c.synthetic,s.scope,s.source_kind,s.source_revision_id,s.source_generation,s.origin_workspace_id,s.workspace_id,s.customer_id,s.audience,
+        (EXISTS(SELECT 1 FROM research_checks proof WHERE proof.source_revision_id=s.source_revision_id
+          AND (proof.check_version='research-check-v3' OR proof.trusted_ingest_identity LIKE 'public-fetch-v1:observation:%'
+            OR proof.trusted_ingest_identity='public-batch-fetch-v1'))
+          OR ${marker?.schema_version>=26?`EXISTS(SELECT 1 FROM research_evidence_links link WHERE link.source_revision_id=s.source_revision_id)`:false}
+          OR ${marker?.schema_version>=45?`EXISTS(SELECT 1 FROM public_customer_research_results result WHERE s.source_revision_id=ANY(result.source_revision_ids))`:false}) AS research_lineage_required,
         CASE WHEN s.source_kind='verified_research' THEN ${publicBatchProof} ELSE false END AS public_batch,
         CASE WHEN s.source_kind='verified_research' THEN ${checkedResearchProof} ELSE false END AS checked_research
       FROM retrieval_jobs j
@@ -44,9 +50,17 @@ export async function currentIndexPassages(claim: RetrievalJobClaim,
       WHERE j.id=$1 AND j.lease_token=$2 AND j.lease_until>now()
         AND j.state='leased' AND j.kind='index'`, [claim.id,claim.leaseToken]);
     const row = source.rows[0];
-    if (!row || !(row.synthetic || row.scope === "shared" || row.public_batch || row.checked_research) ||
-        !await exactRetrievalOriginalCurrent(client,row.source_kind,
-          row.source_revision_id,row.source_generation)) return null;
+    if (!row || !await exactRetrievalOriginalCurrent(client,row.source_kind,
+        row.source_revision_id,row.source_generation,row.origin_workspace_id??undefined)) return null;
+    if(row.source_kind==='verified_research'){
+      if(row.audience!=='internal'&&row.audience!=='delivery')return null;
+      const verified=(await readVerifiedResearchProjectionRows(client,[row.source_revision_id],row.audience,
+        getServerConfig().TURAS_ENVIRONMENT_ID)).get(row.source_revision_id);
+      if(!verified||verified.workspace_id!==row.workspace_id||verified.customer_id!==row.customer_id)return null;
+      // Optional observation/batch lineage retains its original current checks.
+      // Initial checked public evidence need not have either later intake record.
+      if(row.research_lineage_required&&!row.public_batch&&!row.checked_research)return null;
+    }else if(!(row.synthetic||row.scope==='shared'||row.public_batch||row.checked_research))return null;
     const passages = await client.query<IndexPassage>(`
       SELECT p.id,p.passage_text,p.passage_digest
       FROM retrieval_passages p WHERE p.source_id=$1 ORDER BY p.ordinal`, [claim.sourceId]);
@@ -72,8 +86,8 @@ async function runIndex(claim: RetrievalJobClaim): Promise<void> {
       });
       const committed = await withTransaction(async (client) => {
         const current = await client.query<{ source_kind: string;
-          source_revision_id: string; source_generation: string }>(`
-          SELECT s.source_kind,s.source_revision_id,s.source_generation FROM retrieval_jobs j
+          source_revision_id: string; source_generation: string; origin_workspace_id:string|null }>(`
+          SELECT s.source_kind,s.source_revision_id,s.source_generation,s.origin_workspace_id FROM retrieval_jobs j
           JOIN retrieval_sources s ON s.id=j.source_id
           WHERE j.id=$1 AND j.lease_token=$2 AND j.lease_until>now()
             AND j.state='leased' AND s.source_generation=$3 AND s.contract_digest=$4
@@ -81,7 +95,7 @@ async function runIndex(claim: RetrievalJobClaim): Promise<void> {
         [claim.id,claim.leaseToken,claim.generation,claim.contractDigest]);
         const row = current.rows[0];
         if (!row || !await exactRetrievalOriginalCurrent(client,row.source_kind,
-          row.source_revision_id,row.source_generation)) return false;
+          row.source_revision_id,row.source_generation,row.origin_workspace_id??undefined)) return false;
         for (const [index,passage] of batch.entries()) {
           const updated = await client.query(`UPDATE retrieval_passages
             SET embedding=$4::public.vector,embedding_state='ready',
@@ -127,10 +141,16 @@ async function runLifecycle(claim: RetrievalJobClaim): Promise<void> {
       }
       await client.query(`DELETE FROM retrieval_passages p
         USING retrieval_sources s WHERE p.source_id=$1 AND s.id=p.source_id
-          AND s.lifecycle_state IN ('retired','tombstoned')`);
+          AND s.lifecycle_state IN ('retired','tombstoned')`,[claim.sourceId]);
     }
     await finishRetrievalJob(client,claim,"completed");
   });
+}
+
+/** Retirement/purge must run while indexing is disabled and cannot embed. */
+export async function runRetrievalLifecycleTick(sourceIds?:readonly string[]){
+ const claims=await claimRetrievalJobs(2,undefined,getServerConfig().TURAS_ENVIRONMENT_ID,sourceIds,['invalidate','cleanup']);
+ for(const claim of claims)await runLifecycle(claim);
 }
 
 /** One bounded lane in the existing maintenance process; research stays in eve. */

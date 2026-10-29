@@ -29,7 +29,7 @@ export async function verifyGapSources(db:PoolClient,actor:GapActor,refs:readonl
  const closure=options.lock?await lockGapSourceUnion(db,actor,refs,max):await gapDependencyUnion(db,actor,refs,max);
  if(!options.lock&&!options.alreadyLocked)await lockGapCustomers(db,actor,refs.flatMap(r=>r.customerId?[r.customerId]:[]));
  for(const d of closure){if(!originals.includes(d.kind))continue;const kind=d.kind==='shared_knowledge'?'published_shared':d.kind;
-  if(!await originalCurrent(db,{source_kind:kind,source_revision_id:d.revisionId,source_generation:String(d.generation),source_digest:d.contentDigest})||await confirmedConflictAfter(db,kind,d.revisionId,new Date(0)))throw new HttpFailure(409,'source_unavailable','Original evidence changed');}
+  if(!await originalCurrent(db,{source_kind:kind,source_revision_id:d.revisionId,source_generation:String(d.generation),source_digest:d.contentDigest},actor.workspaceId)||await confirmedConflictAfter(db,kind,d.revisionId,new Date(0)))throw new HttpFailure(409,'source_unavailable','Original evidence changed');}
  const seen=new Set<string>();
  for(const ref of [...refs].sort((a,b)=>a.kind.localeCompare(b.kind)||a.sourceRevisionId.localeCompare(b.sourceRevisionId))){const key=`${ref.kind}:${ref.sourceRevisionId}:${ref.customerId}`;if(seen.has(key))continue;seen.add(key);
   if(ref.locator){const kind=ref.kind==='shared_knowledge'?'published_shared':ref.kind;

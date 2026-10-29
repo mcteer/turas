@@ -23,7 +23,7 @@ it.each([
 ])('keeps failed session storage unavailable and private for JSON and native login',async failure=>{
  mocks.issue.mockRejectedValue(failure);
  for(const native of [false,true]){
-  const input={username:'mcteer',password:'synthetic-password',returnTo:'/s'};
+  const input={username:'mcteer',password:'synthetic-password',returnTo:'/s',...(native?{workspace:'pilot'}:{})};
   const response=await POST(new Request('http://localhost:3000/api/auth/login',{
    method:'POST',headers:{origin:'http://localhost:3000','content-type':native?'application/x-www-form-urlencoded':'application/json'},
    body:native?new URLSearchParams(input):JSON.stringify(input),
@@ -34,7 +34,7 @@ it.each([
   if(native){
    const location=new URL(response.headers.get('location')!,'http://localhost:3000');
    expect(location.pathname).toBe('/login');expect(location.searchParams.get('error')).toBe('unavailable');
-   expect(location.searchParams.get('returnTo')).toBe('/s');
+   expect(location.searchParams.get('returnTo')).toBe('/s');expect(location.searchParams.get('workspace')).toBe('pilot');
    expect(await response.text()).toBe('');expect(location.href).not.toMatch(/private-|password|28P01|stack|postgresql/);
   }else{
    expect(response.headers.get('location')).toBeNull();const body=await response.json();

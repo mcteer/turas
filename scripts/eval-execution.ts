@@ -98,7 +98,7 @@ async function main(){
           const input={context:evidence.context,tools:evidence.tools,dependencies:evidence.dependencies};
           if(current.protectedSentinels.some(s=>JSON.stringify({...input,events,providerInputs:evidence.steps.map(s=>s.provider?.captured)}).includes(s)))throw new Error("Protected sentinel entered native execution");
           const finished=Date.now();if(finished>deadline)throw new Error("Native capture exceeded the original deadline");await unchanged();
-          const actual=executionActualSchema.parse({version:"execution-live-v1",runId,caseId:id,sourceDigest,provenance:"native-eve-stream",model:"spacexai/grok-4.7",reasoning:"low",role:"panel",
+          const actual=executionActualSchema.parse({version:"execution-live-v1",runId,caseId:id,sourceDigest,provenance:"native-eve-stream",model:"anthropic/claude-sonnet-5.5",reasoning:"low",role:"panel",
             attemptId:prepared.attemptId,conversationId:prepared.conversationId,nativeSessionId,turnId,startedAt:new Date(started).toISOString(),finishedAt:new Date(finished).toISOString(),deadlineAt:new Date(deadline).toISOString(),
             initialDispatches:1,automaticPaidRetries:0,state:final.state,outputReadable:final.outputReadable,response,responseDigest:sha(response),inputDigest:executionValueDigest(input),...input,
             contextBytes:Number(evidence.advice.context_bytes),readCalls:Number(evidence.advice.read_calls),dependencyCount:Number(evidence.advice.dependency_count),steps:evidence.steps,events,

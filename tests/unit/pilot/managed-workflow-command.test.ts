@@ -1,0 +1,10 @@
+import {it,expect} from 'vitest';
+import {randomUUID} from 'node:crypto';
+import {managedClosureInputSchema,pilotManagedWorkflowClose} from '../../../scripts/pilot-managed-workflow-close';
+const binding={environmentId:'synthetic-owned',recoveryId:randomUUID(),controlRevision:2,projectId:'prj_synthetic',teamId:'team_synthetic',runId:'wrun_synthetic',deploymentId:'dpl_synthetic',workflowName:'workflow//eve//workflowEntry'};
+const input={contract:'pilot-managed-workflow-closure-input-v1',sourceCommit:'a'.repeat(40),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64),capturedAt:new Date().toISOString(),bindings:[binding]};
+it('requires the explicit closure mode before reading configuration',async()=>{await expect(pilotManagedWorkflowClose([])).rejects.toThrow('Explicit bounded');});
+it('rejects unknown flags before reading any protected file or calling the platform',async()=>{await expect(pilotManagedWorkflowClose(['--close-managed-workflows','--source','unused','--destination','unused','--input','unused','--auth-file','unused','--runtime-scope','unused','--session-file','unused','--rogue','unused'])).rejects.toThrow('Invalid managed closure');});
+it('rejects more than fifty run bindings',()=>{expect(managedClosureInputSchema.safeParse({...input,bindings:Array.from({length:51},()=>binding)}).success).toBe(false);});
+it('rejects a workflow outside the installed eve definitions',()=>{expect(managedClosureInputSchema.safeParse({...input,bindings:[{...binding,workflowName:'workflow//foreign//entry'}]}).success).toBe(false);});
+it('rejects an input that tries to authorize cancellation retries',()=>{expect(managedClosureInputSchema.safeParse({...input,allowRetry:true}).success).toBe(false);});

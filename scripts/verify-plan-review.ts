@@ -57,7 +57,7 @@ for(const item of review.cases){
   if(actual.version!==fixture.version || actual.caseId!==item.id ||
       actual.provenance!=="native-eve-stream" ||
       actual.usageSource!=="plan_model_step_receipts" ||
-      actual.model!=="spacexai/grok-4.7" || actual.reasoning!=="low" ||
+      actual.model!=="anthropic/claude-sonnet-5.5" || actual.reasoning!=="low" ||
       (item.id==="P08" ?
         (actual.terminal!=="turn.cancelled" ||
           !["stream","native-projection"].includes(actual.terminalSource)) :

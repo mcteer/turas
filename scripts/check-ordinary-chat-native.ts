@@ -12,11 +12,12 @@ if(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||process.env.CO
 const authored=join(process.cwd(),'agent/agent.ts'),original=await readFile(authored,'utf8'),originalDigest=createHash('sha256').update(original).digest('hex');
 const output=resolve('local-artifacts/legacy-parity-native');await mkdir(output,{recursive:true,mode:0o700});
 try{await withPlanEvalEnvironment(async environment=>{
+ environment.bootstrapDemo();
  const root=await realpath(environment.appRoot),owned=await realpath(resolve('local-artifacts/010'));
  if(!root.startsWith(owned+'/eval-')||!root.endsWith('/app'))throw Error('Owned ordinary app copy required');
  const path=join(root,'agent/agent.ts'),source=await readFile(path,'utf8');
  const target='return wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId,{event});';
- if(source.split(target).length!==2||!source.includes('const selectedModel = "spacexai/grok-4.7";'))throw Error('Ordinary model shape changed');
+ if(source.split(target).length!==2||!source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";'))throw Error('Ordinary model shape changed');
  await writeFile(path,'import {createOrdinaryNativeFixtureModel} from "../tests/fixtures/ordinary-chat-native-model";\n'+source.replace(target,
   "return {model:wrapOrdinaryChatModel(createOrdinaryNativeFixtureModel(String(principal?.attributes?.turasAttemptId)),principal,ctx.session.id,turnId,{event}),modelContextWindowTokens:128_000};"),{mode:0o600});
  const hookPath=join(root,'agent/hooks/persist-conversation.ts');const hook=await readFile(hookPath,'utf8');await writeFile(hookPath,hook.replace('      try {',"      if(['message.received','turn.cancelled','turn.completed'].includes(event.type))console.info(JSON.stringify({fixtureNativeEvent:event.type,attemptId,turnId:'turnId' in event.data?event.data.turnId:null}));\n      try {"),{mode:0o600});
@@ -76,13 +77,7 @@ try{await withPlanEvalEnvironment(async environment=>{
   await writeFile(join(output,'receipt.json'),JSON.stringify(receipt,null,2),{mode:0o600});console.log(JSON.stringify(receipt));for(const name of ['failure-private.log','failure-receipt-private.json','binding-response-private.json','attempts-private.json','cancel-response-private.json'])await rm(join(output,name),{force:true});
  }catch(error){await writeFile(join(output,'attempts-private.json'),JSON.stringify((await query('SELECT id,native_turn_id,response_state,dispatch_state,input_event_id FROM response_attempts')).rows,null,2),{mode:0o600});await writeFile(join(output,'failure-private.log'),environment.privateLogTail(),{mode:0o600});await writeFile(join(output,'failure-receipt-private.json'),JSON.stringify({name:error instanceof Error?error.name:'Unknown',message:error instanceof Error?error.message:String(error)},null,2),{mode:0o600});throw error;}
  finally{if(csrf)await context.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':csrf}}).catch(()=>{});await context.close();await browser.close();}
-},{feature:'010',empty:true,deadlineAt:Date.now()+300000,prepare:async({appRoot})=>{
- // Bootstrap follows the explicit migration in the environment helper, so do
- // it in a tiny owned startup wrapper rather than touching the source database.
- const dev=join(appRoot,'scripts/dev.mjs'),source=await readFile(dev,'utf8');
- await writeFile(dev,"import {execFileSync} from 'node:child_process';\nexecFileSync(process.execPath,['--experimental-strip-types','scripts/bootstrap-demo.ts'],{stdio:'ignore'});\n"+source,{mode:0o600});
- return {};
-}});}finally{
+},{feature:'010',empty:true,deadlineAt:Date.now()+300000});}finally{
  delete process.env.TURAS_ORDINARY_NATIVE_FIXTURE;
  if(createHash('sha256').update(await readFile(authored)).digest('hex')!==originalDigest)throw Error('Authored root model changed during fixture verification');
 }

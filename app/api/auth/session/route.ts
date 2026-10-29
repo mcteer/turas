@@ -10,7 +10,7 @@ export async function GET(request: Request): Promise<Response> {
     if (!session) throw new HttpFailure(401, "authentication_required", "Sign in required");
     return success({
       principal: { id: session.principalId, loginName: session.loginName, displayName: session.displayName },
-      workspace: { id: session.workspaceId },
+      workspace: { id: session.workspaceId, classification: session.workspaceClassification },
       membership: { id: session.membershipId, kind: session.kind, role: session.role },
       csrfToken: csrfTokenForSession(session.token),
       expiresAt: session.expiresAt.toISOString(),

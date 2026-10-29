@@ -28,7 +28,7 @@ export async function boundStaffingToolActor(db: PoolClient, principal: Principa
     c.workspace_id,c.context_login_session_id,c.owner_principal_id,s.expires_at,p.login_name,p.display_name,m.kind,m.role
     FROM staffing_advisory_attempts a JOIN staffing_conversation_bindings b ON b.id=a.binding_id
     JOIN conversations c ON c.id=a.conversation_id JOIN memberships m ON m.id=b.owner_membership_id
-    JOIN principals p ON p.id=c.owner_principal_id JOIN login_sessions s ON s.id=c.context_login_session_id
+    JOIN principals p ON p.id=c.owner_principal_id JOIN login_sessions s ON s.id=c.context_login_session_id AND s.membership_id=m.id AND s.workspace_id=m.workspace_id
     JOIN response_attempts response ON response.id=a.response_attempt_id AND response.conversation_id=c.id
     WHERE a.response_attempt_id=$1 AND c.owner_principal_id=$2 AND a.environment_id=$3
       AND b.environment_id=a.environment_id AND c.environment_id=a.environment_id
@@ -71,7 +71,7 @@ export async function boundStaffingToolActor(db: PoolClient, principal: Principa
     conversation.context_valid_until AS context_deadline_at,
     s.revoked_at,s.expires_at,clock_timestamp() AS now FROM staffing_advisory_attempts a
     JOIN response_attempts response ON response.id=a.response_attempt_id JOIN conversations conversation ON conversation.id=a.conversation_id
-    JOIN login_sessions s ON s.id=$3
+    JOIN login_sessions s ON s.id=$3 AND s.membership_id=$5 AND s.workspace_id=conversation.workspace_id
     WHERE a.id=$1 AND a.response_attempt_id=$2 AND a.conversation_id=$4 AND a.owner_membership_id=$5
     FOR UPDATE OF a`, [row.id, responseAttemptId, actor.sessionId, row.conversation_id, actor.membershipId])).rows[0];
   if (!attempt || attempt.revoked_at || attempt.expires_at.getTime() <= attempt.now.getTime()) {

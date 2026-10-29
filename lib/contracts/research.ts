@@ -58,6 +58,19 @@ export const researchRunStateSchema = z.enum(["queued", "running", "completed", 
 export const researchOperationStateSchema = z.enum(["reserved", "dispatched", "succeeded", "failed", "unconfirmed"]);
 export const researchOriginSchema = z.enum(["independent_discovery", "user_submission"]);
 
+const publicSubject = {
+  version: z.literal("public-research-subject-v1"),
+  basis: z.literal("user_confirmed_scope"),
+};
+/** The admitted question, never evidence of the customer's identity or usage. */
+export const researchPublicSubjectSchema = z.discriminatedUnion("mode", [
+  z.object({ ...publicSubject,mode: z.literal("recon"),
+    publicName: publicField,publicDomain: publicField }).strict(),
+  z.object({ ...publicSubject,mode: z.literal("practices"),
+    product: publicField,versionLabel: publicField,topic: publicField }).strict(),
+  z.object({ ...publicSubject,mode: z.literal("fit") }).strict(),
+]);
+
 export const researchRunReceiptSchema = z.object({
   version: z.literal(researchContractVersion),
   id: governedIdSchema,
@@ -70,7 +83,9 @@ export const researchRunReceiptSchema = z.object({
   searchesUsed: z.number().int().min(0).max(4),
   fetchesUsed: z.number().int().min(0).max(8),
   retainedCitationIds: z.array(governedIdSchema).max(8),
-}).strict();
+  publicSubject: researchPublicSubjectSchema.optional(),
+}).strict().refine((value) => !value.publicSubject || value.publicSubject.mode === value.mode,
+  { path: ["publicSubject"],message: "Research subject must match the admitted mode" });
 
 export const researchLimits = {
   runMs: 120_000,

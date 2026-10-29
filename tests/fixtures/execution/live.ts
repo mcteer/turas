@@ -10,7 +10,7 @@ export async function installExecutionLiveObservation(environment:ExecutionEvalE
   const path=join(root,"agent/agent.ts"),source=await readFile(path,"utf8"),mocked=source.includes("createExecutionNativeFixtureModel");
   if(mocked)assertDeterministicTestMode();else if(process.env.TURAS_ALLOW_LIVE_MODEL_TESTS!=="1"||!process.env.AI_GATEWAY_API_KEY)throw new Error("Explicit live model evaluation required");
   const base=mocked?"createExecutionNativeFixtureModel(principal, identity)":"parityBudgetModel(gateway(selectedModel),selectedModel)",target=`wrapStaffingModel(${base}, admitted.mode`;
-  if(source.split(target).length!==2||!source.includes('const selectedModel = "spacexai/grok-4.7";')||!source.includes('reasoning: "low"'))throw new Error("Selected model shape changed");
+  if(source.split(target).length!==2||!source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";')||!source.includes('reasoning: "low"'))throw new Error("Selected model shape changed");
   await query(`CREATE TABLE execution_live_provider_observations(id uuid PRIMARY KEY,attempt_id uuid NOT NULL REFERENCES execution_advice_attempts(id),
     response_attempt_id uuid NOT NULL REFERENCES response_attempts(id),step_id uuid NOT NULL UNIQUE REFERENCES execution_advice_steps(id),
     step_index integer NOT NULL CHECK(step_index BETWEEN 0 AND 5),provider_path text NOT NULL CHECK(provider_path IN('generate','stream')),

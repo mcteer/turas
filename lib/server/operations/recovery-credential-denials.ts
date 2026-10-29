@@ -1,0 +1,286 @@
+import {reconcileRestoredNamedContentSafety} from './recovery-named-content';
+import {requireRecoveryJobReplayColumns,requireRecoveryJobSemanticRows} from './recovery-job-replay-keys';
+import {currentRecoveryStateDigest} from './recovery-state';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
+import type {Client,PoolClient} from 'pg';
+import {z} from 'zod';
+import {recoveryDenialSnapshotSchema,verifyRecoveryDenialSnapshot} from './recovery-denial-snapshot';
+import {requireAuthenticatedRetainedDenials,type RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
+const command=z.strictObject({environmentId:z.string().min(1).max(256),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),snapshotDigest:z.string().regex(/^[a-f0-9]{64}$/),backupCapturedAt:z.iso.datetime({offset:true})});
+const uuid=z.uuid();
+/** Keep every authenticated row while bounding each database round trip. */
+function* recoveryRowChunks<T>(rows:readonly T[]){
+ for(let offset=0;offset<rows.length;offset+=256){const chunk=rows.slice(offset,offset+256),json=JSON.stringify(chunk);if(Buffer.byteLength(json)>1048576)throw Error('Recovery reconciliation batch exceeds bound');yield {rows:chunk,json};}
+}
+/** Reapply credential/grant and current-projection denials into an actually marked disposable
+ * owner target. Never grant/revive authority, dispatch work, clear quarantine,
+ * or represent full source/publication/provider/replay verification as complete. */
+export async function reconcileOwnedCredentialDenials(db:Client|PoolClient,raw:unknown,input:z.infer<typeof command>){
+ await db.query('BEGIN');
+ try{const result=await reconcileOwnedCredentialDenialsInTransaction(db,raw,input);await db.query('COMMIT');return result;}
+ catch(error){await db.query('ROLLBACK');throw error;}
+}
+/** Internal composed recovery step. Requires the caller's owner transaction;
+ * never commits partial state or turns supplied labels into proof. */
+export async function reconcileOwnedCredentialDenialsInTransaction(db:Client|PoolClient,raw:unknown,input:z.infer<typeof command>){
+ const scope=command.parse(input),snapshot=recoveryDenialSnapshotSchema.parse(raw);
+ await db.query('SAVEPOINT current_denial_reconciliation');await db.query('RELEASE SAVEPOINT current_denial_reconciliation');
+  await db.query("SET LOCAL lock_timeout='3000ms'");await db.query("SET LOCAL statement_timeout='10000ms'");await db.query("SET LOCAL transaction_timeout='60s'");
+  const identity=(await db.query(`SELECT current_database() AS name,current_user AS role,
+   current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner FROM pg_database d WHERE d.datname=current_database()`)).rows[0];
+  const target=new URL(requireOwnedPilotDatabase(process.env,true));
+  if(identity?.owner!==true||identity.name!==target.pathname.slice(1)||identity.role!==decodeURIComponent(target.username))throw Error('Actual owned isolated credential target required');
+  const token=identity.name.slice('turas_test_016_eval_'.length);
+  const owned=await promisify(execFile)('docker',['inspect','--format','{{index .Config.Labels \"turas.016.owner\"}}','turas-016-check-'+token],{timeout:5000,maxBuffer:8192});
+  if(owned.stdout.trim()!==token)throw Error('Actual owned isolated credential target required');
+  return reconcileCredentialDenialsInTransaction(db,snapshot,scope);
+}
+
+/** Independently selected work owner only. The controller verifies the actual
+ * platform binding before/after this operation. Serialized denial receipts do
+ * not substitute for the authenticated independent cold-reader capability. */
+export async function reconcileLockedWorkCredentialDenials(db:Client,retained:RetainedWorkDenials,input:z.infer<typeof command>,expected:{databaseName:string;ownerRole:string}){
+ const scope=command.parse(input);
+ requireAuthenticatedRetainedDenials(retained,scope.environmentId);
+ if(retained.contextDigest!==scope.snapshotDigest||retained.backupCapturedAt!==scope.backupCapturedAt||!expected.databaseName||!expected.ownerRole)throw Error('Exact independently retained work denial scope required');
+ await db.query('BEGIN ISOLATION LEVEL READ COMMITTED');
+ try{
+  await db.query("SET LOCAL lock_timeout='3000ms'; SET LOCAL statement_timeout='10000ms'; SET LOCAL transaction_timeout='60s'");
+  const identity=(await db.query(`SELECT current_database() AS name,current_user AS role,
+   current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner`)).rows[0];
+  if(identity?.owner!==true||identity.name!==expected.databaseName||identity.role!==expected.ownerRole)throw Error('Exact work denial database owner required');
+  await requireRetiredLegacyWorkRuntime(db);
+  const result=await reconcileCredentialDenialsInTransaction(db,retained.snapshot,scope);
+  requireAuthenticatedRetainedDenials(retained,scope.environmentId);
+  await db.query('COMMIT');return {...result,contract:'pilot-work-credential-denials-v1' as const,independentColdBytesVerified:true as const};
+ }catch(error){await db.query('ROLLBACK');throw error;}
+}
+
+export async function requireRetiredLegacyWorkRuntime(db:Client){
+ const legacy=(await db.query("SELECT rolcanlogin FROM pg_roles WHERE rolname='turas_runtime'")).rows;
+ if(legacy.length!==1||legacy[0].rolcanlogin!==false||(await db.query("SELECT 1 FROM pg_stat_activity WHERE usename='turas_runtime'")).rowCount)throw Error('Legacy work runtime must be retired before denial reconciliation');
+}
+
+/** Shared deny-only logic. Both entry points independently establish their owner
+ * target before entering the same exact-schema/control/snapshot decision fence. */
+async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snapshot:z.infer<typeof recoveryDenialSnapshotSchema>,scope:z.infer<typeof command>){
+  const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
+  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==80)throw Error('Exact credential recovery target differs');
+  await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
+  const control=(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1 FOR UPDATE',[scope.environmentId])).rows[0];
+  if(control?.mode!=='locked'||Number(control.revision)!==scope.controlRevision||control.recovery_id!==scope.recoveryId)throw Error('Exact locked credential reconciliation required');
+  const now=Number((await db.query('SELECT extract(epoch FROM clock_timestamp())*1000 AS now')).rows[0].now);
+  verifyRecoveryDenialSnapshot(snapshot,{environmentId:scope.environmentId,contextDigest:scope.snapshotDigest,after:scope.backupCapturedAt,now});
+  const index=(name:string)=>new Map(snapshot.tables.find(table=>table.name===name)!.rows.map(row=>[uuid.parse(row.identity.id),row.status]));
+  const principals=index('principals'),memberships=index('memberships'),sessions=index('login_sessions'),connections=index('mcp_connections'),grants=index('customer_grants');
+  const workspaces=['pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)?index('workspaces'):new Map<string,Record<string,unknown>>(),organizations=['pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)?index('partner_organizations'):new Map<string,Record<string,unknown>>();
+  const targetWorkspaces=new Map((await db.query('SELECT id,active,classification,pilot_environment_id,pilot_provisioning_id FROM workspaces FOR SHARE')).rows.map(row=>[row.id,row]));
+  const workspaceCurrent=(id:string)=>{const current=workspaces.get(id),target=targetWorkspaces.get(id);return current?.active===true&&target?.active===true&&(snapshot.schemaVersion===55&&current.classification===undefined?target.classification==='primary'&&target.pilot_environment_id===null&&target.pilot_provisioning_id===null:current.classification===target.classification&&current.pilot_environment_id===target.pilot_environment_id&&current.pilot_provisioning_id===target.pilot_provisioning_id);};
+  const targetPrincipals=new Map((await db.query('SELECT id,active FROM principals FOR SHARE')).rows.map(row=>[row.id,row]));
+  const targetOrganizations=new Map((await db.query('SELECT id,active,workspace_id,authority_revision FROM partner_organizations FOR SHARE')).rows.map(row=>[row.id,row]));
+  const targetMemberships=new Map((await db.query('SELECT id,active,principal_id,workspace_id,kind,role,partner_org_id,revision FROM memberships FOR SHARE')).rows.map(row=>[row.id,row]));
+  const membershipCurrent=(current:Record<string,unknown>|undefined,target:any)=>!!current&&current.active===true&&target?.active===true&&principals.get(target.principal_id)?.active===true&&targetPrincipals.get(target.principal_id)?.active===true&&workspaceCurrent(target.workspace_id)&&current.principal_id===target.principal_id&&current.workspace_id===target.workspace_id&&current.kind===target.kind&&current.role===target.role&&Number(current.revision)===Number(target.revision)&&(target.kind==='internal'||current.partner_org_id===target.partner_org_id&&organizations.get(target.partner_org_id)?.active===true&&targetOrganizations.get(target.partner_org_id)?.active===true&&Number.isSafeInteger(Number(organizations.get(target.partner_org_id)?.authority_revision))&&Number(organizations.get(target.partner_org_id)?.authority_revision)===Number(targetOrganizations.get(target.partner_org_id)?.authority_revision)&&targetOrganizations.get(target.partner_org_id)?.workspace_id===target.workspace_id&&organizations.get(target.partner_org_id)?.workspace_id===target.workspace_id);
+  // Revoking an old session alone cannot prevent a restored active account
+  // from signing in again. Deny stale identity/role authority itself; never
+  // promote or recreate a current identity from minimized snapshot metadata.
+  let revokedPrincipals=0,revokedMemberships=0,revokedWorkspaces=0,revokedPartnerOrganizations=0;
+  for(const row of (await db.query('SELECT id FROM workspaces WHERE active FOR UPDATE')).rows){if(!workspaceCurrent(row.id))revokedWorkspaces+=(await db.query('UPDATE workspaces SET active=false WHERE id=$1 AND active',[row.id])).rowCount??0;}
+  for(const row of (await db.query('SELECT id,workspace_id,authority_revision FROM partner_organizations WHERE active FOR UPDATE')).rows){const current=organizations.get(row.id);if(current?.active!==true||current.workspace_id!==row.workspace_id||!Number.isSafeInteger(Number(current.authority_revision))||Number(current.authority_revision)!==Number(row.authority_revision)||!workspaceCurrent(row.workspace_id))revokedPartnerOrganizations+=(await db.query('UPDATE partner_organizations SET active=false WHERE id=$1 AND active',[row.id])).rowCount??0;}
+  for(const row of (await db.query('SELECT id FROM principals WHERE active FOR UPDATE')).rows){
+   if(principals.get(row.id)?.active!==true)revokedPrincipals+=(await db.query('UPDATE principals SET active=false WHERE id=$1 AND active',[row.id])).rowCount??0;
+  }
+  for(const row of (await db.query('SELECT id,active,principal_id,workspace_id,kind,role,partner_org_id,revision FROM memberships WHERE active FOR UPDATE')).rows){
+   const current=memberships.get(row.id);
+   if(!membershipCurrent(current,row))revokedMemberships+=(await db.query('UPDATE memberships SET active=false,revision=revision+1 WHERE id=$1 AND active',[row.id])).rowCount??0;
+  }
+  const active=(principalId:string,membershipId:string)=>{const captured=memberships.get(membershipId),target=targetMemberships.get(membershipId);return target?.principal_id===principalId&&membershipCurrent(captured,target);};
+  const future=(value:unknown)=>typeof value==='string'&&Number.isFinite(Date.parse(value))&&Date.parse(value)>now;
+  let revokedSessions=0,revokedMcpConnections=0,revokedGrants=0;
+  const rows=(await db.query('SELECT id,principal_id,membership_id,workspace_id,expires_at FROM login_sessions WHERE revoked_at IS NULL FOR UPDATE')).rows;
+  for(const row of rows){const current=sessions.get(row.id),membership=memberships.get(row.membership_id);
+   if(!current||current.principal_id!==row.principal_id||current.revoked_at!==null||!future(current.expires_at)||Date.parse(String(current.expires_at))!==row.expires_at.getTime()||!active(row.principal_id,row.membership_id)||membership?.workspace_id!==row.workspace_id){
+    revokedSessions+=(await db.query('UPDATE login_sessions SET revoked_at=clock_timestamp() WHERE id=$1 AND revoked_at IS NULL',[row.id])).rowCount??0;
+   }
+  }
+  const mcp=(await db.query('SELECT id,principal_id,membership_id,workspace_id,expires_at FROM mcp_connections WHERE environment_id=$1 AND credential_hash IS NOT NULL FOR UPDATE',[scope.environmentId])).rows;
+  for(const row of mcp){const current=connections.get(row.id),membership=memberships.get(row.membership_id);
+   if(!current||current.principal_id!==row.principal_id||current.membership_id!==row.membership_id||current.workspace_id!==row.workspace_id||current.revoked_at!==null||current.credential_hash!==true||!future(current.expires_at)||Date.parse(String(current.expires_at))!==row.expires_at.getTime()||!active(row.principal_id,row.membership_id)||membership?.workspace_id!==row.workspace_id){
+    revokedMcpConnections+=(await db.query('UPDATE mcp_connections SET credential_hash=NULL WHERE id=$1 AND credential_hash IS NOT NULL',[row.id])).rowCount??0;
+   }
+  }
+  const affected=new Set<string>(),targetGrants=(await db.query("SELECT id,membership_id,workspace_id,customer_id,revision FROM customer_grants WHERE state='active' FOR UPDATE")).rows;
+  for(const row of targetGrants){const current=grants.get(row.id),membership=memberships.get(row.membership_id);
+   if(!current||current.state!=='active'||current.membership_id!==row.membership_id||current.workspace_id!==row.workspace_id||current.customer_id!==row.customer_id||!Number.isSafeInteger(Number(current.revision))||Number(current.revision)!==Number(row.revision)||!membership||!membershipCurrent(membership,targetMemberships.get(row.membership_id))||membership.workspace_id!==row.workspace_id){
+    const result=await db.query("UPDATE customer_grants SET state='revoked',revision=revision+1,changed_at=clock_timestamp() WHERE id=$1 AND state='active'",[row.id]);revokedGrants+=result.rowCount??0;if(result.rowCount)affected.add(row.customer_id);
+   }
+  }
+  if(affected.size)await db.query('UPDATE customer_profile_state SET delivery_generation=delivery_generation+1,updated_at=clock_timestamp() WHERE customer_id=ANY($1::uuid[])',[[...affected]]);
+  let retiredProjections=0,suspendedPublications=0,clearedAcceptedHeads=0,withdrawnArtifacts=0,withdrawnResearch=0;
+  const auditDenial=async(kind:string,id:string,generation:number)=>{await db.query(`INSERT INTO operations_source_denials(environment_id,recovery_id,control_revision,source_kind,source_id,observed_target_generation,snapshot_digest,source_captured_at)
+   VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING`,[scope.environmentId,scope.recoveryId,scope.controlRevision,kind,id,generation,scope.snapshotDigest,snapshot.capturedAt]);};
+  if(['pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)){
+   const records=index('profile_records'),artifacts=index('artifact_versions'),research=index('evidence_source_revisions');
+   const targetHeads=(await db.query('SELECT id,workspace_id,customer_id,current_accepted_revision_id,version FROM profile_records WHERE current_accepted_revision_id IS NOT NULL FOR UPDATE')).rows;
+   const changedCustomers=new Set<string>();
+   for(const record of targetHeads){const current=records.get(record.id);
+    if(!current||current.workspace_id!==record.workspace_id||current.customer_id!==record.customer_id||current.current_accepted_revision_id!==record.current_accepted_revision_id){
+     await auditDenial('accepted_profile',record.current_accepted_revision_id,Number(record.version));
+     clearedAcceptedHeads+=(await db.query('UPDATE profile_records SET current_accepted_revision_id=NULL,version=version+1 WHERE id=$1 AND current_accepted_revision_id IS NOT NULL',[record.id])).rowCount??0;changedCustomers.add(record.customer_id);
+    }
+   }
+   if(changedCustomers.size)await db.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1,delivery_generation=delivery_generation+1,updated_at=clock_timestamp() WHERE customer_id=ANY($1::uuid[])',[[...changedCustomers]]);
+   const versions=(await db.query("SELECT id,workspace_id,customer_id,state,lifecycle_generation,sha256_digest FROM artifact_versions WHERE state IN('ready','partial') FOR UPDATE")).rows;
+   for(const version of versions){const current=artifacts.get(version.id);
+    if(!current||!['ready','partial'].includes(String(current.state))||current.workspace_id!==version.workspace_id||current.customer_id!==version.customer_id||Number(current.lifecycle_generation)!==Number(version.lifecycle_generation)||current.sha256_digest!==version.sha256_digest){
+     await auditDenial('artifact_version',version.id,Number(version.lifecycle_generation));
+     withdrawnArtifacts+=(await db.query("UPDATE artifact_versions SET state='withdrawn',lifecycle_generation=lifecycle_generation+1 WHERE id=$1 AND state IN('ready','partial')",[version.id])).rowCount??0;
+    }
+   }
+   const deniedResearch=new Set(snapshot.tables.find(table=>table.name==='evidence_source_events')!.rows.filter(row=>['withdraw','supersede'].includes(String(row.status.event_type))).map(row=>String(row.status.source_revision_id)));
+   const revisions=(await db.query(`SELECT v.id,v.workspace_id,v.customer_id,v.version,v.passage_digest FROM evidence_source_revisions v
+    WHERE NOT EXISTS(SELECT 1 FROM evidence_source_events e WHERE e.source_revision_id=v.id AND e.event_type IN('withdraw','supersede')) FOR UPDATE OF v`)).rows;
+   for(const revision of revisions){const current=research.get(revision.id);
+    if(!current||current.workspace_id!==revision.workspace_id||current.customer_id!==revision.customer_id||Number(current.version)!==Number(revision.version)||current.passage_digest!==revision.passage_digest||current.passage!==true||deniedResearch.has(revision.id)||(current.payload_expires_at!=null&&!future(current.payload_expires_at))){
+     await auditDenial('verified_research',revision.id,Number(revision.version));
+     // This is a new owner recovery denial, never a reconstructed human decision.
+     // Accepted bytes and all original lifecycle events remain untouched.
+     withdrawnResearch+=(await db.query(`INSERT INTO evidence_source_events(id,source_revision_id,lifecycle_version,event_type,actor_membership_id,rationale,command_receipt_id)
+      SELECT gen_random_uuid(),$1,COALESCE(max(lifecycle_version),0)+1,'withdraw',NULL,'Owner recovery: independently current source proof denies this revision',NULL FROM evidence_source_events WHERE source_revision_id=$1`,[revision.id])).rowCount??0;
+    }
+   }
+  }
+  if(snapshot.contract!=='pilot-denial-replay-snapshot-v2'){
+   const publications=index('knowledge_publications'),sources=index('retrieval_sources');
+   const acceptedHeads=new Set([...index('profile_records').values()].map(record=>record.current_accepted_revision_id).filter(head=>typeof head==='string'));
+   const published=(await db.query("SELECT id,revision_id,head_generation FROM knowledge_publications WHERE environment_id=$1 AND state='published' FOR UPDATE",[scope.environmentId])).rows;
+   for(const publication of published){const current=publications.get(publication.id);
+    if(!current||current.state!=='published'||current.revision_id!==publication.revision_id||Number(current.head_generation)!==Number(publication.head_generation)){
+     if(['pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract))await auditDenial('shared_publication',publication.revision_id,Number(publication.head_generation));
+     suspendedPublications+=(await db.query("UPDATE knowledge_publications SET state='suspended',head_generation=head_generation+1,updated_at=clock_timestamp() WHERE id=$1 AND state='published'",[publication.id])).rowCount??0;
+    }
+   }
+   const projections=(await db.query("SELECT id,source_kind,source_revision_id,source_generation,content_digest,contract_digest FROM retrieval_sources WHERE environment_id=$1 AND lifecycle_state='current' FOR UPDATE",[scope.environmentId])).rows;
+   for(const projection of projections){const current=sources.get(projection.id);
+    const same=current?.lifecycle_state==='current'&&current.source_kind===projection.source_kind&&current.source_revision_id===projection.source_revision_id&&Number(current.source_generation)===Number(projection.source_generation)&&current.content_digest===projection.content_digest&&current.contract_digest===projection.contract_digest;
+    const publicationCurrent=projection.source_kind!=='published_shared'||published.some(publication=>publication.revision_id===projection.source_revision_id&&publications.get(publication.id)?.state==='published'&&publications.get(publication.id)?.revision_id===publication.revision_id&&Number(publications.get(publication.id)?.head_generation)===Number(publication.head_generation));
+    const profileCurrent=projection.source_kind!=='accepted_profile'||acceptedHeads.has(projection.source_revision_id);
+    if(!same||!publicationCurrent||!profileCurrent)retiredProjections+=(await db.query("UPDATE retrieval_sources SET lifecycle_state='retired',updated_at=clock_timestamp() WHERE id=$1 AND lifecycle_state='current'",[projection.id])).rowCount??0;
+   }
+  }
+  let typedModelHoldsAdded=0;
+  if(snapshot.contract==='pilot-denial-replay-snapshot-v7'){
+   const holds:Array<{kind:'ordinary_tokens'|'parity_dollars';id:string;scopeId:string;ceiling:number;actual:number|null;settledAt:string|null;evidenceKind:'operation'|'inherited_hold';observedDigest:string;observedAt:string;observedDigestKind:'operation_row'|'snapshot';baseline:number|null}>=[];
+   const baselines=new Map((snapshot.tables.find(table=>table.name==='ordinary_conversation_allowances')?.rows??[]).map(row=>[uuid.parse(row.identity.conversation_id),z.coerce.number().int().nonnegative().parse(row.status.baseline_output_tokens)]));
+   for(const entry of snapshot.tables){
+    if(!['ordinary_model_operations','parity_evaluation_operations','operations_recovery_model_holds'].includes(entry.name))continue;
+    for(const row of entry.rows){
+     const actualValue=entry.name==='ordinary_model_operations'||row.identity.operation_kind==='ordinary_tokens'?row.status.actual_tokens:row.status.actual_micro_usd;
+     const actual=actualValue==null?null:z.coerce.number().int().nonnegative().safe().parse(actualValue),settledAt=row.status.settled_at==null?null:z.iso.datetime({offset:true}).parse(row.status.settled_at);
+     if(entry.name==='operations_recovery_model_holds'){
+      const kind=z.enum(['ordinary_tokens','parity_dollars']).parse(row.identity.operation_kind);
+      holds.push({kind,id:uuid.parse(row.identity.operation_id),scopeId:uuid.parse(row.status.scope_id),baseline:kind==='ordinary_tokens'?z.coerce.number().int().nonnegative().parse(row.status.baseline_output_tokens):null,actual,settledAt,evidenceKind:'inherited_hold',observedDigestKind:z.enum(['operation_row','snapshot']).parse(row.status.evidence_digest_kind),observedDigest:z.string().regex(/^[a-f0-9]{64}$/).parse(row.status.evidence_digest),observedAt:z.iso.datetime({offset:true}).parse(row.status.source_captured_at),ceiling:z.coerce.number().int().nonnegative().safe().parse(kind==='ordinary_tokens'?row.status.ceiling_tokens:row.status.ceiling_micro_usd)});
+     }else{
+      const ordinary=entry.name==='ordinary_model_operations';
+      holds.push({kind:ordinary?'ordinary_tokens':'parity_dollars',id:uuid.parse(row.identity.id),scopeId:uuid.parse(ordinary?row.status.conversation_id:row.status.budget_id),baseline:ordinary?z.number().int().nonnegative().parse(baselines.get(uuid.parse(row.status.conversation_id))):null,actual,settledAt,evidenceKind:'operation',observedDigestKind:'snapshot',observedDigest:snapshot.snapshotDigest,observedAt:snapshot.capturedAt,ceiling:z.coerce.number().int().nonnegative().safe().parse(ordinary?row.status.ceiling_tokens:row.status.ceiling_micro_usd)});
+     }
+    }
+   }
+   const holdRows=holds.map(hold=>({environment_id:scope.environmentId,operation_kind:hold.kind,operation_id:hold.id,scope_id:hold.scopeId,ceiling_tokens:hold.kind==='ordinary_tokens'?hold.ceiling:null,ceiling_micro_usd:hold.kind==='parity_dollars'?hold.ceiling:null,evidence_digest:scope.snapshotDigest,source_captured_at:snapshot.capturedAt,recovery_id:scope.recoveryId,control_revision:scope.controlRevision,actual_tokens:hold.kind==='ordinary_tokens'?hold.actual:null,actual_micro_usd:hold.kind==='parity_dollars'?hold.actual:null,settled_at:hold.settledAt,evidence_digest_kind:'snapshot',baseline_output_tokens:hold.baseline}));
+   for(const chunk of recoveryRowChunks(holdRows))typedModelHoldsAdded+=(await db.query(`INSERT INTO operations_recovery_model_holds(environment_id,operation_kind,operation_id,scope_id,ceiling_tokens,ceiling_micro_usd,evidence_digest,source_captured_at,recovery_id,control_revision,actual_tokens,actual_micro_usd,settled_at,evidence_digest_kind,baseline_output_tokens)
+    SELECT * FROM jsonb_to_recordset($1::jsonb) AS h(environment_id text,operation_kind text,operation_id uuid,scope_id uuid,ceiling_tokens bigint,ceiling_micro_usd bigint,evidence_digest text,source_captured_at timestamptz,recovery_id uuid,control_revision bigint,actual_tokens bigint,actual_micro_usd bigint,settled_at timestamptz,evidence_digest_kind text,baseline_output_tokens integer)
+    ON CONFLICT(environment_id,operation_kind,operation_id) DO NOTHING`,[chunk.json])).rowCount??0;
+   for(const chunk of recoveryRowChunks(holds.map((hold,ordinal)=>({ordinal,kind:hold.kind,id:hold.id})))){
+    const retained=(await db.query(`SELECT i.ordinal,h.scope_id,h.ceiling_tokens,h.ceiling_micro_usd,h.baseline_output_tokens
+     FROM jsonb_to_recordset($1::jsonb) AS i(ordinal integer,kind text,id uuid)
+     LEFT JOIN operations_recovery_model_holds h ON h.environment_id=$2 AND h.operation_kind=i.kind AND h.operation_id=i.id ORDER BY i.ordinal`,[chunk.json,scope.environmentId])).rows;
+    if(retained.length!==chunk.rows.length)throw Error('Recovered model hold identity differs');
+    for(const row of retained){const hold=holds[row.ordinal];if(!hold||row.scope_id!==hold.scopeId||row.baseline_output_tokens!==hold.baseline||Number(hold.kind==='ordinary_tokens'?row.ceiling_tokens:row.ceiling_micro_usd)!==hold.ceiling)throw Error('Recovered model hold identity differs');}
+   }
+   for(const kind of ['ordinary_tokens','parity_dollars'] as const){const ordinary=kind==='ordinary_tokens';
+    for(const chunk of recoveryRowChunks(holds.flatMap((hold,ordinal)=>hold.kind===kind?[{ordinal,id:hold.id}]:[]))){
+     const local=(await db.query(`SELECT i.ordinal,o.id AS local_id,${ordinary?'o.conversation_id':'o.budget_id'} AS scope,${ordinary?'o.ceiling_tokens':'o.ceiling_micro_usd'} AS ceiling,${ordinary?'o.actual_tokens':'o.actual_micro_usd'} AS actual
+      FROM jsonb_to_recordset($1::jsonb) AS i(ordinal integer,id uuid)
+      LEFT JOIN ${ordinary?'ordinary_model_operations':'parity_evaluation_operations'} o ON o.id=i.id ORDER BY i.ordinal`,[chunk.json])).rows;
+     if(local.length!==chunk.rows.length)throw Error('Recovered immutable model operation differs');
+     for(const row of local){const hold=holds[row.ordinal];if(!hold||row.local_id!==null&&(row.scope!==hold.scopeId||Number(row.ceiling)!==hold.ceiling||row.actual!==null&&hold.actual!==null&&Number(row.actual)!==hold.actual))throw Error('Recovered immutable model operation differs');}
+    }
+   }
+   for(const hold of holds)if(hold.kind==='ordinary_tokens'){
+    const prior=baselines.get(hold.scopeId);if(prior!==undefined&&prior!==hold.baseline)throw Error('Recovered immutable conversation baseline differs');baselines.set(hold.scopeId,hold.baseline!);
+   }
+   const ordinaryScopes=new Set(holds.filter(hold=>hold.kind==='ordinary_tokens').map(hold=>hold.scopeId));
+   for(const chunk of recoveryRowChunks([...baselines].filter(([id])=>ordinaryScopes.has(id)).map(([id,baseline])=>({id,baseline})))){
+    await db.query(`INSERT INTO ordinary_conversation_allowances(conversation_id,baseline_output_tokens)
+     SELECT c.id,i.baseline FROM jsonb_to_recordset($1::jsonb) AS i(id uuid,baseline integer) JOIN conversations c ON c.id=i.id
+     WHERE c.environment_id=$2 AND NOT EXISTS(SELECT 1 FROM ordinary_conversation_allowances a WHERE a.conversation_id=i.id)`,[chunk.json,scope.environmentId]);
+    const local=(await db.query(`SELECT i.id,i.baseline,a.conversation_id AS local_id,a.baseline_output_tokens FROM jsonb_to_recordset($1::jsonb) AS i(id uuid,baseline integer)
+     LEFT JOIN ordinary_conversation_allowances a ON a.conversation_id=i.id`,[chunk.json])).rows;
+    if(local.length!==chunk.rows.length||local.some(row=>row.local_id!==null&&Number(row.baseline_output_tokens)!==row.baseline))throw Error('Recovered immutable conversation baseline differs');
+   }
+   const observations=holds.map(hold=>({kind:hold.kind,id:hold.id,ceiling:hold.ceiling,actual:hold.actual,settledAt:hold.settledAt,evidenceKind:hold.evidenceKind,observedDigest:hold.observedDigest,observedAt:hold.observedAt,observedDigestKind:hold.observedDigestKind}));
+   for(const row of snapshot.tables.find(entry=>entry.name==='operations_recovery_model_observations')?.rows??[]){
+    const kind=z.enum(['ordinary_tokens','parity_dollars']).parse(row.identity.operation_kind),ordinary=kind==='ordinary_tokens';
+    observations.push({kind,id:uuid.parse(row.identity.operation_id),ceiling:z.coerce.number().int().nonnegative().safe().parse(ordinary?row.status.ceiling_tokens:row.status.ceiling_micro_usd),
+     actual:(ordinary?row.status.actual_tokens:row.status.actual_micro_usd)==null?null:z.coerce.number().int().nonnegative().safe().parse(ordinary?row.status.actual_tokens:row.status.actual_micro_usd),
+     settledAt:row.status.settled_at==null?null:z.iso.datetime({offset:true}).parse(row.status.settled_at),evidenceKind:z.enum(['operation','inherited_hold']).parse(row.identity.evidence_kind),
+     observedDigestKind:z.enum(['operation_row','snapshot']).parse(row.status.observed_digest_kind),observedDigest:z.string().regex(/^[a-f0-9]{64}$/).parse(row.identity.observed_evidence_digest),observedAt:z.iso.datetime({offset:true}).parse(row.status.observed_captured_at)});
+   }
+   const observationRows=observations.map(observation=>({environment_id:scope.environmentId,operation_kind:observation.kind,operation_id:observation.id,observed_evidence_digest:observation.observedDigest,observed_captured_at:observation.observedAt,evidence_kind:observation.evidenceKind,ceiling_tokens:observation.kind==='ordinary_tokens'?observation.ceiling:null,ceiling_micro_usd:observation.kind==='parity_dollars'?observation.ceiling:null,actual_tokens:observation.kind==='ordinary_tokens'?observation.actual:null,actual_micro_usd:observation.kind==='parity_dollars'?observation.actual:null,settled_at:observation.settledAt,snapshot_digest:scope.snapshotDigest,source_captured_at:snapshot.capturedAt,recovery_id:scope.recoveryId,control_revision:scope.controlRevision,observed_digest_kind:observation.observedDigestKind}));
+   for(const chunk of recoveryRowChunks(observationRows))await db.query(`INSERT INTO operations_recovery_model_observations(environment_id,operation_kind,operation_id,observed_evidence_digest,observed_captured_at,evidence_kind,ceiling_tokens,ceiling_micro_usd,actual_tokens,actual_micro_usd,settled_at,snapshot_digest,source_captured_at,recovery_id,control_revision,observed_digest_kind)
+    SELECT * FROM jsonb_to_recordset($1::jsonb) AS o(environment_id text,operation_kind text,operation_id uuid,observed_evidence_digest text,observed_captured_at timestamptz,evidence_kind text,ceiling_tokens bigint,ceiling_micro_usd bigint,actual_tokens bigint,actual_micro_usd bigint,settled_at timestamptz,snapshot_digest text,source_captured_at timestamptz,recovery_id uuid,control_revision bigint,observed_digest_kind text)
+    ON CONFLICT(environment_id,operation_kind,operation_id,observed_evidence_digest,evidence_kind) DO NOTHING`,[chunk.json]);
+   await db.query("UPDATE parity_evaluation_budgets SET state='closed' WHERE environment_id=$1 AND state='open' AND id IN(SELECT scope_id FROM operations_recovery_model_holds WHERE environment_id=$1 AND operation_kind='parity_dollars')",[scope.environmentId]);
+  }
+  // Restore authenticated immutable allowance metadata before fencing its old
+  // insertion identity, within this same locked transaction. This does not
+  // recreate any dispatched operation or weaken an existing replay guard.
+  let permanentReplayFencesAdded=0;
+  if(['pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)){
+   // Older source schemas did not declare079's authored semantic identities.
+   // Their authenticated index keys remain enforceable after forward migration;
+   // this deny-only legacy path still keeps every required workflow quarantined.
+   if([79,80].includes(snapshot.schemaVersion))for(const entry of snapshot.tables)await requireRecoveryJobSemanticRows(db,entry,scope.environmentId);
+   const replayEntries=snapshot.tables.map(entry=>({name:entry.name,replayKeyColumns:entry.replayKeyColumns??[],keys:entry.rows.flatMap(row=>row.replayKeys??[])}));
+   const inheritedFence=z.strictObject({environment_id:z.string(),table_name:z.string().regex(/^[a-z_][a-z0-9_]*$/),key_columns:z.array(z.string().regex(/^[a-z_][a-z0-9_]*$/)).min(1).max(16),key_digest:z.string().regex(/^[a-f0-9]{64}$/)});
+   for(const row of snapshot.tables.find(entry=>entry.name==='operations_replay_fences')?.rows??[]){
+    const inherited=inheritedFence.parse(row.identity);if(inherited.environment_id!==scope.environmentId)throw Error('Inherited permanent replay scope differs');
+    replayEntries.push({name:inherited.table_name,replayKeyColumns:[inherited.key_columns],keys:[{columns:inherited.key_columns,digest:inherited.key_digest}]});
+   }
+   const grouped=new Map<string,typeof replayEntries[number]>();
+   for(const entry of replayEntries){const prior=grouped.get(entry.name);if(prior){prior.replayKeyColumns.push(...entry.replayKeyColumns);prior.keys.push(...entry.keys);}else grouped.set(entry.name,{name:entry.name,replayKeyColumns:[...entry.replayKeyColumns],keys:[...entry.keys]});}
+   for(const entry of grouped.values()){
+    if(!entry.replayKeyColumns.length)continue;
+    const protectedTable=(await db.query("SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=$1 AND t.tgname='recovered_request_replay' AND t.tgenabled='O' AND t.tgfoid='turas_recovery_replay_guard'::regproc",[entry.name])).rowCount===1;
+    if(!protectedTable)throw Error('Actual permanent replay guard unavailable');
+    const targetKeys=(await db.query(`SELECT array_agg(a.attname::text ORDER BY a.attname) AS columns FROM pg_index i
+     JOIN pg_class c ON c.oid=i.indrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+     CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY k(attnum,ordinal) JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum=k.attnum
+     WHERE n.nspname='public' AND c.relname=$1 AND i.indisunique AND i.indpred IS NULL AND i.indexprs IS NULL AND k.ordinal<=i.indnkeyatts GROUP BY i.indexrelid`,[entry.name])).rows.map(row=>JSON.stringify(row.columns));
+    targetKeys.push(...(await requireRecoveryJobReplayColumns(db,entry.name)).map(columns=>JSON.stringify(columns)));
+    if(entry.replayKeyColumns.some(columns=>!targetKeys.includes(JSON.stringify(columns))))throw Error('Actual permanent replay index differs');
+    for(const chunk of recoveryRowChunks(entry.keys.map(key=>({key_columns:key.columns,key_digest:key.digest})))){
+     permanentReplayFencesAdded+=(await db.query(`INSERT INTO operations_replay_fences(environment_id,table_name,key_columns,key_digest,snapshot_digest,source_captured_at,recovery_id,control_revision)
+      SELECT $1,$2,k.key_columns,k.key_digest,$4,$5,$6,$7 FROM jsonb_to_recordset($3::jsonb) AS k(key_columns text[],key_digest text)
+      ON CONFLICT(environment_id,table_name,key_columns,key_digest) DO NOTHING`,[scope.environmentId,entry.name,chunk.json,scope.snapshotDigest,snapshot.capturedAt,scope.recoveryId,scope.controlRevision])).rowCount??0;
+    }
+   }
+  }
+  const namedContentCoverage=snapshot.schemaVersion===80?await reconcileRestoredNamedContentSafety(db,snapshot,scope.environmentId):{historicalSnapshot:true,currentNamedContentAuthorityVerified:false,authorityGranted:false};
+  const currentStateDigest=await currentRecoveryStateDigest(db);
+  return {currentStateDigest,namedContentCoverage,contract:'pilot-owned-credential-denials-v5' as const,...scope,mode:'locked' as const,revokedWorkspaces,revokedPartnerOrganizations,revokedPrincipals,revokedMemberships,revokedSessions,revokedMcpConnections,revokedGrants,clearedAcceptedHeads,withdrawnArtifacts,withdrawnResearch,retiredProjections,suspendedPublications,permanentReplayFencesAdded,typedModelHoldsAdded,sourcePublicationDenialsApplied:snapshot.contract!=='pilot-denial-replay-snapshot-v2',scope:'credentials-grants-and-source-denials' as const,authorityGranted:false,quarantineCleared:false,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false};
+}
+
+/** Deny-only composition within an actual platform controller's owner transaction.
+ * This cannot grant authority or replace the original owned entry point. */
+export async function reconcileAuthenticatedWorkCredentialDenialsInTransaction(db:Client,retained:RetainedWorkDenials,input:z.infer<typeof command>){
+ const scope=command.parse(input);requireAuthenticatedRetainedDenials(retained,scope.environmentId);
+ if(retained.contextDigest!==scope.snapshotDigest||retained.backupCapturedAt!==scope.backupCapturedAt)throw Error('Exact independently retained work denial scope required');
+ await db.query('SAVEPOINT authenticated_work_denials');await db.query('RELEASE SAVEPOINT authenticated_work_denials');
+ if((await db.query("SELECT current_setting('transaction_isolation') AS isolation")).rows[0]?.isolation!=='read committed')throw Error('Work denial composition requires read committed isolation');
+ if((await db.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='operations_control'::regclass")).rows[0]?.owner!==true)throw Error('Actual work denial owner required');
+ await requireRetiredLegacyWorkRuntime(db);
+ const result=await reconcileCredentialDenialsInTransaction(db,retained.snapshot,scope);
+ requireAuthenticatedRetainedDenials(retained,scope.environmentId);return result;
+}

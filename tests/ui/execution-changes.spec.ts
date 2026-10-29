@@ -5,8 +5,10 @@ import {requireOwnedExecutionClone} from "../../scripts/execution-eval-environme
 import {timeFixture,draftTime,submitTime,timeCandidate,decideTime} from "../fixtures/execution/time";
 import {registerFixture,replaceBaseline,saveRegister,registerBase} from "../fixtures/execution/registers";
 import {withTransaction} from "../../lib/server/db/client";
+import {installExecutionChangesDiagnostics} from "../fixtures/execution/ui-diagnostics";
 const expect=baseExpect.configure({timeout:30000});
 test.beforeEach(({page})=>{page.setDefaultTimeout(30000);requireOwnedExecutionClone();if(process.env.TURAS_EXECUTION_FIXTURE_READY!=="1")throw new Error("Use owned008 UI runner");});
+installExecutionChangesDiagnostics();
 test("reviewed RAID and scope replacement retain actuals and require explicit one-to-one mapping",async({page},testInfo)=>{
   test.setTimeout(180000);const f=await timeFixture();await decideTime(f,await timeCandidate(f,[await submitTime(f,await draftTime(f))]));
   const url=`/customers/${f.customerId}/engagements/${f.engagementId}/execution`;
@@ -86,4 +88,53 @@ test("decision review rejects an intercepted stale preview and requires a new hu
   await page.reload();await page.getByRole("tab",{name:"Registers",exact:true}).click();await page.getByRole("combobox",{name:"Register",exact:true}).selectOption("decision");await expect(decision.getByText("submitted",{exact:true})).toBeVisible();
   await decision.getByRole("button",{name:"Review register record",exact:true}).click();await page.getByRole("textbox",{name:"Review rationale",exact:true}).fill("Human independently reviewed the refreshed exact decision");
   await page.getByRole("button",{name:"Confirm reviewed decision",exact:true}).click();await expect(decision.getByText("accepted",{exact:true})).toBeVisible();
+});
+
+
+test("baseline mapping owns its first input and clears choices before a new pair appears",async({page})=>{
+  test.setTimeout(180000);
+  const f=await registerFixture(),url=`/customers/${f.customerId}/engagements/${f.engagementId}/execution`;
+  await signIn(page,"mcteer");await page.goto(url);await page.getByRole("tab",{name:"Registers",exact:true}).click();
+  // Dispatch at the first DOM exposure, before a deferred reset can run. This
+  // intentionally exercises a faster event ordering than a manual interaction.
+  await page.evaluate(()=>{
+    document.documentElement.dataset.mappingFirstInput="pending";
+    const observer=new MutationObserver(()=>{
+      const select=document.querySelector<HTMLSelectElement>('select[aria-label="Map work_package proof"]');
+      if(!select)return;observer.disconnect();select.value="delivery";select.dispatchEvent(new Event("change",{bubbles:true}));
+      document.documentElement.dataset.mappingFirstInput="done";
+    });observer.observe(document.body,{childList:true,subtree:true});
+  });
+  const content=structuredClone(f.content);content.workPackages[0].key="delivery";content.workPackages[1].key="verification";
+  content.milestones[0].key="delivery_done";content.milestones[1].dependencies=["delivery_done"];
+  await replaceBaseline(f,content);await page.evaluate(()=>window.dispatchEvent(new Event("focus")));
+  const mapping=page.getByRole("region",{name:"Baseline Reconciliation",exact:true});
+  await expect.poll(()=>page.evaluate(()=>document.documentElement.dataset.mappingFirstInput)).toBe("done");
+  const proof=mapping.getByRole("combobox",{name:"Map work_package proof",exact:true});await expect(proof).toHaveValue("delivery");
+  await mapping.getByRole("combobox",{name:"Map work_package readiness",exact:true}).selectOption("__retired__");
+  await mapping.getByRole("combobox",{name:"Map milestone proof_done",exact:true}).selectOption("delivery_done");
+  await mapping.getByRole("combobox",{name:"Map milestone ready",exact:true}).selectOption("ready");
+  const added=mapping.getByRole("checkbox",{name:/Add Prepare rollback \(verification\)/});await added.check();
+  await expect(mapping.getByRole("button",{name:"Review baseline mapping",exact:true})).toBeEnabled();
+  const overview=page.waitForResponse(r=>new URL(r.url()).pathname===`/api/execution/engagements/${f.engagementId}`&&r.request().method()==="GET");
+  const activities=page.waitForResponse(r=>new URL(r.url()).pathname===`/api/execution/engagements/${f.engagementId}/records`&&new URL(r.url()).searchParams.get("kind")==="activity");
+  await page.evaluate(()=>window.dispatchEvent(new Event("focus")));await (await overview).finished();await (await activities).finished();
+  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+  await expect(proof).toHaveValue("delivery");await expect(added).toBeChecked();
+  await page.evaluate(()=>{
+    document.documentElement.dataset.mappingNewPair="pending";
+    const observer=new MutationObserver(()=>{
+      const region=document.querySelector<HTMLElement>('section[aria-label="Baseline Reconciliation"]');
+      if(!region?.textContent?.includes("Synthetic refreshed delivery mapping"))return;observer.disconnect();
+      document.documentElement.dataset.mappingNewPairClear=String([...region.querySelectorAll<HTMLSelectElement>("select")].every(s=>s.value===""));
+      document.documentElement.dataset.mappingNewPairAddedClear=String([...region.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].every(s=>!s.checked));
+      document.documentElement.dataset.mappingNewPairReviewDisabled=String([...region.querySelectorAll<HTMLButtonElement>("button")].find(b=>b.textContent==="Review baseline mapping")?.disabled===true);
+      document.documentElement.dataset.mappingNewPair="done";
+    });observer.observe(document.body,{childList:true,characterData:true,subtree:true});
+  });
+  const next=structuredClone(content);next.workPackages[0].title="Synthetic refreshed delivery mapping";
+  await replaceBaseline(f,next);await page.evaluate(()=>window.dispatchEvent(new Event("focus")));
+  await expect.poll(()=>page.evaluate(()=>document.documentElement.dataset.mappingNewPair)).toBe("done");
+  expect(await page.evaluate(()=>({mapped:document.documentElement.dataset.mappingNewPairClear,added:document.documentElement.dataset.mappingNewPairAddedClear,review:document.documentElement.dataset.mappingNewPairReviewDisabled}))).toEqual({mapped:"true",added:"true",review:"true"});
+  await expect(proof).toHaveValue("");await expect(mapping.getByRole("button",{name:"Review baseline mapping",exact:true})).toBeDisabled();
 });

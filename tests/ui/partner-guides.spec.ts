@@ -6,15 +6,30 @@ import { partnerAcceptedEvidence } from "../fixtures/partners/originals";
 import { withPartnerDatabase } from "../fixtures/partners/environment";
 import { DEMO_IDS } from "../../lib/server/bootstrap-ids";
 async function session(page:Page,actor:CurrentSession){await page.context().addCookies([{name:"turas_session",value:actor.token,url:process.env.TURAS_UI_BASE_URL!,httpOnly:true,sameSite:"Lax"}]);}
+/** Settle the exact command before changing the authenticated browser login.
+ * Evidence-date labels already contain “published” while the guide is submitted. */
+async function guideCommand(page:Page,action:"guide.publish"|"guide.revise"|"guide.submit"|"guide.reject",button:string){
+ const guideId=new URL(page.url()).pathname.split("/").at(-1);
+ const [response]=await Promise.all([
+  page.waitForResponse(response=>{
+   if(new URL(response.url()).pathname!=="/api/partners/commands"||response.request().method()!=="POST")return false;
+   try{const input=response.request().postDataJSON();return input?.action===action&&input.guideId===guideId;}catch{return false;}
+  }),
+  page.getByRole("button",{name:button,exact:true}).click(),
+ ]);
+ expect(response.status()).toBe(200);
+ expect(await response.finished()).toBeNull();
+}
+const guideState=(page:Page)=>page.getByTestId("partner-protected-body").locator(":scope > p").first();
 test.beforeEach(async()=>{if(process.env.TURAS_PARTNERS_UI_FIXTURE_READY!=="1")throw Error("Owned partner UI runner required");await withPartnerDatabase(db=>db.query("DELETE FROM partner_rate_windows WHERE environment_id=$1",[process.env.TURAS_ENVIRONMENT_ID]));});
 test("publishes an exact reviewed guide, follows its lessons and isolates a rejected replacement",async({page})=>{
  test.setTimeout(90000);
  const f=await partnerGuideFixture(`Synthetic browser reviewed guide ${test.info().project.name}`);await session(page,f.reviewer);await page.goto(`/partners/guides/${f.guideId}`);await expect(page.getByRole("heading",{name:f.content.title,exact:true})).toBeVisible();
- await page.getByLabel("Guide Review Rationale").fill("Exact synthetic evidence review for this guide");await page.getByRole("button",{name:"Prepare Guide Review",exact:true}).click();await expect(page.getByRole("heading",{name:"Exact Decision Preview",exact:true})).toBeVisible();await page.getByRole("button",{name:"Confirm Guide Decision",exact:true}).click();await expect(page.getByTestId("partner-protected-body")).toContainText("published");
+ await page.getByLabel("Guide Review Rationale").fill("Exact synthetic evidence review for this guide");await page.getByRole("button",{name:"Prepare Guide Review",exact:true}).click();await expect(page.getByRole("heading",{name:"Exact Decision Preview",exact:true})).toBeVisible();await guideCommand(page,"guide.publish","Confirm Guide Decision");await expect(guideState(page)).toContainText(/ · published · /);
  await session(page,f.partner);await page.evaluate(()=>window.dispatchEvent(new Event("focus")));await expect(page.getByText("Signed in as partner",{exact:true})).toHaveCount(1,{timeout:15000});await expect(page.getByRole("link",{name:"Planning Finance",exact:true})).toHaveCount(0);await expect(page.getByRole("heading",{name:"Lesson 1: Demonstrate the reviewed customer delivery practice",exact:true})).toBeVisible();await expect(page.getByRole("button",{name:"Edit Guide Draft",exact:true})).toHaveCount(0);await expect(page.getByRole("heading",{name:"Review Exact Guide",exact:true})).toHaveCount(0);
- await session(page,f.author);await page.evaluate(()=>window.dispatchEvent(new Event("focus")));await page.getByRole("button",{name:"Edit Guide Draft",exact:true}).click();await page.getByLabel("Guide Title",{exact:true}).fill("Synthetic replacement still awaiting review");await page.getByRole("button",{name:"Save Guide Draft",exact:true}).click();await page.getByRole("button",{name:"Submit Guide for Review",exact:true}).click();await expect(page.getByTestId("partner-protected-body")).toContainText("submitted");
+ await session(page,f.author);await page.evaluate(()=>window.dispatchEvent(new Event("focus")));await page.getByRole("button",{name:"Edit Guide Draft",exact:true}).click();await page.getByLabel("Guide Title",{exact:true}).fill("Synthetic replacement still awaiting review");await guideCommand(page,"guide.revise","Save Guide Draft");await guideCommand(page,"guide.submit","Submit Guide for Review");await expect(guideState(page)).toContainText(/ · submitted · /);
  await session(page,f.partner);await page.evaluate(()=>window.dispatchEvent(new Event("focus")));await expect(page.getByRole("heading",{name:f.content.title,exact:true})).toBeVisible();await expect(page.getByText("Synthetic replacement still awaiting review",{exact:true})).toHaveCount(0);
- await session(page,f.reviewer);await page.evaluate(()=>window.dispatchEvent(new Event("focus")));await expect(page.getByRole("heading",{name:"Synthetic replacement still awaiting review",exact:true})).toBeVisible();await page.getByRole("combobox",{name:"Guide Decision",exact:true}).selectOption("guide.reject");await page.getByLabel("Guide Review Rationale",{exact:true}).fill("Keep the prior publication while the author corrects this draft");await page.getByRole("button",{name:"Prepare Guide Review",exact:true}).click();await page.getByRole("button",{name:"Confirm Guide Decision",exact:true}).click();await expect(page.getByTestId("partner-protected-body")).toContainText("rejected");
+ await session(page,f.reviewer);await page.evaluate(()=>window.dispatchEvent(new Event("focus")));await expect(page.getByRole("heading",{name:"Synthetic replacement still awaiting review",exact:true})).toBeVisible();await page.getByRole("combobox",{name:"Guide Decision",exact:true}).selectOption("guide.reject");await page.getByLabel("Guide Review Rationale",{exact:true}).fill("Keep the prior publication while the author corrects this draft");await page.getByRole("button",{name:"Prepare Guide Review",exact:true}).click();await guideCommand(page,"guide.reject","Confirm Guide Decision");await expect(guideState(page)).toContainText(/ · rejected · /);
  await session(page,f.partner);await page.evaluate(()=>window.dispatchEvent(new Event("focus")));await expect(page.getByRole("heading",{name:f.content.title,exact:true})).toBeVisible();await page.screenshot({path:test.info().outputPath("synthetic-guide.png"),fullPage:true});
 });
 test("authors a structured guide from current evidence using ordinary form fields",async({page})=>{

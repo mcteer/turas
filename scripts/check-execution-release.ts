@@ -12,6 +12,7 @@ const sourceDigest=await executionSourceDigest(),pointer=resolve("local-artifact
 const environment:NodeJS.ProcessEnv={...process.env,TURAS_ALLOW_LIVE_MODEL_TESTS:"0",NODE_ENV:"test"};
 for(const key of Object.keys(environment))if(/(?:API_KEY|ACCESS_TOKEN|AUTH_TOKEN|OIDC_TOKEN)$/.test(key))environment[key]="";
 for(const key of ["AI_GATEWAY_API_KEY","OPENAI_API_KEY","ANTHROPIC_API_KEY","XAI_API_KEY","CONTEXT_API_KEY"])environment[key]="";
+delete environment.TURAS_016_QUALITY_RUNTIME_FILE;environment.NODE_OPTIONS="";
 const partial=executionPreflightSchema.extend({gates:z.array(executionPreflightSchema.shape.gates.element).max(10),directory:z.string()});
 await mkdir("local-artifacts/008",{recursive:true,mode:0o700});
 const prior=resume?partial.parse(JSON.parse(readPrivateExecutionArtifact(pointer).toString())):null;

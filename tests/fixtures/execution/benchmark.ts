@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../bound-session";
 import {randomUUID,createHash} from "node:crypto";
 import type {PoolClient} from "pg";
 import {withTransaction} from "../../../lib/server/db/client";
@@ -43,7 +44,7 @@ export async function seedExecutionBenchmark(options:{reporting?:true}={}){
       const principalId=randomUUID(),membershipId=randomUUID(),sessionId=randomUUID(),loginName=`execution_benchmark_${i}_${randomUUID().slice(0,8)}`;
       await db.query("INSERT INTO principals(id,login_name,display_name) VALUES($1,$2,'Synthetic load contributor')",[principalId,loginName]);
       await db.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','member')",[membershipId,principalId,actor.workspaceId]);
-      await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '2 hours')",[sessionId,principalId,createHash("sha256").update(sessionId).digest("hex")]);
+      await insertBoundFixtureSession(db,{id:sessionId,principalId,membershipId,workspaceId:actor.workspaceId,tokenHash:createHash("sha256").update(sessionId).digest("hex"),expiresAt:new Date(Date.now()+7200000)});
       users.push({...f.author,principalId,membershipId,sessionId,loginName,displayName:"Synthetic load contributor",expiresAt:new Date(Date.now()+7200000),token:"fixture"});
     }
     const row=async(table:string,where:string,value:string):Promise<Row>=>{const r=(await db.query(`SELECT * FROM ${table} WHERE ${where}=$1`,[value])).rows[0];if(!r)throw new Error("Benchmark template missing");return r;};

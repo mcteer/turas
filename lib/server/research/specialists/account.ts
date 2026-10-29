@@ -1,3 +1,5 @@
+import {researchReadActor} from './read-actor';
+import type {CurrentSession} from '../../auth/sessions';
 import type {PoolClient} from 'pg';
 import {readVerifiedResearchProjectionRows} from "../../retrieval/research-projection";
 import {getServerConfig} from "../../config";
@@ -25,8 +27,8 @@ export type ResearchSourceReference={accountId:string;url:string};
 export const researchSourceKey=(source:ResearchSourceReference)=>JSON.stringify([source.accountId.toLowerCase(),source.url]);
 /** Every URL is eligible only when ALL of its canonical heads are eligible.
  * Newly discovered URLs without canonical headers retain the original true result. */
-export async function researchSourcesAreEligibleInTransaction(db:PoolClient,identity:AppIdentity,sources:readonly ResearchSourceReference[]){
- await lockProfileActors(db,identity,sources.map(source=>source.accountId),undefined,true);
+export async function researchSourcesAreEligibleInTransaction(db:PoolClient,identity:AppIdentity,sources:readonly ResearchSourceReference[],authorizationActor:CurrentSession=identity){
+ await lockProfileActors(db,researchReadActor(identity,authorizationActor),sources.map(source=>source.accountId),undefined,true);
  const result=new Map(sources.map(source=>[researchSourceKey(source),true]));
  if(!sources.length)return result;
  const requested=[...new Map(sources.map(source=>[researchSourceKey(source),source])).values()];

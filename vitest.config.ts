@@ -11,6 +11,7 @@ export default defineConfig({
     ...(process.env.TURAS_GAPS_OWNED === "1" ? { setupFiles: ["tests/fixtures/gaps/rate-reset.ts"] } : {}),
     ...(process.env.TURAS_OWNED_REGRESSION_SETUP === "1" ? { setupFiles: ["tests/fixtures/regression-rate-reset.ts"] } : {}),
     ...(process.env.TURAS_GAPS_REGRESSION_KIND ? { setupFiles: ["tests/fixtures/gaps/regression-rate-reset.ts"] } : {}),
+    ...(process.env.TURAS_REPORTS_OWNED === "1" ? { setupFiles: ["tests/fixtures/reports/rate-reset.ts"] } : {}),
     exclude: [...configDefaults.exclude,"local-artifacts/**"],
   },
 });

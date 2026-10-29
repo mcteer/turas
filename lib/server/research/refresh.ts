@@ -22,6 +22,19 @@ type Source = { id: string; source_id: string; workspace_id: string;
   observation_at: Date | null; publication_at: Date | null; retrieval_at: Date;
   quality_input: unknown };
 
+/** Shared scheduling eligibility; due notices are operator work after marking. */
+export const researchReviewMarkingFromSql = `
+      FROM evidence_source_revisions v
+      JOIN evidence_sources s ON s.id=v.source_id AND s.origin='independent_research'
+      JOIN research_checks check_result ON check_result.source_revision_id=v.id
+      LEFT JOIN research_review_due due ON due.source_revision_id=v.id
+      WHERE NOT EXISTS (SELECT 1 FROM evidence_source_events event
+          WHERE event.source_revision_id=v.id AND event.event_type IN ('withdraw','supersede'))
+        AND check_result.identity_result AND check_result.scope_result
+        AND check_result.integrity_result AND check_result.content_result
+        AND (due.source_revision_id IS NULL OR due.updated_at<now()-interval '1 hour')
+`;
+
 /** The maintenance worker only marks dates. It never starts external research. */
 export async function markDueResearch(existingClient?: PoolClient): Promise<number> {
   const run = async (client: PoolClient) => {
@@ -32,15 +45,7 @@ export async function markDueResearch(existingClient?: PoolClient): Promise<numb
     const sources = await client.query<Source>(`
       SELECT v.id,v.source_id,v.workspace_id,v.customer_id,v.version,v.location,
         v.passage_digest,v.observation_at,v.publication_at,v.retrieval_at,v.quality_input
-      FROM evidence_source_revisions v
-      JOIN evidence_sources s ON s.id=v.source_id AND s.origin='independent_research'
-      JOIN research_checks check_result ON check_result.source_revision_id=v.id
-      LEFT JOIN research_review_due due ON due.source_revision_id=v.id
-      WHERE NOT EXISTS (SELECT 1 FROM evidence_source_events event
-          WHERE event.source_revision_id=v.id AND event.event_type IN ('withdraw','supersede'))
-        AND check_result.identity_result AND check_result.scope_result
-        AND check_result.integrity_result AND check_result.content_result
-        AND (due.source_revision_id IS NULL OR due.updated_at<now()-interval '1 hour')
+      ${researchReviewMarkingFromSql}
       ORDER BY due.updated_at NULLS FIRST,v.id LIMIT 100`,[]);
     const now = new Date();
     for (const source of sources.rows) {

@@ -1,0 +1,22 @@
+// Controlled unit artifacts only; no hosted execution or independent review asserted.
+import {randomUUID} from 'node:crypto';
+import {join} from 'node:path';
+import type {PilotHostedScope} from '../../../lib/contracts/pilot-hosted';
+import type {PilotRun} from '../../../lib/contracts/pilot-readiness';
+import type {addPartnerEvidenceFixture} from './partner-evidence';
+import {writeEvidence,evidenceDigest} from '../../../scripts/pilot-evidence';
+import {feedbackDigest,validateFeedbackAppend} from '../../../lib/contracts/pilot-feedback';
+export async function addFeedbackEvidenceFixture(f:{directory:string;scope:PilotHostedScope},run:PilotRun,training:Awaited<ReturnType<typeof addPartnerEvidenceFixture>>['training']){
+ const scope=f.scope,at=new Date().toISOString();
+ const capture={runId:run.id,sourceCommit:run.sourceCommit,sourceDigest:run.sourceDigest,catalogDigest:run.catalogDigest,environmentMarker:run.environmentMarker,workspaceId:scope.workspaceId,...training};
+ const file='training-internal-admin.json',captureDigest=await writeEvidence(f.directory,file,capture),feedbackScope={contract:'pilot-feedback-scope-v1',environmentId:scope.environmentMarker,workspaceId:scope.workspaceId,customerIds:[training.customerId],participants:[{reference:'Controlled unit internal',principalId:randomUUID(),membershipId:randomUUID(),kind:'internal'},{reference:'Controlled unit partner',principalId:randomUUID(),membershipId:randomUUID(),kind:'partner'}]},records=[],items=[];
+ for(const participant of feedbackScope.participants){
+  const original=validateFeedbackAppend({contract:'pilot-feedback-record-v2',scope:feedbackScope,scopeDigest:feedbackDigest(feedbackScope),item:{id:randomUUID(),journey:'J013',participantReference:participant.reference,severity:'minor',observedAt:training.completedAt,observationReference:file,observation:'Controlled unit observation, not actual hosted feedback.'},transitions:[{state:'recorded',at,ownerReference:feedbackScope.participants[0].reference}],previousDigest:null,sourceCommit:run.sourceCommit,sourceDigest:run.sourceDigest,catalogDigest:run.catalogDigest,humanReported:false,releaseApproved:false,messagesSent:0,automation:{method:'automated-role-exercise',deploymentId:scope.deploymentId,origin:scope.origin,captureDigest,runnerReference:'Controlled unit runner'}});
+  const triaged=validateFeedbackAppend({...original,previousDigest:feedbackDigest(original),transitions:[...original.transitions,{state:'triaged',at,ownerReference:feedbackScope.participants[0].reference,rationale:'Controlled unit disposition.'}]},original),receipt=run.receipts.find(row=>row.gateId==='G18'&&row.role===(participant.kind==='internal'?'internal-admin':'assigned-partner'))!,recheck={file:receipt.id+'.json',digest:receipt.proofDigest};
+  const resolved=validateFeedbackAppend({...triaged,previousDigest:feedbackDigest(triaged),transitions:[...triaged.transitions,{state:'resolved',at,ownerReference:feedbackScope.participants[0].reference,rationale:'Controlled unit passing original case review.',recheckReference:recheck.file,recheckDigest:recheck.digest}]},triaged),history=[];
+  for(const [index,value] of [original,triaged,resolved].entries()){const name=participant.kind+'-'+index+'.json',digest=await writeEvidence(f.directory,name,value);history.push({file:name,digest});}
+  records.push({...history[0],recordDigest:feedbackDigest(original),participantReference:participant.reference});items.push({id:original.item.id,history,recheck,rationale:'Controlled unit independent review only.'});
+ }
+ const observationsDigest=await writeEvidence(f.directory,'role-observations.json',{contract:'pilot-hosted-role-observations-v1',scope,capture:{file,digest:captureDigest},records,independentReviewRequired:true,dispositionsComplete:false,humanReported:false,releaseApproved:false}),partnerEvidenceDigest=evidenceDigest(await import('node:fs/promises').then(fs=>fs.readFile(join(f.directory,'partner-evidence-index.json')))),review={contract:'pilot-hosted-feedback-review-v1',scope,method:'automated-independent-review',reviewerReference:'Controlled unit reviewer',reviewedAt:at,observationsDigest,partnerEvidenceDigest,items,completeCaptureReview:true,humanReported:false,releaseApproved:false};
+ await writeEvidence(f.directory,'role-observations-review.json',review);return {review};
+}

@@ -1,3 +1,4 @@
+import {protectedCancellationRequest} from '../../lib/server/operations/admission';
 import {ownedInputResponseAttempt} from "../../lib/server/conversations/input-responses";
 import { eveChannel } from "eve/channels/eve";
 import type { AuthFn } from "eve/channels/auth";
@@ -20,7 +21,7 @@ const appCookieAuth: AuthFn<Request> = async (request): Promise<Awaited<ReturnTy
     if (principalId) return { authenticator: "turas-source-retirement",
       principalId, principalType: "user", attributes: {} };
   }
-  const session = await getCurrentSession(request);
+  const session = await getCurrentSession(request,protectedCancellationRequest(request)?"cancellation":"ordinary");
   if (!session) return null;
   let pendingAttempt:string|undefined;
   const continuation=new URL(request.url).pathname.match(/^\/eve\/v1\/session\/(wrun_[A-Za-z0-9_-]+)$/);

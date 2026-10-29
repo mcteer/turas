@@ -24,7 +24,7 @@ export function createExpansionNativeFixtureModel(principal: unknown,
   requireFixture();
   if (!principal) throw new Error("Owned native principal required");
   let abortSignal: AbortSignal | undefined;
-  const model = mockModel({ provider: "turas-owned-expansion-fixture", modelId: "spacexai/grok-4.7",
+  const model = mockModel({ provider: "turas-owned-expansion-fixture", modelId: "anthropic/claude-sonnet-5.5",
     respond: async ({ tools, toolResults }) => {
       const expected = ["load_skill", "expansion_hypotheses", "expansion_evidence", "expansion_summary"];
       if (tools.map(tool => tool.name).sort().join(",") !== expected.sort().join(",")) throw new Error("Expansion native catalog mismatch");

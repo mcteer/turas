@@ -6,6 +6,7 @@ import { setMembershipActive } from "../../../../../lib/server/access/service";
 
 const inputSchema = z.object({
   active: z.boolean(),
+  expectedLiveSessionIds: z.array(z.uuid()).length(1).optional(),
   expectedRevision: z.number().int().nonnegative(),
   requestKey: z.uuid(),
 }).strict();

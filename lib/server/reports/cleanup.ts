@@ -2,10 +2,11 @@ import {randomUUID,createHash} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {HttpFailure} from '../../contracts/http';
 import {requireReportEnvironment} from './readiness';
-import {deleteExactReportObject,reportStoreRoot} from './store';
+import {deleteExactReportObject,reportStoreRoot,assertReportStoreReady} from './store';
 import {lstat,opendir,readFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {reportId} from './schema';
+import {privateObjectBackend} from '../storage/factory';
 
 /** Queue exact immutable payload identities; newer corrections are never targets. */
 export async function queueReportRevisionCleanup(db:PoolClient,revisionId:string){
@@ -88,7 +89,7 @@ export async function cleanupReportFiles(db:PoolClient,limit=100){
   const token=randomUUID();await db.query("UPDATE report_cleanup_jobs SET state='leased',lease_token=$2,lease_until=now()+interval '180 seconds' WHERE id=$1",[job.id,token]);
   const file=(await db.query("SELECT * FROM report_store_objects WHERE object_key=$1 AND revision_id=$2 AND environment_id=$3 AND content_digest=$4 FOR UPDATE",[job.payload_id,job.revision_id,job.environment_id,job.payload_digest])).rows[0];
   if(!file){await db.query("UPDATE report_cleanup_jobs SET state='stale',lease_token=NULL,lease_until=NULL WHERE id=$1",[job.id]);continue;}
-  await reportStoreRoot();
+  await assertReportStoreReady();
   try{await deleteExactReportObject(file.object_key,file.content_digest,Number(file.size_bytes));}
   catch(error){if((error as {code?:string}).code!=='ENOENT')throw error;}
   await db.query("UPDATE report_store_objects SET state='deleted' WHERE object_key=$1",[file.object_key]);
@@ -118,7 +119,7 @@ export async function cleanupStagedReportObjects(db:PoolClient,limit=100){
 /** Old scratch requires its private marker and an expired exact render lease. */
 export async function cleanupReportScratch(db:PoolClient,limit=100){
  if(!Number.isInteger(limit)||limit<1||limit>100)throw new HttpFailure(422,'invalid_input','Invalid cleanup batch');
- await requireReportEnvironment(db);const root=join(await reportStoreRoot(),'scratch');
+ await requireReportEnvironment(db);if(privateObjectBackend()==='blob')return {inspected:0,purged:0};const root=join(await reportStoreRoot(),'scratch');
  const stat=await lstat(root).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
  if(!stat)return {inspected:0,purged:0};
  if(!stat.isDirectory()||stat.isSymbolicLink()||stat.mode&0o077)throw new HttpFailure(503,'store_unavailable','Private scratch unavailable');

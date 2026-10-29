@@ -25,8 +25,13 @@ export function artifactContainerInvocation(input: {
   signaturesPath?: string;
   ocrAssetsPath?: string;
 }): ArtifactContainerInvocation {
-  if (!/^turas-artifact-(?:scanner:004|parser:(?:004|007))-v1$/.test(input.image)) throw new Error("Unpinned artifact image");
-  if ((input.kind === "scan") !== input.image.includes("scanner")) throw new Error("Artifact image/kind mismatch");
+  const immutable=/^sha256:[a-f0-9]{64}$/.test(input.image);
+  const selected=input.kind==="scan"?process.env.TURAS_PILOT_SCANNER_IMAGE:process.env.TURAS_PILOT_PARSER_IMAGE;
+  if(immutable){if(input.image!==selected)throw Error("Unapproved immutable artifact image");}
+  else{
+    if (!/^turas-artifact-(?:scanner:004|parser:(?:004|007))-v1$/.test(input.image)) throw new Error("Unpinned artifact image");
+    if ((input.kind === "scan") !== input.image.includes("scanner")) throw new Error("Artifact image/kind mismatch");
+  }
   const scan = input.kind === "scan";
   const name = `turas-artifact-${randomUUID()}`;
   const args = [

@@ -8,7 +8,7 @@ import {previewReportSend,submitReportSendDecision} from '../../lib/server/repor
 import {claimReportDeliveries,dispatchReportDelivery} from '../../lib/server/reports/outbox';
 import {acceptReportWebhook} from '../../lib/server/reports/webhooks';
 import {cleanupReportRevisionPayloads,cleanupReportDeliveryAudit,cleanupUnmatchedReportEvents} from '../../lib/server/reports/cleanup';
-import {requireOwnedReportsDatabase} from '../fixtures/reports/environment';
+import {requireOwnedReportsDatabase,ownedReportFixtureTransaction} from '../fixtures/reports/environment';
 import {invalidateReportSource} from '../../lib/server/reports/invalidation';
 describe('persistent exact-review send and durable outbox',()=>{
  let fixture:Awaited<ReturnType<typeof publishedReportFixture>>;
@@ -60,7 +60,7 @@ describe('persistent exact-review send and durable outbox',()=>{
    it('purges expired recipient and request bytes without changing delivered audit status',async()=>{
    await requireOwnedReportsDatabase();
    process.env.TURAS_REPORTS_ENABLED='false';
-   await reportTransaction(async db=>{
+   await ownedReportFixtureTransaction(async db=>{
     // Only the owned migration fixture can advance immutable expiry timestamps.
     await db.query('ALTER TABLE report_policy_recipients DISABLE TRIGGER report_policy_recipients_no_update');
     await db.query('ALTER TABLE report_delivery_payloads DISABLE TRIGGER report_delivery_payloads_no_update');
@@ -68,6 +68,8 @@ describe('persistent exact-review send and durable outbox',()=>{
     await db.query("UPDATE report_delivery_payloads SET expires_at=now()-interval '1 second'");
     await db.query('ALTER TABLE report_policy_recipients ENABLE TRIGGER report_policy_recipients_no_update');
     await db.query('ALTER TABLE report_delivery_payloads ENABLE TRIGGER report_delivery_payloads_no_update');
+   });
+   await reportTransaction(async db=>{
     expect((await cleanupReportRevisionPayloads(db)).purged).toBe(2);
     expect((await db.query('SELECT 1 FROM report_policy_recipients')).rowCount).toBe(0);
     expect((await db.query('SELECT 1 FROM report_delivery_payloads')).rowCount).toBe(0);
@@ -77,12 +79,14 @@ describe('persistent exact-review send and durable outbox',()=>{
    it('minimizes expired provider diagnostics without losing the permanent send identity',async()=>{
     await requireOwnedReportsDatabase();
     const before=await reportTransaction(async db=>(await db.query('SELECT id,provider_key,recipient_identity,publication_id,state FROM report_deliveries')).rows[0]);
-    await reportTransaction(async db=>{
+    await ownedReportFixtureTransaction(async db=>{
      await db.query('ALTER TABLE report_deliveries DISABLE TRIGGER report_delivery_identity');
      await db.query('ALTER TABLE report_deliveries DISABLE TRIGGER report_delivery_audit_identity');
      await db.query("UPDATE report_deliveries SET created_at=now()-interval '731 days'");
      await db.query('ALTER TABLE report_deliveries ENABLE TRIGGER report_delivery_identity');
      await db.query('ALTER TABLE report_deliveries ENABLE TRIGGER report_delivery_audit_identity');
+    });
+    await reportTransaction(async db=>{
      const delivery=(await db.query('SELECT * FROM report_deliveries WHERE id=$1',[before.id])).rows[0];
      const job=randomUUID(),lease=randomUUID();
      await db.query(`INSERT INTO report_cleanup_jobs(id,environment_id,workspace_id,customer_id,payload_kind,payload_id,payload_digest,cause_generation,cause_kind,due_at,state,lease_token,lease_until)
@@ -114,11 +118,13 @@ describe('persistent exact-review send and durable outbox',()=>{
    });
    it('purges expired review rationale while retaining technical approval and delivery identities',async()=>{
     await requireOwnedReportsDatabase();
-    await reportTransaction(async db=>{
-     const decision=(await db.query("SELECT d.id FROM report_decisions d JOIN report_decision_payloads p ON p.decision_id=d.id WHERE d.subject_id=$1 AND d.action='publish'",[fixture.published.reportId])).rows[0];
+    const decision=await reportTransaction(async db=>(await db.query("SELECT d.id FROM report_decisions d JOIN report_decision_payloads p ON p.decision_id=d.id WHERE d.subject_id=$1 AND d.action='publish'",[fixture.published.reportId])).rows[0]);
+    await ownedReportFixtureTransaction(async db=>{
      await db.query('ALTER TABLE report_decision_payloads DISABLE TRIGGER report_decision_payloads_no_update');
      await db.query("UPDATE report_decision_payloads SET expires_at=now()-interval '1 second' WHERE decision_id=$1",[decision.id]);
      await db.query('ALTER TABLE report_decision_payloads ENABLE TRIGGER report_decision_payloads_no_update');
+    });
+    await reportTransaction(async db=>{
      expect((await cleanupReportRevisionPayloads(db)).purged).toBe(1);
      expect((await db.query('SELECT 1 FROM report_decision_payloads WHERE decision_id=$1',[decision.id])).rowCount).toBe(0);
      expect((await db.query('SELECT 1 FROM report_decisions WHERE id=$1',[decision.id])).rowCount).toBe(1);
@@ -128,7 +134,7 @@ describe('persistent exact-review send and durable outbox',()=>{
    it.each(['before_claim','after_claim','after_post'] as const)('fences source withdrawal %s while preserving truthful dispatch history',async phase=>{
     await requireOwnedReportsDatabase();
     // These are independent synthetic race scenarios, not one rate-limit workload.
-    await reportTransaction(db=>db.query('DELETE FROM report_rate_windows WHERE environment_id=$1',[process.env.TURAS_ENVIRONMENT_ID]));
+    await ownedReportFixtureTransaction(db=>db.query('DELETE FROM report_rate_windows WHERE environment_id=$1',[process.env.TURAS_ENVIRONMENT_ID]));
     process.env.TURAS_REPORTS_ENABLED='true';const f=await publishedReportFixture();
     const policy=await reportTransaction(db=>createReportRecipientPolicy(db,f.reviewer,f.customerId,{selection:{kind:'weekly',audience:'delivery',timezone:'UTC',engagementIds:[f.engagementId],workloadIds:[],includeCustomerLevel:true},senderId:process.env.TURAS_REPORT_SENDER_ID!,recipients:[{address:`withdrawal-${phase}@example.invalid`,entitlementRationale:'Explicit synthetic withdrawal race fixture'}]}));
     const review=await reportTransaction(db=>createReportPolicyPreview(db,f.reviewer,policy.policyId,'approve',1));

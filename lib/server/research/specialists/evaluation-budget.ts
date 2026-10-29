@@ -67,7 +67,7 @@ export function parityBudgetModel(model:Model,modelId:string):Model {
       // The funded Preview root-answer check needs a bounded answer, not a
       // 32k-token output reservation. This is a real provider limit as well as
       // the reserved ceiling; specialist envelopes remain unchanged.
-      const outputLimit=modelId==='spacexai/grok-4.7'?8192:32_000;
+      const outputLimit=modelId==='anthropic/claude-sonnet-5.5'?8192:32_000;
       const maxOutputTokens=Math.min(params.maxOutputTokens??outputLimit,outputLimit);
       operation=await reserve(modelId,pricing=>{
         const price=pricing[modelId];if(!price)throw new Error('Model pricing was not authorized');

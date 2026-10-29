@@ -8,7 +8,7 @@ export async function installLearningNativeFixture(environment:{appRoot:string})
  const root=await realpath(environment.appRoot),owned=await realpath(resolve('local-artifacts/014'));
  if(!root.startsWith(`${owned}/owned-`)||!root.endsWith('/app')||root===await realpath(process.cwd()))throw Error('Owned learning app copy required');
  const path=join(root,'agent/agent.ts'),source=await readFile(path,'utf8'),target='wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode';
- if(source.split(target).length!==2||!source.includes('const selectedModel = "spacexai/grok-4.7";')||!source.includes('reasoning: "low"'))throw Error('Learning fixture model shape changed');
+ if(source.split(target).length!==2||!source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";')||!source.includes('reasoning: "low"'))throw Error('Learning fixture model shape changed');
  const replaced=source.replace(target,'wrapStaffingModel(createLearningNativeFixtureModel(principal, identity), admitted.mode').replace('return wrapStaffingModel(createLearningNativeFixtureModel(principal, identity), admitted.mode, {','return {model: wrapStaffingModel(createLearningNativeFixtureModel(principal, identity), admitted.mode, {').replace('beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),\n        });','beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),\n        }), modelContextWindowTokens:128_000};');
  if(!replaced.includes('modelContextWindowTokens:128_000'))throw Error('Owned learning model metadata changed');
  await writeFile(path,'import {createLearningNativeFixtureModel} from "../tests/fixtures/learning/native-model";\n'+replaced,{mode:0o600});

@@ -9,6 +9,7 @@ import {withPlanEvalEnvironment} from './plan-eval-environment';
 import {DEMO_IDS} from '../lib/server/bootstrap-ids';
 import {query,closeRuntimePool} from '../lib/server/db/client';
 import {assertDeterministicTestMode} from '../tests/fixtures/runtime';
+import {ordinaryNativeFileFixtureMaximumMs,waitForNativeFileFixtureResponse} from '../tests/fixtures/ordinary-native-file-steering';
 assertDeterministicTestMode();
 if(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||process.env.CONTEXT_API_KEY||process.env.CONTEXT_DEV_API_KEY)throw Error('Unpaid native file check requires empty provider credentials');
 const authored=resolve('agent/agent.ts'),authoredDigest=createHash('sha256').update(await readFile(authored)).digest('hex');
@@ -18,7 +19,9 @@ const docker=(args:string[])=>spawnSync('docker',args,{encoding:'utf8'});
 const fixtureOwner='turas-native-file-'+randomUUID();
 let marker:string|undefined;
 let fixturePhase='owned_environment_preparation';
+const fixtureDeadlineAt=Date.now()+ordinaryNativeFileFixtureMaximumMs;
 try{await withPlanEvalEnvironment(async environment=>{
+ environment.bootstrapDemo();
  const path=join(environment.appRoot,'agent/agent.ts'),source=await readFile(path,'utf8');
  const target='return wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId,{event});';
  if(source.split(target).length!==2)throw Error('Authored model shape changed');
@@ -45,6 +48,7 @@ try{await withPlanEvalEnvironment(async environment=>{
  const owner=new Client({connectionString:fixtureOwnerUrl});await owner.connect();try{await owner.query(`CREATE TABLE ordinary_native_file_fixture_calls(id uuid PRIMARY KEY,attempt_id uuid NOT NULL REFERENCES response_attempts(id),bytes_digest text NOT NULL,tool_names text[] NOT NULL DEFAULT '{}');CREATE TABLE ordinary_native_file_fixture_resolutions(attempt_id uuid PRIMARY KEY REFERENCES response_attempts(id),customer_id uuid NOT NULL REFERENCES customer_references(id));GRANT SELECT,INSERT ON ordinary_native_file_fixture_calls,ordinary_native_file_fixture_resolutions TO turas_runtime`);}finally{await owner.end();}
  const runtime=new URL(process.env.DATABASE_URL!);runtime.searchParams.set('options','-c role=turas_runtime');await closeRuntimePool();process.env.DATABASE_URL=runtime.href;process.env.DATABASE_URL_UNPOOLED=runtime.href;process.env.TURAS_TEST_DATABASE_URL=runtime.href;
  process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED='1';process.env.TURAS_ORDINARY_NATIVE_FILE_FIXTURE='1';
+ process.env.TURAS_ORDINARY_NATIVE_FILE_FIXTURE_DEADLINE_AT=String(fixtureDeadlineAt);
  if(process.argv.includes('--steer'))process.env.TURAS_ORDINARY_NATIVE_FILE_STEERING_FIXTURE='1';
  if(process.argv.includes('--memory')||process.argv.includes('--memory-files'))process.env.TURAS_ORDINARY_MEMORY_FIXTURE='1';
  if(process.argv.includes('--memory-files'))process.env.TURAS_ORDINARY_MEMORY_FILE_FIXTURE='1';
@@ -149,8 +153,9 @@ try{await withPlanEvalEnvironment(async environment=>{
     await page.getByLabel('Message Turi').fill('Correct this using the attached file.');
     await page.getByLabel('Chat document files',{exact:true}).setInputFiles({name:'corrected.png',mimeType:'image/png',buffer:bytes});
     await page.getByRole('button',{name:'Remove corrected.png'}).waitFor({timeout:10000});
-    const [delivery]=await Promise.all([page.waitForResponse(response=>response.request().method()==='POST'&&response.url()===environment.origin+'/eve/v1/session/'+native),boundaryMiB?submitWhileUploadPaused('corrected.png'):page.getByRole('button',{name:'Send message',exact:true}).click()]);
-    if(!delivery.ok())throw Error('Composer file correction rejected');
+    const correctionRequest=page.waitForRequest(request=>request.method()==='POST'&&request.url()===environment.origin+'/eve/v1/session/'+native,{timeout:Math.max(1,fixtureDeadlineAt-Date.now())});
+    const [delivery]=await Promise.all([waitForNativeFileFixtureResponse(correctionRequest,fixtureDeadlineAt),boundaryMiB?submitWhileUploadPaused('corrected.png'):page.getByRole('button',{name:'Send message',exact:true}).click()]);
+    if(!delivery||!delivery.ok())throw Error('Composer file correction rejected');
     await page.getByLabel('Message Turi').fill('Keep this next unsent draft.');
    }else{
    const correction=await context.request.post('/eve/v1/session/'+native,{headers:{...headers,'x-turas-conversation-id':id,'x-turas-request-key':randomUUID()},data:{turnPolicy:'steer',message:[{type:'text',text:'Correct this using the attached file.'},{type:'file',filename:'corrected.png',mediaType:'image/png',data:'data:image/png;base64,'+bytes.toString('base64')}]}});
@@ -284,7 +289,7 @@ try{await withPlanEvalEnvironment(async environment=>{
   }
   await writeFile(join(out,'failure-private.log'),environment.privateLogTail(),{mode:0o600});await writeFile(join(out,'failure-private.json'),JSON.stringify({name:error instanceof Error?error.name:'Unknown',message:error instanceof Error?error.message:String(error)}),{mode:0o600});throw error;}
  finally{if(csrf)await context.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':csrf}}).catch(()=>{});await context.close();await browser.close();}
-},{feature:'010',empty:true,deadlineAt:Date.now()+420000,prepare:async({appRoot,environmentId})=>{
+},{feature:'010',empty:true,deadlineAt:fixtureDeadlineAt,prepare:async({appRoot,environmentId})=>{
  marker=fixtureOwner;
  await writeFile(join(appRoot,'package-lock.json'),await readFile(resolve('package-lock.json')),{mode:0o600});
  // Eve's native runtime can request its documented optional local provider.
@@ -299,7 +304,7 @@ try{await withPlanEvalEnvironment(async environment=>{
  // auto-installing an unrelated default provider during the browser turn.
  for(const specialist of ['customer-recon-worker','implementation-research-worker','vercel-best-practices-worker'])
   await writeFile(join(appRoot,'agent/subagents',specialist,'sandbox.ts'),"import {defineParentSandbox} from 'eve/sandbox';export default defineParentSandbox();\n",{mode:0o600});
- const dev=join(appRoot,'scripts/dev.mjs');await writeFile(dev,"import {execFileSync} from 'node:child_process';\nexecFileSync(process.execPath,['--experimental-strip-types','scripts/bootstrap-demo.ts'],{stdio:'ignore'});\n"+(await readFile(dev,'utf8')).replace('["dev"]','["dev","--webpack"]'),{mode:0o600});
+ const dev=join(appRoot,'scripts/dev.mjs');await writeFile(dev,(await readFile(dev,'utf8')).replace('["dev"]','["dev","--webpack"]'),{mode:0o600});
  await writeFile(join(appRoot,'agent/sandbox.ts'),`import {defineSandbox} from 'eve/sandbox';import {DockerSandbox} from 'eve/sandbox/docker';export const environment=DockerSandbox.image(${JSON.stringify(image)},{pullPolicy:'never',env:{TURAS_NATIVE_FILE_FIXTURE_OWNER:${JSON.stringify(fixtureOwner)}}});export default defineSandbox(()=>environment.open({networkPolicy:'deny-all'}));\n`,{mode:0o600});return {};
 }});}catch(error){
  const reason=(error instanceof Error?error.message:'Unknown fixture failure').split('\n')[0].replace(/[a-z][a-z0-9+.-]*:\/\/[^\s/@:]+:[^\s/@]+@/gi,'<redacted>@').slice(0,200);
@@ -307,6 +312,7 @@ try{await withPlanEvalEnvironment(async environment=>{
 }finally{
  delete process.env.TURAS_ORDINARY_MEMORY_FILE_FIXTURE;delete process.env.TURAS_ORDINARY_MEMORY_FIXTURE;delete process.env.TURAS_ORDINARY_NATIVE_FILE_STEERING_FIXTURE;delete process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED;delete process.env.TURAS_ORDINARY_NATIVE_FILE_FIXTURE;
  delete process.env.TURAS_ORDINARY_TASK_STATE_FIXTURE;
+ delete process.env.TURAS_ORDINARY_NATIVE_FILE_FIXTURE_DEADLINE_AT;
  // Exact baked-in fixture ownership excludes every unrelated Docker resource.
  const removedContainers:string[]=[],removedImages:string[]=[];
  if(marker){const ids=docker(['ps','-aq']).stdout.trim().split(/\s+/).filter(Boolean);for(const id of ids){const inspected=docker(['inspect',id]);if(inspected.status===0&&JSON.parse(inspected.stdout)[0]?.Config?.Env?.includes('TURAS_NATIVE_FILE_FIXTURE_OWNER='+marker)){if(docker(['rm','-f','-v',id]).status!==0)throw Error('Owned native file container cleanup failed');removedContainers.push(id);}}

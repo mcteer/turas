@@ -1,0 +1,22 @@
+{
+  "contract": "pilot-load-profile-v1",
+  "sessions": 25,
+  "internalSessions": 15,
+  "assignedPartnerSessions": 10,
+  "customers": 250,
+  "eligiblePassages": 10000,
+  "warmupMs": 120000,
+  "measurementMs": 600000,
+  "maxTotalMs": 3600000,
+  "samplesPerClass": 100,
+  "waveIntervalMs": 4000,
+  "ordinaryClasses": ["profiles", "evidence", "passages", "citations", "plans", "execution", "reports", "support", "expansion", "gaps", "partner-workspace", "training", "learning"],
+  "mcpClasses": ["mcp-profiles", "mcp-evidence", "mcp-knowledge", "mcp-plans", "mcp-reports"],
+  "internalOnlyClasses": ["support", "expansion", "gaps", "learning"],
+  "ordinaryP95Ms": 2000,
+  "mcpAdmittedP95Ms": 1000,
+  "failureRateBelow": 0.01,
+  "quotaResets": 0,
+  "providerCalls": 0,
+  "hostedLoadAuthorized": false
+}
