@@ -1519,3 +1519,9 @@ No hosted target may be locked for release before its measured reopen path exist
   manual UUID once-only across budgets, successful-capture cadence, expiry and
   no automatic retry. Record fixed diagnostic classifications without raw
   errors or secrets; verify actual operator capture and restore (FR-017, FR-021).
+- [ ] T240 Preserve Preview clone trigger dependencies during an isolated public
+  application restore without importing private copied-request authority. Limit
+  the compatibility fence to a fresh locked owned target and its actual owner;
+  deny runtime use, reject preexisting schema state, retain all public triggers
+  and report the adapter explicitly. Verify originals, quarantine and full
+  maintenance service behavior against an actual cold capture (FR-017, FR-021).

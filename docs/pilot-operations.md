@@ -1663,3 +1663,13 @@ database state, fresh verification row, authenticated archive and current
 destination bytes. A changed mapping or stale existing result fails; it cannot
 fall through to new probes. Keep the existing explicit fresh-attempt, current
 denial, service, provider inventory and owner-unlock requirements.
+
+For an authenticated Preview work capture, the disposable restore can retain
+public `preview_clone_copied_request` triggers whose function lives in the private
+clone schema. The fresh, locked owned target installs only an owner-only bootstrap
+compatibility function for that exact dependency. Runtime LOGIN and CONNECT stay
+closed; the schema and function grant no runtime access. The original private
+fingerprint ledger and copied-request authority are not restored. The receipt
+records `previewCloneBootstrap` and explicitly distinguishes this adapter from
+source policy restoration. Required-original verification, quarantine and actual
+maintenance HTTP checks still apply; the adapter does not authorize promotion.

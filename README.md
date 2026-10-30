@@ -1582,3 +1582,7 @@ its explicit capacity migration; existing archives, expiry, budgets and failed
 cost reservations remain intact. A separately reviewed manual capture preserves
 successful-backup cadence and cannot replay the failed scheduled slot. Hosted
 capture, full restore, fresh CI and Production acceptance remain pending.
+
+Isolated Preview recovery preserves public clone guard triggers through a
+restricted local bootstrap adapter. It does not restore the private copied-request
+ledger or grant runtime access; actual full restore verification remains required.
