@@ -28,12 +28,20 @@ async function readArchive(db:Client,scope:NeonArchiveScope,signal:AbortSignal,c
  const chunkCount=Math.ceil(scope.sizeBytes/chunkBytes);
  if(!row||row.environment_id!==scope.environmentId||row.captured_at.toISOString()!==new Date(scope.capturedAt).toISOString()||row.expires_at.toISOString()!==new Date(scope.expiresAt).toISOString()||row.ciphertext_digest!==scope.ciphertextDigest||row.header_digest!==scope.headerDigest||Number(row.size_bytes)!==scope.sizeBytes||row.chunk_count!==chunkCount)throw Error('Exact encrypted archive identity differs');
  const hash=createHash('sha256');let size=0;
- for(let ordinal=0;ordinal<chunkCount;ordinal++){
+ // Text bytea doubles ciphertext on the wire. The installed pg protocol parser
+ // does not preserve arbitrary binary results, so use ASCII base64 in small,
+ // ordered groups instead of enabling its unsafe binary result mode.
+ for(let start=0;start<chunkCount;start+=4){
   signal.throwIfAborted();
-  const chunks=(await db.query('SELECT ciphertext FROM turas_backup.chunks WHERE archive_id=$1 AND ordinal=$2',[scope.id,ordinal])).rows;
-  const bytes=chunks[0]?.ciphertext;
-  if(chunks.length!==1||!Buffer.isBuffer(bytes)||bytes.length!==Math.min(chunkBytes,scope.sizeBytes-size))throw Error('Encrypted archive chunk missing or changed');
-  size+=bytes.length;hash.update(bytes);if(consume)await consume(bytes);
+  const end=Math.min(start+4,chunkCount),chunks=(await db.query("SELECT ordinal,encode(ciphertext,'base64') AS encoded FROM turas_backup.chunks WHERE archive_id=$1 AND ordinal >= $2 AND ordinal < $3 ORDER BY ordinal",[scope.id,start,end])).rows;
+  if(chunks.length!==end-start)throw Error('Encrypted archive chunk missing or changed');
+  for(let index=0;index<chunks.length;index++){
+   signal.throwIfAborted();const row=chunks[index];
+   if(row.ordinal!==start+index||typeof row.encoded!=='string'||row.encoded.length>Math.ceil(chunkBytes/3)*4+Math.ceil(chunkBytes/57))throw Error('Encrypted archive chunk missing or changed');
+   const bytes=Buffer.from(row.encoded,'base64');
+   if(bytes.length!==Math.min(chunkBytes,scope.sizeBytes-size))throw Error('Encrypted archive chunk missing or changed');
+   size+=bytes.length;hash.update(bytes);if(consume)await consume(bytes);
+  }
  }
  if(Number((await db.query('SELECT count(*) AS n FROM turas_backup.chunks WHERE archive_id=$1',[scope.id])).rows[0].n)!==chunkCount||size!==scope.sizeBytes||hash.digest('hex')!==scope.ciphertextDigest)throw Error('Encrypted archive byte verification differs');
  return {encryptedBytesVerified:true as const,chunkCount,sizeBytes:size};
@@ -75,7 +83,7 @@ export async function putNeonEncryptedArchive(db:Client,raw:NeonArchiveScope,fil
   if(hash.digest('hex')!==scope.ciphertextDigest||(await file.stat()).size!==info.size)throw Error('Encrypted archive source digest differs');
   const result=await readArchive(db,scope,signal);signal.throwIfAborted();await db.query('COMMIT');transaction=false;
   return {contract:scope.contract,archiveId:scope.id,installationId:scope.installationId,...result,replayed:existing,independentPlacementVerified:false,restorationReady:false};
- }catch(error){if(transaction)await db.query('ROLLBACK');throw error;}
+ }catch(error){if(transaction)await db.query('ROLLBACK').catch(()=>{});throw error;}
  finally{await file.close();}
 }
 export async function verifyNeonEncryptedArchive(db:Client,raw:NeonArchiveScope,signal:AbortSignal){
@@ -85,7 +93,7 @@ export async function verifyNeonEncryptedArchive(db:Client,raw:NeonArchiveScope,
   await db.query("SET LOCAL statement_timeout='10000ms'");await db.query("SET LOCAL transaction_timeout='180s'");
   await requireArchiveContract(db,scope);const result=await readArchive(db,scope,signal);signal.throwIfAborted();await db.query('COMMIT');
   return {contract:scope.contract,archiveId:scope.id,installationId:scope.installationId,...result,independentPlacementVerified:false,restorationReady:false};
- }catch(error){await db.query('ROLLBACK');throw error;}
+ }catch(error){await db.query('ROLLBACK').catch(()=>{});throw error;}
 }
 /** Writes only ciphertext to a new private file. A corrupt/missing chunk or an
  * interruption removes that new partial file; existing files are never replaced. */
@@ -104,7 +112,7 @@ export async function downloadNeonEncryptedArchive(db:Client,raw:NeonArchiveScop
   });
   signal.throwIfAborted();await file.sync();await db.query('COMMIT');transaction=false;complete=true;
   return {contract:scope.contract,archiveId:scope.id,installationId:scope.installationId,...result,independentPlacementVerified:false,restorationReady:false};
- }catch(error){if(transaction)await db.query('ROLLBACK');throw error;}
+ }catch(error){if(transaction)await db.query('ROLLBACK').catch(()=>{});throw error;}
  finally{await file.close();if(!complete)await unlink(target);}
 }
 /** Exact managed-archive retention only. Never scans or deletes operator files,

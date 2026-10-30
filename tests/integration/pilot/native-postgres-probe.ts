@@ -2,7 +2,8 @@ import {Client} from 'pg';
 import {runNativeRecoveryPgDump} from '../../../lib/server/operations/native-postgres';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import {writeFile,lstat,mkdir,readFile} from 'node:fs/promises';
+import {writeFile,lstat,mkdir,readFile,readdir} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
 import {randomBytes,randomUUID,createHash} from 'node:crypto';
 import {captureWorkRecoveryCandidate} from '../../../lib/server/operations/capture-work-candidate';
 import {LocalPrivateObjects} from '../../../lib/server/storage/local-objects';
@@ -67,7 +68,14 @@ try{
    await mkdir('/output/cold-read',{mode:0o700});await mkdir('/output/wrong-key',{mode:0o700});
    const inspection={connectionString:archiveUrl.toString(),installationId,archiveId:scheduled.id,environmentId,sourceProjectId:'prj_synthetic',master,masterReference:'TURAS_RECOVERY_MASTER_1',masterVersion:'1',output:'/output/cold-read',signal:AbortSignal.timeout(60000)};
    const inspected=await readWorkCapture(inspection);let wrongKeyDenied=false;const wrongMaster=randomBytes(32);try{await readWorkCapture({...inspection,master:wrongMaster,output:'/output/wrong-key'});}catch{wrongKeyDenied=true;}finally{wrongMaster.fill(0);}
-   coldReadVerified=inspected.encryptedArchiveVerified&&inspected.captureMetadataVerified&&inspected.candidate.id===scheduled.id&&inspected.header.entries.length===7&&wrongKeyDenied&&!inspected.sourceAccessed&&!inspected.restorationReady;
+   // Reproduce a real server timeout while a delivered chunk is being consumed.
+   // Keep EventEmitter semantics: a missing client error listener must still fail.
+   await mkdir('/output/cold-timeout',{mode:0o700});const originalQuery=Client.prototype.query,originalEmit=Client.prototype.emit,keyDirectories=async()=> (await readdir(tmpdir())).filter(name=>name.startsWith('turas-cold-work-key-')).sort(),keysBefore=await keyDirectories();let chunkDelivered=false,timeoutWhileConsuming=false,timeoutRejected=false;
+   Client.prototype.query=(async function(this:Client,...args:any[]){if(args[0]==="SET LOCAL transaction_timeout='180s'")args[0]="SET LOCAL transaction_timeout='500ms'";const result=await (originalQuery as any).apply(this,args);if(typeof args[0]==='string'&&args[0].includes("encode(ciphertext,'base64')")){chunkDelivered=true;await new Promise(resolve=>setTimeout(resolve,750));}return result;}) as typeof originalQuery;
+   Client.prototype.emit=function(this:Client,event:string|symbol,...args:any[]){if(event==='error'&&args[0]?.code==='25P04'&&chunkDelivered)timeoutWhileConsuming=true;return originalEmit.call(this,event,...args);};
+   try{await readWorkCapture({...inspection,output:'/output/cold-timeout'});}catch{timeoutRejected=true;}finally{Client.prototype.query=originalQuery;Client.prototype.emit=originalEmit;}
+   const timeoutCleanupVerified=chunkDelivered&&timeoutWhileConsuming&&timeoutRejected&&(await readdir('/output/cold-timeout')).length===0&&JSON.stringify(await keyDirectories())===JSON.stringify(keysBefore);if(!timeoutCleanupVerified)throw Error('Interrupted cold download must reject and remove its partial file and ephemeral key');
+   coldReadVerified=inspected.encryptedArchiveVerified&&inspected.captureMetadataVerified&&inspected.candidate.id===scheduled.id&&inspected.header.entries.length===7&&wrongKeyDenied&&timeoutCleanupVerified&&!inspected.sourceAccessed&&!inspected.restorationReady;
    await archiveDb.query(await readFile('/sql/neon-archive-005-cost-authority.sql','utf8'));
    let missingReviewGuardDenied=false;
    try{await reserveWorkBackupCost(archiveDb,{installationId,environmentId,hostingBudgetId:randomUUID(),blobBudgetId:randomUUID(),scopeDigest:'d'.repeat(64),pricingDigest:'e'.repeat(64),hostingCeilingMicroUsd:500,blobCeilingMicroUsd:500},'7'.repeat(64));}catch{missingReviewGuardDenied=true;}

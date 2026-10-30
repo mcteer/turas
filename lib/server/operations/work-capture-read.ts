@@ -18,6 +18,9 @@ export async function readWorkCapture(input:{connectionString:string;installatio
  input.signal.throwIfAborted();const root=resolve(input.output),info=await lstat(root);
  if(!info.isDirectory()||info.isSymbolicLink()||info.uid!==process.getuid?.()||(info.mode&0o777)!==0o700||await realpath(root)!==root||(await readdir(root)).length)throw Error('Fresh private cold inspection output required');
  const db=new Client({connectionString:input.connectionString,connectionTimeoutMillis:5000,statement_timeout:10000});let data:any;
+ // A server transaction timeout can emit an error while the consumer writes a
+ // chunk to disk. Keep it on the normal rejection/finally cleanup path.
+ db.on('error',()=>{});
  try{
   await db.connect();
   const contract=(await db.query("SELECT installation_id,current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='turas_backup.contract'::regclass)) AS owner FROM turas_backup.contract")).rows;
@@ -34,6 +37,7 @@ export async function readWorkCapture(input:{connectionString:string;installatio
   keys=await mkdtemp(join(await realpath(tmpdir()),'turas-cold-work-key-'));const keyFile=join(keys,'key');await writeFile(keyFile,key,{mode:0o600,flag:'wx'});
   const scope:NeonArchiveScope={contract:'pilot-neon-archive-v1',installationId:input.installationId,id:input.archiveId,environmentId:input.environmentId,capturedAt:data.captured_at.toISOString(),expiresAt:data.expires_at.toISOString(),ciphertextDigest:data.ciphertext_digest,headerDigest:data.header_digest,sizeBytes:Number(data.size_bytes)};
   const cold=new Client({connectionString:input.connectionString,connectionTimeoutMillis:5000,statement_timeout:10000}),bundle=join(root,'candidate.encrypted');
+  cold.on('error',()=>{});
   try{await cold.connect();await downloadNeonEncryptedArchive(cold,scope,bundle,input.signal);downloaded=true;}finally{await cold.end();}
   await verifyRecoveryCandidate({candidate,environmentId:input.environmentId,bundle,keyFile,signal:input.signal});
   const archive=join(root,'matched.archive');await decryptRecoveryFile(bundle,archive,key,candidate.encryptedBundle.headerDigest,input.signal);
