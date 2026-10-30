@@ -1,3 +1,5 @@
+import {consumeOwnedWorkCaptureBundle} from './capture-work-candidate';
+import {WORK_BACKUP_LIMITS} from './work-backup-limits';
 import {Client} from 'pg';
 import {z} from 'zod';
 import {resolve,join} from 'node:path';
@@ -11,9 +13,9 @@ import {sealWorkCandidate,unsealWorkCandidate} from './work-candidate-capsule';
 /** Actual ciphertext copy plus a fresh-connection download/authentication.
  * Deployment/resource placement must still be independently proved by the
  * operator. This cannot certify cron, current authority or full restoration. */
-export async function copyWorkCapture(input:{candidate:unknown;sourceProjectId:string;installationId:string;connectionString:string;maximumBytes:number;bundle:string;keyFile:string;coldOutput:string;signal:AbortSignal}){
+export async function copyWorkCapture(input:{candidate:unknown;sourceProjectId:string;installationId:string;connectionString:string;maximumBytes:number;bundle:string;keyFile:string;coldOutput:string;consumeOwnedBundle?:boolean;signal:AbortSignal}){
  const candidate=workCaptureCandidateSchema.parse(input.candidate),project=z.string().regex(/^prj_[A-Za-z0-9]+$/).parse(input.sourceProjectId),installationId=z.uuid().parse(input.installationId);
- if(!Number.isSafeInteger(input.maximumBytes)||input.maximumBytes<1048576||input.maximumBytes>419430400)throw Error('Exact bounded work archive capacity required');
+ if(!Number.isSafeInteger(input.maximumBytes)||input.maximumBytes<1048576||input.maximumBytes>WORK_BACKUP_LIMITS.maximumRetainedBytes)throw Error('Exact bounded work archive capacity required');
  await verifyRecoveryCandidate({candidate,environmentId:candidate.environmentId,bundle:input.bundle,keyFile:input.keyFile,signal:input.signal});
  const capsule=await withPrivateRecoveryKey({file:input.keyFile,excludedRoots:[resolve(input.bundle,'..'),resolve(input.coldOutput)],signal:input.signal},async key=>sealWorkCandidate(candidate,key));
  const scope:NeonArchiveScope={contract:'pilot-neon-archive-v1',installationId,id:candidate.id,environmentId:candidate.environmentId,capturedAt:candidate.capturedAt,expiresAt:new Date(Date.parse(candidate.capturedAt)+7*86400000).toISOString(),ciphertextDigest:candidate.encryptedBundle.digest,headerDigest:candidate.encryptedBundle.headerDigest,sizeBytes:candidate.encryptedBundle.sizeBytes};
@@ -24,6 +26,7 @@ export async function copyWorkCapture(input:{candidate:unknown;sourceProjectId:s
   if((await first.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='turas_backup.capture_capsules'::regclass")).rows[0]?.owner!==true)throw Error('Explicitly migrated encrypted capsule owner required');
   if(Number((await first.query('SELECT maximum_bytes FROM turas_backup.contract WHERE installation_id=$1',[installationId])).rows[0]?.maximum_bytes)!==input.maximumBytes)throw Error('Work archive capacity differs');await putNeonEncryptedArchive(first,scope,resolve(input.bundle),input.signal);
  }finally{await first.end();}
+ if(input.consumeOwnedBundle)await consumeOwnedWorkCaptureBundle(input.candidate,input.bundle);
  // A distinct connection and downloaded file prove a cold path; source bytes
  // cannot accidentally satisfy verification of the destination copy.
  const cold=new Client({connectionString:input.connectionString,connectionTimeoutMillis:5000,statement_timeout:10000}),download=join(resolve(input.coldOutput),'candidate.encrypted');

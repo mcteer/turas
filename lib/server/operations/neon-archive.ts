@@ -1,3 +1,4 @@
+import {WORK_BACKUP_LIMITS} from './work-backup-limits';
 import {constants} from 'node:fs';
 import {open,lstat,realpath,unlink} from 'node:fs/promises';
 import {resolve,dirname} from 'node:path';
@@ -9,7 +10,7 @@ export const neonArchiveScopeSchema=z.strictObject({
  contract:z.literal('pilot-neon-archive-v1'),installationId:z.uuid(),id:z.uuid(),
  environmentId:z.string().min(1).max(256).regex(/^[A-Za-z0-9_.:-]+$/),
  capturedAt:z.iso.datetime({offset:true}),expiresAt:z.iso.datetime({offset:true}),
- ciphertextDigest:digest,headerDigest:digest,sizeBytes:z.number().int().min(68).max(67108864),
+ ciphertextDigest:digest,headerDigest:digest,sizeBytes:z.number().int().min(68).max(WORK_BACKUP_LIMITS.encryptedArchiveBytes),
 }).superRefine((value,ctx)=>{if(Date.parse(value.expiresAt)-Date.parse(value.capturedAt)!==7*86400000)ctx.addIssue({code:'custom',message:'Managed archive retention differs'});});
 export type NeonArchiveScope=z.infer<typeof neonArchiveScopeSchema>;
 const chunkBytes=1048576;
@@ -19,7 +20,7 @@ async function requireArchiveContract(db:Client,scope:Pick<NeonArchiveScope,'con
  FROM turas_backup.contract`)).rows;
  if(rows.length!==1||rows[0].version!==scope.contract||rows[0].installation_id!==scope.installationId||rows[0].owner!==true)throw Error('Exact independent archive owner installation required');
  const maximumBytes=Number(rows[0].maximum_bytes);
- if(!Number.isSafeInteger(maximumBytes)||maximumBytes<1048576||maximumBytes>419430400)throw Error('Bounded archive capacity policy required');
+ if(!Number.isSafeInteger(maximumBytes)||maximumBytes<1048576||maximumBytes>WORK_BACKUP_LIMITS.maximumRetainedBytes)throw Error('Bounded archive capacity policy required');
  return maximumBytes;
 }
 async function readArchive(db:Client,scope:NeonArchiveScope,signal:AbortSignal,consume?:(bytes:Buffer)=>Promise<void>){

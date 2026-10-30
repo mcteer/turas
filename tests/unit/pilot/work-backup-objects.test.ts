@@ -37,3 +37,7 @@ it('denies unlisted reads excess reads invalid namespaces and every source write
  await store.list('artifact');for(let i=0;i<4;i++)await store.stat(f.key);await expect(store.stat(f.key)).rejects.toThrow('allowance');
  await expect(store.put(f.key,(async function*(){yield f.bytes;})(),f.descriptor)).rejects.toThrow('read-only');await expect(store.delete(f.key)).rejects.toThrow('read-only');expect(f.count()).toEqual({headers:1,reads:5});
 });
+
+it('admits expanded metadata pages while preserving the explicit legacy page bound',async()=>{
+ const f=fixture();f.set([]);const expanded=new BoundedWorkBackupObjects(f.source,f.environment,256,1,'pilot-work-backup-config-v2');for(let i=0;i<640;i++)await expanded.list('artifact');await expect(expanded.list('artifact')).rejects.toThrow('request allowance');expect(f.count()).toEqual({headers:640,reads:0});expect(()=>new BoundedWorkBackupObjects(f.source,f.environment,256,25165825)).toThrow();
+});

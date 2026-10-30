@@ -528,13 +528,17 @@
     },
     {
       "file": "tests/unit/pilot/backup-archive.test.ts",
-      "expectedCases": 5,
+      "expectedCases": 9,
       "cases": [
         "round trips the exact database object and workflow byte inventory",
         "refuses changed source bytes and removes the partial archive",
         "removes extracted plaintext when an indexed body digest fails",
         "rejects a wrong marker header or existing restore target",
-        "rejects traversal duplicate inventories truncation and interruption"
+        "rejects traversal duplicate inventories truncation and interruption",
+        "streams owned archive entries through encryption and authenticates every byte without plaintext copies",
+        "rejects forged ownership and outside temporary sources without deleting original bytes",
+        "keeps maximum expanded capture scratch below the Functions limit and verifies a full 256 MiB archive",
+        "rejects a root-directory swap before reading or deleting any temporary entry"
       ]
     },
     {
@@ -937,7 +941,7 @@
     },
     {
       "file": "tests/integration/pilot/neon-archive.test.ts",
-      "expectedCases": 10,
+      "expectedCases": 11,
       "cases": [
         "stores and cold verifies exact multi chunk encrypted bytes with immutable replay",
         "rolls back tampered ciphertext and refuses a foreign archive installation",
@@ -948,7 +952,8 @@
         "permanently retains authentic authority snapshots without changing current authority claims",
         "excludes independently retained authority from expiry while deleting ordinary elapsed backups",
         "rejects missing damaged foreign and cancelled authority retention without inserting holds",
-        "enforces authority hold owner and authenticated context even after accidental runtime grants"
+        "enforces authority hold owner and authenticated context even after accidental runtime grants",
+        "migrates complete capture capacity without altering old archives and cold-verifies more than 64 chunks"
       ]
     },
     {
@@ -1128,7 +1133,7 @@
     },
     {
       "file": "tests/integration/pilot/native-postgres.test.ts",
-      "expectedCases": 9,
+      "expectedCases": 10,
       "cases": [
         "restores the exported snapshot with the real Linux client while retaining later source writes",
         "denies cancelled native execution without leaving a partial dump",
@@ -1138,12 +1143,13 @@
         "holds unknown backup costs and preserves atomic category budgets across retries and exhaustion",
         "cold reads derived-key archives without source access and rejects a wrong retained master",
         "provisions one bounded work authorization without expanding or resetting category budgets",
-        "runs complete bounded scheduled capture, cold copy, cleanup and cost accounting without changing service control"
+        "runs complete bounded scheduled capture, cold copy, cleanup and cost accounting without changing service control",
+        "runs one reviewed manual capture with full prior costs retained and rejects replay without changing the scheduled slot"
       ]
     },
     {
       "file": "tests/unit/pilot/work-backup.test.ts",
-      "expectedCases": 9,
+      "expectedCases": 10,
       "cases": [
         "accepts only explicitly bound independent work resources and object allowances",
         "rejects shared source placement pooled connections and missing certificate verification",
@@ -1153,7 +1159,8 @@
         "rejects altered capsule bytes wrong keys and foreign archive contexts",
         "refuses capsule metadata that claims release approval or hides infrastructure calls as zero providers",
         "builds the actual operator transport and rejects unauthorized disabled and nonproduction requests",
-        "paces scheduled capture from source time with one bounded abortable wait"
+        "paces scheduled capture from source time with one bounded abortable wait",
+        "requires distinct versioned admission for expanded capture and keeps diagnostics secret-free"
       ]
     },
     {
@@ -1180,19 +1187,20 @@
     },
     {
       "file": "tests/unit/pilot/work-backup-objects.test.ts",
-      "expectedCases": 6,
+      "expectedCases": 7,
       "cases": [
         "captures exact private bytes with metadata-first pages and five reads per object",
         "rejects an oversized metadata page before its first object download",
         "rejects excess object counts before downloading an otherwise valid first entry",
         "bounds metadata requests even when a provider keeps returning empty pages",
         "rejects changed known metadata before another download",
-        "denies unlisted reads excess reads invalid namespaces and every source write"
+        "denies unlisted reads excess reads invalid namespaces and every source write",
+        "admits expanded metadata pages while preserving the explicit legacy page bound"
       ]
     },
     {
       "file": "tests/unit/pilot/work-backup-pricing.test.ts",
-      "expectedCases": 7,
+      "expectedCases": 8,
       "cases": [
         "reserves on-demand CPU memory operations transfer and storage without subtracting free credits",
         "binds all three independently downloaded official rate documents by exact bytes",
@@ -1200,7 +1208,8 @@
         "refuses missing pricing and script-only rate claims",
         "refuses under-reserved or foreign pricing before any HTTP request",
         "bounds official response bytes before parsing and fails without retry",
-        "does not request pricing after cancellation"
+        "does not request pricing after cancellation",
+        "quotes explicit expanded bundles and metadata limits even with small object payloads"
       ]
     },
     {

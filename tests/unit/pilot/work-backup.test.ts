@@ -11,7 +11,7 @@ import {workBackupConfigurationSchema,workBackupScopeDigest,deriveWorkBackupKey,
 import {assessBackupSchedule} from '../../../lib/server/operations/backup-schedule';
 import {preparePilotRecoveryOperator} from '../../../scripts/prepare-pilot-recovery-operator';
 import {sealWorkCandidate,unsealWorkCandidate} from '../../../lib/server/operations/work-candidate-capsule';
-import {workBackupPricingDigest} from '../../../lib/server/operations/work-backup-pricing';
+import {workBackupCostCeilings,workBackupPricingDigest} from '../../../lib/server/operations/work-backup-pricing';
 import {recoveryDigest} from '../../../lib/contracts/pilot-recovery';
 
 function configuration(){
@@ -158,4 +158,9 @@ it('paces scheduled capture from source time with one bounded abortable wait',as
    }finally{master.fill(0);vi.useRealTimers();vi.doUnmock('pg');vi.doUnmock('../../../lib/server/operations/work-backup-cost');vi.doUnmock('../../../lib/server/operations/work-backup-pricing');vi.resetModules();}
   }
  }finally{if(previousRetries===undefined)delete process.env.VERCEL_BLOB_RETRIES;else process.env.VERCEL_BLOB_RETRIES=previousRetries;vi.useRealTimers();}
+});
+
+it('requires distinct versioned admission for expanded capture and keeps diagnostics secret-free',async()=>{
+ const legacy=configuration(),expanded={...legacy,contract:'pilot-work-backup-config-v2',maximumArchiveBytes:6442450944,maximumObjectBytes:201326592,cost:{...legacy.cost}},price=workBackupCostCeilings(expanded.maximumObjectBytes,'pilot-work-backup-config-v2');expanded.cost.scopeDigest=workBackupScopeDigest(expanded);expanded.cost.hostingCeilingMicroUsd=price.hostingCeilingMicroUsd;expanded.cost.blobCeilingMicroUsd=price.blobCeilingMicroUsd;expect(workBackupConfigurationSchema.parse(expanded)).toEqual(expanded);expect(expanded.cost.scopeDigest).not.toBe(legacy.cost.scopeDigest);expect(()=>workBackupConfigurationSchema.parse({...expanded,contract:'pilot-work-backup-config-v1'})).toThrow();const small={...legacy,contract:'pilot-work-backup-config-v2'};expect(workBackupScopeDigest(small)).not.toBe(workBackupScopeDigest(legacy));
+ const {recordWorkBackupFailure,workBackupFailureDiagnostic}=await import('../../../lib/server/operations/work-backup-diagnostics');const failure=Object.assign(Error('synthetic-private-credential'),{code:'synthetic-private-code'});recordWorkBackupFailure(failure,'capture');const diagnostic=workBackupFailureDiagnostic(failure);expect(diagnostic).toEqual({stage:'capture',code:'unclassified',reason:'unclassified'});expect(JSON.stringify(diagnostic)).not.toContain('synthetic-private');expect(failure.message).toBe('synthetic-private-credential');const hostile=Object.defineProperty(Error('synthetic-private-credential'),'code',{get(){throw Error('synthetic-private-accessor');}});expect(()=>workBackupFailureDiagnostic(hostile)).not.toThrow();expect(JSON.stringify(workBackupFailureDiagnostic(hostile))).not.toContain('synthetic-private');
 });

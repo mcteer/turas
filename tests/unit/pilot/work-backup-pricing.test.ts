@@ -34,3 +34,8 @@ it('bounds official response bytes before parsing and fails without retry',async
 it('does not request pricing after cancellation',async()=>{
  const fixture=transport();await expect(verifyWorkBackupPricing(input(),AbortSignal.abort(),fixture.fetch)).rejects.toThrow();expect(fixture.count()).toBe(0);
 });
+
+it('quotes explicit expanded bundles and metadata limits even with small object payloads',()=>{
+ const legacy=workBackupCostCeilings(1),expanded=workBackupCostCeilings(1,'pilot-work-backup-config-v2'),maximum=workBackupCostCeilings(201326592,'pilot-work-backup-config-v2');
+ expect(legacy.maximumBlobListRequests).toBe(32);expect(expanded.maximumBlobListRequests).toBe(640);expect(expanded.hostingMinimumMicroUsd).toBeGreaterThan(legacy.hostingMinimumMicroUsd);expect(maximum.hostingCeilingMicroUsd).toBeGreaterThanOrEqual(maximum.hostingMinimumMicroUsd);expect(maximum.blobCeilingMicroUsd).toBeGreaterThanOrEqual(maximum.blobMinimumMicroUsd);expect(maximum.hostingCeilingMicroUsd+maximum.blobCeilingMicroUsd).toBeLessThan(1000000);expect(maximum.maximumBlobReadRequests).toBe(1280);expect(()=>workBackupCostCeilings(201326593,'pilot-work-backup-config-v2')).toThrow();expect(()=>workBackupCostCeilings(25165825)).toThrow();
+});

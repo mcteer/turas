@@ -1573,3 +1573,12 @@ validation can acquire its engagement lock without upgrading a shared lock held
 by that summary. Normal profile summaries and evidence eligibility checks remain
 unchanged. The local native reproduction completes without provider calls;
 fresh CI, live model evaluation and Production verification remain required.
+
+The backup follow-up adds an explicitly selected v2 capacity policy for complete
+pilot file inventories: 192 MiB of objects, a 320 MiB encrypted capture and a
+separate 6 GiB retained archive allowance. Streaming packing and authenticated
+verification avoid full temporary plaintext copies. The archive database needs
+its explicit capacity migration; existing archives, expiry, budgets and failed
+cost reservations remain intact. A separately reviewed manual capture preserves
+successful-backup cadence and cannot replay the failed scheduled slot. Hosted
+capture, full restore, fresh CI and Production acceptance remain pending.

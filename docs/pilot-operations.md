@@ -197,7 +197,42 @@ operator availability. Do not recreate or deploy an operator without a new user
 instruction. Retiring this project does not establish 016 recovery acceptance.
 
 
-During initial 016 preparation, the work account received a separate Neon Free resource, `turas-recovery-016`, previously connected only to the now-removed `turas-recovery-operator` project. The selected application project and `.env.local` are unchanged. Its explicitly installed schema is [neon-archive.sql](../infra/pilot/neon-archive.sql); application requests cannot install it. The current adapter bounds an encrypted archive to 64 MiB and total retained ciphertext to 400 MiB after the explicit owner migration [neon-archive-002-capacity.sql](../infra/pilot/neon-archive-002-capacity.sql). It rejects capacity exhaustion and never upgrades the plan automatically. This bounded destination is not a verified complete Production backup or a guarantee against a provider or regional failure.
+During initial 016 preparation, the work account received a separate Neon Free resource, `turas-recovery-016`, previously connected only to the now-removed `turas-recovery-operator` project. The selected application project and `.env.local` are unchanged. Its explicitly installed schema is [neon-archive.sql](../infra/pilot/neon-archive.sql); application requests cannot install it. The original v1 capacity policy bounds an encrypted archive to 64 MiB and total retained ciphertext to 400 MiB after the explicit owner migration [neon-archive-002-capacity.sql](../infra/pilot/neon-archive-002-capacity.sql). It rejects capacity exhaustion and never upgrades the plan automatically. This bounded destination is not a verified complete Production backup or a guarantee against a provider or regional failure.
+
+The explicit `pilot-work-backup-config-v2` follow-up supports larger complete
+inventories. Its resource digest includes a 320 MiB single-capture ceiling and
+640 metadata requests, even for a small payload. It allows at most 192 MiB of
+objects, retaining the 10 MiB per-object, 256-object and 1,280-read limits. The
+database dump keeps its independent 64 MiB limit. Legacy v1 configurations and
+resource digests keep their previous limits. Raising only an application limit
+is insufficient: the archive owner must explicitly apply
+[neon-archive-003-complete-captures.sql](../infra/pilot/neon-archive-003-complete-captures.sql)
+to raise chunk limits and retained capacity to 6 GiB. This is a logical storage
+ceiling, not a provider-plan change or a claim of observed seven-day cadence.
+Actual prior retained bytes, future captures, storage, compute and transfer must
+fit a separately selected finite resource allowance before activation.
+
+Capture packs owned temporary files directly into encryption, deleting each
+temporary source only after its hash and written ciphertext have been checked.
+Authoritative database and object-store originals remain intact. Verification
+streams the GCM-authenticated archive and checks every header and entry digest
+without a plaintext archive or extraction tree. For v2, the original candidate
+object carries in-process authority to discard only its own temporary ciphertext
+after destination verification; cold verification then downloads through a fresh
+connection into a separate file. Full service restore still requires an actual
+isolated database and extracted originals.
+
+A failed scheduled slot remains spent and failed. An operator can configure
+`TURAS_WORK_BACKUP_MANUAL_REVIEW` and supply its exact ID in the authenticated
+`x-turas-reviewed-capture` header for one separately reviewed manual operation.
+The review must bind the exact full-estimate reconciliation of the previous
+failure, current configuration and resource scope, current budget IDs and source
+tuple. It expires within an hour and must leave five minutes for execution.
+The manual ID cannot be reused by changing its budget, expiry or environment.
+Normal successful-backup cadence still applies. The response explicitly records
+manual execution and never declares the original scheduled slot successful.
+There is no automatic retry, refund or budget reset. Failure logs contain only
+fixed stage, code and reason classifications, with no raw error message or stack.
 
 `npm run pilot:backup -- --copy-neon-candidate --environment <owned-marker> --candidate <private-candidate.json> --bundle <private-encrypted-bundle> --key-file <separate-private-key> --destination <private-operator-config.json> --output <new-private-evidence-directory>` accepts only the existing owned synthetic candidate contract. The strict private destination configuration binds the work team, separate operator/source project IDs, exact resource/name, Neon project, schema installation UUID, capacity and explicit `verify-full` database connection. Keep its credentials in protected operator configuration. Before and after copying, the command verifies actual platform/project/resource/credential bindings and the exact declared plan. The original v1 descriptor remains Free-only. A strict v2 descriptor explicitly binds either `free_v3` or `launch_v3`; this describes identity, not pricing or spending authority. Current inspection found the retained resource already on Launch. The recreated dedicated operator is linked and connected to that resource, but has not been deployed or scheduled. No billing plan was changed. Finite spending authority and actual usage accounting remain separate requirements. It authenticates the candidate using the separately supplied key, preserves immutable chunk identity, verifies the complete ciphertext through a fresh connection and leaves restoration readiness false. It cannot capture or qualify Production recovery.
 

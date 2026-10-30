@@ -1,3 +1,4 @@
+import {WORK_BACKUP_LIMITS,workBackupListLimit,type WorkBackupConfigurationVersion} from './work-backup-limits';
 import {activeObjectNamespaces} from '../storage/inventory';
 import {validateObjectKey,environmentObjectId,type PrivateObjects,type ObjectDescriptor,type ObjectNamespace} from '../storage/private-objects';
 type MetadataStore=PrivateObjects&{headers(namespace:ObjectNamespace,cursor?:string,limit?:number,signal?:AbortSignal):Promise<{objects:{key:string;sizeBytes:number;createdAt:string}[];cursor?:string}>};
@@ -7,9 +8,9 @@ type MetadataStore=PrivateObjects&{headers(namespace:ObjectNamespace,cursor?:str
 export class BoundedWorkBackupObjects implements PrivateObjects{
  private known=new Map<string,{sizeBytes:number;reads:number}>();private bytes=0;private pages=0;private reads=0;
  private environment:string;
- constructor(private source:MetadataStore,environmentId:string,private maximumObjects:number,private maximumBytes:number){
+ constructor(private source:MetadataStore,environmentId:string,private maximumObjects:number,private maximumBytes:number,private configurationVersion:WorkBackupConfigurationVersion='pilot-work-backup-config-v1'){
   this.environment=environmentObjectId(environmentId);
-  if(!Number.isSafeInteger(maximumObjects)||maximumObjects<1||maximumObjects>256||!Number.isSafeInteger(maximumBytes)||maximumBytes<0||maximumBytes>25165824)throw Error('Exact bounded backup object scope required');
+  if(!Number.isSafeInteger(maximumObjects)||maximumObjects<1||maximumObjects>256||!Number.isSafeInteger(maximumBytes)||maximumBytes<0||maximumBytes>(configurationVersion==='pilot-work-backup-config-v2'?WORK_BACKUP_LIMITS.objectBytes:WORK_BACKUP_LIMITS.legacyObjectBytes))throw Error('Exact bounded backup object scope required');
  }
  private admitRead(key:string,expected?:Omit<ObjectDescriptor,'key'>){
   validateObjectKey(key,this.environment);const known=this.known.get(key);
@@ -24,7 +25,7 @@ export class BoundedWorkBackupObjects implements PrivateObjects{
   signal?.throwIfAborted();this.admitRead(key,expected);return this.source.stream(key,expected,signal);
  }
  async list(namespace:ObjectNamespace,cursor?:string,limit=100,signal?:AbortSignal){
-  signal?.throwIfAborted();if(!activeObjectNamespaces.includes(namespace)||!Number.isSafeInteger(limit)||limit<1||limit>100||cursor&&cursor.length>2048)throw Error('Bounded backup metadata request required');if(++this.pages>32)throw Error('Backup metadata request allowance exceeded');
+  signal?.throwIfAborted();if(!activeObjectNamespaces.includes(namespace)||!Number.isSafeInteger(limit)||limit<1||limit>100||cursor&&cursor.length>2048)throw Error('Bounded backup metadata request required');if(++this.pages>workBackupListLimit(this.configurationVersion))throw Error('Backup metadata request allowance exceeded');
   const page=await this.source.headers(namespace,cursor,limit,signal);if(page.objects.length>limit)throw Error('Backup metadata page exceeds bound');
   // Validate the complete page before downloading even its first object.
   for(const header of page.objects){

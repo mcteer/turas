@@ -100,7 +100,7 @@ requires distinct budget IDs. Repeating identical authority preserves accounting
 Replacing IDs or increasing an existing cap fails; this command neither deploys
 nor enables the scheduler.
 
-Backup Blob reads validate each complete metadata page against the aggregate
+Legacy v1 backup Blob reads validate each complete metadata page against the aggregate
 256-object/24 MiB allowance before downloading any object on that page. The
 read-only adapter admits at most 32 list requests, 1,280 reads, and five reads per
 object. Over-bound inventories, changed metadata and extra requests fail; it never
@@ -126,3 +126,25 @@ It charges both retained full ceilings as estimates, preserves original budget
 and reservation identities, and records the review permanently. An exact replay
 retains receipts; changed evidence or review fails. It cannot release an unknown
 charge as unused, fabricate an invoice, dispatch a provider or reset spend.
+
+
+The explicitly selected `pilot-work-backup-config-v2` policy supports 192 MiB
+of objects and 640 bounded metadata requests while preserving the 256-object,
+10 MiB per-object and 1,280-read limits. Its distinct resource digest and pricing
+include a 320 MiB single-capture allowance, including the independent 64 MiB
+database dump and header/encryption overhead. Explicitly apply the separate
+archive-owner `neon-archive-003-complete-captures.sql` migration before selecting
+its 6 GiB retained capacity. Existing immutable archives, seven-day expiry and
+cost records survive; no provider plan or billing setting changes automatically.
+Streaming packing, encryption and verification keep temporary storage bounded.
+
+For one reviewed manual capture after a reconciled failure, set the dedicated
+operator's protected `TURAS_WORK_BACKUP_MANUAL_REVIEW` variable and send the exact
+configured review ID as `x-turas-reviewed-capture`, with the existing CRON bearer
+authorization. The strict review binds the prior full-cost disposition, current
+configuration/source/budget pair and finite execution window. Its UUID is once
+only across budgets and environments in the installation. Successful-capture
+cadence remains enforced; this never replays or marks the failed scheduled slot
+successful. Normal cron requests omit this header. Remove the manual review after
+its attempt; automatic retry and refund remain prohibited. Protected failure logs
+emit only fixed stage/code/reason classifications, never raw errors or secrets.

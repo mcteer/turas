@@ -1,3 +1,4 @@
+import {WORK_BACKUP_LIMITS,workBackupListLimit,type WorkBackupConfigurationVersion} from './work-backup-limits';
 import {createHash} from 'node:crypto';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
 /** Published on-demand iad1 rates; credits and free allowances never lower a
@@ -5,17 +6,18 @@ import {recoveryDigest} from '../../contracts/pilot-recovery';
 export const workBackupPublishedRates=Object.freeze({contract:'pilot-work-backup-pricing-v1',region:'iad1',cpuMicroUsdPerHour:128000,memoryMicroUsdPerGbHour:10600,invocationMicroUsdPerMillion:600000,simpleMicroUsdPerMillion:400000,advancedMicroUsdPerMillion:5000000,blobTransferMicroUsdPerGb:50000,fastTransferMicroUsdPerGb:150000,originTransferMicroUsdPerGb:60000,cdnMicroUsdPerMillion:2000000,storageMicroUsdPerGbMonth:23000});
 export function workBackupPricingDigest(){return recoveryDigest(workBackupPublishedRates);}
 const ceil=(amount:bigint,divisor:bigint)=>Number((amount+divisor-1n)/divisor);
-export function workBackupCostCeilings(maximumObjectBytes:number){
- if(!Number.isSafeInteger(maximumObjectBytes)||maximumObjectBytes<0||maximumObjectBytes>25165824)throw Error('Bounded work pricing object allowance required');
+export function workBackupCostCeilings(maximumObjectBytes:number,configurationVersion:WorkBackupConfigurationVersion='pilot-work-backup-config-v1'){
+ if(!Number.isSafeInteger(maximumObjectBytes)||maximumObjectBytes<0||maximumObjectBytes>(configurationVersion==='pilot-work-backup-config-v2'?WORK_BACKUP_LIMITS.objectBytes:WORK_BACKUP_LIMITS.legacyObjectBytes))throw Error('Bounded work pricing object allowance required');
  // Both inventories read each object twice; copying reads it once. One changed
  // provider object can consume at most the adapter's 10 MiB before failure.
+ const expanded=configurationVersion==='pilot-work-backup-config-v2',listRequests=workBackupListLimit(configurationVersion),archiveBytes=expanded?WORK_BACKUP_LIMITS.encryptedArchiveBytes:67108864;
  const downloadBytes=BigInt(maximumObjectBytes)*5n+10485760n;
- const metadataAndHeaders=32n*131072n+1280n*16384n;
- const blob=ceil((downloadBytes+metadataAndHeaders)*260000n,1000000000n)+512+2560+160+
+ const metadataAndHeaders=BigInt(listRequests)*131072n+1280n*16384n;
+ const blob=ceil((downloadBytes+metadataAndHeaders)*260000n,1000000000n)+512+2560+listRequests*5+
   ceil(BigInt(maximumObjectBytes)*23000n*7n,1000000000n*30n*14n);
  const hosting=ceil(2n*300n*128000n,3600n)+ceil(4n*300n*10600n,3600n)+1+
-  ceil((4n*67108864n+8388608n)*150000n,1000000000n);
- return {hostingMinimumMicroUsd:hosting,blobMinimumMicroUsd:blob,hostingCeilingMicroUsd:100000,blobCeilingMicroUsd:50000,maximumBlobListRequests:32,maximumBlobReadRequests:1280,maximumBlobDownloadBytes:Number(downloadBytes)};
+  ceil((4n*BigInt(archiveBytes)+8388608n)*150000n,1000000000n);
+ return {hostingMinimumMicroUsd:hosting,blobMinimumMicroUsd:blob,hostingCeilingMicroUsd:Math.max(100000,Math.ceil(hosting/10000)*10000),blobCeilingMicroUsd:Math.max(50000,Math.ceil(blob/10000)*10000),maximumBlobListRequests:listRequests,maximumBlobReadRequests:1280,maximumBlobDownloadBytes:Number(downloadBytes)};
 }
 const documents=[
  {url:'https://vercel.com/docs/functions/usage-and-pricing',patterns:[/Washington D\.C\., USA \(iad1\) \$0\.128 \$0\.0106/,/\$0\.60 per million/]},
@@ -24,8 +26,8 @@ const documents=[
 ] as const;
 /** Actual official-document verification, not a caller-supplied healthy label.
  * Transport is bounded, sequential and has no retry or paid model/search call. */
-export async function verifyWorkBackupPricing(input:{maximumObjectBytes:number;pricingDigest:string;hostingCeilingMicroUsd:number;blobCeilingMicroUsd:number},signal:AbortSignal,transport:typeof fetch=fetch){
- const bounds=workBackupCostCeilings(input.maximumObjectBytes);
+export async function verifyWorkBackupPricing(input:{maximumObjectBytes:number;configurationVersion?:WorkBackupConfigurationVersion;pricingDigest:string;hostingCeilingMicroUsd:number;blobCeilingMicroUsd:number},signal:AbortSignal,transport:typeof fetch=fetch){
+ const bounds=workBackupCostCeilings(input.maximumObjectBytes,input.configurationVersion);
  if(input.pricingDigest!==workBackupPricingDigest()||input.hostingCeilingMicroUsd<bounds.hostingMinimumMicroUsd||input.blobCeilingMicroUsd<bounds.blobMinimumMicroUsd)throw Error('Published work cost ceiling unavailable');
  const captures=[];
  for(const document of documents){

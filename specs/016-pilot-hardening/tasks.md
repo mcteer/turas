@@ -1504,3 +1504,18 @@ No hosted target may be locked for release before its measured reopen path exist
   summaries, accepted evidence and authorization checks. Verify a concurrent
   database lock regression, the actual native skill/read flow, fresh CI and live
   model behavior before the hosted release (FR-002, FR-017, FR-021).
+
+- [ ] T238 Capture the complete required pilot object inventory within explicit
+  versioned capacity and paid-resource bounds. Preserve v1 scope digests and
+  limits; opt v2 into 192 MiB of objects, 640 metadata requests, a 320 MiB bundle
+  and a separately migrated 6 GiB retained destination. Stream packing, encryption
+  and authenticated entry verification within Functions scratch limits. Preserve
+  every required object, seven-day expiry and all earlier costs. Verify large
+  byte inventories, archive migration/replay, full cold restore and hosted
+  behavior before Production release (FR-002, FR-017, FR-021).
+- [ ] T239 Permit one explicitly reviewed manual backup after exact full-cost
+  reconciliation without waiting for another nominal scheduled slot. Bind the
+  prior failure, current configuration, budget pair and source tuple; keep the
+  manual UUID once-only across budgets, successful-capture cadence, expiry and
+  no automatic retry. Record fixed diagnostic classifications without raw
+  errors or secrets; verify actual operator capture and restore (FR-017, FR-021).
