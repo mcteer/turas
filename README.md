@@ -1567,3 +1567,9 @@ The staffing browser gate uses the current canonical title-case accessible label
 for work-package selection and confirmation review. Its keyboard, confirmation,
 withdrawal, receipt and accessibility checks remain required; no application
 behavior or authorization changes accompany this selector correction.
+
+Staffing evidence reads omit the unused profile delivery summary so finance
+validation can acquire its engagement lock without upgrading a shared lock held
+by that summary. Normal profile summaries and evidence eligibility checks remain
+unchanged. The local native reproduction completes without provider calls;
+fresh CI, live model evaluation and Production verification remain required.

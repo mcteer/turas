@@ -1498,3 +1498,9 @@ No hosted target may be locked for release before its measured reopen path exist
   case, confirmation, withdrawal, receipt, keyboard and accessibility assertion;
   rerun the full browser gate before the remaining live evaluation (FR-002,
   FR-017, FR-021).
+
+- [ ] T237 Prevent staffing finance admission from upgrading an engagement lock
+  acquired by the unused profile delivery summary. Preserve ordinary profile
+  summaries, accepted evidence and authorization checks. Verify a concurrent
+  database lock regression, the actual native skill/read flow, fresh CI and live
+  model behavior before the hosted release (FR-002, FR-017, FR-021).
