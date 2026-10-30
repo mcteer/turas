@@ -853,7 +853,8 @@
         "unit.work-backup.010",
         "unit.work-backup-objects.007",
         "unit.backup-archive.009",
-        "integration.native-postgres.010"
+        "integration.native-postgres.010",
+        "unit.neon-destination.007"
       ]
     },
     {

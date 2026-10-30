@@ -1,3 +1,4 @@
+import {WORK_BACKUP_LIMITS} from '../lib/server/operations/work-backup-limits';
 import {Client} from 'pg';
 import {z} from 'zod';
 import {execFile} from 'node:child_process';
@@ -22,10 +23,12 @@ const legacyNeonArchiveDestinationSchema=z.strictObject({
  databaseUrl:z.string().max(4096).refine(raw=>{try{const url=new URL(raw);return ['postgres:','postgresql:'].includes(url.protocol)&&url.hostname.endsWith('.neon.tech')&&url.searchParams.get('sslmode')==='verify-full';}catch{return false;}},'Explicit Neon verify-full connection required'),
 });
 /** Plan identity is not pricing, spending authority or settlement. Preserve the
- * original Free-only contract; an explicit v2 can bind an existing Launch plan. */
+ * original Free-only contract; an explicit v2 can bind an existing Launch plan. V3 explicitly opts into
+ * expanded retained capacity on an already owned Launch resource. */
 export const neonArchiveDestinationSchema=z.discriminatedUnion('contract',[
  legacyNeonArchiveDestinationSchema,
  legacyNeonArchiveDestinationSchema.extend({contract:z.literal('pilot-neon-operator-config-v2'),billingPlanId:z.enum(['free_v3','launch_v3'])}),
+ legacyNeonArchiveDestinationSchema.extend({contract:z.literal('pilot-neon-operator-config-v3'),billingPlanId:z.literal('launch_v3'),maximumBytes:z.number().int().min(1048576).max(WORK_BACKUP_LIMITS.maximumRetainedBytes)}),
 ]).refine(value=>value.sourceProjectId!==value.operatorProjectId,'Separate operator project required');
 type Destination=z.infer<typeof neonArchiveDestinationSchema>;
 async function platform(args:string[],signal:AbortSignal){

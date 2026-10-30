@@ -148,3 +148,7 @@ cadence remains enforced; this never replays or marks the failed scheduled slot
 successful. Normal cron requests omit this header. Remove the manual review after
 its attempt; automatic retry and refund remain prohibited. Protected failure logs
 emit only fixed stage/code/reason classifications, never raw errors or secrets.
+
+The archive placement CLI requires explicit `pilot-neon-operator-config-v3` for
+the expanded retained capacity and verifies the existing owned resource is on
+Launch. Earlier destination contracts retain their original capacity bounds.
