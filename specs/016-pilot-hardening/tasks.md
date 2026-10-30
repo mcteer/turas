@@ -1561,3 +1561,13 @@ No hosted target may be locked for release before its measured reopen path exist
   path, size, content type, expiry, source generation, CSRF and actual-byte
   completion checks. Verify both artifact and workforce uploads on the hosted
   deployment without exporting a static store credential.
+
+- [ ] T247 Produce actual incident-to-ordinary-service RPO/RTO measurements after
+  the complete hosted owner verifier, explicit quarantine resolution and opening.
+  Bind immutable source incident and fresh target creation clocks, authenticate
+  the capture, verify ordinary roles, five SDK categories, native streams, health
+  and exact probe retirement, and retain partial/failed evidence (FR-008, FR-021).
+
+- [ ] T248 Confirm a delayed linked foundation approval through bounded reads of
+  its original receipt. Preserve the original 20-second command envelope and
+  never resubmit the approval, revive a provider attempt or enlarge a phase.

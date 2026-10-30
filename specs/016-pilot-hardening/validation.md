@@ -9583,3 +9583,29 @@ continues to verify actual stored bytes; provider callbacks cannot publish facts
 The browser and hosted operator use the same protocol. Focused upload integration
 checks (eight cases), private object contracts (nine cases), and root TypeScript
 pass locally. These checks do not establish hosted upload or release acceptance.
+
+### Complete service timing producer
+
+The physical restore and 301-record maintenance receipts deliberately retain
+false RPO/RTO and readiness fields. A separate owner producer now follows the
+complete hosted verification, explicit resolution and explicit opening. It reads
+the first immutable source quiescing transition after the authenticated capture,
+observes a new target branch created afterward, and measures real ordinary role,
+five-category SDK, captured artifact/workforce/report streams and healthy service.
+Its finish clock comes from the target database after probe retirement and final
+state, schema, grant and source checks. It cannot accept caller timestamps or
+healthy flags. Arithmetic helpers alone never assert recovery acceptance.
+
+Six timing unit cases and three real loopback HTTP transport cases pass locally.
+The latter exercise cancellation, exhausted request allowance, exact credential
+cleanup and lost acknowledgments; they are not hosted authentication or recovery
+proof. Live owned control checks cover immutable incident replay and preservation
+of pre-existing state around a real issued/revoked session. The actual complete
+hosted producer run remains required before acceptance.
+
+The generated-file foundation approval exceeded the transport's first request
+window on two deployments. The original approval was confirmed committed; no
+replacement approval or provider operation was submitted. Foundation confirmation
+now reuses the existing exact-receipt reader, with at most three release-matching
+503 lookups inside the original 10-second write plus 10-second confirmation
+envelope. All prior failures and their actual receipts remain retained.

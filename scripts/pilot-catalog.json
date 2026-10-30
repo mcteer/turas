@@ -854,7 +854,10 @@
         "unit.work-backup-objects.007",
         "unit.backup-archive.009",
         "integration.native-postgres.010",
-        "unit.neon-destination.007"
+        "unit.neon-destination.007",
+        "unit.service-recovery-transport.001",
+        "unit.service-recovery-transport.002",
+        "unit.service-recovery-transport.003"
       ]
     },
     {

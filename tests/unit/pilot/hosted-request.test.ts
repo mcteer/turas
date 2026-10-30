@@ -30,7 +30,7 @@ it('does not retry an uncertain mutation body',async()=>{
 
 });
 it('rejects foreign and non-API paths before dispatch',async()=>{
- let calls=0;const transport:typeof fetch=async()=>{calls++;return response('{}');};const request=pilotHostedRequest(input(transport));for(const path of ['//foreign.example/api/x','/other','/api/../other','/api/\\foreign'])await expect(request(path,'GET')).rejects.toThrow('same-origin');expect(calls).toBe(0);
+ let calls=0;const transport:typeof fetch=async()=>{calls++;return response('{}');};const request=pilotHostedRequest(input(transport));for(const timeout of [0,-1,10001,Infinity,NaN])await expect(request('/api/synthetic','GET',undefined,timeout)).rejects.toThrow('bounded');for(const path of ['//foreign.example/api/x','/other','/api/../other','/api/\\foreign'])await expect(request(path,'GET')).rejects.toThrow('same-origin');expect(calls).toBe(0);
 });
 it('honors cancellation before dispatch',async()=>{
  let calls=0;const controller=new AbortController();controller.abort();const transport:typeof fetch=async()=>{calls++;return response('{}');};await expect(pilotHostedRequest({...input(transport),signal:controller.signal})('/api/synthetic','GET')).rejects.toThrow();expect(calls).toBe(0);

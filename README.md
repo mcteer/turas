@@ -6,6 +6,13 @@ Current pilot release status and validation results are recorded in
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.
 
+The recovery follow-up adds a separate incident-to-service measurement after
+complete owner verification, explicit resolution and reopening. It checks real
+ordinary role/SDK reads, captured original streams, healthy service and exact
+probe retirement before recording a database-derived finish time. Physical
+restore receipts remain partial. The final hosted rehearsal and release checks
+are still required; see [the recovery runbook](docs/pilot-operations.md).
+
 The upload follow-up replaces the browser token mint with an OIDC-compatible,
 put-only signed URL for the authenticated prepared capability. Exact path, size,
 content type, expiry and generation checks remain enforced; domain completion

@@ -1716,3 +1716,89 @@ source/destination inventory and SHA verification. They do not flush every
 temporary file to durable storage: each lease removes those copies, and the
 durable restored originals remain the source for the next lease. This changes
 no byte, admission, source, runtime retirement or recovery deadline check.
+
+### Incident-to-ordinary-service measurement
+
+`pilot:recovery:authority -- --verify-service-recovery --configuration <private-json>`
+is separate from physical restore and locked maintenance verification. Run it
+only after `--verify-work-recovery` v4 has actually completed, quarantines have
+been explicitly resolved, and the canonical owner control command has opened
+the exact verified recovery. It does not perform those transitions or authorize
+paid delivery. Existing physical/maintenance receipts remain partial.
+
+Declare the controlled incident with an explicit original-source `open` to
+`quiescing` control operation **before creating or restoring the recovery target**.
+Keep its operation UUID. The producer reads that row's database timestamp and
+requires it to be the first such source transition after the authenticated
+capture. Replaying the command or selecting a later transition cannot reset RTO.
+The old source must remain closed, with its measured HTTP, Workflow and Sandbox
+fences intact.
+
+Create the isolated Neon branch with the exact name
+`pilot-recovery-<targetAttemptId>`, where `targetAttemptId` is a fresh operator UUID.
+The producer reads the real branch and endpoint through the Neon API, checks the
+endpoint against the actual target connection, and requires branch creation
+after the original incident. An already-restored/pre-existing target cannot
+exclude restore/provisioning time from the result. `NEON_API_KEY` is supplied
+privately to the CLI process; never put it in this configuration or command line.
+
+Private configuration shape:
+
+```json
+{
+  "contract": "pilot-work-service-recovery-input-v1",
+  "verificationConfigurationFile": "/private/v4-verification-input.json",
+  "verificationId": "<actual-complete-verification-uuid>",
+  "incidentOperationId": "<original-source-quiescing-operation-uuid>",
+  "targetAttemptId": "<fresh-target-attempt-uuid>",
+  "openOperationId": "<actual-owner-open-operation-uuid>",
+  "configurationFile": "/private/expected-restored-hosted-configuration.json",
+  "serviceCustomerId": "<linked-assigned-synthetic-customer-uuid>",
+  "deniedCustomerId": "<different-synthetic-customer-uuid>",
+  "nativeReferences": [
+    {"kind": "artifact", "id": "<captured-artifact-version-uuid>"},
+    {"kind": "workforce", "id": "<captured-import-uuid>", "sourceVersionId": "<captured-source-version-uuid>"},
+    {"kind": "report", "id": "<captured-report-artifact-uuid>"}
+  ],
+  "targetNeon": {"projectId": "<actual-project-id>", "branchId": "<actual-branch-id>", "endpointId": "<actual-endpoint-id>"},
+  "output": "/private/new-service-measurement-directory"
+}
+```
+
+The v4 input supplies the original denial source, restored owner/runtime and
+credentials files, authenticated candidate/bundle/key, exact deployment and
+restored physical-store mapping. The expected configuration must equal that
+mapping. Complete all infrastructure/backup/image/worker health prerequisites
+before measuring. After opening, do not create unrelated sessions, SDK credentials
+or domain work before this command: its initial state must still match the
+complete owner's committed verification. Never give a normal Production role a
+short test `VALID UNTIL`; an isolated rehearsal's finite role must remain valid
+through its actual final measurement.
+
+The command performs three ordinary role checks and actual read-only SDK journeys
+covering all five categories, current citations and revocation. It streams one
+captured original from each artifact/workforce/report class and compares actual
+bytes against both current database rows and the authenticated archive. The
+normal operations endpoint must report healthy, open service, no quarantined
+required scope and the exact runtime/database/deployment binding. New probe
+sessions/connections are revoked through the normal paths. Existing credentials,
+domain state, schema and grants must remain unchanged; only those exact new
+probes, their audits and operational read counters are excluded from comparison.
+
+Cancellation or ordinary-request exhaustion reserves a separate finite cleanup
+allowance for exact observed credentials. A failed command may use deny-only
+owner cleanup for its actual new cookies and original SDK create receipts. It
+does not guess a session after a lost login acknowledgment. Such uncertainty and
+unconfirmed creates remain in `failure.json`; all acceptance flags stay false.
+Fence and reconcile the failed isolated target. A fresh explicitly admitted
+rehearsal uses another target attempt UUID while retaining the **same original
+incident timestamp** and every earlier failure/cost hold. No automatic retry,
+opening, clock reset or replay of an original paid/send operation occurs.
+
+`service-recovery.json` obtains its finish timestamp from the target database
+after all actual probes retire and final owner checks pass. RPO is the conservative
+capture-watermark-to-incident bound (not a zero-loss assertion); RTO includes the
+original incident through verified ordinary service. The targets remain 24 hours
+and four hours respectively. A measured overrun records false target/readiness
+flags. A planned timestamp, physical-copy duration, locked verification row or
+serialized healthy object cannot substitute for this live run.

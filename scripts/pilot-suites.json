@@ -487,6 +487,15 @@
       ]
     },
     {
+      "file": "tests/unit/pilot/service-recovery-transport.test.ts",
+      "expectedCases": 3,
+      "cases": [
+        "retires only observed probe credentials after parent cancellation",
+        "reserves finite cleanup capacity after the ordinary request cap is exhausted",
+        "retains uncertainty after a lost login acknowledgment and denies guessed cleanup"
+      ]
+    },
+    {
       "file": "tests/unit/pilot/storage-inventory.test.ts",
       "expectedCases": 12,
       "cases": [
