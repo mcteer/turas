@@ -121,7 +121,7 @@
     },
     {
       "file": "tests/contracts/pilot/private-objects.test.ts",
-      "expectedCases": 9,
+      "expectedCases": 10,
       "cases": [
         "writes immutable verified bytes",
         "rejects incorrect size",
@@ -131,7 +131,8 @@
         "rejects different bytes at an existing key",
         "streams private bytes without a public URL",
         "deletes only the exact scoped object",
-        "propagates the caller capture deadline into a stalled Blob read"
+        "propagates the caller capture deadline into a stalled Blob read",
+        "keeps signed upload headers within the provider browser preflight contract"
       ]
     },
     {

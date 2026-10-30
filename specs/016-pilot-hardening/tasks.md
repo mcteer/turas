@@ -1571,3 +1571,7 @@ No hosted target may be locked for release before its measured reopen path exist
 - [ ] T248 Confirm a delayed linked foundation approval through bounded reads of
   its original receipt. Preserve the original 20-second command envelope and
   never resubmit the approval, revive a provider attempt or enlarge a phase.
+
+- [ ] T249 Remove unsupported signed-upload option headers after the actual
+  WebKit preflight rejection. Preserve signed no-overwrite/path/size/type/expiry
+  constraints and verify actual browser upload, completion and original bytes.

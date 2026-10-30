@@ -9611,3 +9611,16 @@ now reuses the existing exact-receipt reader, with at most three release-matchin
 envelope. All prior failures and their actual receipts remain retained.
 
 The ordinary-service verifier binds each native stream to the authenticated archive's `objects/<namespace>/<object-id>` entry, independently of the live Blob environment prefix. Actual archive inspection identified and corrected that distinction before hosted service acceptance; the prior revision remains unaccepted.
+
+An independent actual WebKit upload to the isolated recovery store failed its
+preflight because `x-add-random-suffix` is absent from Blob's allowed headers.
+Actual OPTIONS also excludes `x-allow-overwrite`. Both redundant headers are
+removed; their constraints remain in the signed URL. The failed original
+application uploads and partial prior-source catalog are retained without pass
+claims. Corrected-source browser, CI and release verification remain pending.
+
+With the corrected headers, a distinct actual WebKit PUT to the isolated recovery
+store returned 200 and authenticated metadata confirmed all 42 bytes. The exact
+probe object was then deleted. This proves the provider transport correction;
+it does not replace the authenticated application upload, processing, retention
+or hosted recovery checks. No model call or production change occurred.

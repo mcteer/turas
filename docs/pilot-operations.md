@@ -1802,3 +1802,9 @@ original incident through verified ordinary service. The targets remain 24 hours
 and four hours respectively. A measured overrun records false target/readiness
 flags. A planned timestamp, physical-copy duration, locked verification row or
 serialized healthy object cannot substitute for this live run.
+
+For signed browser uploads, do not send `x-add-random-suffix` or
+`x-allow-overwrite`: Blob's preflight allowlist rejects those headers. The signed
+URL already carries the immutable path and no-overwrite constraints. Verify
+actual WebKit cross-origin PUT, normal domain completion and byte integrity;
+a successful Node upload does not establish browser CORS compatibility.

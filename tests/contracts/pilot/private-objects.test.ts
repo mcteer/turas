@@ -9,7 +9,7 @@ vi.mock('@vercel/blob',()=>{
  async del(key:string){expect(key.startsWith('e_')).toBe(true);mocked.objects.delete(key);},
  async list(options:{prefix:string;cursor?:string;limit:number}){const keys=[...mocked.objects.keys()].filter(k=>k.startsWith(options.prefix)&&(!options.cursor||k>options.cursor)).sort();return {blobs:keys.slice(0,options.limit).map(pathname=>({pathname,size:mocked.objects.get(pathname)!.length,uploadedAt:new Date()})),hasMore:keys.length>options.limit,cursor:keys[options.limit-1]};}};
 });
-import {privateUploadUrl} from '../../../lib/contracts/blob-upload';
+import {privateUploadUrl,privateUploadHeaders} from '../../../lib/contracts/blob-upload';
 import {BlobPrivateObjects} from '../../../lib/server/storage/blob-objects';
 import type {PrivateObjects} from '../../../lib/server/storage/private-objects';
 import {LocalPrivateObjects} from '../../../lib/server/storage/local-objects';import {objectKey} from '../../../lib/server/storage/private-objects';
@@ -38,3 +38,11 @@ it('streams private bytes without a public URL',async()=>{for(const store of sto
 });
 it('deletes only the exact scoped object',async()=>{for(const store of stores){const second=objectKey('test-contract','artifact',randomUUID());await store.put(key,source(),expected);await store.put(second,source(),expected);expect((await store.list('artifact',undefined,1)).cursor).toBeDefined();await store.delete(key);expect(await store.stat(key)).toBeNull();expect(await store.stat(second)).toEqual({key:second,...expected});await store.delete(key);}});
 it('propagates the caller capture deadline into a stalled Blob read',async()=>{mocked.stallReads=true;const deadline=AbortSignal.timeout(20);await expect(stores[1].stream(key,expected,deadline)).rejects.toThrow();expect(deadline.aborted).toBe(true);});
+it('keeps signed upload headers within the provider browser preflight contract',()=>{
+ // Actual /api/blob/ OPTIONS allowlist; Node uploads do not enforce CORS.
+ const allowed=new Set('authorization,content-type,x-api-version,x-mpu-action,x-mpu-key,x-mpu-upload-id,x-mpu-part-number,x-content-type,x-proxy-through-alternative-api,x-api-blob-request-id,x-api-blob-request-attempt,x-content-length,x-vercel-blob-access,x-vercel-blob-store-kind,x-vercel-blob-store-id,x-vercel-blob-team-id,x-if-match'.split(','));
+ expect(Object.keys(privateUploadHeaders).every(name=>allowed.has(name))).toBe(true);
+ expect(privateUploadHeaders['content-type']).toBe('application/octet-stream');
+ expect(privateUploadHeaders['x-content-type']).toBe('application/octet-stream');
+ expect(privateUploadHeaders['x-vercel-blob-access']).toBe('private');
+});

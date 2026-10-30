@@ -19,6 +19,11 @@ content type, expiry and generation checks remain enforced; domain completion
 still verifies actual stored bytes. Focused local checks pass; fresh hosted and
 release verification remain required.
 
+Actual WebKit verification identified redundant upload headers rejected by Blob's
+CORS policy. The browser now sends only supported headers; overwrite and suffix
+constraints remain enforced by the signed URL. Fresh hosted verification remains
+required for this correction.
+
 At `2a408b4`, all 1,071 local cases and CI pass, and the real Preview role
 checks pass. Complete maintenance recovery still misses its original deadline.
 The follow-up removes durable flushes from disposable canonical runtime copies

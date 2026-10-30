@@ -256,7 +256,8 @@
         "integration.generated-byte-boundary.001",
         "integration.generated-byte-boundary.002",
         "integration.generated-byte-boundary.003",
-        "integration.generated-byte-boundary.004"
+        "integration.generated-byte-boundary.004",
+        "contracts.private-objects.010"
       ]
     },
     {
