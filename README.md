@@ -1586,3 +1586,6 @@ capture, full restore, fresh CI and Production acceptance remain pending.
 Isolated Preview recovery preserves public clone guard triggers through a
 restricted local bootstrap adapter. It does not restore the private copied-request
 ledger or grant runtime access; actual full restore verification remains required.
+The complete work-restore path explicitly carries the 192 MiB object bound through
+integrity checks and canonical maintenance copies; generic owned restores keep
+their 24 MiB default.

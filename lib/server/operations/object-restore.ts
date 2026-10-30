@@ -1,3 +1,4 @@
+import {WORK_BACKUP_LIMITS} from './work-backup-limits';
 import {constants} from 'node:fs';
 import {open,lstat,realpath,mkdir,rm,writeFile} from 'node:fs/promises';
 import {resolve,dirname,join} from 'node:path';
@@ -13,13 +14,14 @@ import {activeObjectNamespaces,verifiedObjectInventory} from '../storage/invento
 /** Copies authenticated archive objects into a newly created disposable local
  * store. Never overwrites a live store or deletes source bytes. This component
  * provides no restored authority, workflow resumption or hosted-service proof. */
-export async function restoreOwnedRecoveryObjects(input:{header:BackupArchiveHeader;unpacked:string;target:string;signal:AbortSignal}){
+export async function restoreOwnedRecoveryObjects(input:{header:BackupArchiveHeader;unpacked:string;target:string;signal:AbortSignal;maximumBytes?:number}){
  requireOwnedPilotDatabase();input.signal.throwIfAborted();
  const header=backupArchiveHeader.parse(input.header),source=resolve(input.unpacked),target=resolve(input.target);
  async function privateDirectory(path:string){const info=await lstat(path);if(!info.isDirectory()||info.isSymbolicLink()||info.uid!==process.getuid?.()||(info.mode&0o777)!==0o700||await realpath(path)!==path)throw Error('Direct private restore directory required');}
  await privateDirectory(source);await privateDirectory(dirname(target));
- const entries=header.entries.filter(entry=>entry.name.startsWith('objects/'));
- if(entries.length>256||entries.reduce((sum,row)=>sum+row.sizeBytes,0)>24*1024*1024||entries.some(row=>row.sizeBytes>10485760))throw Error('Owned object restore allowance exceeded');
+ const entries=header.entries.filter(entry=>entry.name.startsWith('objects/')),maximumBytes=input.maximumBytes??WORK_BACKUP_LIMITS.legacyObjectBytes;
+ if(!Number.isSafeInteger(maximumBytes)||maximumBytes<0||maximumBytes>WORK_BACKUP_LIMITS.objectBytes)throw Error('Bounded owned object restore allowance required');
+ if(entries.length>256||entries.reduce((sum,row)=>sum+row.sizeBytes,0)>maximumBytes||entries.some(row=>row.sizeBytes>10485760))throw Error('Owned object restore allowance exceeded');
  const verified:Array<{key:string;bytes:Buffer;sizeBytes:number;digest:string}>=[];
  // Authenticate every source before creating the destination. A corrupt late
  // entry cannot leave an apparently usable partially restored store.
@@ -39,7 +41,7 @@ export async function restoreOwnedRecoveryObjects(input:{header:BackupArchiveHea
   const store=new LocalPrivateObjects(target,header.environmentId,10485760);
   for(const namespace of activeObjectNamespaces)await mkdir(dirname(join(target,objectKey(header.environmentId,namespace,'0'.repeat(64)))),{recursive:true,mode:0o700});
   for(const object of verified){input.signal.throwIfAborted();await store.put(object.key,(async function*(){yield object.bytes;})(),object);}
-  const inventory=await verifiedObjectInventory(store,header.environmentId,activeObjectNamespaces,input.signal,{maximumObjects:256,maximumBytes:24*1024*1024});
+  const inventory=await verifiedObjectInventory(store,header.environmentId,activeObjectNamespaces,input.signal,{maximumObjects:256,maximumBytes});
   const expected=verified.map(({key,sizeBytes,digest})=>({key,sizeBytes,digest})).sort((a,b)=>a.key.localeCompare(b.key));
   const actual=inventory.objects.map(({key,sizeBytes,digest})=>({key,sizeBytes,digest})).sort((a,b)=>a.key.localeCompare(b.key));
   if(JSON.stringify(actual)!==JSON.stringify(expected))throw Error('Restored object inventory differs');
@@ -51,13 +53,14 @@ export async function restoreOwnedRecoveryObjects(input:{header:BackupArchiveHea
 /** Materialize measured restored bytes for the unchanged canonical local domain
  * adapters. Filesystem parity only: no authority, database grant or readiness is
  * created. Caller must bind/recheck its actual restore integrity separately. */
-export async function materializeOwnedRecoveryStores(input:{sourceRoot:string;target:string;environmentId:string;signal:AbortSignal}){
+export async function materializeOwnedRecoveryStores(input:{sourceRoot:string;target:string;environmentId:string;signal:AbortSignal;maximumBytes?:number}){
  requireOwnedPilotDatabase();
  const signal=AbortSignal.any([input.signal,AbortSignal.timeout(60000)]),source=resolve(input.sourceRoot),target=resolve(input.target);
  const privateDirectory=async(path:string)=>{const info=await lstat(path);if(!info.isDirectory()||info.isSymbolicLink()||info.uid!==process.getuid?.()||(info.mode&0o777)!==0o700||await realpath(path)!==path)throw Error('Direct private recovery store required');};
  signal.throwIfAborted();await privateDirectory(source);await privateDirectory(dirname(target));
  if(dirname(target)!==dirname(source)||source===target)throw Error('Fresh sibling recovery store required');
- const store=new LocalPrivateObjects(source,input.environmentId,10485760),limits={maximumObjects:256,maximumBytes:24*1024*1024};
+ const maximumBytes=input.maximumBytes??WORK_BACKUP_LIMITS.legacyObjectBytes;if(!Number.isSafeInteger(maximumBytes)||maximumBytes<0||maximumBytes>WORK_BACKUP_LIMITS.objectBytes)throw Error('Bounded owned object restore allowance required');
+ const store=new LocalPrivateObjects(source,input.environmentId,10485760),limits={maximumObjects:256,maximumBytes};
  const inventory=await verifiedObjectInventory(store,input.environmentId,activeObjectNamespaces,signal,limits),reportNamespaces=new Map<string,'report'|'gap-report'>();
  // Reject every unrepresentable or colliding identity before creating anything.
  const locations=inventory.objects.map(object=>{

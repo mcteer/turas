@@ -1,3 +1,4 @@
+import {WORK_BACKUP_LIMITS} from './work-backup-limits';
 import {retireOwnedProcess,requireOwnedProcessRetirement,type OwnedProcessRetirement} from '../../../scripts/pilot-owned-process';
 import {requiredRecoveryObjects} from './required-objects';
 import {LocalPrivateObjects} from '../storage/local-objects';
@@ -97,7 +98,7 @@ export async function requireOwnedRestoreConnection(db:Client,target:OwnedRestor
 export async function verifyOwnedRestoredRequiredObjects(db:Client,target:OwnedRestoreTarget,raw:Scope,signal:AbortSignal){
  const scope=scopeSchema.parse(raw),b=binding(target),proof=await requireOwnedRestoreConnection(db,target,scope,signal);
  await requireMeasuredWorkIntegrity(db,proof,scope,b.restored!.storeRoot,signal);
- const required=await requiredRecoveryObjects(db,scope.environmentId),physical=await verifiedObjectInventory(new LocalPrivateObjects(b.restored!.storeRoot,scope.environmentId,10485760),scope.environmentId,activeObjectNamespaces,signal,{maximumObjects:256,maximumBytes:24*1024*1024});
+ const required=await requiredRecoveryObjects(db,scope.environmentId),physical=await verifiedObjectInventory(new LocalPrivateObjects(b.restored!.storeRoot,scope.environmentId,10485760),scope.environmentId,activeObjectNamespaces,signal,{maximumObjects:256,maximumBytes:WORK_BACKUP_LIMITS.objectBytes});
  const actual=new Map(physical.objects.map(object=>[object.key,object]));
  if(required.length>256||required.some(object=>{const stored=actual.get(object.key);return !stored||stored.digest!==object.digest||stored.sizeBytes!==object.sizeBytes;}))throw Error('Required restored original coverage differs');
  return Object.freeze({contract:'pilot-owned-required-originals-v1' as const,environmentId:scope.environmentId,recoveryId:scope.recoveryId,controlRevision:scope.controlRevision,requiredObjectCount:required.length,requiredObjectBytes:required.reduce((sum,object)=>sum+object.sizeBytes,0),requiredObjectsDigest:recoveryDigest(required),physicalInventoryDigest:physical.digest,requiredOriginalsVerified:true as const,serviceVerified:false as const,restorationReady:false as const});
@@ -153,7 +154,7 @@ export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:
     await requireOwnedRestoreConnection(owner,target,scope,deadline);
     if(await recoveryGrantCheckpoint(owner)!==state.closedDigest)throw Error('Restored runtime grant boundary changed');
     await verifyOwnedRestoredRequiredObjects(owner,target,scope,deadline);
-    recoveryStores=await materializeOwnedRecoveryStores({sourceRoot:b.restored!.storeRoot,target:join(dirname(b.restored!.storeRoot),'canonical-runtime-'+randomUUID()),environmentId:scope.environmentId,signal:deadline});
+    recoveryStores=await materializeOwnedRecoveryStores({sourceRoot:b.restored!.storeRoot,target:join(dirname(b.restored!.storeRoot),'canonical-runtime-'+randomUUID()),environmentId:scope.environmentId,signal:deadline,maximumBytes:WORK_BACKUP_LIMITS.objectBytes});
     await requireMeasuredWorkIntegrity(owner,proof,scope,b.restored!.storeRoot,deadline);
     await owner.query(grants);
     await owner.query('GRANT turas_runtime TO turas_runtime_016');

@@ -1673,3 +1673,9 @@ fingerprint ledger and copied-request authority are not restored. The receipt
 records `previewCloneBootstrap` and explicitly distinguishes this adapter from
 source policy restoration. Required-original verification, quarantine and actual
 maintenance HTTP checks still apply; the adapter does not authorize promotion.
+
+Complete work restoration explicitly uses the bounded 192 MiB object allowance
+through object copying, required-original and integrity inventories, and canonical
+maintenance-store materialization. Generic owned object restore and materialization
+retain their 24 MiB default unless an explicit bounded allowance is supplied.
+Object count, individual file limits, exact bytes and digests remain enforced.

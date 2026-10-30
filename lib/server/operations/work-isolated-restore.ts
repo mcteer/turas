@@ -1,3 +1,4 @@
+import {WORK_BACKUP_LIMITS} from './work-backup-limits';
 import {requireAuthenticatedRetainedDenials,type RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
 import {measureRestoredWorkIntegrity} from './restored-work-integrity';
 import {Client} from 'pg';
@@ -40,7 +41,7 @@ export async function restoreIsolatedWorkCapture(input:{candidate:unknown;bundle
     if(await recoveryContentDigest(db)!==candidate.acceptedContentDigest)throw Error('Restored work accepted content differs');
     await db.query('COMMIT');
    }catch(error){await db.query('ROLLBACK');throw error;}
-   const objects=await restoreOwnedRecoveryObjects({header,unpacked,target:join(root,'objects'),signal:input.signal});
+   const objects=await restoreOwnedRecoveryObjects({header,unpacked,target:join(root,'objects'),signal:input.signal,maximumBytes:WORK_BACKUP_LIMITS.objectBytes});
    if(objects.inventoryDigest!==candidate.objects.inventoryDigest||objects.objectCount!==candidate.objects.objectCount)throw Error('Restored work object inventory differs');
    if(!restored.recoveryId||!restored.controlRevision)throw Error('Restored work lock identity unavailable');
    const physicalIntegrity=await measureRestoredWorkIntegrity(db,{candidate,scope:{environmentId:candidate.environmentId,recoveryId:restored.recoveryId,controlRevision:restored.controlRevision},storeRoot:join(root,'objects'),bundle:input.bundle,keyFile:input.keyFile,signal:input.signal});
