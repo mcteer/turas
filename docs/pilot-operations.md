@@ -1701,3 +1701,8 @@ separate owner connections and admissions. The batch waits for all read results
 and their retirement before releasing the original runtime lease, even after a
 failure. Any failed read fails the batch. The four-record limit, 60-second lease,
 complete inventory coverage and original 15-minute operation deadline remain.
+
+A successful per-record retirement verifies the admission and login session are
+revoked before the required HTTP denial check. Cleanup does not repeat that
+already verified retirement. Any earlier failure still invokes retirement in
+`finally`; the final global runtime/backend/admission closure check is unchanged.

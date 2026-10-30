@@ -1537,3 +1537,8 @@ No hosted target may be locked for release before its measured reopen path exist
   four-record lease, awaiting every retirement on success or failure. Retain all
   access, source, byte and release checks, inventory coverage and the original
   operation deadline; verify actual complete archived inventory (FR-017, FR-021).
+
+- [ ] T243 Avoid repeating a successfully verified recovery-probe retirement,
+  retaining fallback cleanup on every earlier failure, revoked HTTP denial and
+  final global closure checks. Verify the complete archived inventory within the
+  original deadline (FR-017, FR-021).

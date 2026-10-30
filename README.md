@@ -1602,3 +1602,7 @@ Owned recovery verifies up to four independent records concurrently inside each
 existing finite runtime lease. It waits for every read and probe retirement,
 including on failure, before closing that runtime; coverage and deadlines remain
 unchanged. Actual full-inventory timing remains under verification.
+
+Recovery probes retire once after successful SQL closure verification and still
+require the revoked HTTP denial and final global closure check. Earlier failures
+retain mandatory fallback cleanup. Full-inventory timing remains under verification.
