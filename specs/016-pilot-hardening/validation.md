@@ -9624,3 +9624,13 @@ store returned 200 and authenticated metadata confirmed all 42 bytes. The exact
 probe object was then deleted. This proves the provider transport correction;
 it does not replace the authenticated application upload, processing, retention
 or hosted recovery checks. No model call or production change occurred.
+
+The corrected-header source's first full local run stopped at the runtime
+retirement check after 120 cases passed. A controlled owned backend reproduced
+the failure: default termination returned true while the old backend remained
+visible. The existing integration test now delays that real backend's exit;
+it fails against the original implementation. Retirement now waits for confirmed
+exit under explicit finite SQL bounds and retains the final fresh census.
+All eight recovery-authority and five runtime-retirement integration cases pass,
+including the delayed-exit regression, and type checking passes. Full-catalog, CI and actual
+hosted verification remain required.

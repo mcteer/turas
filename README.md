@@ -24,6 +24,10 @@ CORS policy. The browser now sends only supported headers; overwrite and suffix
 constraints remain enforced by the signed URL. Fresh hosted verification remains
 required for this correction.
 
+Recovery runtime retirement now waits for confirmed backend exit after disabling
+the old login. An unconfirmed termination keeps recovery locked; actual hosted
+recovery and release verification remain required.
+
 At `2a408b4`, all 1,071 local cases and CI pass, and the real Preview role
 checks pass. Complete maintenance recovery still misses its original deadline.
 The follow-up removes durable flushes from disposable canonical runtime copies

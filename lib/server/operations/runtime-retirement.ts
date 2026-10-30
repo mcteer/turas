@@ -63,7 +63,16 @@ export async function retireLockedLegacyRuntime(db:Client,input:z.infer<typeof s
  }catch(error){await db.query('ROLLBACK');throw error;}
  // LOGIN closes reconnection first. Termination is deliberately after commit:
  // rollback cannot reopen the legacy login after killing its backends.
- await db.query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename='turas_runtime' AND pid<>pg_backend_pid()");
+ // The default timeout only acknowledges signal delivery. Wait for actual
+ // termination, bounded independently of the number of selected backends.
+ await db.query('BEGIN');
+ try{
+  await db.query("SET LOCAL statement_timeout='10000ms'; SET LOCAL transaction_timeout='15s'");
+  const terminated=await db.query("SELECT pg_terminate_backend(pid,3000) AS stopped FROM pg_stat_activity WHERE usename='turas_runtime' AND pid<>pg_backend_pid()");
+  if(terminated.rows.some(row=>row.stopped!==true))throw Error('Runtime termination unconfirmed; recovery remains locked');
+  await db.query('COMMIT');
+ }catch(error){await db.query('ROLLBACK');throw error;}
+ // Use a fresh transaction's activity snapshot after confirmed termination.
  const roles=(await db.query("SELECT rolname,rolcanlogin,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') ORDER BY rolname")).rows;
  if(roles.length!==2||roles[0].rolcanlogin!==false||roles[1].rolcanlogin!==true||roles.some(row=>row.rolsuper||row.rolcreatedb||row.rolcreaterole||row.rolreplication||row.rolbypassrls)||(await db.query("SELECT 1 FROM pg_stat_activity WHERE usename='turas_runtime'")).rowCount)throw Error('Runtime retirement incomplete; recovery remains locked');
  return {contract:'pilot-runtime-retirement-v1' as const,environmentId:scope.environmentId,recoveryId:scope.recoveryId,controlRevision:scope.controlRevision,oldLoginDisabled:true,oldBackendsTerminated:true,replacementRole:'turas_runtime_016',mode:'locked' as const,hostedCredentialsChanged:false,restorationReady:false};

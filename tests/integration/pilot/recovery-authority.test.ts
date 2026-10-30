@@ -1,4 +1,6 @@
-import {it,expect} from 'vitest';
+import {it,expect,vi} from 'vitest';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 import {randomUUID,randomBytes} from 'node:crypto';
 import {Client} from 'pg';
 import {withAuthorityEnvironment,coldAuthorityProof,lockAuthorityTarget,authorityCheckpointTime} from '../../fixtures/pilot/recovery-authority';
@@ -50,8 +52,22 @@ it('preserves permanent replay receipts',async()=>withAuthorityEnvironment(async
  const result=await reconcileOwnedCredentialDenials(owner,proof,await lockAuthorityTarget(owner,environmentId,proof,backup));expect(result.permanentReplayFencesAdded).toBeGreaterThan(0);
  await expect(runtime.query('INSERT INTO mcp_management_receipts(request_key,environment_id,workspace_id,actor_membership_id,connection_id,action,request_digest) VALUES($1,$2,$3,$4,$5,$6,$7)',[key,environmentId,receipt.workspace_id,receipt.actor_membership_id,c.connection.id,receipt.action,receipt.request_digest])).rejects.toThrow('Recovered permanent request cannot be repeated');await expect(owner.query('DELETE FROM operations_replay_fences')).rejects.toThrow('immutable');
 }),210000);
-it('denies an old deployment session bypass',async()=>withAuthorityEnvironment(async(owner,runtime,environmentId)=>{
- const f=await pilotPublishedKnowledgeFixture(owner as any,'primary'),{hashSessionToken}=await import('../../../lib/server/auth/sessions'),old=requireOwnedPilotDatabase(),scope=await lockAuthorityTarget(owner,environmentId),oldAuth="SELECT s.id FROM login_sessions s JOIN principals p ON p.id=s.principal_id JOIN memberships m ON m.principal_id=p.id WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND p.active AND m.active",tokenHash=hashSessionToken(f.actor.token);expect((await runtime.query(oldAuth,[tokenHash])).rows.some(row=>row.id===f.actor.sessionId)).toBe(true);expect(await retireOwnedLegacyRuntime(owner,{environmentId,recoveryId:scope.recoveryId,controlRevision:scope.controlRevision,password:randomBytes(32).toString('base64url')})).toMatchObject({oldLoginDisabled:true,oldBackendsTerminated:true});await expect(runtime.query(oldAuth,[tokenHash])).rejects.toThrow();const reconnect=new Client({connectionString:old});try{await expect(reconnect.connect()).rejects.toMatchObject({code:'28000'});}finally{await reconnect.end();}
+it('denies an old deployment session bypass',async()=>withAuthorityEnvironment(async(owner,runtime,environmentId,owned)=>{
+ const f=await pilotPublishedKnowledgeFixture(owner as any,'primary'),{hashSessionToken}=await import('../../../lib/server/auth/sessions'),old=requireOwnedPilotDatabase(),scope=await lockAuthorityTarget(owner,environmentId),oldAuth="SELECT s.id FROM login_sessions s JOIN principals p ON p.id=s.principal_id JOIN memberships m ON m.principal_id=p.id WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND p.active AND m.active",tokenHash=hashSessionToken(f.actor.token);expect((await runtime.query(oldAuth,[tokenHash])).rows.some(row=>row.id===f.actor.sessionId)).toBe(true);
+ // Delay this exact owned backend's exit. A signal acknowledgment alone must
+ // not count as retirement. All SQL still executes against the real database.
+ const pid=(await runtime.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+ expect(Number.isInteger(pid)&&pid>0).toBe(true);
+ const signal=(name:string)=>promisify(execFile)('docker',['exec',owned.databaseContainer,'sh','-c','kill -'+name+' "$1"','sh',String(pid)],{timeout:5000,maxBuffer:8192});
+ await signal('STOP');let resumed:Promise<unknown>|undefined;
+ const original=owner.query.bind(owner),observed=vi.spyOn(owner,'query').mockImplementation(((...args:any[])=>{
+  if(typeof args[0]==='string'&&args[0].includes('SELECT pg_terminate_backend')&&!resumed)
+   resumed=new Promise(resolve=>setTimeout(resolve,250)).then(()=>signal('CONT'));
+  return (original as (...args:any[])=>any)(...args);
+ }) as typeof owner.query);
+ try{expect(await retireOwnedLegacyRuntime(owner,{environmentId,recoveryId:scope.recoveryId,controlRevision:scope.controlRevision,password:randomBytes(32).toString('base64url')})).toMatchObject({oldLoginDisabled:true,oldBackendsTerminated:true});}
+ finally{observed.mockRestore();if(resumed)await resumed;else await signal('CONT');}
+ await expect(runtime.query(oldAuth,[tokenHash])).rejects.toThrow();const reconnect=new Client({connectionString:old});try{await expect(reconnect.connect()).rejects.toMatchObject({code:'28000'});}finally{await reconnect.end();}
 }),210000);
 it('quarantines absent current authority proof',async()=>withAuthorityEnvironment(async(owner,runtime,environmentId)=>{
  const scope=await lockAuthorityTarget(owner,environmentId),result=await quarantineRestoredAuthority(owner,{environmentId,recoveryId:scope.recoveryId,controlRevision:scope.controlRevision});expect(result).toMatchObject({currentAuthorityVerified:false,restorationReady:false});expect(result.quarantinedScopes).toEqual([...requiredRecoveryQuarantineScopes].sort());await expect(owner.query("UPDATE operations_control SET mode='open' WHERE environment_id=$1",[environmentId])).rejects.toThrow('quarantined');await expect(runtime.query('DELETE FROM operations_recovery_quarantines')).rejects.toThrow('permission denied');expect((await owner.query('SELECT count(*)::int AS n FROM login_sessions WHERE revoked_at IS NULL')).rows[0].n).toBe(0);

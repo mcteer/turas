@@ -1575,3 +1575,7 @@ No hosted target may be locked for release before its measured reopen path exist
 - [ ] T249 Remove unsupported signed-upload option headers after the actual
   WebKit preflight rejection. Preserve signed no-overwrite/path/size/type/expiry
   constraints and verify actual browser upload, completion and original bytes.
+
+- [ ] T250 Confirm actual legacy runtime backend termination before the final
+  census. Preserve committed login denial, exact owner/control scope and bounded
+  failure; exercise a deliberately delayed exit in the owned PostgreSQL test.

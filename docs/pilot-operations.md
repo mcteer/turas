@@ -1808,3 +1808,10 @@ For signed browser uploads, do not send `x-add-random-suffix` or
 URL already carries the immutable path and no-overwrite constraints. Verify
 actual WebKit cross-origin PUT, normal domain completion and byte integrity;
 a successful Node upload does not establish browser CORS compatibility.
+
+Runtime retirement commits the old role's `NOLOGIN` before terminating its
+backends. PostgreSQL's default termination acknowledgment proves only signal
+delivery. The operator requires confirmed exit with a three-second per-backend
+wait inside a ten-second statement bound, then checks role state and a fresh
+backend census. Failure preserves the committed login denial and locked recovery;
+it never reopens the old role or skips remaining verification.
