@@ -27,19 +27,22 @@ const generationSchema=z.object({id:z.string().regex(/^gen_[A-Za-z0-9_-]{1,240}$
 const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 /** Accounting can lag a just-cancelled stream. Re-read only the same immutable
- * generation, within 20 seconds and three attempts. No model request is retried.
+ * generation, within 20 seconds and ten attempts, spaced two seconds apart.
+ * This covers the provider's documented asynchronous ingestion window.
+ * https://vercel.com/docs/ai-gateway/observability-and-spend/usage
+ * No model request is retried.
  * Invalid success bodies and authentication/other client errors fail directly. */
-export async function fetchPilotGatewayGeneration(request:Request,signal:AbortSignal,transport:typeof fetch=fetch,onExtraRead:()=>void=()=>{}){
+export async function fetchPilotGatewayGeneration(request:Request,signal:AbortSignal,transport:typeof fetch=fetch,onExtraRead:()=>void=()=>{},wait:(ms:number,signal:AbortSignal)=>Promise<void>=(ms,signal)=>delay(ms,undefined,{signal})){
  const url=new URL(request.url);
  if(request.method!=='GET'||url.origin!=='https://ai-gateway.vercel.sh'||url.pathname!=='/v1/generation'||[...url.searchParams].length!==1||!/^gen_[A-Za-z0-9_-]{1,240}$/.test(url.searchParams.get('id')??''))throw Error('Fixed generation lookup only');
  const whole=AbortSignal.any([signal,request.signal,AbortSignal.timeout(20000)]);
- for(let attempt=0;attempt<3;attempt++){
+ for(let attempt=0;attempt<10;attempt++){
   whole.throwIfAborted();
   const attemptSignal=AbortSignal.any([whole,AbortSignal.timeout(5000)]);
   let response:Response;
   try{if(attempt)onExtraRead();response=await transport(request.clone(),{redirect:'error',cache:'no-store',signal:attemptSignal});}
-  catch(error){if(whole.aborted||attempt===2||!['TimeoutError','AbortError','TypeError'].includes((error as Error)?.name))throw error;await delay(750*(attempt+1),undefined,{signal:whole});continue;}
-  if([404,408,429,500,502,503,504].includes(response.status)&&attempt<2){await response.body?.cancel();await delay(750*(attempt+1),undefined,{signal:whole});continue;}
+  catch(error){if(whole.aborted||attempt===9||!['TimeoutError','AbortError','TypeError'].includes((error as Error)?.name))throw error;await wait(2000,whole);continue;}
+  if([404,408,429,500,502,503,504].includes(response.status)&&attempt<9){await response.body?.cancel();await wait(2000,whole);continue;}
   const reader=response.body?.getReader();if(!reader)throw Error('Actual generation lookup body required');
   const abortBody=()=>{void reader.cancel(attemptSignal.reason).catch(()=>{});};
   attemptSignal.addEventListener('abort',abortBody,{once:true});if(attemptSignal.aborted)abortBody();

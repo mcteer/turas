@@ -13,19 +13,20 @@ it('bounds accounting-only rereads of one immutable generation and stops on inva
  vi.useFakeTimers();
  const request=new Request('https://ai-gateway.vercel.sh/v1/generation?id=gen_synthetic');
  try{
-  let extra=0;const seen:Request[]=[],transport=vi.fn(async(r:Request)=>{seen.push(r);return new Response('{}',{status:seen.length<3?404:200});});
-  const result=fetchPilotGatewayGeneration(request,new AbortController().signal,transport as never,()=>{extra++;});
-  await vi.runAllTimersAsync();expect((await result).status).toBe(200);expect(extra).toBe(2);expect(seen).toHaveLength(3);
+  const waits:number[]=[],paced=async(ms:number,signal:AbortSignal)=>{signal.throwIfAborted();waits.push(ms);};
+  let extra=0;const seen:Request[]=[],transport=vi.fn(async(r:Request)=>{seen.push(r);return new Response('{}',{status:seen.length<10?404:200});});
+  const result=fetchPilotGatewayGeneration(request,new AbortController().signal,transport as never,()=>{extra++;},paced);
+  await vi.runAllTimersAsync();expect((await result).status).toBe(200);expect(extra).toBe(9);expect(seen).toHaveLength(10);expect(waits).toEqual(Array(9).fill(2000));expect(waits.reduce((a,b)=>a+b,0)).toBe(18000);
   expect(seen.every(r=>r.method==='GET'&&r.url===request.url)).toBe(true);
   for(const status of [400,401,403,422]){
    const once=vi.fn(async()=>new Response('{}',{status}));expect((await fetchPilotGatewayGeneration(request,new AbortController().signal,once as never)).status).toBe(status);expect(once).toHaveBeenCalledTimes(1);
   }
-  const unavailable=vi.fn(async()=>new Response('{}',{status:503}));const exhausted=fetchPilotGatewayGeneration(request,new AbortController().signal,unavailable as never);await vi.runAllTimersAsync();expect((await exhausted).status).toBe(503);expect(unavailable).toHaveBeenCalledTimes(3);
+  const unavailable=vi.fn(async()=>new Response('{}',{status:503}));const exhausted=fetchPilotGatewayGeneration(request,new AbortController().signal,unavailable as never,()=>{},paced);await vi.runAllTimersAsync();expect((await exhausted).status).toBe(503);expect(unavailable).toHaveBeenCalledTimes(10);
   const denied=vi.fn();await expect(fetchPilotGatewayGeneration(new Request(request.url,{method:'POST'}),new AbortController().signal,denied as never)).rejects.toThrow('Fixed generation');expect(denied).not.toHaveBeenCalled();
   const abort=new AbortController();abort.abort();await expect(fetchPilotGatewayGeneration(request,abort.signal,denied as never)).rejects.toThrow();expect(denied).not.toHaveBeenCalled();
   for(const name of ['TypeError','TimeoutError']){
    let calls=0;const network=vi.fn(async()=>{if(!calls++){const error=new Error('Synthetic connection failure');error.name=name;throw error;}return new Response('{}');});
-   const recovered=fetchPilotGatewayGeneration(request,new AbortController().signal,network as never);await vi.runAllTimersAsync();expect((await recovered).status).toBe(200);expect(network).toHaveBeenCalledTimes(2);
+   const recovered=fetchPilotGatewayGeneration(request,new AbortController().signal,network as never,()=>{},paced);await vi.runAllTimersAsync();expect((await recovered).status).toBe(200);expect(network).toHaveBeenCalledTimes(2);
   }
   const duringWait=new AbortController(),temporary=vi.fn(async()=>new Response('{}',{status:429}));
   const waiting=fetchPilotGatewayGeneration(request,duringWait.signal,temporary as never);const waitRejected=expect(waiting).rejects.toThrow();await Promise.resolve();duringWait.abort();await waitRejected;expect(temporary).toHaveBeenCalledTimes(1);

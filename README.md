@@ -1287,8 +1287,9 @@ an interrupted generation separately without another model call. Unknown costs
 retain their ceiling; closed/recovered budgets never refund or reopen. Conflicting
 actual charges retain an immutable receipt and block further dispatch. These
 runners are implemented; their existence does not establish hosted acceptance.
-Accounting lookups may re-read the same generation up to three times within
-20 seconds for temporary HTTP or connection failures. Authentication and invalid
+Accounting lookups may re-read the same generation up to ten times, two seconds
+apart within a 20-second deadline, for temporary HTTP or connection failures.
+This covers [Gateway's documented asynchronous usage ingestion](https://vercel.com/docs/ai-gateway/observability-and-spend/usage). Authentication and invalid
 accounting still fail directly. The runner saves its UI checkpoint before these
 reads; that checkpoint alone proves neither cleanup nor hosted acceptance.
 Read-only quality-budget status, source and authority checks validate a stable
