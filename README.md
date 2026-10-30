@@ -1287,6 +1287,14 @@ an interrupted generation separately without another model call. Unknown costs
 retain their ceiling; closed/recovered budgets never refund or reopen. Conflicting
 actual charges retain an immutable receipt and block further dispatch. These
 runners are implemented; their existence does not establish hosted acceptance.
+Accounting lookups may re-read the same generation up to three times within
+20 seconds for temporary HTTP or connection failures. Authentication and invalid
+accounting still fail directly. The runner saves its UI checkpoint before these
+reads; that checkpoint alone proves neither cleanup nor hosted acceptance.
+Read-only quality-budget status, source and authority checks validate a stable
+immutable journal snapshot without owning the write lock. Killing a startup
+reader therefore cannot strand that lock. Writers still lock and validate
+authority before every change; an existing interrupted lock remains fail-closed.
 
 Fresh private scan/parse/render images now bind signature version28156 and verified
 OCI/configuration digests. Actual bounded Sandbox scan, parse, render and Office

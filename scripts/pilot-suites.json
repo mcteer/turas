@@ -1080,8 +1080,9 @@
     },
     {
       "file": "tests/unit/pilot/quality-budget.test.ts",
-      "expectedCases": 17,
+      "expectedCases": 18,
       "cases": [
+        "killing a startup snapshot reader leaves no writer lock and never steals an existing writer fence",
         "admits at most one concurrent provider dispatch across independent ledger clients",
         "refuses insufficient budget before recording a dispatch",
         "retains prior charges and credits across corrected source attempts and blocks unresolved retries",
@@ -1725,8 +1726,9 @@
     },
     {
       "file": "tests/integration/pilot/hosted-root-reconcile.test.ts",
-      "expectedCases": 10,
+      "expectedCases": 11,
       "cases": [
+        "bounds accounting-only rereads of one immutable generation and stops on invalid scope cancellation or client errors",
         "reconciles only the original Gateway identity and atomically preserves its actual charge across replay",
         "retains unknown ceilings for mismatched nonterminal BYOK tool and invalid provider accounting",
         "rolls back a receipt and refund together when settlement fails before commit",

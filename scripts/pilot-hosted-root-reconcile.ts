@@ -5,6 +5,7 @@ import {resolve,dirname,basename} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {z} from 'zod';
+import {setTimeout as delay} from 'node:timers/promises';
 import {pilotHostedScopeSchema,type PilotHostedScope} from '../lib/contracts/pilot-hosted';
 import {readEvidence,createEvidenceDirectory,writeEvidence} from './pilot-evidence';
 import {pilotSource} from './pilot-source';
@@ -25,19 +26,39 @@ const generationSchema=z.object({id:z.string().regex(/^gen_[A-Za-z0-9_-]{1,240}$
  .refine(value=>value.model!=='xai/grok-4.7'||value.providerName==='xai',{path:['model'],message:'Exact xai accounting provider required'});
 const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-/** Fixed read-only provider transport. No model, retry, alternate origin or
+/** Accounting can lag a just-cancelled stream. Re-read only the same immutable
+ * generation, within 20 seconds and three attempts. No model request is retried.
+ * Invalid success bodies and authentication/other client errors fail directly. */
+export async function fetchPilotGatewayGeneration(request:Request,signal:AbortSignal,transport:typeof fetch=fetch,onExtraRead:()=>void=()=>{}){
+ const url=new URL(request.url);
+ if(request.method!=='GET'||url.origin!=='https://ai-gateway.vercel.sh'||url.pathname!=='/v1/generation'||[...url.searchParams].length!==1||!/^gen_[A-Za-z0-9_-]{1,240}$/.test(url.searchParams.get('id')??''))throw Error('Fixed generation lookup only');
+ const whole=AbortSignal.any([signal,request.signal,AbortSignal.timeout(20000)]);
+ for(let attempt=0;attempt<3;attempt++){
+  whole.throwIfAborted();
+  const attemptSignal=AbortSignal.any([whole,AbortSignal.timeout(5000)]);
+  let response:Response;
+  try{if(attempt)onExtraRead();response=await transport(request.clone(),{redirect:'error',cache:'no-store',signal:attemptSignal});}
+  catch(error){if(whole.aborted||attempt===2||!['TimeoutError','AbortError','TypeError'].includes((error as Error)?.name))throw error;await delay(750*(attempt+1),undefined,{signal:whole});continue;}
+  if([404,408,429,500,502,503,504].includes(response.status)&&attempt<2){await response.body?.cancel();await delay(750*(attempt+1),undefined,{signal:whole});continue;}
+  const reader=response.body?.getReader();if(!reader)throw Error('Actual generation lookup body required');
+  const abortBody=()=>{void reader.cancel(attemptSignal.reason).catch(()=>{});};
+  attemptSignal.addEventListener('abort',abortBody,{once:true});if(attemptSignal.aborted)abortBody();
+  const parts:Uint8Array[]=[];let size=0;
+  try{for(;;){const next=await reader.read();if(next.done)break;size+=next.value.byteLength;if(size>1048576)throw Error('Generation lookup exceeds bound');parts.push(next.value);}attemptSignal.throwIfAborted();}
+  finally{attemptSignal.removeEventListener('abort',abortBody);await reader.cancel().catch(()=>{});reader.releaseLock();}
+  return new Response(Buffer.concat(parts),{status:response.status,headers:response.headers});
+ }
+ throw Error('Bounded generation lookup incomplete');
+}
+
+/** Fixed read-only provider transport. No model, alternate origin or
  * caller-supplied capture can manufacture accounting provenance. */
-export async function lookupPilotGatewayGeneration(id:string,signal:AbortSignal){
+export async function lookupPilotGatewayGeneration(id:string,signal:AbortSignal,onExtraRead:()=>void=()=>{}){
  const key=process.env.AI_GATEWAY_API_KEY;if(!key)throw Error('Explicit Gateway lookup credential required');
  const gateway=createGateway({apiKey:key,baseURL:'https://ai-gateway.vercel.sh/v1/ai',fetch:async(input,init)=>{
   const request=new Request(input,init),url=new URL(request.url);
   if(request.method!=='GET'||url.origin!=='https://ai-gateway.vercel.sh'||url.pathname!=='/v1/generation'||url.searchParams.get('id')!==id||[...url.searchParams].length!==1)throw Error('Fixed generation lookup only');
-  const response=await fetch(request,{redirect:'error',cache:'no-store',signal:AbortSignal.any([signal,request.signal,AbortSignal.timeout(5000)])});
-  const reader=response.body?.getReader();if(!reader)throw Error('Actual generation lookup body required');
-  const parts:Uint8Array[]=[];let size=0;
-  try{for(;;){const next=await reader.read();if(next.done)break;size+=next.value.byteLength;if(size>1048576)throw Error('Generation lookup exceeds bound');parts.push(next.value);}}
-  finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
-  return new Response(Buffer.concat(parts),{status:response.status,headers:response.headers});
+  return fetchPilotGatewayGeneration(request,signal,fetch,onExtraRead);
  }});
  return generationSchema.parse(await gateway.getGenerationInfo({id}));
 }
@@ -67,7 +88,8 @@ export async function reconcileHostedRootGeneration(input:{db:Client;scope:Pilot
  const {db,signal}=input,scope=pilotHostedScopeSchema.parse(input.scope),id=z.uuid().parse(input.operationId);
  signal.throwIfAborted();const original=await readOperation(db,scope,id);
  const existing=(await db.query('SELECT * FROM operations_hosted_root_generation_receipts WHERE operation_id=$1',[id])).rows[0];
- const generation=existing?null:await lookupPilotGatewayGeneration(original.row.provider_key,signal);
+ let providerReads=existing?0:1;
+ const generation=existing?null:await lookupPilotGatewayGeneration(original.row.provider_key,signal,()=>{providerReads++;});
  if(generation&&((generation.model!==original.dispatch.model&&!(original.dispatch.model==='spacexai/grok-4.7'&&generation.model==='xai/grok-4.7'&&generation.providerName==='xai'))||generation.id!==original.row.provider_key||generation.streamed!==(original.dispatch.providerPath==='stream')
   ||generation.usage!==generation.totalCost||Date.parse(generation.createdAt)<original.row.created_at.getTime()-30000
   ||Date.parse(generation.createdAt)>original.row.created_at.getTime()+300000||Date.parse(generation.createdAt)>Date.now()+30000))throw Error('Exact terminal Gateway accounting unavailable');
@@ -90,7 +112,7 @@ export async function reconcileHostedRootGeneration(input:{db:Client;scope:Pilot
   }
   const settlement=await settleLockedHostedRoot(db,locked,actual);
   signal.throwIfAborted();await db.query('COMMIT');
-  return {contract:'pilot-hosted-root-generation-reconciliation-v1',operationId:id,budgetId:String(current.row.budget_id),generationId:String(current.row.provider_key),actualMicroUsd:actual,...settlement,alreadyRecorded:!!receipt,providerReads:existing?0:1,modelCalls:0,approvalExtended:false,budgetReopened:false};
+  return {contract:'pilot-hosted-root-generation-reconciliation-v1',operationId:id,budgetId:String(current.row.budget_id),generationId:String(current.row.provider_key),actualMicroUsd:actual,...settlement,alreadyRecorded:!!receipt,providerReads,modelCalls:0,approvalExtended:false,budgetReopened:false};
  }catch(error){await db.query('ROLLBACK').catch(()=>{});throw error;}
 }
 

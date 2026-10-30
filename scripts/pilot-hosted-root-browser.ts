@@ -7,6 +7,7 @@ import {hostedRootBudgetSchema} from '../lib/server/conversations/hosted-root-bu
 import {terminalNativeRetirementReceipt} from '../lib/server/conversations/native-retirement-recovery';
 import {boundedHostedJson} from './pilot-hosted-http';
 import {reconcileHostedRootGeneration} from './pilot-hosted-root-reconcile';
+import {writeEvidence} from './pilot-evidence';
 
 /** Two actual root sends, never retried. Binding/admission and original058
  * authority must already exist. Browser observations cannot settle a charge. */
@@ -88,9 +89,21 @@ export async function runHostedRootBrowser(input:{scope:PilotHostedScope;db:Clie
   await until(async()=> (await attempts())[1]?.response_state==='cancelled');
   await page.screenshot({path:join(input.evidenceDirectory,'root-'+(input.mobile?'mobile':'desktop')+'-stopped-private.png'),fullPage:true});
   if(Number(posts)!==2||forbidden||releaseMismatch||(await operations()).length!==2)throw Error('Root browser dispatch or release boundary differs');
+  // Preserve the actual UI assertions before external accounting reads. This
+  // checkpoint is deliberately not a successful transport/cleanup receipt.
+  const originalOperations=await operations();
+  await writeEvidence(input.evidenceDirectory,'root-'+(input.mobile?'mobile':'desktop')+'-ui-checkpoint.json',{
+   contract:'pilot-hosted-root-ui-checkpoint-v1',scope,conversationId:id,nativeSessionId:native,
+   startedAt,observedAt:new Date().toISOString(),mobile:input.mobile,actualUiSends:2,
+   streamingReload:true,sameAttempt:true,deadlinePreserved:true,noReloadResend:true,actualStop:true,
+   requestAndReleaseBoundariesVerified:true,attempts:await attempts(),operationIds:originalOperations.map(row=>row.id),
+   accountingVerified:false,nativeRetirementConfirmed:false,conversationArchived:false,browserClosed:false,
+   fullHostedCatalogVerified:false,
+  });
   const accounting=[];
-  for(const operation of await operations()){
+  for(const operation of originalOperations){
    const result=await reconcileHostedRootGeneration({db:ownerDb,scope,operationId:operation.id,signal});
+   await writeEvidence(input.evidenceDirectory,'root-'+(input.mobile?'mobile':'desktop')+'-accounting-'+operation.id+'.json',result);
    if(!result.reconciliationSuccessful)throw Error('Actual root cost exceeded original ceiling');accounting.push(result);
   }
   receipt={contract:'pilot-hosted-root-browser-v1',conversationId:id,mobile:input.mobile,actualUiSends:2,streamingReload:true,sameAttempt:true,deadlinePreserved:true,noReloadResend:true,actualStop:true,accounting,fullHostedCatalogVerified:false};
