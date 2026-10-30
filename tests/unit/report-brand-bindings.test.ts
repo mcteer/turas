@@ -69,7 +69,7 @@ describe('archived report renderer identity in authenticated recovery',()=>{
    await expect(requireCurrentReportBrand(db,'workspace','brand')).rejects.toMatchObject({code:'brand_unapproved'});
    recoveryAuthentication.proof={...proof,readKind:'profile'};await expect(withRecoveryReportBrand(db,request,'admission',async()=>{})).rejects.toMatchObject({status:403});
    recoveryAuthentication.proof=proof;await expect(withRecoveryReportBrand(db,request,'admission',async()=>{throw Error('consumer failed');})).rejects.toThrow('consumer failed');expect(await recoveryReportBrandBinding(db,'workspace','brand')).toBeNull();
-   row={...original,manifest:current.profileManifest,manifest_digest:current.profileDigest,state:'draft'};expect((await requireCurrentReportBrand(db,'workspace','brand',false)).state).toBe('draft');
+   row={...original,manifest:{...current.profileManifest,rendererImage:'sha256:'+'a'.repeat(64)},manifest_digest:current.profileDigest,state:'draft'};expect((await requireCurrentReportBrand(db,'workspace','brand',false)).state).toBe('draft');
    recoveryAuthentication.proof=null;await expect(withRecoveryReportBrand(db,request,'admission',async()=>{})).rejects.toThrow('No authenticated admission');
   }finally{recoveryAuthentication.proof=null;for(const key of keys){if(previous[key]===undefined)delete process.env[key];else process.env[key]=previous[key];}}
  });
