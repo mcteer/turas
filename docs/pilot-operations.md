@@ -1679,3 +1679,7 @@ through object copying, required-original and integrity inventories, and canonic
 maintenance-store materialization. Generic owned object restore and materialization
 retain their 24 MiB default unless an explicit bounded allowance is supplied.
 Object count, individual file limits, exact bytes and digests remain enforced.
+Maintenance service descriptors share the existing 1,024-row aggregate ledger
+inventory bound. Profiles, plans and file records count together; the verifier
+must consume every descriptor. Four-record runtime leases and the original
+15-minute full recovery deadline remain unchanged.

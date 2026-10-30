@@ -1589,3 +1589,5 @@ ledger or grant runtime access; actual full restore verification remains require
 The complete work-restore path explicitly carries the 192 MiB object bound through
 integrity checks and canonical maintenance copies; generic owned restores keep
 their 24 MiB default.
+Maintenance verification retains every derived record within the shared
+1,024-row ledger bound, using the existing small runtime batches and deadline.

@@ -61,7 +61,12 @@ it.each(['artifact','report','workforce','gap','command'] as const)('%s authenti
   await withPilotEnvironment(async environment=>{
    const db=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await db.connect();
    try{
-    sourceEnvironmentId=environment.environmentId;const profile=await pilotPublishedKnowledgeFixture(db as any,'primary');await db.query('BEGIN');const original=Buffer.from('Synthetic work restore artifact'),source=await createArtifactDatabaseFixture(db as unknown as PoolClient,profile.actor,profile.customerId,null,original,createHash('sha256').update(original).digest('hex'));await db.query("UPDATE artifact_extraction_runs SET state='published',scan_receipt='{}',coverage='{\"total\":1,\"visited\":1,\"omitted\":[]}',manifest_digest=$2,published_at=now() WHERE id=$1",[source.runId,source.originalDigest]);await db.query("UPDATE artifact_versions SET state='processing' WHERE id=$1",[source.versionId]);await db.query("UPDATE artifact_versions SET state='ready',submitted_at=now() WHERE id=$1",[source.versionId]);sourceProfile={workspaceId:profile.actor.workspaceId,customerId:profile.customerId,revisionId:profile.originalRevisionId,artifactVersionId:source.versionId};await db.query('COMMIT');
+    sourceEnvironmentId=environment.environmentId;const profile=await pilotPublishedKnowledgeFixture(db as any,'primary');
+    if(surface==='workforce')await db.query(`WITH added AS (
+     INSERT INTO customer_references(id,workspace_id,display_name,synthetic)
+     SELECT gen_random_uuid(),$1,'Synthetic inventory-only profile '||n,true FROM generate_series(1,260) n RETURNING id,workspace_id)
+     INSERT INTO customer_profile_state(customer_id,workspace_id) SELECT id,workspace_id FROM added`,[profile.actor.workspaceId]);
+    await db.query('BEGIN');const original=Buffer.from('Synthetic work restore artifact'),source=await createArtifactDatabaseFixture(db as unknown as PoolClient,profile.actor,profile.customerId,null,original,createHash('sha256').update(original).digest('hex'));await db.query("UPDATE artifact_extraction_runs SET state='published',scan_receipt='{}',coverage='{\"total\":1,\"visited\":1,\"omitted\":[]}',manifest_digest=$2,published_at=now() WHERE id=$1",[source.runId,source.originalDigest]);await db.query("UPDATE artifact_versions SET state='processing' WHERE id=$1",[source.versionId]);await db.query("UPDATE artifact_versions SET state='ready',submitted_at=now() WHERE id=$1",[source.versionId]);sourceProfile={workspaceId:profile.actor.workspaceId,customerId:profile.customerId,revisionId:profile.originalRevisionId,artifactVersionId:source.versionId};await db.query('COMMIT');
     process.env.TURAS_PILOT_RENDERER_IMAGE=renderer;process.env.TURAS_REPORTS_ENABLED='true';
     const baseline=await reportsDeliveryFixture(),activity=await addReviewedReportActivity(baseline,{narrative:'Controlled normally reviewed recovery byte fixture.'});
     const delivery={plan:{created:baseline.created,content:baseline.content,decision:baseline.decision},engagementId:baseline.engagementId,baselineId:baseline.baselineId,activity};
@@ -145,6 +150,7 @@ it.each(['artifact','report','workforce','gap','command'] as const)('%s authenti
     await bindOwnedRestoredSource(otherOwnedTarget,proof,storeRoot,environment.signal);
     const maintenance=await deriveOwnedMaintenanceInventory(ownedTarget,scope,environment.signal);
     expect(maintenance.requiredOriginals.requiredObjectCount).toBe(8);
+    if(surface==='workforce'){expect(maintenance.records.filter(record=>record.kind==='profile').length).toBeGreaterThanOrEqual(260);expect(maintenance.records.length).toBeGreaterThan(256);expect(maintenance.records.length).toBeLessThanOrEqual(1024);}
     expect([...new Set(maintenance.records.map(record=>record.kind))].sort()).toEqual(['artifact','execution','gap','plan','profile','report','workforce']);
     expect(maintenance.requiredScopeHealthy).toBe(false);expect(maintenance.restorationReady).toBe(false);
     const foreignOwner=randomUUID(),workforceOwner=(await db.query('SELECT owner_membership_id FROM workforce_import_intents WHERE id=$1',[expectedWorkforce.importId])).rows[0].owner_membership_id;
