@@ -1,6 +1,7 @@
 # Turas
 
 Current pilot release status and validation results are recorded in
+[PR #48](https://github.com/mcteer/turas/pull/48) and its parent
 [PR #47](https://github.com/mcteer/turas/pull/47). The observations below are
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.

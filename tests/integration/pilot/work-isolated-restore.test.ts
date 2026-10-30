@@ -1,3 +1,4 @@
+import {execFileSync} from 'node:child_process';
 import {verifyOwnedMaintenanceRecovery,requireOwnedMaintenanceVerification} from '../../../lib/server/operations/owned-maintenance-verification';
 import {deriveOwnedMaintenanceInventory} from '../../../lib/server/operations/owned-maintenance-inventory';
 import {DEMO_IDS} from '../../../lib/server/bootstrap-ids';
@@ -15,7 +16,7 @@ import {runWorkforceImport} from '../../../lib/server/staffing/runner';
 import {WorkforceStore} from '../../../lib/server/staffing/store';
 import {parsePilotImagePreparation} from '../../../lib/contracts/pilot-images';
 import {reportsDeliveryFixture,addReviewedReportActivity} from '../../fixtures/reports/delivery';
-import {pilotLoadReportFixture} from '../../fixtures/pilot/load-delivery';
+import {pilotLoadReportFixture,pilotLoadDraftReportFixture} from '../../fixtures/pilot/load-delivery';
 import {previewReportPublication,submitReportPublicationDecision} from '../../../lib/server/reports/service';
 import {readReportObject} from '../../../lib/server/reports/store';
 import {createArtifactDatabaseFixture} from '../../fixtures/artifact-database';
@@ -51,7 +52,8 @@ it.each(['artifact','report','workforce','gap','command'] as const)('%s authenti
  const preparation=process.env.TURAS_PILOT_UI_PREPARATION_FILE,renderer=process.env.TURAS_PILOT_RENDERER_IMAGE??(preparation?parsePilotImagePreparation(await readFile(preparation)).images.find(image=>image.kind==='renderer')?.localImageId:undefined);
  if(!renderer||!/^sha256:[a-f0-9]{64}$/.test(renderer))throw Error('Explicit prepared recovery report renderer required');
  await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});const root=await mkdtemp(resolve('local-artifacts/016/work-rehearsal-')),key=randomBytes(32);
- let application:OwnedRecoveryApplication|undefined;
+ let application:OwnedRecoveryApplication|undefined,alternateImage:string|undefined;
+ const alternateContainer='turas-pilot-draft-renderer-'+randomUUID();let alternateContainerCreated=false;
  let sourceGap:{jsonExportId:string;exportId:string;reportId:string;revisionId:string;workspaceId:string;digest:string;sizeBytes:number;objectKey:string}|undefined;
  let sourceWorkforce:{importId:string;sourceId:string;versionId:string;workspaceId:string;digest:string;bytes:Buffer}|undefined;
  let sourceReport:{artifactId:string;reportId:string;revisionId:string;customerId:string;workspaceId:string;digest:string;sizeBytes:number;objectKey:string}|undefined;
@@ -70,11 +72,17 @@ it.each(['artifact','report','workforce','gap','command'] as const)('%s authenti
     process.env.TURAS_PILOT_RENDERER_IMAGE=renderer;process.env.TURAS_REPORTS_ENABLED='true';
     const baseline=await reportsDeliveryFixture(),activity=await addReviewedReportActivity(baseline,{narrative:'Controlled normally reviewed recovery byte fixture.'});
     const delivery={plan:{created:baseline.created,content:baseline.content,decision:baseline.decision},engagementId:baseline.engagementId,baselineId:baseline.baselineId,activity};
-    const reports=await pilotLoadReportFixture(db as unknown as PoolClient,{actors:[baseline.reviewer,baseline.author],customers:[{id:baseline.customerId}]},delivery,environment.signal);
-    const report=reports.reports[1],publication=await previewReportPublication(baseline.reviewer,report.reportId,{action:'publish',expectedVersion:report.version});
-    await submitReportPublicationDecision(baseline.reviewer,report.reportId,{action:'publish',expectedVersion:report.version,requestKey:randomUUID(),rationale:'Review normally rendered synthetic recovery artifact',previewId:publication.previewId,previewDigest:publication.previewDigest});
+    const reports=await (surface==='report'?pilotLoadDraftReportFixture:pilotLoadReportFixture)(db as unknown as PoolClient,{actors:[baseline.reviewer,baseline.author],customers:[{id:baseline.customerId}]},delivery,environment.signal);
+    const report=reports.reports[1];
+    if(surface==='report'){
+     expect((await db.query('SELECT state FROM report_brand_profiles WHERE id=$1',[reports.brandId])).rows[0].state).toBe('draft');
+     await expect(previewReportPublication(baseline.reviewer,report.reportId,{action:'publish',expectedVersion:report.version})).rejects.toMatchObject({code:'brand_unapproved'});
+    }else{
+     const publication=await previewReportPublication(baseline.reviewer,report.reportId,{action:'publish',expectedVersion:report.version});
+     await submitReportPublicationDecision(baseline.reviewer,report.reportId,{action:'publish',expectedVersion:report.version,requestKey:randomUUID(),rationale:'Review normally rendered synthetic recovery artifact',previewId:publication.previewId,previewDigest:publication.previewDigest});
+    }
     const reportArtifacts=(await db.query('SELECT a.*,r.report_id FROM report_artifacts a JOIN report_revisions r ON r.id=a.revision_id ORDER BY a.id')).rows;expect(reportArtifacts).toHaveLength(4);
-    const pdf=reportArtifacts.find(row=>row.revision_id===report.revisionId&&row.format==='pdf');if(!pdf)throw Error('Normally rendered published PDF missing');
+    const pdf=reportArtifacts.find(row=>row.revision_id===report.revisionId&&row.format==='pdf');if(!pdf)throw Error('Normally rendered validated PDF missing');
     sourceReport={artifactId:pdf.id,reportId:pdf.report_id,revisionId:pdf.revision_id,customerId:pdf.customer_id,workspaceId:pdf.workspace_id,digest:pdf.content_digest,sizeBytes:Number(pdf.size_bytes),objectKey:pdf.object_key};
     if(!preparation)throw Error('Explicit prepared workforce recovery images required');
     const images=parsePilotImagePreparation(await readFile(preparation)),parser=images.images.find(image=>image.kind==='parser')!,scanner=images.images.find(image=>image.kind==='scanner')!,preparedStore=join(dirname(preparation),'store');
@@ -235,7 +243,7 @@ it.each(['artifact','report','workforce','gap','command'] as const)('%s authenti
      expect((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin")).rowCount).toBe(0);
      expect((await db.query("SELECT 1 FROM pg_auth_members WHERE member='turas_runtime_016'::regrole")).rowCount).toBe(0);
     }
-    const recoveryApplication=await prepareOwnedRecoveryApplication({target:ownedTarget,scope,signal:environment.signal,deadline:Date.now()+120000});application=recoveryApplication;
+    let recoveryApplication=await prepareOwnedRecoveryApplication({target:ownedTarget,scope,signal:environment.signal,deadline:Date.now()+120000});application=recoveryApplication;
     await warmOwnedRecoveryApplication(recoveryApplication,environment.signal);
     await interruptedPreparation(false);
     async function verifyRuntimePhase(kinds:readonly ('artifact'|'report'|'workforce'|'gap')[]){
@@ -429,6 +437,32 @@ it.each(['artifact','report','workforce','gap','command'] as const)('%s authenti
     // Each independent capture/restore case exercises one surface plus every
     // shared control inside the unchanged 60-second restricted runtime lease.
     await verifyRuntimePhase([surface]);
+    if(surface==='report'){
+     // The first phase reads an exact-current draft profile. This second real
+     // HTTP read retains its captured image while a different actual immutable
+     // renderer is configured. It never renders, approves or publishes bytes.
+     // Derive an owned image configuration from the actual prepared renderer.
+     // No container starts, no layers change and no ambient legacy tag is needed.
+     execFileSync('docker',['create','--name',alternateContainer,renderer],{encoding:'utf8',timeout:5000,maxBuffer:1024});alternateContainerCreated=true;
+     const alternate=execFileSync('docker',['commit','--change','LABEL turas.pilot.draft-recovery=alternate',alternateContainer],{encoding:'utf8',timeout:5000,maxBuffer:1024}).trim();alternateImage=alternate;
+     expect(alternate).toMatch(/^sha256:[a-f0-9]{64}$/);expect(alternate).not.toBe(renderer);
+     execFileSync('docker',['rm',alternateContainer],{encoding:'utf8',timeout:5000,maxBuffer:1024});alternateContainerCreated=false;
+     await retireOwnedRecoveryApplication(recoveryApplication);
+     recoveryApplication=await prepareOwnedRecoveryApplication({target:ownedTarget,scope,signal:environment.signal,deadline:Date.now()+60000,rendererImage:alternate});application=recoveryApplication;
+     await warmOwnedRecoveryApplication(recoveryApplication,environment.signal);
+     await withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async(_runtime,signal,appEnvironment)=>withOwnedRecoveryApplication(recoveryApplication,appEnvironment,signal,async()=>{
+      let proof:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
+      try{
+       await withOwnedRecoveryApplicationConfiguration(recoveryApplication,signal,async owner=>{await owner.query('BEGIN');try{proof=await issueOwnedRecoveryHttpRead(owner as unknown as PoolClient,{...scope,workspaceId:expectedReport.workspaceId,customerId:expectedReport.customerId,deadline:Date.now()+20000,password:process.env.TURAS_DEMO_PASSWORD!,maximumRequests:1,deploymentId:null,readKind:'report',recordId:expectedReport.artifactId});await owner.query('COMMIT');}catch(error){await owner.query('ROLLBACK');throw error;}});
+       if(!proof)throw Error('Actual draft sample admission missing');
+       const path=recoveryApplication.origin+'/api/operations/recovery-read/'+proof.id+'/report',headers={cookie:sessionCookie(proof.actor.token,proof.actor.expiresAt).split(';')[0],'x-turas-recovery-read':proof.secret};
+       const response=await fetch(path,{headers,redirect:'manual',signal});expect(response.status).toBe(200);const bytes=Buffer.from(await response.arrayBuffer());expect(bytes.length).toBe(expectedReport.sizeBytes);expect(createHash('sha256').update(bytes).digest('hex')).toBe(expectedReport.digest);
+       expect((await db.query('SELECT b.state FROM report_brand_profiles b JOIN report_revisions r ON r.brand_id=b.id WHERE r.id=$1',[expectedReport.revisionId])).rows[0].state).toBe('draft');
+       expect((await db.query('SELECT 1 FROM report_publications WHERE revision_id=$1',[expectedReport.revisionId])).rowCount).toBe(0);
+       await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,proof.id);const denied=await fetch(path,{headers,redirect:'manual',signal});expect(denied.status).toBe(403);await denied.body?.cancel();
+      }finally{if(proof)await retireOwnedRecoveryHttpRead(db as unknown as PoolClient,proof.id);}
+     }));
+    }
     await interruptedPreparation(true);
     await expect(withOwnedRestoredRuntime(ownedTarget,scope,environment.signal,async()=>{throw Error('Controlled runtime failure');})).rejects.toThrow('Controlled runtime failure');
     const interrupted=new AbortController();let held:Promise<boolean>|undefined,expiredEnvironment:Readonly<Record<string,string>>|undefined;
@@ -515,5 +549,11 @@ it.each(['artifact','report','workforce','gap','command'] as const)('%s authenti
     const outcome=await measurement;expect(outcome.value).toBeNull();expect(outcome.error).toBeInstanceOf(Error);expect(outcome.error.message).toContain('accepted content differs');
    }finally{await blocker.query('ROLLBACK').catch(()=>{});await blocker.end();await db.end();}
   },{postgresMajor:18,deadlineMs:180000});
- }finally{if(application)await retireOwnedRecoveryApplication(application);key.fill(0);await rm(root,{recursive:true,force:true});}
+ }finally{
+  try{if(application)await retireOwnedRecoveryApplication(application);}finally{
+   try{if(alternateContainerCreated)execFileSync('docker',['rm','-f',alternateContainer],{timeout:5000,maxBuffer:1024});}finally{
+    try{if(alternateImage)execFileSync('docker',['image','rm',alternateImage],{timeout:5000,maxBuffer:1024});}finally{key.fill(0);await rm(root,{recursive:true,force:true});}
+   }
+  }
+ }
 },420000);

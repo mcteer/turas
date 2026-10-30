@@ -1,3 +1,4 @@
+import {WORK_BACKUP_LIMITS} from '../../../lib/server/operations/work-backup-limits';
 import {workMcpCaseFailureMetadata} from '../../../scripts/ci-process-diagnostics';
 import {observeWorkRecoveryStore,restoredWorkStoreDigest} from '../../../lib/server/operations/work-recovery-store-binding';
 import {execFile} from 'node:child_process';
@@ -436,7 +437,7 @@ it('authenticates real work integrity bytes and rejects forged changed-object ar
   const {providerCalls:ignored,...common}=owned;
   const candidate=workCaptureCandidateSchema.parse({...common,configurationDigest,contract:'pilot-work-capture-candidate-v1',workflow:{inventoryDigest:recoveryDigest([]),fileCount:0,entries:[],backend:'managed-workflow',capability:'interrupted-reconciliation',runtimeStoppedVerified:false,resumptionVerified:false,reconciliationVerified:false},encryptedBundle:{headerDigest:packed.headerDigest,...encrypted},modelCalls:0,mailCalls:0});
   process.env.VERCEL_BLOB_RETRIES='0';const args={target:input,candidate,bundle,keyFile,assetRoot,storeId:'syntheticStore',oidcToken:'synthetic.oidc.identity'};
-  await expect(measureWorkTargetIntegrity({...args,candidate:{...candidate,encryptedBundle:{...candidate.encryptedBundle,sizeBytes:67108865}}})).rejects.toThrow('capture allowance');
+  await expect(measureWorkTargetIntegrity({...args,candidate:{...candidate,encryptedBundle:{...candidate.encryptedBundle,sizeBytes:WORK_BACKUP_LIMITS.encryptedArchiveBytes+1}}})).rejects.toThrow('capture allowance');
   await expect(measureWorkTargetIntegrity({...args,oidcToken:''})).rejects.toThrow();
   const proof=await measureWorkTargetIntegrity(args);expect(proof).toMatchObject({objectCount:activeObjectNamespaces.length,acceptedContentDigest:candidate.acceptedContentDigest,restorationReady:false});
   const blobToken='vercel_blob_rw_syntheticStore_SYNTHETICFIXTUREONLY';await expect(measureWorkTargetIntegrity({...args,blobToken})).rejects.toThrow('Exactly one');await expect(measureWorkTargetIntegrity({...args,oidcToken:undefined,blobToken:'vercel_blob_rw_foreignStore_SYNTHETICFIXTUREONLY'})).rejects.toThrow('identity differs');const tokenProof=await measureWorkTargetIntegrity({...args,oidcToken:undefined,blobToken});expect(tokenProof).toMatchObject({objectCount:activeObjectNamespaces.length,acceptedContentDigest:candidate.acceptedContentDigest,restorationReady:false});expect(JSON.stringify(tokenProof)).not.toContain(blobToken);await withLockedWorkRecoveryDecision(input,async(db,target)=>{expect(await requireMeasuredWorkTargetIntegrity(db,target,tokenProof,signal)).toBe(tokenProof);});

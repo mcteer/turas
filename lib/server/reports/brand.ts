@@ -58,5 +58,5 @@ export async function requireCurrentReportBrand(db:PoolClient,workspaceId:string
    && recovered.renderer_digest===rendererDigest&&recovered.brand_digest===row.manifest_digest
    && recovered.font_digest===brand.fontDigest&&recovered.template_digest===brand.templateDigest;
  }
- if(!row || (recovered&&row.state!=='approved') || !profileMatches || row.font_digest!==brand.fontDigest || row.template_digest!==brand.templateDigest || (approved && row.state!=='approved') || row.state==='revoked')throw new HttpFailure(503,'brand_unapproved','Current brand review is required');return {...row,bundleDigest:brand.manifestDigest,rendererCodeDigest:brand.rendererCodeDigest};
+ if(!row || !profileMatches || row.font_digest!==brand.fontDigest || row.template_digest!==brand.templateDigest || (approved && row.state!=='approved') || row.state==='revoked')throw new HttpFailure(503,'brand_unapproved','Current brand review is required');return {...row,bundleDigest:brand.manifestDigest,rendererCodeDigest:brand.rendererCodeDigest};
 }

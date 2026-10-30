@@ -56,7 +56,7 @@ describe('archived report renderer identity in authenticated recovery',()=>{
     expect((await requireCurrentReportBrand(db,'workspace','brand')).id).toBe('brand');
     await expect(requireCurrentReportBrand({...db} as PoolClient,'workspace','brand')).rejects.toMatchObject({code:'brand_unapproved'});
     await expect(recoveryReportBrandBinding(db,'other-workspace','brand')).rejects.toMatchObject({status:403});
-    for(const state of ['draft','revoked']){row={...original,state};await expect(requireCurrentReportBrand(db,'workspace','brand')).rejects.toMatchObject({code:'brand_unapproved'});await expect(requireCurrentReportBrand(db,'workspace','brand',false)).rejects.toMatchObject({code:'brand_unapproved'});}
+    for(const state of ['draft','revoked']){row={...original,state};await expect(requireCurrentReportBrand(db,'workspace','brand')).rejects.toMatchObject({code:'brand_unapproved'});if(state==='draft')expect((await requireCurrentReportBrand(db,'workspace','brand',false)).state).toBe('draft');else await expect(requireCurrentReportBrand(db,'workspace','brand',false)).rejects.toMatchObject({code:'brand_unapproved'});}
     row={...original};
     for(const changed of [{manifest:{...manifest,rendererImage:'mutable:latest'}},{manifest:{...manifest,rendererCodeDigest:'c'.repeat(64)}},{font_digest:'c'.repeat(64)},{template_digest:'c'.repeat(64)}]){
      row={...original,...changed};await expect(requireCurrentReportBrand(db,'workspace','brand')).rejects.toMatchObject({code:'brand_unapproved'});

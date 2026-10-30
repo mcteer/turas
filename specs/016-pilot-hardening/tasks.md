@@ -1542,3 +1542,10 @@ No hosted target may be locked for release before its measured reopen path exist
   retaining fallback cleanup on every earlier failure, revoked HTTP denial and
   final global closure checks. Verify the complete archived inventory within the
   original deadline (FR-017, FR-021).
+
+- [ ] T244 Preserve canonical draft-sample download eligibility during owned
+  recovery while requiring brand approval for publication and denying revoked
+  brands. Verify normally rendered draft samples through authenticated HTTP
+  with both current and archived immutable renderer identities, publication
+  denial, byte integrity and probe retirement. Keep the encrypted archive
+  rejection test above the actual shared backup limit (FR-017, FR-021).

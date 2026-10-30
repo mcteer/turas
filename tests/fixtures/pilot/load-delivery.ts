@@ -25,7 +25,7 @@ export async function pilotLoadDeliveryBaseFixture(db:PoolClient,evidence:Awaite
  const activity=await addReviewedReportActivity(fixture,{eventDate:'2026-09-24',narrative:'Controlled synthetic load demonstration, not an actual customer outcome.'});
  return {plan,engagementId,baselineId,activity};
 }
-export async function pilotLoadReportFixture(db:PoolClient,evidence:{actors:CurrentSession[];customers:{id:string}[]},delivery:Awaited<ReturnType<typeof pilotLoadDeliveryBaseFixture>>,signal:AbortSignal){
+export async function pilotLoadDraftReportFixture(db:PoolClient,evidence:{actors:CurrentSession[];customers:{id:string}[]},delivery:Awaited<ReturnType<typeof pilotLoadDeliveryBaseFixture>>,signal:AbortSignal){
  requireOwnedPilotDatabase(process.env,true);const {plan,engagementId,baselineId,activity}=delivery,author=evidence.actors[1],reviewer=evidence.actors[0],customerId=evidence.customers[0].id;
  if(process.env.TURAS_REPORTS_ENABLED!=='true'||!/^sha256:[a-f0-9]{64}$/.test(process.env.TURAS_PILOT_RENDERER_IMAGE??''))throw Error('Explicit prepared owned renderer required');
  const reports:any[]=[];
@@ -36,6 +36,10 @@ export async function pilotLoadReportFixture(db:PoolClient,evidence:{actors:Curr
   reports.push(view);
  }
  const brand=(await db.query('SELECT b.id,b.state FROM report_brand_profiles b JOIN report_revisions r ON r.brand_id=b.id WHERE r.id=$1',[reports[0].revisionId])).rows[0];
+ return {...delivery,reports,brandId:brand.id,brandState:brand.state};
+}
+export async function pilotLoadReportFixture(db:PoolClient,evidence:{actors:CurrentSession[];customers:{id:string}[]},delivery:Awaited<ReturnType<typeof pilotLoadDeliveryBaseFixture>>,signal:AbortSignal){
+ const draft=await pilotLoadDraftReportFixture(db,evidence,delivery,signal),{reports}=draft,reviewer=evidence.actors[0],customerId=evidence.customers[0].id,brand={id:draft.brandId,state:draft.brandState};
  if(brand.state!=='approved'){const body={customerId,action:'approve' as const,expectedVersion:1,sampleRevisionIds:reports.map(report=>report.revisionId)},preview=await previewReportBrand(reviewer,brand.id,body);await submitReportBrandDecision(reviewer,brand.id,{...body,previewId:preview.previewId,previewDigest:preview.previewDigest,requestKey:randomUUID(),rationale:'Review actual controlled branded samples'});}
  const preview=await previewReportPublication(reviewer,reports[0].reportId,{action:'publish',expectedVersion:reports[0].version});
  const published=await submitReportPublicationDecision(reviewer,reports[0].reportId,{action:'publish',expectedVersion:reports[0].version,requestKey:randomUUID(),rationale:'Publish controlled synthetic load report',previewId:preview.previewId,previewDigest:preview.previewDigest});

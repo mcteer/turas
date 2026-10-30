@@ -9547,3 +9547,25 @@ behavior. The actual current cffe byte-component inventory is explicitly bound
 when composing cffe evidence; a newer operator checkout inventory cannot replace
 it. The actual post-restart byte composition passed with zero new jobs/models
 and retains the explicit `actualReportAt10MiB: false` qualification.
+
+### Draft sample recovery policy and archive test boundary
+
+Independent review identified an overstrict archived-brand guard: it required
+brand approval even when the canonical report caller permits a validated,
+unpublished draft sample. The unchanged guard failed the new unit expectation
+and the real recovery HTTP report case returned 503. Removing only that extra
+condition preserves the caller's approval requirement and unconditional revoked
+brand denial. The first real after-fix report case passes authenticated exact
+bytes, publication denial and retirement for both current and different immutable
+renderer identities. Review then required replacing an ambient legacy Docker tag
+with an owned alternate image configuration derived from the prepared renderer;
+that self-contained case also passes its real authenticated report checks. Its
+owned stopped container and alternate image are removed in final cleanup.
+
+The previous source's full catalog failed its work-integrity case because its
+forged 64 MiB-plus-one candidate is below the expanded 320 MiB archive limit.
+The test now uses the shared encrypted archive limit plus one and retains the
+same early capture-allowance rejection assertion. Its narrow actual check passes.
+The failed full catalog remains failed. Three brand unit cases and root/pilot
+TypeScript checks pass locally; these are not full catalog, hosted or Production
+acceptance. Production remains unchanged.

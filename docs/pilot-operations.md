@@ -1691,8 +1691,12 @@ transaction, workspace, report, revision, brand and artifact. Previously rendere
 bytes may retain their archived immutable renderer reference: its digest must
 match the artifact renderer digest, the archived manifest must authenticate
 itself, and replacing only the current image reference must reproduce that
-manifest. Current assets, renderer code, fonts, templates, approval/revocation,
-source eligibility and per-chunk checks still apply. This does not equate a
+manifest. Current assets, renderer code, fonts, templates, source eligibility
+and per-chunk checks still apply. Canonical approval policy is preserved: a
+validated unpublished sample may be downloaded with its draft brand when the
+caller does not require approval. That read grants no brand approval or
+publication authority. Publication requires an approved brand, and a revoked
+brand is always denied. This does not equate a
 hosted OCI manifest digest with a local Docker image ID, run a renderer, approve
 a new brand, or change ordinary report generation/publication/download policy.
 
