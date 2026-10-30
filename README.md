@@ -1591,3 +1591,9 @@ integrity checks and canonical maintenance copies; generic owned restores keep
 their 24 MiB default.
 Maintenance verification retains every derived record within the shared
 1,024-row ledger bound, using the existing small runtime batches and deadline.
+
+Recovery report downloads retain the archived immutable renderer identity when
+reading already rendered bytes through an authenticated recovery admission. They
+still verify current assets and renderer code, artifact digests, brand approval
+and source eligibility. Ordinary rendering and publication keep their exact
+current renderer binding. Actual full recovery and Production release remain pending.

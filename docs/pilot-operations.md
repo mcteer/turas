@@ -1683,3 +1683,15 @@ Maintenance service descriptors share the existing 1,024-row aggregate ledger
 inventory bound. Profiles, plans and file records count together; the verifier
 must consume every descriptor. Four-record runtime leases and the original
 15-minute full recovery deadline remain unchanged.
+
+### Archived report brands during recovery
+
+The report recovery endpoint binds the live authenticated admission to its exact
+transaction, workspace, report, revision, brand and artifact. Previously rendered
+bytes may retain their archived immutable renderer reference: its digest must
+match the artifact renderer digest, the archived manifest must authenticate
+itself, and replacing only the current image reference must reproduce that
+manifest. Current assets, renderer code, fonts, templates, approval/revocation,
+source eligibility and per-chunk checks still apply. This does not equate a
+hosted OCI manifest digest with a local Docker image ID, run a renderer, approve
+a new brand, or change ordinary report generation/publication/download policy.

@@ -1525,3 +1525,10 @@ No hosted target may be locked for release before its measured reopen path exist
   deny runtime use, reject preexisting schema state, retain all public triggers
   and report the adapter explicitly. Verify originals, quarantine and full
   maintenance service behavior against an actual cold capture (FR-017, FR-021).
+
+- [ ] T241 Verify archived report renderer identity on the exact authenticated
+  recovery download without changing ordinary brand policy. Bind the original
+  artifact, revision, workspace, transaction and live admission; retain approval,
+  revocation, current assets/code, sources and per-chunk validation. Verify an
+  actual cold captured report and complete maintenance recovery before release
+  (FR-017, FR-021).

@@ -5,6 +5,7 @@ import {authenticateRecoveryHttpRead} from '../../../../../../lib/server/operati
 import {withRecoveryHttpReadCapability} from '../../../../../../lib/server/operations/admission';
 import {streamReportArtifact} from '../../../../../../lib/server/reports/artifacts';
 import {reportTransaction} from '../../../../../../lib/server/reports/commands';
+import {withRecoveryReportBrand} from '../../../../../../lib/server/operations/recovery-report-brand';
 export const dynamic='force-dynamic';
 export const runtime='nodejs';
 /** Fully consume the canonical, rechecked stream inside the live admission.
@@ -13,7 +14,7 @@ export async function GET(request:Request,context:{params:Promise<{admissionId:s
  try{
   const {admissionId}=await context.params;
   await withTransaction(db=>authenticateRecoveryHttpRead(db,request,admissionId,true));
-  const result=await reportTransaction(db=>withRecoveryHttpReadCapability(db,request,admissionId,async(actor,_customerId,proof)=>{
+  const result=await reportTransaction(db=>withRecoveryHttpReadCapability(db,request,admissionId,(actor,_customerId,proof)=>withRecoveryReportBrand(db,request,admissionId,async()=>{
    if(proof.readKind!=='report'||!proof.recordParentId||!proof.recordId||!proof.recordDigest||!proof.recordSize)throw new HttpFailure(403,'forbidden','Recovery read unavailable');
    // Explicitly inject the same authenticated transaction, retaining canonical
    // authorization and per-chunk source checks without a global bypass flag.
@@ -25,7 +26,7 @@ export async function GET(request:Request,context:{params:Promise<{admissionId:s
    finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
    if(size!==proof.recordSize||hash.digest('hex')!==proof.recordDigest)throw new HttpFailure(503,'dependency_unavailable','Original unavailable');
    return {bytes:Buffer.concat(parts,size),headers:response.headers};
-  }));
+  })));
   request.signal.throwIfAborted();return new Response(result.bytes,{headers:result.headers});
  }catch(error){if(!(error instanceof HttpFailure))console.error(JSON.stringify({kind:'recovery_report_read_failed',databaseCode:error&&typeof error==='object'&&'code' in error&&/^[0-9A-Z]{5}$/.test(String(error.code))?String(error.code):null}));return failure(error);}
 }
