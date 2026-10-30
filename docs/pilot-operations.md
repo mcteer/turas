@@ -1695,3 +1695,9 @@ manifest. Current assets, renderer code, fonts, templates, approval/revocation,
 source eligibility and per-chunk checks still apply. This does not equate a
 hosted OCI manifest digest with a local Docker image ID, run a renderer, approve
 a new brand, or change ordinary report generation/publication/download policy.
+
+Each four-record maintenance batch runs its independent reads concurrently on
+separate owner connections and admissions. The batch waits for all read results
+and their retirement before releasing the original runtime lease, even after a
+failure. Any failed read fails the batch. The four-record limit, 60-second lease,
+complete inventory coverage and original 15-minute operation deadline remain.

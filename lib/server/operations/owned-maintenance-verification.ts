@@ -108,7 +108,13 @@ export async function verifyOwnedMaintenanceRecovery(input:{target:OwnedRestoreT
   for(let offset=0;offset<inventory.records.length;offset+=4){
    input.signal.throwIfAborted();const deadline=Math.min(input.deadline,Date.now()+59000),batch=inventory.records.slice(offset,offset+4);
    await withOwnedRestoredRuntime(input.target,input.scope,input.signal,async(_runtime,signal,environment)=>withOwnedRecoveryApplication(application,environment,signal,async()=>{
-    for(const record of batch){signal.throwIfAborted();bytes+=await readRecord(application,record,input,deadline,signal);verified++;}
+    // Each read has its own admission and owner connections. Keep the original
+    // four-record lease, and await every retirement before closing its runtime,
+    // including when a sibling read fails.
+    const results=await Promise.allSettled(batch.map(record=>readRecord(application,record,input,deadline,signal)));
+    const failures=results.filter((result):result is PromiseRejectedResult=>result.status==='rejected');
+    if(failures.length)throw new AggregateError(failures.map(result=>result.reason),'Maintenance batch incomplete');
+    for(const result of results)if(result.status==='fulfilled'){bytes+=result.value;verified++;}
    }));
   }
  }catch(error){failure=error;throw error;}finally{try{await retireOwnedRecoveryApplication(application);}catch(retirement){if(failure)throw new AggregateError([failure,retirement],'Maintenance verification and application retirement failed');throw retirement;}}

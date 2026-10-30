@@ -1532,3 +1532,8 @@ No hosted target may be locked for release before its measured reopen path exist
   revocation, current assets/code, sources and per-chunk validation. Verify an
   actual cold captured report and complete maintenance recovery before release
   (FR-017, FR-021).
+
+- [ ] T242 Verify independent maintenance reads concurrently within each original
+  four-record lease, awaiting every retirement on success or failure. Retain all
+  access, source, byte and release checks, inventory coverage and the original
+  operation deadline; verify actual complete archived inventory (FR-017, FR-021).

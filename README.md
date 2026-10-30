@@ -1597,3 +1597,8 @@ reading already rendered bytes through an authenticated recovery admission. They
 still verify current assets and renderer code, artifact digests, brand approval
 and source eligibility. Ordinary rendering and publication keep their exact
 current renderer binding. Actual full recovery and Production release remain pending.
+
+Owned recovery verifies up to four independent records concurrently inside each
+existing finite runtime lease. It waits for every read and probe retirement,
+including on failure, before closing that runtime; coverage and deadlines remain
+unchanged. Actual full-inventory timing remains under verification.
