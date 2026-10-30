@@ -1710,3 +1710,9 @@ A successful per-record retirement verifies the admission and login session are
 revoked before the required HTTP denial check. Cleanup does not repeat that
 already verified retirement. Any earlier failure still invokes retirement in
 `finally`; the final global runtime/backend/admission closure check is unchanged.
+
+Disposable canonical runtime copies await every write and close before full
+source/destination inventory and SHA verification. They do not flush every
+temporary file to durable storage: each lease removes those copies, and the
+durable restored originals remain the source for the next lease. This changes
+no byte, admission, source, runtime retirement or recovery deadline check.

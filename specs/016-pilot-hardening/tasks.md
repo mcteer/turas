@@ -1549,3 +1549,9 @@ No hosted target may be locked for release before its measured reopen path exist
   with both current and archived immutable renderer identities, publication
   denial, byte integrity and probe retirement. Keep the encrypted archive
   rejection test above the actual shared backup limit (FR-017, FR-021).
+
+- [ ] T245 Avoid per-object durable flushes for disposable per-lease canonical
+  runtime copies. Preserve awaited writes/closes, full source and destination
+  inventories/hashes, durable originals, all HTTP/access/retirement checks and
+  the original recovery deadline. Verify full cold maintenance recovery and
+  current source gates (FR-017, FR-021).

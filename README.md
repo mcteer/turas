@@ -6,6 +6,12 @@ Current pilot release status and validation results are recorded in
 historical snapshots at their recorded source revisions; they do not replace
 current release evidence.
 
+At `2a408b4`, all 1,071 local cases and CI pass, and the real Preview role
+checks pass. Complete maintenance recovery still misses its original deadline.
+The follow-up removes durable flushes from disposable canonical runtime copies
+while retaining awaited writes/closes, complete source/destination hashes and
+all access and retirement checks. Fresh complete validation remains required.
+
 The report operator must select the current brand bound to all three rendered
 samples while retaining earlier brand versions. A scoped post-render continuation
 uses the ordinary approval and publication APIs for those existing samples; it

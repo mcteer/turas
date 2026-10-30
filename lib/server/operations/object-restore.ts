@@ -79,9 +79,11 @@ export async function materializeOwnedRecoveryStores(input:{sourceRoot:string;ta
    await writeFile(join(root,`.turas-${kind}-store.json`),JSON.stringify({environmentId:input.environmentId}),{mode:0o600,flag:'wx'});
    for(const directory of ['objects','staged'])await mkdir(join(root,directory),{mode:0o700});
   }
+  // These per-lease copies are disposable. Await writes and close before full
+  // source/destination hash verification; durable restored originals are retained.
   for(const {object,kind,directory,id} of locations){
    signal.throwIfAborted();const bytes=await verifiedBytes(await store.stream(object.key,object),object,10485760);
-   try{signal.throwIfAborted();const file=await open(join(target,kind,directory,id),constants.O_CREAT|constants.O_EXCL|constants.O_WRONLY|constants.O_NOFOLLOW,0o600);try{await file.writeFile(bytes);await file.sync();}finally{await file.close();}}finally{bytes.fill(0);}
+   try{signal.throwIfAborted();const file=await open(join(target,kind,directory,id),constants.O_CREAT|constants.O_EXCL|constants.O_WRONLY|constants.O_NOFOLLOW,0o600);try{await file.writeFile(bytes);}finally{await file.close();}}finally{bytes.fill(0);}
   }
   const destination=new LegacyLocalPrivateObjects({environmentId:input.environmentId,...roots,reportNamespaces});
   const cold=await verifiedObjectInventory(destination,input.environmentId,activeObjectNamespaces,signal,limits),current=await verifiedObjectInventory(store,input.environmentId,activeObjectNamespaces,signal,limits);
