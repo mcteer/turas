@@ -49,6 +49,7 @@ it('builds the actual operator transport and rejects unauthorized disabled and n
  const root=resolve('local-artifacts/016/operator-transport-'+randomUUID()),previous={...process.env};let server:ReturnType<typeof createServer>|undefined;
  try{
   await preparePilotRecoveryOperator(['--output',root]);
+  expect(await readFile(join(root,'agent/agent.ts'),'utf8')).toContain("model:'anthropic/claude-sonnet-5.5'");
   // Check upload matching with actual gitignore semantics, including arbitrary
   // env-pull names and files injected under an otherwise admitted directory.
   // Vercel's walker tests directories as bare paths before descending. Use an
