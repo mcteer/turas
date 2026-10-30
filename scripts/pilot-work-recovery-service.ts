@@ -20,7 +20,6 @@ import {databaseTargetDigest,operationalDatabaseBindingSchema} from '../lib/serv
 import {recoveryGrantCheckpoint} from '../lib/server/operations/grant-checkpoint';
 import {requireRetiredLegacyWorkRuntime} from '../lib/server/operations/recovery-credential-denials';
 import {withRecoveryCancellation} from '../lib/server/operations/recovery-cancellation';
-import {objectKey,type ObjectNamespace} from '../lib/server/storage/private-objects';
 
 const file=z.string().min(1).max(4096),id=z.uuid(),providerId=z.string().regex(/^[a-z0-9-]{1,60}$/);
 const nativeReference=z.discriminatedUnion('kind',[z.strictObject({kind:z.literal('artifact'),id}),z.strictObject({kind:z.literal('workforce'),id,sourceVersionId:id}),z.strictObject({kind:z.literal('report'),id})]);
@@ -101,7 +100,7 @@ export async function pilotWorkRecoveryService(args:string[]){
     for(const reference of input.nativeReferences){
      const query=reference.kind==='artifact'?['SELECT object_key,sha256_digest AS digest,actual_size_bytes AS bytes FROM artifact_versions WHERE id=$1 AND environment_id=$2 AND workspace_id=$3',[reference.id,scope.environmentMarker,scope.workspaceId]]:reference.kind==='workforce'?['SELECT v.object_key,v.content_digest AS digest,v.byte_size AS bytes FROM workforce_source_versions v JOIN workforce_import_intents i ON i.source_id=v.source_id AND i.environment_id=v.environment_id WHERE i.id=$1 AND v.environment_id=$2 AND v.workspace_id=$3 AND v.id=$4',[reference.id,scope.environmentMarker,scope.workspaceId,reference.sourceVersionId]]:['SELECT object_key,content_digest AS digest,size_bytes AS bytes FROM report_artifacts WHERE id=$1 AND environment_id=$2 AND workspace_id=$3',[reference.id,scope.environmentMarker,scope.workspaceId]];
      const rows=(await reader.query(query[0] as string,query[1] as string[])).rows,row=rows[0];need(rows.length===1&&Number(row.bytes)>0&&Number(row.bytes)<=10485760);
-     const key=objectKey(scope.environmentMarker,reference.kind as ObjectNamespace,row.object_key),entry=candidate.objects.entries.find(value=>value.name==='objects/'+key);need(entry&&entry.digest===row.digest&&entry.sizeBytes===Number(row.bytes));
+     const entry=candidate.objects.entries.find(value=>value.name==='objects/'+reference.kind+'/'+row.object_key);need(entry&&entry.digest===row.digest&&entry.sizeBytes===Number(row.bytes));
      const path=reference.kind==='artifact'?'/api/artifacts/'+reference.id+'/original':reference.kind==='workforce'?'/api/staffing/imports/'+reference.id+'/content':'/api/reports/artifacts/'+reference.id;
      const stream=await transport(new URL(path,scope.origin),{headers:context.headers,signal:AbortSignal.any([signal,AbortSignal.timeout(30000)])});need(stream.status===200&&stream.headers.get('x-turas-code-version')===scope.sourceCommit);const readerBody=stream.body?.getReader();need(readerBody);let bytes=0;const digest=createHash('sha256');try{for(;;){const part=await readerBody!.read();if(part.done)break;bytes+=part.value.byteLength;need(bytes<=Number(row.bytes));digest.update(part.value);}}finally{await readerBody!.cancel().catch(()=>{});readerBody!.releaseLock();}need(bytes===Number(row.bytes)&&digest.digest('hex')===row.digest);streams.push({kind:reference.kind,id:reference.id,bytes,digest:row.digest});
     }

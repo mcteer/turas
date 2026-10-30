@@ -9609,3 +9609,5 @@ replacement approval or provider operation was submitted. Foundation confirmatio
 now reuses the existing exact-receipt reader, with at most three release-matching
 503 lookups inside the original 10-second write plus 10-second confirmation
 envelope. All prior failures and their actual receipts remain retained.
+
+The ordinary-service verifier binds each native stream to the authenticated archive's `objects/<namespace>/<object-id>` entry, independently of the live Blob environment prefix. Actual archive inspection identified and corrected that distinction before hosted service acceptance; the prior revision remains unaccepted.
