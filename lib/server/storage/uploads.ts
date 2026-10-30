@@ -1,3 +1,4 @@
+import {issueSignedToken,presignUrl} from '@vercel/blob';
 import {privateBlobAuth} from './blob-auth';
 import {randomUUID,randomBytes} from 'node:crypto';
 import {handleUpload,type HandleUploadBody} from '@vercel/blob/client';
@@ -42,6 +43,15 @@ export async function directUploadRequest(request:Request,domain:Domain,id:strin
  z.uuid().parse(id);const body=await jsonBody(request);if(prepare.safeParse(body).success){const actor=await artifactSession(request,true);return success(await prepareDirectUpload(domain,actor,id));}
  if(privateObjectBackend()!=='blob')throw new HttpFailure(409,'source_changed','Direct upload unavailable');
  const completed=finish.safeParse(body);if(completed.success){const actor=await artifactSession(request,true);return success(await finishDirectUpload(domain,actor,id,completed.data.capabilityId));}
+ const signed=z.object({type:z.literal('blob.presign'),capabilityId:z.uuid(),pathname:z.string().max(1024)}).strict().safeParse(body);
+ if(signed.success){
+  const actor=await artifactSession(request,true);const {row}=await currentCapability(domain,actor,id,signed.data.capabilityId);
+  if(signed.data.pathname!==row.staging_key)throw hiddenRecord();
+  const constraints={pathname:row.staging_key,validUntil:row.expires_at.getTime(),allowedContentTypes:['application/octet-stream'],maximumSizeInBytes:Number(row.expected_bytes)};
+  const token=await issueSignedToken({...privateBlobAuth(),...constraints,operations:['put'],abortSignal:AbortSignal.timeout(30000)});
+  const result=await presignUrl(token,{...constraints,access:'private',operation:'put',addRandomSuffix:false,allowOverwrite:false});
+  return success({presignedUrl:result.presignedUrl});
+ }
  const kind=(body as {type?:unknown})?.type;if(kind!=='blob.generate-client-token'&&kind!=='blob.upload-completed')throw new HttpFailure(422,'invalid_input','Invalid upload request');
  const actor=kind==='blob.generate-client-token'?await artifactSession(request,true):null;
  const result=await handleUpload({request,body:body as HandleUploadBody,...privateBlobAuth(),onBeforeGenerateToken:async(pathname,payload,multipart)=>{if(!actor||multipart)throw hiddenRecord();const cap=z.object({capabilityId:z.uuid()}).strict().parse(JSON.parse(payload??'null'));const {row}=await currentCapability(domain,actor,id,cap.capabilityId);if(pathname!==row.staging_key)throw hiddenRecord();return {allowedContentTypes:['application/octet-stream'],maximumSizeInBytes:Number(row.expected_bytes),validUntil:row.expires_at.getTime(),addRandomSuffix:false,allowOverwrite:false,tokenPayload:JSON.stringify({capabilityId:row.id})};},

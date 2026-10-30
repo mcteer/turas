@@ -1555,3 +1555,9 @@ No hosted target may be locked for release before its measured reopen path exist
   inventories/hashes, durable originals, all HTTP/access/retirement checks and
   the original recovery deadline. Verify full cold maintenance recovery and
   current source gates (FR-017, FR-021).
+
+- [ ] T246 Support OIDC-authenticated private Blob uploads with put-only signed
+  URLs bound to the current authenticated prepared capability. Preserve exact
+  path, size, content type, expiry, source generation, CSRF and actual-byte
+  completion checks. Verify both artifact and workforce uploads on the hosted
+  deployment without exporting a static store credential.

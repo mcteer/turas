@@ -9569,3 +9569,17 @@ same early capture-allowance rejection assertion. Its narrow actual check passes
 The failed full catalog remains failed. Three brand unit cases and root/pilot
 TypeScript checks pass locally; these are not full catalog, hosted or Production
 acceptance. Production remains unchanged.
+
+### OIDC private upload transport
+
+The current Preview's legacy client-token mint returned HTTP 503 before any
+file bytes or native job dispatch. Its connected private store uses OIDC; the
+SDK's legacy client-token helper requires a read/write token. The replacement
+uses the installed SDK's signed-token and presigned-URL APIs with an exact
+prepared path, put-only operation, original size/content-type/expiry limits and
+no overwrite or random suffix. Authentication, CSRF, session membership and
+source generation are checked before issuing the URL. Authenticated completion
+continues to verify actual stored bytes; provider callbacks cannot publish facts.
+The browser and hosted operator use the same protocol. Focused upload integration
+checks (eight cases), private object contracts (nine cases), and root TypeScript
+pass locally. These checks do not establish hosted upload or release acceptance.
