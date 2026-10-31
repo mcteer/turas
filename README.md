@@ -69,6 +69,9 @@ selection to Anthropic's route. Existing admission, accounting and no-retry
 wrappers remain in place. This is a compatibility mitigation after different
 provider outcomes; it does not establish why the earlier request failed. Fresh
 Native quality and hosted verification remain pending.
+Owned fixture copies retain that routed selection while substituting their fake
+provider and explicit context window; the shared selector also remains available
+when an evaluation replaces the root agent module.
 
 At development revision `bd2cac0`, the model migration selects `anthropic/claude-sonnet-5.5` through
 Vercel AI Gateway, following the request to stop xAI. New evaluation admission

@@ -2272,6 +2272,18 @@
         "preserves the same route and shared no-replay guard for streaming calls",
         "serializes the selection through the installed Gateway SDK for generate and stream without real network access"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/native-fixture-selection.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "preserves the routed guarded model and explicit context window in the actual staffing installer",
+        "preserves the routed guarded model and explicit context window in the actual execution installer",
+        "preserves the routed guarded model and explicit context window in the actual support installer",
+        "preserves the routed guarded model and explicit context window in the actual expansion installer",
+        "preserves the routed guarded model and explicit context window in the actual learning installer",
+        "keeps all five actual installer metadata guards fail closed before fixture writes when the source shape changes"
+      ]
     }
   ],
   "ui": {

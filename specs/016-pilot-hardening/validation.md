@@ -9701,3 +9701,21 @@ and does not change team routing, credentials or billing. Four offline SDK/selec
 serialization through an intercepted fetch with real network access forbidden.
 The existing owned recovery model guard also passes. Fresh complete deterministic, CI,
 Native actual-model and hosted verification remain release requirements.
+
+## Routed-selection fixture compatibility correction
+
+The first routed candidate's CI failures exposed two test-copy assumptions:
+five native installers still rewrote the previous bare-model return shape, and
+production clones replaced the agent module that a new unit test imported its
+selector from. An original owned production preflight retained the exact missing
+export diagnostic. The pure selector now lives in a copied library module with
+identical behavior. Each existing installer preserves the routed selection and
+adds its original 128k context metadata while replacing only its provider.
+Six new source-transformation cases exercise all five actual installers with
+filesystem copies of the real agent source, controlled SQL/ownership dependencies
+and no real network; changed metadata shapes still fail before fixture writes.
+These mechanics and the four routing cases pass. The original clone preflight passes all three artifact, retrieval and plan stages
+in 172,796ms with code0 and verified owned cleanup. The existing real owned root
+recovery guard also passes; 25 other cases were deliberately unselected. Complete
+committed-source CI validation remains required; the failed candidate and its
+partial results remain historical.

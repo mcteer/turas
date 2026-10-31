@@ -1,6 +1,7 @@
 import {it,expect,vi} from 'vitest';
 import {createGateway} from 'ai';
-import agent,{selectTurasGatewayModel} from '../../../agent/agent';
+import agent from '../../../agent/agent';
+import {selectTurasGatewayModel} from '../../../lib/server/models/gateway-routing';
 import {wrapSupportModel} from '../../../lib/server/support/model-budget';
 type Model=Extract<Parameters<typeof wrapSupportModel>[0],{specificationVersion:'v4'}>;
 const fake=(methods:Partial<Model>)=>({specificationVersion:'v4',provider:'synthetic-no-network',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},...methods}) as Model;
@@ -8,7 +9,7 @@ const fake=(methods:Partial<Model>)=>({specificationVersion:'v4',provider:'synth
 it('serializes the actual session selection with the same model and request-local Anthropic-only route',()=>{
  const selection=(agent.model as unknown as {events:{'session.started':()=>unknown}}).events['session.started']();
  expect(JSON.parse(JSON.stringify(selection))).toEqual({model:'anthropic/claude-sonnet-5.5',modelOptions:{providerOptions:{gateway:{only:['anthropic']}}}});
- expect(agent.reasoning).toBe('low');
+ expect((agent as unknown as {reasoning?:string}).reasoning).toBe('low');
 });
 
 it('passes the route through the actual support guard without replacing the model or permitting a second generate call',async()=>{

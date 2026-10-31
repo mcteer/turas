@@ -1,7 +1,8 @@
 import {requireOperationalOpen} from '../lib/server/operations/admission';
 import {responseFeature} from "../lib/server/conversations/feature";
 import {wrapOrdinaryChatModel} from "../lib/server/conversations/model-budget";
-import { gateway, type LanguageModel } from "ai";
+import { gateway } from "ai";
+import {selectTurasGatewayModel} from "../lib/server/models/gateway-routing";
 import { defineAgent, defineDynamic } from "eve";
 import { withTransaction } from "../lib/server/db/client";
 import { hiddenRecord } from "../lib/contracts/http";
@@ -17,9 +18,6 @@ import {hostedRootAttempt} from "../lib/server/conversations/hosted-root-budget"
 
 const selectedModel = "anthropic/claude-sonnet-5.5";
 const currentModel=()=>parityEvaluationBudgetId()?budgetedResearchModel(selectedModel):selectedModel;
-export const selectTurasGatewayModel = <T extends LanguageModel>(model: T) => ({
-  model, modelOptions: { providerOptions: { gateway: { only: ['anthropic'] } } },
-});
 
 export default defineAgent({
   // Turas owns durable, authorized captures. Retiring a native session must

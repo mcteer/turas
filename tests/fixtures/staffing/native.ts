@@ -13,10 +13,10 @@ export async function installStaffingNativeFixture(environment: StaffingEvalEnvi
   const target = "wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode";
   if (source.split(target).length !== 2 || !source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";') || !source.includes('reasoning: "low"')) throw new Error("Native fixture model shape changed");
   const fixture = source.replace(target, "wrapStaffingModel(createStaffingNativeFixtureModel(principal, identity), admitted.mode")
-    .replace("return wrapStaffingModel(createStaffingNativeFixtureModel(principal, identity), admitted.mode, {",
-      "return { model: wrapStaffingModel(createStaffingNativeFixtureModel(principal, identity), admitted.mode, {")
-    .replace("beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),\n        });",
-      "beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),\n        }), modelContextWindowTokens: 128_000 };");
+    .replace("return selectTurasGatewayModel(wrapStaffingModel(createStaffingNativeFixtureModel(principal, identity), admitted.mode, {",
+      "return { ...selectTurasGatewayModel(wrapStaffingModel(createStaffingNativeFixtureModel(principal, identity), admitted.mode, {")
+    .replace("beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),\n        }));",
+      "beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),\n        })), modelContextWindowTokens: 128_000 };");
   if (!fixture.includes("modelContextWindowTokens: 128_000")) throw new Error("Native fixture metadata shape changed");
   await writeFile(path, 'import { createStaffingNativeFixtureModel } from "../tests/fixtures/staffing/native-model";\n' + fixture, { mode: 0o600 });
   await query(`CREATE TABLE staffing_native_fixture_calls(id uuid PRIMARY KEY,response_attempt_id uuid NOT NULL REFERENCES response_attempts(id),

@@ -1621,3 +1621,8 @@ No hosted target may be locked for release before its measured reopen path exist
   using supported per-selection model options, preserving all existing model
   admission, accounting, recovery and deadline guards. Verify generate/stream
   transport mechanics and fresh funded Native quality without replaying failures.
+
+- [ ] T259 Keep all five owned native fixture installers compatible with the
+  routed model selection and explicit 128k context window. Preserve fake-provider
+  substitution and fail-closed metadata checks; verify production app clones can
+  typecheck with their generated root agent and complete fresh CI catalog coverage.

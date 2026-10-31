@@ -967,7 +967,13 @@
         "unit.native-model-routing.001",
         "unit.native-model-routing.002",
         "unit.native-model-routing.003",
-        "unit.native-model-routing.004"
+        "unit.native-model-routing.004",
+        "unit.native-fixture-selection.001",
+        "unit.native-fixture-selection.002",
+        "unit.native-fixture-selection.003",
+        "unit.native-fixture-selection.004",
+        "unit.native-fixture-selection.005",
+        "unit.native-fixture-selection.006"
       ]
     },
     {
