@@ -1,9 +1,9 @@
+import {fileURLToPath as retiredFilePath} from 'node:url';
+import {resolve as retiredResolve} from 'node:path';
+// Historical owned-test fixture only; private pilot provisioning CLI retired.
 import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { Pool,type PoolClient } from 'pg';
+import { type PoolClient } from 'pg';
 import { z } from 'zod';
-import { readEvidence } from './pilot-evidence';
 import { DEMO_IDS } from '../lib/server/bootstrap-ids';
 const uuid=z.uuid();
 export const pilotProvisionSchema=z.object({version:z.literal('pilot-provision-v1'),environmentId:z.string().min(1).max(256),workspaceId:uuid,provisioningId:uuid,
@@ -38,6 +38,5 @@ export async function provisionPilotWorkspace(db:PoolClient,input:unknown){
  await db.query('COMMIT');return {workspaceId:v.workspaceId,memberships:v.memberships.length,customers:v.customers.length,grants:v.grants.length};
  }catch(error){await db.query('ROLLBACK');throw error;}
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
- try{if(process.argv.length!==4||!process.env.DATABASE_URL_UNPOOLED||!process.env.TURAS_ENVIRONMENT_ID)throw Error('Explicit private manifest and owner connection required');const input=pilotProvisionSchema.parse(await readEvidence(resolve(process.argv[2]),process.argv[3]));if(input.environmentId!==process.env.TURAS_ENVIRONMENT_ID)throw Error('Target mismatch');const pool=new Pool({connectionString:process.env.DATABASE_URL_UNPOOLED,max:1});try{const db=await pool.connect();try{await provisionPilotWorkspace(db,input);console.log('Synthetic pilot provisioned; accepted facts and release readiness remain separate');}finally{db.release();}}finally{await pool.end();}}catch{console.error('Pilot provisioning refused; inspect the explicit target and private manifest');process.exitCode=2;}
-}
+
+if(process.argv[1]&&retiredResolve(process.argv[1])===retiredFilePath(import.meta.url)){console.error('Private pilot command retired; historical fixtures are import-only.');process.exitCode=2;}

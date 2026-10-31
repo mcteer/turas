@@ -1,3 +1,6 @@
+import {fileURLToPath as retiredFilePath} from 'node:url';
+import {resolve as retiredResolve} from 'node:path';
+// Historical private-pilot fixture module; programme CLI retired.
 import {randomUUID} from 'node:crypto';
 import {resolve,dirname,basename} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -43,4 +46,5 @@ export async function pilotGateVerification(args=process.argv.slice(2)){
  const file=resolve(args[1]),root=dirname(file),result=await observePilotGates(root,await readEvidence(root,basename(file)));
  await writeEvidence(root,args[3],result.run);return checkPilotReadiness(result.run,Date.now(),result.observations);
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)pilotGateVerification().then(result=>{console.info(JSON.stringify(result));process.exitCode=result.technicalEligibility==='eligible'?0:1;}).catch(()=>{console.error('Gate evidence verification incomplete; original executions unchanged.');process.exitCode=2;});
+
+if(process.argv[1]&&retiredResolve(process.argv[1])===retiredFilePath(import.meta.url)){console.error('Private pilot command retired; historical fixtures are import-only.');process.exitCode=2;}

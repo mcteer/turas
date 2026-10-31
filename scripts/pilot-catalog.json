@@ -189,25 +189,16 @@
         "integration.hosted-role-reads.001",
         "integration.hosted-role-reads.002",
         "integration.hosted-role-reads.003",
-        "integration.hosted-role-reads.004",
-        "integration.hosted-role-reads.005",
-        "integration.hosted-role-reads.006",
-        "integration.hosted-role-reads.007",
-        "integration.hosted-role-reads.008",
-        "integration.hosted-role-reads.009",
-        "integration.hosted-browser.001",
         "unit.hosted-configuration.001",
         "unit.hosted-configuration.002",
         "unit.hosted-configuration.003",
         "unit.hosted-configuration.004",
-        "integration.hosted-role-reads.010",
         "integration.isolation.009",
         "integration.sessions.009",
         "unit.pilot-login-selection.001",
         "unit.pilot-login-selection.002",
         "unit.hosted-configuration.005",
-        "integration.hosted-sdk.007",
-        "integration.hosted-role-reads.011"
+        "integration.hosted-sdk.007"
       ]
     },
     {
@@ -885,8 +876,7 @@
         "integration.lifecycle.006",
         "integration.lifecycle.007",
         "integration.lifecycle.008",
-        "integration.lifecycle.009",
-        "integration.linked-http-workforce.001"
+        "integration.lifecycle.009"
       ]
     },
     {
@@ -924,7 +914,6 @@
         "integration.report-projection-sources.006",
         "integration.report-projection-sources.007",
         "integration.report-projection-sources.008",
-        "integration.linked-http-reports.001",
         "unit.hosted-file-refusal.001"
       ]
     },
@@ -1101,14 +1090,12 @@
         "integration.hosted-learning-admission.004",
         "integration.hosted-learning-admission.005",
         "integration.hosted-learning-admission.006",
-        "integration.hosted-learning-preparation.001",
         "unit.hosted-learning-capture.001",
         "unit.hosted-learning-capture.002",
         "unit.hosted-learning-capture.003",
         "unit.hosted-learning-capture.004",
         "unit.hosted-learning-capture.005",
         "unit.hosted-learning-capture.006",
-        "integration.hosted-learning-preparation.002",
         "unit.hosted-learning-capture.007",
         "integration.hosted-root-browser-header.001",
         "unit.work-backup-pricing.008",
@@ -1236,9 +1223,7 @@
         "internal-admin",
         "assigned-partner"
       ],
-      "localCaseIds": [
-        "integration.linked-http-training.001"
-      ]
+      "localCaseIds": []
     },
     {
       "id": "G19",

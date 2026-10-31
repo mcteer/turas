@@ -1,3 +1,6 @@
+import {fileURLToPath as retiredFilePath} from 'node:url';
+import {resolve as retiredResolve} from 'node:path';
+// Historical private-pilot fixture module; standalone programme CLI retired.
 import {execFileSync} from 'node:child_process';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -51,4 +54,5 @@ export async function pilotQuality(args=process.argv.slice(2)){
  await writeEvidence(root,'quality.json',receipt);
  console.info(JSON.stringify({gate:'pilot-quality-applicability',catalogs:entries.length,freshRequired:entries.filter(item=>item.applicability==='fresh-required').length,actualModelQualityVerified:false,paidCalls:0}));return receipt;
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)pilotQuality().catch(()=>{console.error('Quality applicability incomplete; no evaluation or release approved.');process.exitCode=1;});
+
+if(process.argv[1]&&retiredResolve(process.argv[1])===retiredFilePath(import.meta.url)){console.error('Private pilot command retired; historical fixtures are import-only.');process.exitCode=2;}

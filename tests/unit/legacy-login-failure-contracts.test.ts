@@ -23,7 +23,7 @@ it.each([
 ])('keeps failed session storage unavailable and private for JSON and native login',async failure=>{
  mocks.issue.mockRejectedValue(failure);
  for(const native of [false,true]){
-  const input={username:'mcteer',password:'synthetic-password',returnTo:'/s',...(native?{workspace:'pilot'}:{})};
+  const input={username:'mcteer',password:'synthetic-password',returnTo:'/s'};
   const response=await POST(new Request('http://localhost:3000/api/auth/login',{
    method:'POST',headers:{origin:'http://localhost:3000','content-type':native?'application/x-www-form-urlencoded':'application/json'},
    body:native?new URLSearchParams(input):JSON.stringify(input),
@@ -34,7 +34,7 @@ it.each([
   if(native){
    const location=new URL(response.headers.get('location')!,'http://localhost:3000');
    expect(location.pathname).toBe('/login');expect(location.searchParams.get('error')).toBe('unavailable');
-   expect(location.searchParams.get('returnTo')).toBe('/s');expect(location.searchParams.get('workspace')).toBe('pilot');
+   expect(location.searchParams.get('returnTo')).toBe('/s');expect(location.searchParams.get('workspace')).toBeNull();
    expect(await response.text()).toBe('');expect(location.href).not.toMatch(/private-|password|28P01|stack|postgresql/);
   }else{
    expect(response.headers.get('location')).toBeNull();const body=await response.json();
@@ -45,4 +45,16 @@ it.each([
  expect(mocks.issue).toHaveBeenCalledTimes(2);
  expect(mocks.record).toHaveBeenCalledTimes(2);
  for(const [event] of mocks.record.mock.calls){expect(event).toMatchObject({action:'login',outcome:'failed'});expect(event.errorCode).toMatch(/^issue_session_(?:service_limit|database_authentication|database_network|configuration|unclassified)(?:_[0-9A-Z]{5})?$/);expect(JSON.stringify(event)).not.toMatch(/private-|password|stack|postgresql/);}
+});
+
+it('rejects the retired pilot workspace before authentication or session creation',async()=>{
+ for(const native of [false,true]){
+  const body={username:'mcteer',password:'configured-password',workspace:'pilot'};
+  const response=await POST(new Request('http://localhost:3000/api/auth/login',{method:'POST',headers:{origin:'http://localhost:3000','content-type':native?'application/x-www-form-urlencoded':'application/json'},body:native?new URLSearchParams(body).toString():JSON.stringify(body)}));
+  expect(response.status).toBe(422);
+  expect(response.headers.get('set-cookie')).toBeNull();
+ }
+ expect(mocks.throttle).not.toHaveBeenCalled();
+ expect(mocks.authenticate).not.toHaveBeenCalled();
+ expect(mocks.issue).not.toHaveBeenCalled();
 });

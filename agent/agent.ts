@@ -14,7 +14,6 @@ import { staffingResponseScope } from "../lib/server/staffing/native-context";
 import { admitGovernedStaffingModelStep, assertGovernedStaffingProviderRelease } from "../lib/server/staffing/native-admission";
 import { wrapStaffingModel } from "../lib/server/staffing/model-budget";
 import { budgetedResearchModel,parityBudgetModel,parityEvaluationBudgetId } from "../lib/server/research/specialists/evaluation-budget";
-import {hostedRootAttempt} from "../lib/server/conversations/hosted-root-budget";
 
 const selectedModel = "anthropic/claude-sonnet-5.5";
 const currentModel=()=>parityEvaluationBudgetId()?budgetedResearchModel(selectedModel):selectedModel;
@@ -36,8 +35,6 @@ export default defineAgent({
       const turnId = data.turnId;
       const stepIndex = data.stepIndex;
       const principal = ctx.session.auth.current;
-      const hostedRoot=process.env.TURAS_PILOT_HOSTED_ROOT_BUDGET_JSON?await withTransaction(db=>hostedRootAttempt(db,principal)):null;
-      if(hostedRoot&&((await responseFeature(principal))?.kind!=='normal'||hostedRoot.nativeSessionId!==ctx.session.id))throw hiddenRecord();
       if (await staffingResponseScope(principal)) {
         const responseAttemptId = principal?.attributes?.turasAttemptId;
         if (!principal?.principalId || typeof responseAttemptId !== "string") throw hiddenRecord();

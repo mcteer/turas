@@ -25,7 +25,9 @@ import { listLearningOriginals } from '../../lib/server/learning/catalog';
 describe('governed learning draft preparation',()=>{
  it('captures exact originals, reserves no paid dispatch, and fences replay after source withdrawal',()=>withLearningDatabase(async db=>{
   const actors=await learningTestActors(db),lineage=await learningAcceptedOriginal(db,actors.member,actors.admin,DEMO_IDS.sharedCustomer);
-  const previous=process.env.TURAS_014_PRICE_CONTRACT;
+  const previous=process.env.TURAS_014_PRICE_CONTRACT,previousHosted=process.env.TURAS_PILOT_HOSTED_LEARNING_LEDGER_JSON;
+  // Retired hosted-arm tickets cannot gate the normal domain budget/dispatch.
+  process.env.TURAS_PILOT_HOSTED_LEARNING_LEDGER_JSON='{"retired":true}';
   process.env.TURAS_014_PRICE_CONTRACT=JSON.stringify({version:'learning-price-v1',modelId:'anthropic/claude-sonnet-5.5',inputMicroUsdPerMillion:'8000000',outputMicroUsdPerMillion:'24000000',providerInputLimit:500000,providerOutputLimit:500000,hardOutputCapIncludesReasoning:true,pricingSource:'https://ai-gateway.vercel.sh/v1/models',outputContractSource:'https://vercel.com/ai-gateway/models/claude-sonnet-5.5',pricingCaptureDigest:'a'.repeat(64),outputContractCaptureDigest:'b'.repeat(64),verifiedAt:new Date(Date.now()-1000).toISOString(),expiresAt:new Date(Date.now()+3600000).toISOString()});
   await db.query('UPDATE learning_workspace_state SET enabled=true WHERE workspace_id=$1',[DEMO_IDS.workspace]);
   try{
@@ -91,6 +93,7 @@ describe('governed learning draft preparation',()=>{
   }finally{
    await db.query('UPDATE learning_workspace_state SET enabled=false WHERE workspace_id=$1',[DEMO_IDS.workspace]);
    if(previous===undefined)delete process.env.TURAS_014_PRICE_CONTRACT;else process.env.TURAS_014_PRICE_CONTRACT=previous;
+   if(previousHosted===undefined)delete process.env.TURAS_PILOT_HOSTED_LEARNING_LEDGER_JSON;else process.env.TURAS_PILOT_HOSTED_LEARNING_LEDGER_JSON=previousHosted;
   }
  }));
 });

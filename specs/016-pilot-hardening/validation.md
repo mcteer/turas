@@ -10,30 +10,68 @@ or Production record was changed. Requirements checklist is 16/16 passing; no
 extension hooks are installed. Ignore patterns cover Node/Python/Docker generated
 state, private evidence/configuration and credentials.
 
-## Current acceptance
+## Current acceptance and scope
 
-Implementation and release acceptance remain in progress. The dated checkpoints
-below retain their original source and gate states. At `5c8c45f`, all 61 CI jobs
-and the 1,053-case deterministic catalog passed, including separately retained
-unchanged-source reruns. Synthetic Preview provisioning, real provider jobs,
-retained-file reads and partial model evaluations have run; these do not establish
-whole-pilot or Production acceptance.
+The private pilot programme was cancelled by the owner on 2026-10-31. Synthetic
+workspace provisioning, selectable pilot login, participant feedback collection
+and pilot approval ceremonies are removed from active scope. Their dated records
+below are historical evidence, not remaining release prerequisites or passing
+production checks. Production authentication, authorization, private file handling,
+bounded jobs, maintenance, backup and recovery remain required.
 
-The 2026-10-26 hosted core attempt passed exact deployment/schema/grant preflight
-and retained-file checks, then failed with HTTP 409 during native Root creation.
-Its scoped budget snapshot showed zero response attempts, operations, reservations
-and charges. The failed receipt remains failed; an unbound database identity does
-not establish remote native-session absence. Installed eve documentation and
-source distinguish an accepted prewarmed candidate from a later canonical
-operation owner. T193 tracks the bounded binding correction and fresh acceptance.
+Production release `11240b6f11500109ae3a88c1e880f85d061b7783` was merged through
+PR48 and serves schema081. Its exact-tree premerge checks passed: all54 main CI
+jobs, all7 legacy jobs, and the198-suite/1100-case deterministic catalog. One
+unchanged Learning UI job required a successful targeted rerun; the failed first
+attempt is retained. The final production deployment is
+`dpl_5HrzmzzX41iXn4gRXAfEGiHr1GqF` at `https://www.turas.dev`.
 
-The current R04 output used a revision identifier instead of a consumed citation
-and exceeded the original five-step limit. Unpaid real-tool probes found that
-field-label queries could not discover a shared field whose value omitted that
-label. T194 tracks lexical metadata discovery and explicit citation guidance.
-The failed model calls are not relabeled as passes, and their actual query history
-was not retained. Production remains f8d196f/schema077; backup/restore, complete
-model and hosted workflow acceptance, merge and Production release are pending.
+Authenticated production checks verified all three ordinary account logins,
+owner-private conversation reads, real streaming/reload/Stop behavior on the
+same-code preceding deployment, and one private-file upload/scan/parse/download
+with matching digest on the final deployment. Tests used normal application
+paths; no synthetic Production workspace was enabled. Existing legacy context
+history remains protected by the schema080 guard; data was preserved.
+
+Full operational recovery assurance remains incomplete: `/api/health/ready`
+returned503 after release. A verified database safety backup and isolated
+077-to081 migration rehearsal do not prove a matched full-service restore.
+Removing the pilot programme does not waive that production recovery work or
+permit fabricated healthy observations. Detailed private receipts remain outside
+Git. Dated checkpoints below retain their original identities and limitations.
+
+## Private programme removal — 2026-10-31
+
+The removal branch deletes the selectable Synthetic Pilot login, rejects retired
+pilot login requests before authentication/session creation, and retains ordinary
+primary accounts and membership/owner/partner boundaries. Eight standalone programme npm commands and their direct entry points are
+retired; five additional programme-only direct entry points are also retired.
+All refuse direct execution with exit2;
+imported historical fixture functions remain available to regression tests. Normal
+backup, recovery, lifecycle, health, storage and processing commands are retained.
+The active plan and tasks now cover production work only; superseded programme
+instructions remain in Git history rather than an executable task queue.
+
+Actual removal checks: documentation/hygiene and both full and016 TypeScript checks
+passed. Independent review found no login/CLI blocker and reran17 focused unit cases
+successfully. Credential-free direct invocations of all thirteen retired entry points
+verified their explicit exit2 refusal. The final stable owned session/role run
+passed12 cases and its source-preservation/cleanup checks. A separate owned run
+passed11 ordinary-steering and one Learning draft case, including retained unknown
+holds, token limits, real budget/dispatch/settlement and source-withdrawal fences
+with malformed retired configuration present. Twenty model-budget/fixture unit
+cases also passed (37 focused unit cases total).
+
+Twenty CLI WebKit login cases passed across four desktop/mobile and light/dark
+profiles. Those captures preceded the final primary-only session SQL and runtime
+overlay edits; the UI bytes were unchanged. They are qualified local UI evidence,
+not an exact final-commit hosted acceptance claim. The first keyboard assertion
+failure and the source-preservation failure during concurrent editing remain
+retained; the corrected/stable reruns passed without weakening application guards.
+The catalog now inventories193 suites/1086 cases after removing obsolete programme
+orchestration tests; its inventory validation passed. The complete new catalog
+and current PR CI have not yet passed. No new hosted release or completed
+full-service recovery is claimed. No Turas test containers remain.
 
 ## Initial implementation checkpoint
 

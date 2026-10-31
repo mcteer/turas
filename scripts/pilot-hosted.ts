@@ -1,3 +1,6 @@
+import {fileURLToPath as retiredFilePath} from 'node:url';
+import {resolve as retiredResolve} from 'node:path';
+// Historical private-pilot fixture module; standalone programme CLI retired.
 import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {recordHostedTrainingObservations} from './pilot-hosted-feedback';
 import {runHostedMembershipBoundary} from './pilot-hosted-membership';
@@ -289,4 +292,5 @@ export async function pilotHosted(args=process.argv.slice(2)){
  }
  });
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)pilotHosted().catch(()=>{console.error('Hosted catalog incomplete; no runtime acceptance established.');process.exitCode=1;});
+
+if(process.argv[1]&&retiredResolve(process.argv[1])===retiredFilePath(import.meta.url)){console.error('Private pilot command retired; historical fixtures are import-only.');process.exitCode=2;}

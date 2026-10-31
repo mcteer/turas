@@ -1,170 +1,113 @@
-# 016 Validation Run Guide
+# Production hardening quickstart
 
-Planning artifact: commands prefixed `pilot:` and the new runners are to be built.
-Do not report their presence or results until implementation. Use Node 24, the
-canonical checkout, explicit feature selection and owned resources only.
+The private pilot programme is retired. Do not provision synthetic workspaces,
+collect participant-feedback approvals or build a private readiness bundle to use
+or release Turas. Historical evaluation commands and results remain references;
+they are not normal Production prerequisites. Retain the implemented security,
+private-storage, bounded-processing and recovery controls.
+
+The actual main112/schema-081 deployment and its unresolved readiness503 recovery
+gap are recorded in the [handoff](handoff.md). Operational procedures are in the
+[Production operations runbook](../../docs/pilot-operations.md). Those records
+separate application-path checks from full backup/service recovery assurance.
+
+## Development setup
+
+Use Node24 and the existing protected environment. On macOS include `/usr/sbin`
+for owned-process checks:
 
 ```sh
+export PATH=/opt/homebrew/opt/node@24/bin:/usr/sbin:$PATH
 export SPECIFY_FEATURE_DIRECTORY=specs/016-pilot-hardening
-export PATH=/opt/homebrew/opt/node@24/bin:$PATH
+npm ci
+npm ci --prefix packages/artifact-extractor
 ```
 
-Read spec → plan → tasks → contracts. Preserve selected `.env.local`, `agent/agent.ts`
-and root `.eve/.workflow-data`. Do not run root dev or predecessor commands against
-the selected Preview/Production database. New harnesses create isolated databases,
-stores and app processes under ignored `local-artifacts/016`; no sibling worktrees.
+Read the governing specification and contribution rules for the selected change.
+Preserve `.env.local`, `agent/agent.ts` model selection and root
+`.eve/.workflow-data`. Create or migrate only the explicitly selected development
+or disposable test database; never point fixture, demo or initialization commands
+at Production. Use separate runtime and owner authority, verified TLS remotely,
+and explicit migrations/grants. Current runtime/schema-dependent checks require
+schema081; older archive identities remain historical inputs to their specific
+compatibility paths.
 
-## 1. Readiness contract and owned foundation
+## Verify the change that is being made
 
 ```sh
 npm run check:docs
 npm run typecheck
-npm run test:pilot
+npm run test:unit
 ```
 
-Expected: complete registered case inventory, strict evidence failures rejected,
-provider keys absent and no paid dispatch. Test stale/tampered receipts, duplicate
-attempts, missing hosted identity, arbitrary owner strings and fail→resume history.
-Verify new 078/079 schema, explicit runtime grants and locked-runtime denials on
-empty and 055 databases. Do not initialize any existing target database.
+Use the narrow relevant feature integration, concurrency, security and UI checks
+when needed. Run builds for runtime changes. Use command-line Playwright/WebKit
+with the relevant desktop/mobile and light/dark configurations for UI changes;
+do not operate the host browser for testing. Preserve original deadlines,
+assertions, cancellation and owned cleanup. A failed or incomplete attempt remains
+failed; a retry must not conceal it or replay uncertain paid work.
 
-## 2. Workspace and hosted storage/execution adapters
+Deterministic tests use disposable marked databases/stores, blank provider keys
+and owned processes. Relevant retained `test:pilot` cases may still test shared
+Production protections; the script name is not an instruction to run the cancelled
+pilot programme. CI remains required for merge. A mock proves its contract scope,
+not actual hosted processing, load, model behavior or recovery.
 
-Run the registered workspace/auth, synthetic publication, private-object and executor
-suites through `test:pilot`. Check primary default, exact session membership, revoked
-memberships, all direct-ID/search/MCP paths, and no synthetic counts in primary views.
+An actual-provider check needs an applicable finite allowance and the existing
+source, pricing, admission and strict-output guards. Select only the behavior
+needed for the change. Do not add a whole paid catalogue or a private pilot bundle
+as a new release gate. Preserve charges, credits, immutable journals and full
+unknown-cost holds; no automatic retry, refund, top-up or authority reset follows
+from failure or programme retirement.
 
-Validate existing maximum file sizes including >4.5 MiB upload, exact staged path,
-wrong digest/expiry/owner callback, cancellation/replay, malicious file and private
-stream revocation. Local adapters remain covered. Fake Blob/Sandbox transports prove
-contract failure behavior only; they do not pass actual hosted gates.
+## Normal Production checks
 
-Before actual hosted checks, prepare a concrete versioned private-store/image/scope
-manifest and finite infrastructure cost reservation. Pin official SDKs/images,
-verify scanner freshness, apply explicit target migrations/grants and configured
-least-privilege credentials. Use eve for provisioning/deployment operations where
-supported; do not link/reconnect a different project or expose store tokens.
+After the authorized release, verify the actual canonical origin, Git commit,
+environment marker, schema081, runtime grants and changed behavior. Use the normal
+primary workspace and current Production credentials. Do not pass a pilot workspace
+selector or copy Preview budgets, tokens or evaluation-only bindings.
 
-## 3. Recovery and lifecycle
+For a storage/processing change, a specifically selected small harmless private
+file can exercise the normal signed upload, scheduled scan/parse and exact original
+download hash. Verify actual provider/domain receipts, not only a successful PUT.
+Then use normal source deletion, conversation archive and session logout. Record
+whether asynchronous domain deletion completed; do not infer independent physical
+Blob deletion from a database state. No model request is required for this file
+path. The existing Production scheduler owns dispatch; do not bypass cron auth.
 
-```sh
-# Use the explicit owned capture/isolated restore inputs in docs/pilot-operations.md.
-# Lifecycle execution requires an admitted exact target and new private evidence directory:
-npm run pilot:lifecycle:check -- --environment <exact-marker> --output <new-private-directory> --execute
-```
+For a changed chat or Support path, use a focused normal request and inspect its
+actual stream/output, owner/session boundaries, strict validation, Stop/retirement
+and accounting as applicable. A single schema-acceptance check is not a claim that
+an entire feature suite or every hosted workflow passed. Outbound mail remains
+subject to its separate exact sender/recipient/content authority.
 
-Acceptance requires all recovery cases in the contract, current denial state newer than the
-backup, zero duplicate paid/sent work, encrypted matched restore, tested missing
-key/object rejection, bounded interrupted cleanup, original deadlines and permanent
-request fences. Preserve owned run receipts after cleanup; never output backups.
+Read `/api/operations/status` as the canonical administrator and report its
+components separately. `/api/health/ready`503 remains an honest unresolved
+operational/recovery assurance signal even when application checks pass. Keep
+missing backup, store/image, maintenance or recovery evidence visible; do not
+manufacture observations or remove real safety controls to make the signal green.
 
-The current isolated restore remains locked and quarantined, and does not yet
-complete this acceptance catalog. Do not use the lifecycle execution receipt as
-proof of full lifecycle/backup expiry.
+## Database and recovery operations
 
-Validate scheduled backup cadence separately: two actual scheduled runs ≥12h apart,
-one restore ≤24h old, measured ≤4h recovery and no >24h accepted-work loss. An
-accelerated clock or local ad hoc dump cannot substitute for observed hosted cadence.
+Before a schema-dependent release, verify the target and recovery copy, rehearse
+forward migrations on a disposable database, apply explicit migrations and exact
+runtime grants, then check actual restricted-runtime behavior. Never initialize an
+existing target or migrate in a request handler.
 
-## 4. UI, workload, quality and regressions
+For a recovery incident, use the runbook's exact-target owner fencing, drain and
+lock procedure. Authenticate the matched encrypted archive and private objects,
+restore into an isolated target, retain current denials/replay metadata, reconcile
+uncertain provider work and quarantine unsupported scope. Verification, quarantine
+resolution and reopening remain separate explicit actions. A database safety-copy
+rehearsal or working login is not full service recovery. Preserve original incident
+clocks and report the measured RPO/RTO rather than planned times.
 
-```sh
-npm run pilot:ui:check
-npm run benchmark:pilot -- --disposable
-npm run pilot:regressions
-npm run build:web:check
-npm run build:eve:check
-```
+## Closeout
 
-Four WebKit configurations: desktop/mobile × light/dark. Verify login workspace
-choice, visible pilot context, keyboard/focus/errors/overflow and changed upload
-flows. Inspect synthetic screenshots; hosted private screenshots/logs stay ignored.
-
-Load uses the exact fixed classes/shape in the recovery contract. Report admitted
-latency and natural quota waiting independently; no quota resets, hidden retries or
-aggregate-only percentiles. All affected existing feature catalogs run complete.
-Do not rerun unrelated expensive suites after green without a new change/failure.
-
-Use governing eval commands/verifiers only when required by the quality catalog.
-Prepare the exact synthetic cases, unchanged model, provider bounds and independent
-reviewer before asking for any missing budget. Reuse applicable existing
-permission; do not seek a second approval for the same admitted run. Unknown spend
-is held for reconciliation under the existing contract, never guessed to zero.
-
-`npm run pilot:quality:live -- --prepare --images <preparation.json> --output
-<new-private-directory>` exercises native admission with a synthetic credential
-and a one-microdollar denial budget; it dispatches no paid provider request.
-After the complete current deterministic catalog passes, `--live` requires
-`--images`, `--output`, `--authorization`, `--deterministic-proof`, `--preparation`
-and the exact `--budget-usd`. The authorization records the actual applicable
-operator instruction, expiry, dollar cap, four existing Context credits and
-independent review authorization. Infrastructure authorization does not admit
-model evaluations. Context Auto-Topup must be disabled; credits are recorded
-separately without an invented dollar conversion.
-
-All nine catalogs run in fresh owned synthetic environments. The canonical
-private `local-artifacts/016/quality-budgets/<approval-id>` journal survives failed
-attempts and retains their spending. Corrected full batches use the remaining
-original allowance; copying an authorization or selecting another output cannot
-reset it. An unresolved provider charge blocks both providers and corrected
-attempts. Captures remain awaiting independent review and cannot approve release.
-
-## 5. Synthetic Preview and Production pilot
-
-Private Blob configuration always names the exact connected `BLOB_STORE_ID`.
-On Vercel, the pinned SDK obtains fresh project OIDC identity; no static read-write
-token is required. A protected operator outside Vercel supplies an explicit
-`VERCEL_OIDC_TOKEN`, or an exact store-matched `BLOB_READ_WRITE_TOKEN`. Verify the
-actual private store and all governed namespaces before cutover. These credentials
-never authorize domain records, and provider denial never selects a local store.
-
-
-After current CI is green and release/merge authorization covers the step:
-
-1. Verify exact target marker, alias, current/required schema and runtime grants,
-   current matched backup, storage backend, image digests and worker placement.
-2. Use compatible disabled-first migration/code order; verify Preview first. Retire
-   or protect historical unbound-session deployments before second memberships.
-   `pilot:recovery:authority -- --retire-work-runtime --source <private-source.json>
-   --input <private-retirement.json> --output <new-private-directory>` requires
-   the exact Production work project, schema 57 and locked recovery revision.
-   The private input contains the replacement secret; never put it in command
-   arguments. The operation disables the legacy login before terminating its
-   backends, preserves its restricted permission role, and verifies a fresh
-   replacement connection. Exact-input reconciliation cannot replace its password
-   or adopt an unrelated existing role. It does not update deployment credentials,
-   close provider runs, reconcile paid effects or unlock service. Complete those
-   separate steps before enabling the replacement deployment.
-3. Run the explicit idempotent provisioner against the admitted target to create
-   the marked pilot workspace, existing-principal memberships, synthetic customers
-   and reviewed scope of partner grants. Record receipts; never bootstrap over
-   existing Production or auto-approve business records.
-4. Enable only ready hosted adapters/workspace. Use normal authenticated reviews
-   for the catalog J002–J015; actual scan/parse/render and SDK reads must return
-   retained bytes/revisions. Synthetic fixture names remain visible.
-5. Verify cold/restarted and separate hosted instances can read the same private
-   object; inspect all configured class freshness and cleanup behavior.
-6. Run the exact post-merge deployed version through role-bound HTTP and CLI WebKit,
-   including Product Gaps refresh, assigned-partner journey and MCP five-category
-   positive reads/citations/revocation. Check actual backing requests and errors.
-7. Keep outbound mail disabled. Any later controlled send needs 009's exact
-   sender/recipient/payload approval and provider receipt; no implicit sends.
-8. Record actual internal and assigned-partner participant feedback; an agent
-   cannot supply it. Fix/recheck blockers and assign all other feedback.
-9. Run `pilot:check` with the explicit private run manifest. Obtain/record the actual
-   mcteer decision for that scope only when the bundle is eligible. If authorization
-   was already given for that exact action, record it without asking again.
-
-Low-rate Production journeys do not establish the local benchmark's hosted capacity.
-Do not advance all tasks to complete while a required participant, budget, storage,
-backup or hosted proof remains missing; report the specific pending gate.
-
-## 6. Closeout
-
-Update README/roadmap/spec validation with separate local, CI, actual-provider,
-hosted and human outcomes. Include deployed commit, schema/grants and remaining
-limits. Revoke only owned test credentials, stop owned sandboxes/processes and
-expire/remove pilot payloads through normal lifecycle policy after evidence capture.
-Keep customer records, allowed audit and permanent replay receipts. Preserve original
-configuration/workflow/model hashes. After each successful merge, keep PR closed,
-delete associated local/remote feature branch and verify README on main.
+Update README and the relevant feature/validation record with the actual source,
+checks and limitations. Retire only resources owned by the selected check and
+preserve financial/audit/replay records. Do not delete Production stores, firewall
+rules, credentials or historical evidence as incidental programme cleanup.
+After an authorized merge, leave the PR closed, remove its feature branch and
+verify README on main. No participant-feedback or private pilot approval step
+follows this closeout.

@@ -36,9 +36,9 @@ export function verifyConfiguredCredentials(
 }
 
 export async function authenticateDemoPrincipal(username: string, password: string, workspaceSelection: "primary" | "pilot" = "primary"): Promise<DemoIdentity | null> {
-  if (!["primary", "pilot"].includes(workspaceSelection)) return null;
+  // Retired pilot selectors fail closed, including callers retaining the old argument.
+  if (workspaceSelection !== "primary") return null;
   const config = getServerConfig();
-  if (workspaceSelection === "pilot" && config.TURAS_PILOT_LOGIN_ENABLED !== "1") return null;
   const principalId = verifyConfiguredCredentials(username, password, config);
   if (!principalId) return null;
   const result = await query<{
@@ -52,11 +52,10 @@ export async function authenticateDemoPrincipal(username: string, password: stri
     JOIN workspaces w ON w.id = m.workspace_id
     LEFT JOIN partner_organizations o ON o.id = m.partner_org_id AND o.workspace_id = m.workspace_id
     WHERE p.id = $1 AND p.login_name = $2 AND p.active AND m.active AND w.active
-      AND (($3='primary' AND w.id=$4 AND w.classification='primary') OR
-           ($3='pilot' AND w.classification='synthetic_pilot' AND w.pilot_environment_id=$5))
+      AND w.id=$3 AND w.classification='primary'
       AND (m.kind = 'internal' OR (m.kind = 'partner' AND o.active))
     LIMIT 1
-  `, [principalId, username, workspaceSelection, DEMO_IDS.workspace, config.TURAS_ENVIRONMENT_ID]);
+  `, [principalId, username, DEMO_IDS.workspace]);
   const row = result.rows[0];
   return row ? {
     principalId: row.principal_id,

@@ -83,14 +83,14 @@
       "expectedCases": 9,
       "cases": [
         "defaults to the primary membership",
-        "binds an explicitly selected pilot membership",
+        "rejects both new and retained synthetic membership sessions",
         "denies an unassigned workspace",
         "revokes an inactive membership immediately",
         "keeps a session stable after a second membership",
         "rejects an unresolved legacy session",
         "logout revokes only the exact session",
-        "does not transfer conversation ownership across workspaces",
-        "requires explicit pilot login enablement without changing primary login"
+        "does not transfer primary conversation ownership across principals",
+        "keeps retired pilot login disabled without changing primary login"
       ]
     },
     {
@@ -925,19 +925,11 @@
     },
     {
       "file": "tests/integration/pilot/hosted-role-reads.test.ts",
-      "expectedCases": 11,
+      "expectedCases": 3,
       "cases": [
-        "proves actual bound roles positive partner listing denied gaps and exact session cleanup",
-        "refuses missing role credentials before creating sessions or making HTTP calls",
-        "rejects cross workspace customer disclosure and revokes its exact test session on failure",
-        "rejects a changed serving release and revokes the exact session before failing",
-        "revokes a created session after a malformed login response without logging in again",
-        "revokes the exact newly created session when its parent run is cancelled",
-        "cleans its exact bound session when a trusted journey callback fails",
-        "exercises actual parked conversation replay ownership archive and restore without native dispatch",
-        "archives the original parked conversation after an uncertain creation response without replacement or native work",
-        "blocks journey writes on actual mismatched configuration and revokes the original session",
-        "refuses a raced unrelated session before scoped membership disable and preserves its access"
+        "verifies normal primary role reads conversation privacy and exact logout",
+        "denies a retired pilot selection before creating any login session",
+        "denies invalid normal credentials without issuing a cookie"
       ]
     },
     {
@@ -1392,13 +1384,6 @@
       ]
     },
     {
-      "file": "tests/integration/pilot/linked-http-reports.test.ts",
-      "expectedCases": 1,
-      "cases": [
-        "reviews an uploaded source through cited planning and delivery and denies published report files after normal withdrawal"
-      ]
-    },
-    {
       "file": "tests/unit/pilot/hosted-request.test.ts",
       "expectedCases": 7,
       "cases": [
@@ -1409,13 +1394,6 @@
         "rejects foreign and non-API paths before dispatch",
         "honors cancellation before dispatch",
         "binds expected denial codes to the serving release without retaining private error prose"
-      ]
-    },
-    {
-      "file": "tests/integration/pilot/linked-http-training.test.ts",
-      "expectedCases": 1,
-      "cases": [
-        "publishes and assigns a guide through normal HTTP, verifies the partner demonstration and removes credit after source withdrawal"
       ]
     },
     {
@@ -1494,13 +1472,6 @@
       ]
     },
     {
-      "file": "tests/integration/pilot/hosted-browser.test.ts",
-      "expectedCases": 1,
-      "cases": [
-        "uses actual served role sessions and four CLI WebKit configurations for parked ownership and lifecycle boundaries"
-      ]
-    },
-    {
       "file": "tests/unit/pilot/gap-release-header.test.ts",
       "expectedCases": 2,
       "cases": [
@@ -1555,13 +1526,6 @@
       "expectedCases": 1,
       "cases": [
         "requires an active exact partner grant and an ordinarily accepted training source before role callbacks"
-      ]
-    },
-    {
-      "file": "tests/integration/pilot/linked-http-workforce.test.ts",
-      "expectedCases": 1,
-      "cases": [
-        "reviews six located personnel cells through ordinary HTTP and keeps the original outside customer retrieval"
       ]
     },
     {
@@ -1672,7 +1636,7 @@
       "expectedCases": 2,
       "cases": [
         "keeps primary native login available without exposing disabled pilot selection",
-        "offers explicit primary and pilot choices only when enabled"
+        "has no workspace selector even when a retired environment flag is set"
       ]
     },
     {
@@ -1760,14 +1724,6 @@
         "rolls back hosted consumption with a failed domain claim and never releases its original reservation",
         "persists a native pre-admission rejection without a provider claim or invented native identity",
         "refuses any broader native pre-admission status body state or identity through the database constraint"
-      ]
-    },
-    {
-      "file": "tests/integration/pilot/hosted-learning-preparation.test.ts",
-      "expectedCases": 2,
-      "cases": [
-        "prepares one actual HTTP feedback revision and independent review against the ordinarily published baseline without a model dispatch",
-        "submits exact reviewed paired captures over HTTP and preserves no-benefit rejection without another model call"
       ]
     },
     {
@@ -2303,8 +2259,8 @@
     ],
     "cases": {
       "tests/ui/pilot-workspace.spec.ts": [
-        "selects an assigned synthetic workspace at login",
-        "shows persistent synthetic context without transferring conversations",
+        "signs into primary without a synthetic workspace selector",
+        "rejects a retired pilot login without creating a session",
         "supports keyboard focus and navigation",
         "shows denied empty and error states",
         "preserves primary workspace behavior"

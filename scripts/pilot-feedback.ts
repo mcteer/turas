@@ -1,7 +1,9 @@
+import {fileURLToPath as retiredFilePath} from 'node:url';
+import {resolve as retiredResolve} from 'node:path';
+// Historical fixture module only; private pilot feedback CLI retired.
 import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {Client,type PoolClient} from 'pg';
 import {resolve,dirname,basename} from 'node:path';
-import {pathToFileURL} from 'node:url';
 import {z} from 'zod';
 import {pilotFeedbackScopeSchema,validateFeedbackAppend,feedbackDigest} from '../lib/contracts/pilot-feedback';
 import {operatorRecoveryDatabase} from './pilot-control';
@@ -49,4 +51,5 @@ export async function pilotFeedback(args=process.argv.slice(2)){
   console.info(JSON.stringify({recorded:true,state:record.transitions.at(-1)!.state,recordDigest:feedbackDigest(record),fileDigest,humanReported:record.humanReported,releaseApproved:false,messagesSent:0}));
  }finally{await db.end();}
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)pilotFeedback().catch(()=>{console.error('Feedback recording refused; no feedback or release decision was invented.');process.exitCode=1;});
+
+if(process.argv[1]&&retiredResolve(process.argv[1])===retiredFilePath(import.meta.url)){console.error('Private pilot command retired; historical fixtures are import-only.');process.exitCode=2;}
