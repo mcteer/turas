@@ -1596,3 +1596,9 @@ No hosted target may be locked for release before its measured reopen path exist
   research controls and server authorization; test a deliberately delayed
   capability response and the original keyboard-cancellation journey in
   headless WebKit without retries or longer timeouts (FR-013, FR-021).
+
+- [x] T254 Observe unexpected connection errors on checked-out transaction
+  clients. Reject the original operation, preserve its error when rollback also
+  fails, discard broken clients, and prevent callback replay or false commit
+  success. Exercise actual pg client error delivery between queries and during
+  commit; retain fresh full-catalog and hosted checks as release requirements.

@@ -54,18 +54,35 @@ export async function query<Row extends QueryResultRow = QueryResultRow>(
 
 export async function withTransaction<T>(run: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await getRuntimePool().connect();
+  let connectionFailure: Error | undefined;
+  let releaseFailure: Error | undefined;
+  let began = false;
+  const observeFailure = (error: Error) => { connectionFailure ??= error; };
+  const requireConnection = () => { if (connectionFailure) throw connectionFailure; };
+  client.on("error", observeFailure);
   try {
     await client.query("BEGIN");
+    began = true;
+    requireConnection();
     try {
       const result = await run(client);
+      requireConnection();
       await client.query("COMMIT");
+      requireConnection();
       return result;
     } catch (error) {
-      await client.query("ROLLBACK");
+      try { await client.query("ROLLBACK"); }
+      catch (rollbackError) {
+        releaseFailure = rollbackError instanceof Error ? rollbackError : new Error("Database rollback unavailable");
+      }
       throw normalizeReplayFailure(error);
     }
+  } catch (error) {
+    if (!began) releaseFailure = error instanceof Error ? error : new Error("Database transaction unavailable");
+    throw error;
   } finally {
-    client.release();
+    try { client.release(connectionFailure ?? releaseFailure); }
+    finally { client.removeListener("error", observeFailure); }
   }
 }
 

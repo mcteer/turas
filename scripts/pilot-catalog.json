@@ -1250,7 +1250,14 @@
         "operator",
         "reviewer"
       ],
-      "localCaseIds": []
+      "localCaseIds": [
+        "unit.db-client-lifecycle.001",
+        "unit.db-client-lifecycle.002",
+        "unit.db-client-lifecycle.003",
+        "unit.db-client-lifecycle.004",
+        "unit.db-client-lifecycle.005",
+        "unit.db-client-lifecycle.006"
+      ]
     },
     {
       "id": "G21",

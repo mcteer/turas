@@ -2241,6 +2241,18 @@
         "requires the retained forty-slide layout when continuing the maximum layout exercise",
         "refuses duplicate sample identities and a cancelled continuation before reads or writes"
       ]
+    },
+    {
+      "file": "tests/unit/db-client-lifecycle.test.ts",
+      "expectedCases": 6,
+      "cases": [
+        "rejects an actual pg client error between queries without replay or commit",
+        "preserves callback error when rollback also fails and discards client",
+        "preserves BEGIN query failure and destroys the borrowed connection",
+        "does not accept a COMMIT during which an actual client error occurs",
+        "keeps the listener until release installs the pool listener and cleans up on success",
+        "retains permanent replay normalization and never repeats a transaction"
+      ]
     }
   ],
   "ui": {

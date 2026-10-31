@@ -1300,6 +1300,11 @@ immutable journal snapshot without owning the write lock. Killing a startup
 reader therefore cannot strand that lock. Writers still lock and validate
 authority before every change; an existing interrupted lock remains fail-closed.
 
+Transactions also observe connection failures while a database client is checked
+out of its pool. A disconnect fails the original operation, discards the broken
+connection, and preserves its error even if rollback fails. It never replays the
+transaction or reports an uncertain commit as successful.
+
 Fresh private scan/parse/render images now bind signature version28156 and verified
 OCI/configuration digests. Actual bounded Sandbox scan, parse, render and Office
 checks pass, and all four owned executions are confirmed absent. The existing

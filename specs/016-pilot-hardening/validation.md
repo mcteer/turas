@@ -9654,3 +9654,21 @@ diff checks passed; independent source review found no blocker.
 These are pre-commit candidate checks. Fresh committed-source full-catalog,
 CI, model, hosted and release checks remain required. Production remains at
 `f8d196f` / schema 077.
+
+### Checked-out database connection failure
+
+The `d40adf5` hosted component run stopped on the first partner-evidence GET.
+The server retained an unexpected PostgreSQL connection termination and an
+uncaught exception; no training guide or learning model call had started.
+The underlying socket-closure cause remains unproven. Inspection and a
+deterministic reproduction with the installed pg implementation confirmed that
+pool error listeners do not cover checked-out clients.
+
+The transaction wrapper now observes those errors through release, checks for
+a failed connection before accepting commit, discards broken clients, and
+preserves the original failure if rollback also fails. Six focused cases pass,
+including actual pg client error delivery between queries and during commit,
+original-error preservation, pool-listener handoff, and no callback replay.
+Type checking and diff checks pass. Fresh committed-source full-catalog, CI,
+model-quality, hosted and release verification remain required; the prior
+candidate's partial results are retained as historical evidence.
