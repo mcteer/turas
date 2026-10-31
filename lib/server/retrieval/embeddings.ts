@@ -1,3 +1,4 @@
+import {withOperationalProviderIo} from '../operations/admission';
 import { randomUUID } from "node:crypto";
 import { embedMany, gateway } from "ai";
 import { withTransaction } from "../db/client";
@@ -18,14 +19,14 @@ export function exactEmbeddingVector(value: readonly number[]): number[] {
   return [...value];
 }
 
-export async function embedRetrievalTexts(values: readonly string[],options:{jobId?:string;operationKey?:string}={}) {
+export async function embedRetrievalTexts(values: readonly string[],options:{jobId?:string;operationKey?:string;signal?:AbortSignal}={}) {
  return embedGovernedTexts(values,options,2000);
 }
 export async function embedWorkspacePatternText(value:string):Promise<number[]> {
  return (await embedGovernedTexts([value],{},16000))[0];
 }
-async function embedGovernedTexts(values: readonly string[],
-  options: { jobId?: string; operationKey?: string },characterLimit:number): Promise<number[][]> {
+async function embedGovernedTextsWithinFence(values: readonly string[],
+  options: { jobId?: string; operationKey?: string;signal?:AbortSignal },characterLimit:number): Promise<number[][]> {
   if (values.length < 1 || values.length > retrievalLimits.embeddingBatch ||
       values.some((value) => !value.trim() || Array.from(value).length > characterLimit) ||
       !process.env.AI_GATEWAY_API_KEY) throw new Error("Embedding unavailable or input exceeds limit");
@@ -46,7 +47,7 @@ async function embedGovernedTexts(values: readonly string[],
     const budget=await reserveParityEmbedding(inputCharacters);
     const response = await embedMany({ model: gateway.embeddingModel(embeddingModelId),
       values: normalized,maxRetries: 0,maxParallelCalls: retrievalLimits.concurrentEmbeddingCalls,
-      abortSignal: AbortSignal.timeout(retrievalLimits.embeddingTimeoutMs),
+      abortSignal: AbortSignal.any([...(options.signal?[options.signal]:[]),AbortSignal.timeout(retrievalLimits.embeddingTimeoutMs)]),
       experimental_telemetry: { isEnabled: false } });
     await settleParityProvider(budget,response.providerMetadata);
     if (response.embeddings.length !== normalized.length) throw new Error("Embedding count mismatch");
@@ -59,4 +60,8 @@ async function embedGovernedTexts(values: readonly string[],
     recordRetrievalMetric("unconfirmed_operation_count",1);
     throw new Error("Embedding unavailable or outcome unconfirmed");
   }
+}
+
+async function embedGovernedTexts(values:readonly string[],options:{jobId?:string;operationKey?:string;signal?:AbortSignal},characterLimit:number):Promise<number[][]>{
+ return withOperationalProviderIo(()=>embedGovernedTextsWithinFence(values,options,characterLimit),options.signal);
 }

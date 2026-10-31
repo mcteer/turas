@@ -9,10 +9,10 @@ import {requireOwnedLearningDatabase} from '../../scripts/learning-environment';
 import {learningCompletedEvaluation} from '../fixtures/learning/completed-evaluation';
 test.beforeEach(()=>{if(process.env.TURAS_LEARNING_UI_FIXTURE_READY!=='1')throw Error('Owned learning UI runner required');});
 test('human reviews all eight immutable capture pairs before final exact publication',async({page})=>{
- test.setTimeout(120000); // Sixteen prepared arms and eight immutable human reviews in one journey.
+ test.setTimeout(180000); // Sixteen arms, 96 scores/checks and eight reviews on bounded two-core CI.
  const fixture=await withLearningDatabase(learningCompletedEvaluation);
  await page.context().addCookies([{name:'turas_session',value:fixture.actors.admin.token,url:process.env.TURAS_UI_BASE_URL!,httpOnly:true,sameSite:'Lax'}]);
- await page.goto(`/learning/candidates/${fixture.candidate.id}`);await expect(page.getByRole('button',{name:'Publish Exact Evaluated Revision',exact:true})).toHaveCount(0);
+ await page.goto(`/learning/candidates/${fixture.candidate.id}`);await expect(page.getByRole('heading',{name:'Synthetic fully captured browser candidate',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Publish Exact Evaluated Revision',exact:true})).toHaveCount(0);
  await page.goto(`/learning/evaluations/${fixture.evaluationId}`);await expect(page.getByRole('heading',{name:'Awaiting Review',exact:true})).toBeVisible();
  for(let index=1;index<=8;index++){
   const caseId=`E${String(index).padStart(2,'0')}`;await page.getByRole('button',{name:`Read and Review ${caseId}`,exact:true}).click();

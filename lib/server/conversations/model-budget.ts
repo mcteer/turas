@@ -11,6 +11,7 @@ import {steeringTurnDeadline} from './steering';
 import {ordinaryConversationOutputLimit,reserveOrdinaryOutput,settleOrdinaryOutput} from './token-allowance';
 import {readNativeProviderFiles} from './native-uploads';
 import {nativeProviderFilePresent} from './native-provider-dedup';
+import {wrapHostedRootBudget} from './hosted-root-budget';
 type Principal=Parameters<typeof customerQuestionActor>[1];
 type Model=Parameters<typeof wrapLanguageModel>[0]['model'];
 /** Replies to parked questions use the same ordinary-chat token allowance;
@@ -18,7 +19,7 @@ type Model=Parameters<typeof wrapLanguageModel>[0]['model'];
 export function wrapOrdinaryChatModel(model:Model,principal:Principal,nativeSessionId:string,turnId:string,nativeStep?:{event:unknown}){
  let called=false;
  let operation:Awaited<ReturnType<typeof reserveOrdinaryOutput>>|null=null;
- return wrapLanguageModel({model,middleware:{async transformParams({params}){
+ return wrapLanguageModel({model:wrapHostedRootBudget(model,principal,nativeSessionId,turnId),middleware:{async transformParams({params}){
   if(called)throw new HttpFailure(409,'model_call_repeated','A dispatched model call cannot be repeated');called=true;
   const {remaining,packet,resumeDeadline,files}=await withTransaction(async db=>{
    const reconstructionDeadline=nativeStep?await admitQuestionReconstruction(db,principal,nativeSessionId,nativeStep.event,params.prompt):null;

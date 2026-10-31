@@ -1,3 +1,4 @@
+import {installExecutionWriteDiagnostics} from '../fixtures/execution/ui-diagnostics';
 import {test,expect as baseExpect} from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import {signIn} from "../fixtures/ui";
@@ -11,6 +12,7 @@ const expect=baseExpect.configure({timeout:30000});
 test.beforeEach(({page},testInfo)=>{
   page.on("response",async response=>{const path=new URL(response.url()).pathname;if(path.startsWith("/api/execution")&&response.status()>=400){const body=await response.json().catch(()=>({}));await testInfo.attach("execution-response",{body:JSON.stringify({path,status:response.status(),code:body.error?.code}),contentType:"application/json"});}});
   page.on("framenavigated",async frame=>{if(frame===page.mainFrame())await testInfo.attach("navigation",{body:new URL(frame.url()).pathname,contentType:"text/plain"});});page.setDefaultTimeout(30000);requireOwnedExecutionClone();if(process.env.TURAS_EXECUTION_FIXTURE_READY!=="1")throw new Error("Use owned008 UI runner");});
+installExecutionWriteDiagnostics();
 test("forecast shows exact lifetime and period quantities, reviewed estimate input, and late-actual incompleteness",async({page},testInfo)=>{
   test.setTimeout(240000);const f=await timeFixture({calendar:true});await decideTime(f,await timeCandidate(f,[await submitTime(f,await draftTime(f))],"time.approve",{unplanned:"Human verifies unbooked work"}));
   for(const [key,budget,remaining] of [["proof",120,30],["readiness",0,0]] as const){
@@ -27,14 +29,30 @@ test("forecast shows exact lifetime and period quantities, reviewed estimate inp
   await page.getByRole("combobox",{name:"Record type",exact:true}).selectOption("estimate");
   await page.getByLabel("Delivery title",{exact:true}).fill("Refreshed remaining work");await page.getByLabel("Delivery context",{exact:true}).fill("The owner reviewed remaining work after the completed activity");
   await page.getByLabel("Remaining minutes",{exact:true}).fill("15");await page.getByLabel("Estimate as of (UTC)",{exact:true}).fill(new Date().toISOString());
+  const created=page.waitForResponse(response=>response.request().method()==="POST"&&new URL(response.url()).pathname===`/api/execution/engagements/${f.engagementId}/commands`&&response.request().postDataJSON()?.action==="record.create").then(async response=>{
+    expect(response.status()).toBe(200);const body=await response.json();expect(body.data?.state).toBe("committed");expect(body.data?.requestKey).toBe(response.request().postDataJSON().requestKey);
+  });
+  // Observe the real receipt without postponing the original immediate Submit.
+  void created.catch(()=>{});
   await page.getByRole("button",{name:"Save delivery draft",exact:true}).click();const record=page.getByRole("article",{name:"Delivery record Refreshed remaining work",exact:true});
-  await record.getByRole("button",{name:"Submit delivery record",exact:true}).click();await expect(record.getByText("submitted",{exact:true})).toBeVisible();
+  await Promise.all([created,(async()=>{await record.getByRole("button",{name:"Submit delivery record",exact:true}).click();await expect(record.getByText("submitted",{exact:true})).toBeVisible();})()]);
   await signIn(page,"mcteer");await page.goto(url);await page.getByRole("tab",{name:"Forecast",exact:true}).click();await page.getByRole("combobox",{name:"Record type",exact:true}).selectOption("estimate");
   await record.getByRole("button",{name:"Review delivery record",exact:true}).click();await page.getByLabel("Review rationale",{exact:true}).fill("Human checked the exact current package estimate");
   await page.getByRole("button",{name:"Confirm reviewed decision",exact:true}).focus();await page.keyboard.press("Enter");await expect(record.getByText("accepted",{exact:true})).toBeVisible();
   await expect(forecast.locator(".execution-metric").filter({has:page.getByText("Forecast Total",{exact:true})})).toContainText("75 min");
   await page.getByLabel("Period start",{exact:true}).fill(f.date);await page.getByLabel("Period end",{exact:true}).fill(f.date);await page.getByRole("button",{name:"Apply period",exact:true}).click();
-  const utilization=page.getByRole("region",{name:"Actual Utilization",exact:true});await utilization.getByRole("checkbox").first().check();await utilization.getByRole("button",{name:"Calculate actual utilization",exact:true}).click();
+  await expect(forecast.getByText(`${f.date} through ${f.date}, using each approved time entry’s captured service date.`,{exact:true})).toBeVisible();
+  await expect(forecast.locator(".execution-metric").filter({has:page.getByText("Period Actual",{exact:true})})).toContainText("60 min");
+  const utilization=page.getByRole("region",{name:"Actual Utilization",exact:true});await utilization.getByRole("checkbox").first().check();
+  const [usageResponse]=await Promise.all([
+    page.waitForResponse(response=>new URL(response.url()).pathname==="/api/execution/utilization"&&response.request().method()==="GET"),
+    utilization.getByRole("button",{name:"Calculate actual utilization",exact:true}).click(),
+  ]);
+  const usageQuery=new URL(usageResponse.url()).searchParams,usage=await usageResponse.json();
+  const percentage=usage.data?.total?.percentage,state=usage.data?.total?.state,errorCode=usage.error?.code;
+  const code=(value:unknown)=>typeof value==="string"&&/^[a-z_]{1,64}$/.test(value)?value:null;
+  await testInfo.attach("utilization-scope",{body:JSON.stringify({status:usageResponse.status(),fromMatches:usageQuery.get("from")===f.date,toMatches:usageQuery.get("to")===f.date,resourceMatches:usageQuery.get("resourceIds")===f.resourceId,percentage:typeof percentage==="string"&&/^\d{1,12}\.\d{2}$/.test(percentage)?percentage:null,state:code(state),errorCode:code(errorCode)}),contentType:"application/json"});
+  expect(usageQuery.get("from")).toBe(f.date);expect(usageQuery.get("to")).toBe(f.date);expect(usageQuery.get("resourceIds")).toBe(f.resourceId);expect(usageResponse.status()).toBe(200);
   await expect(utilization.getByText("12.50%",{exact:true})).toBeVisible();
   expect((await page.request.get(`/api/execution/utilization?from=${f.date}&to=${f.date}&resourceIds=${f.resourceId},${f.resourceId}`)).status()).toBe(400);
   expect((await page.request.get(`/api/execution/engagements/${f.engagementId}/summary?from=${f.date}&to=${f.date}&extra=1`)).status()).toBe(400);
@@ -100,4 +118,30 @@ test("outcomes retain unknown measurements and accept an evidenced observation o
   await outcome.getByRole("button",{name:"Review delivery record",exact:true}).click();await page.getByLabel("Review rationale",{exact:true}).fill("Human verifies the observation, measurement window and explicit limits");await page.getByRole("button",{name:"Confirm reviewed decision",exact:true}).click();await expect(outcome.getByText("accepted",{exact:true})).toBeVisible();
   await signIn(page,"partner");await page.goto(url);await page.getByRole("tab",{name:"Handoff",exact:true}).click();await page.getByRole("combobox",{name:"Record type",exact:true}).selectOption("outcome");await expect(outcome).toContainText("112.125 ms");await expect(outcome).toContainText("Baseline: No prior comparable measurement");await expect(outcome).toContainText("Comparison: No comparison group");
   await page.screenshot({path:testInfo.outputPath("reviewed-outcome.png"),fullPage:true});expect((await new AxeBuilder({page}).analyze()).violations.filter(v=>["serious","critical"].includes(v.impact??""))).toEqual([]);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+});
+
+test("confirmed delivery writes clear expired read eligibility and recover without replay",async({page})=>{
+ test.setTimeout(240000);const f=await timeFixture();const path=`/api/execution/engagements/${f.engagementId}`;
+ let armed=false,allow=false,creates=0,submits=0,held=0;const releases:Array<()=>void>=[];const pending:Promise<void>[]=[];
+ await page.route('**/api/execution/engagements/**',async route=>{
+  const request=route.request(),url=new URL(request.url());
+  if(url.pathname===path+'/commands'&&request.method()==='POST'){
+   const body=request.postDataJSON();if(body.action==='record.create')creates++;if(body.action==='record.submit')submits++;
+   const response=await route.fetch();if(body.action==='record.create'){expect(response.ok()).toBe(true);const envelope=await response.json();expect(envelope.data?.state).toBe('committed');expect(envelope.data?.requestKey).toBe(body.requestKey);armed=true;}
+   await route.fulfill({response});return;
+  }
+  if(url.pathname===path&&request.method()==='GET'&&armed&&!allow){held++;const response=await route.fetch();let release!:()=>void;const gate=new Promise<void>(r=>release=r);releases.push(release);const timer=setTimeout(release,90000);const work=gate.then(async()=>{clearTimeout(timer);await route.fulfill({response}).catch(()=>{});});pending.push(work);await work;return;}
+  await route.continue();
+ });
+ try{
+ await signIn(page,'panel');await page.goto(`/customers/${f.customerId}/engagements/${f.engagementId}/execution`);await page.getByRole('tab',{name:'Forecast',exact:true}).click();
+ await page.getByRole('combobox',{name:'Record type',exact:true}).selectOption('estimate');
+ await page.getByLabel('Delivery title',{exact:true}).fill('Controlled confirmed estimate');await page.getByLabel('Delivery context',{exact:true}).fill('Controlled local read deadline observation');await page.getByLabel('Remaining minutes',{exact:true}).fill('15');await page.getByLabel('Estimate as of (UTC)',{exact:true}).fill(new Date().toISOString());
+ await page.getByRole('button',{name:'Save delivery draft',exact:true}).click();await expect.poll(()=>held).toBeGreaterThan(0);
+ const record=page.getByRole('article',{name:'Delivery record Controlled confirmed estimate',exact:true});
+  await expect(page.getByText('Current execution read timed out. Refresh current execution access.',{exact:true})).toBeVisible();await expect(record).toHaveCount(0);const refresh=page.getByRole('button',{name:'Refresh execution',exact:true});await expect(refresh).toBeEnabled();expect(creates).toBe(1);expect(submits).toBe(0);
+  allow=true;await refresh.click();await page.getByRole('combobox',{name:'Record type',exact:true}).selectOption('estimate');await expect(record).toBeVisible();await expect(record.getByRole('button',{name:'Submit delivery record',exact:true})).toBeEnabled();
+  // An aborted old response is released after a new authoritative read, never before.
+  await record.getByRole('button',{name:'Submit delivery record',exact:true}).click();await expect(record.getByText('submitted',{exact:true})).toBeVisible();expect(creates).toBe(1);expect(submits).toBe(1);for(const release of releases)release();await Promise.all(pending);await expect(record.getByText('submitted',{exact:true})).toBeVisible();
+ }finally{allow=true;for(const release of releases)release();await Promise.allSettled(pending);await page.unrouteAll({behavior:'wait'});}
 });

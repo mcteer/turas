@@ -16,7 +16,7 @@ export async function installExpansionLiveObservation(environment: { appRoot: st
   expansionLiveBudgetSchema.parse(Number(process.env.TURAS_EXPANSION_LIVE_BUDGET_USD));
   const base = mocked ? "createExpansionNativeFixtureModel(principal, identity)" : "parityBudgetModel(gateway(selectedModel),selectedModel)";
   const target = `wrapStaffingModel(${base}, admitted.mode`;
-  if (source.split(target).length !== 2 || !source.includes('const selectedModel = "spacexai/grok-4.7";') || !source.includes('reasoning: "low"'))
+  if (source.split(target).length !== 2 || !source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";') || !source.includes('reasoning: "low"'))
     throw new Error("Expansion selected model shape changed");
   await query(`CREATE TABLE expansion_live_provider_observations(id uuid PRIMARY KEY,attempt_id uuid NOT NULL REFERENCES expansion_advice_attempts(id),
     response_attempt_id uuid NOT NULL REFERENCES response_attempts(id),step_id uuid NOT NULL UNIQUE REFERENCES expansion_model_step_receipts(id),

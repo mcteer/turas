@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../fixtures/bound-session";
 import { createHash, randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import type { CurrentSession } from "../../lib/server/auth/sessions";
@@ -12,6 +13,7 @@ import { suspendStaleKnowledge } from "../../lib/server/knowledge/suspension";
 import { readKnowledgeImpact } from "../../lib/server/knowledge/impact";
 import { materializeCurrentProjection } from "../../lib/server/retrieval/projections";
 import { flagTypedConflict,decideTypedConflict } from "../../lib/server/retrieval/conflicts";
+import {exactRetrievalOriginalCurrent} from "../../lib/server/retrieval/fences";
 import { currentIndexPassages } from "../../scripts/retrieval-worker";
 
 const payload = { title: "Synthetic build timing", productVersion: "2026.9",
@@ -92,9 +94,7 @@ describe("shared publication boundary", () => {
           async function actor(principalId: string,membershipId: string,workspaceId: string,
             role: "admin" | "member"): Promise<CurrentSession> {
             const sessionId = randomUUID();
-            await client.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-              VALUES($1,$2,$3,now()+interval '1 hour')`,
-            [sessionId,principalId,sha(sessionId)]);
+            await insertBoundFixtureSession(client,{id:sessionId,principalId:principalId,membershipId:membershipId,workspaceId:workspaceId,tokenHash:sha(sessionId),expiresAt:new Date(Date.now()+3600000)});
             return { sessionId,principalId,membershipId,workspaceId,kind: "internal",role,
               loginName: "synthetic",displayName: "Synthetic",token: "synthetic",
               expiresAt: new Date(Date.now()+3_600_000) };
@@ -213,6 +213,40 @@ describe("shared publication boundary", () => {
           expect(otherDto).toEqual(internalDto);
           expect(await readPublishedKnowledge(client,partner,publicationId)).toEqual(internalDto);
           expect(JSON.stringify(otherDto)).not.toMatch(/Private Juniper Sentinel|customerId|lineage|sourceRevisionId/);
+          // Synthetic shared knowledge is indexable only in its actual origin scope.
+          await client.query('SAVEPOINT synthetic_shared_index');
+          const pilotWorkspace=randomUUID(),pilotCustomer=randomUUID(),pilotMember=randomUUID(),pilotRecord=randomUUID(),pilotRevision=randomUUID();
+          await client.query(`INSERT INTO workspaces(id,name,classification,pilot_environment_id,pilot_provisioning_id)
+            VALUES($1,'Synthetic isolated publication','synthetic_pilot',$2,$3)`,[pilotWorkspace,environment,randomUUID()]);
+          await client.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','admin')",[pilotMember,adminPrincipal,pilotWorkspace]);
+          await client.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Synthetic isolated source',true)",[pilotCustomer,pilotWorkspace]);
+          await client.query("INSERT INTO profile_records(id,workspace_id,customer_id,kind,created_by) VALUES($1,$2,$3,'claim',$4)",[pilotRecord,pilotWorkspace,pilotCustomer,pilotMember]);
+          await client.query(`INSERT INTO profile_revisions(id,record_id,workspace_id,customer_id,revision_number,payload_schema_version,payload,quality_input,author_membership_id,origin,audience,data_category,content_digest)
+            VALUES($1,$2,$3,$4,1,'profile-v1',$5,'{}',$6,'manual','internal','internal_operations',$7)`,[pilotRevision,pilotRecord,pilotWorkspace,pilotCustomer,JSON.stringify({kind:'claim',text:'synthetic accepted source',sourceType:'manual'}),pilotMember,sourceDigest]);
+          await client.query("INSERT INTO profile_review_decisions(revision_id,decision,reviewer_membership_id,rationale,command_receipt_id) VALUES($1,'accept',$2,'Synthetic isolated review',$3)",[pilotRevision,pilotMember,randomUUID()]);
+          await client.query('UPDATE profile_records SET current_accepted_revision_id=$2 WHERE id=$1',[pilotRecord,pilotRevision]);
+          const pilotActor=await actor(adminPrincipal,pilotMember,pilotWorkspace,'admin');
+          const pilotDraft=await createKnowledgeCandidate(client,pilotActor,{idempotencyKey:'synthetic-index-draft',customerId:pilotCustomer,payload,
+            lineage:[{sourceKind:'accepted_profile',sourceRevisionId:pilotRevision,sourceGeneration:1,sourceDigest,rightsBasis:'Synthetic reusable source'}]});
+          await submitKnowledgeCandidate(client,pilotActor,pilotDraft.id,{idempotencyKey:'synthetic-index-submit',expectedRevision:1,expectedDigest:pilotDraft.digest});
+          await decideKnowledgeCandidate(client,pilotActor,pilotDraft.id,{idempotencyKey:'synthetic-index-publish',expectedRevision:1,expectedDigest:pilotDraft.digest,action:'publish',rightsAttested:true,sanitizationRationale:'Generic checked synthetic guidance only',checklist});
+          const pilotPublication=(await client.query('SELECT id,revision_id FROM knowledge_publications WHERE contribution_id=$1',[pilotDraft.id])).rows[0];
+          const pilotSource=(await client.query(`SELECT s.id,s.source_revision_id,s.source_generation,s.origin_workspace_id,j.id AS job_id,j.contract_digest
+            FROM retrieval_sources s JOIN retrieval_jobs j ON j.source_id=s.id AND j.kind='index' WHERE s.source_revision_id=$1`,[pilotPublication.revision_id])).rows[0];
+          expect(pilotSource.origin_workspace_id).toBe(pilotWorkspace);
+          const pilotLease=randomUUID();
+          await client.query("UPDATE retrieval_jobs SET state='leased',attempts=1,lease_token=$2,lease_started_at=now(),lease_until=now()+interval '30 seconds' WHERE id=$1",[pilotSource.job_id,pilotLease]);
+          const pilotClaim={id:pilotSource.job_id,sourceId:pilotSource.id,generation:Number(pilotSource.source_generation),contractDigest:pilotSource.contract_digest,kind:'index' as const,leaseToken:pilotLease,attempt:1};
+          expect((await currentIndexPassages(pilotClaim,client))?.some(item=>item.passage_text===payload.title)).toBe(true);
+          expect(await exactRetrievalOriginalCurrent(client,'published_shared',pilotSource.source_revision_id,pilotSource.source_generation,pilotWorkspace)).toBe(true);
+          expect(await exactRetrievalOriginalCurrent(client,'published_shared',pilotSource.source_revision_id,pilotSource.source_generation,otherWorkspace)).toBe(false);
+          expect(await readPublishedKnowledge(client,pilotActor,pilotPublication.id)).toBeTruthy();
+          await expect(readPublishedKnowledge(client,reader,pilotPublication.id)).rejects.toMatchObject({status:404});
+          await client.query('ROLLBACK TO SAVEPOINT synthetic_shared_index');
+          await client.query('RELEASE SAVEPOINT synthetic_shared_index');
+          // The primary-origin publication remains readable across workspaces.
+          expect(await readPublishedKnowledge(client,reader,publicationId)).toEqual(internalDto);
+
           await client.query("SAVEPOINT typed_conflict");
           await materializeCurrentProjection(client,"accepted_profile",revision,"internal");
           const flagged = await flagTypedConflict(client,admin,{

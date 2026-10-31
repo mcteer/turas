@@ -24,7 +24,7 @@ export function verifyExecutionPreflight(raw:unknown,sourceDigest:string,load:(p
 }
 const usage=z.object({source:z.enum(["reported","unknown"]),inputTokens:count.nullable(),outputTokens:count.nullable()}).strict();
 export const executionActualSchema=z.object({version:z.literal("execution-live-v1"),runId:z.uuid(),caseId:z.enum(EXECUTION_EVAL_IDS),sourceDigest:digest,
-  provenance:z.literal("native-eve-stream"),model:z.literal("spacexai/grok-4.7"),reasoning:z.literal("low"),role:z.enum(["panel","mcteer"]),
+  provenance:z.literal("native-eve-stream"),model:z.literal("anthropic/claude-sonnet-5.5"),reasoning:z.literal("low"),role:z.enum(["panel","mcteer"]),
   attemptId:z.uuid(),conversationId:z.uuid(),nativeSessionId:z.string().regex(/^wrun_[A-Za-z0-9_-]+$/),turnId:z.string().min(1).max(200),
   startedAt:instant,finishedAt:instant,deadlineAt:instant,initialDispatches:z.literal(1),automaticPaidRetries:z.literal(0),
   state:z.enum(["completed","failed","cancelled","expired","unconfirmed"]),outputReadable:z.boolean(),response:z.string().max(1000000),responseDigest:digest,

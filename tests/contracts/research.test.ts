@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { researchPreviewInputSchema } from "../../lib/contracts/research";
+import { researchPreviewInputSchema,researchPublicSubjectSchema,
+  researchRunReceiptSchema } from "../../lib/contracts/research";
 import { renderResearchQueries } from "../../lib/server/research/policy";
 import { discoverContext, discoveryInScope } from "../../lib/server/research/discovery";
+import { assertFitEvidenceCoverage } from "../../evals/fit-evidence";
 
 const customerId = "00000000-0000-4000-8000-000000000001";
 const conversationId = "00000000-0000-4000-8000-000000000002";
@@ -11,6 +13,7 @@ describe("bounded public research preview", () => {
   it("renders exact versioned queries for recon and practices", () => {
     const recon = researchPreviewInputSchema.parse({ ...common,mode: "recon",
       publicName: "Public Example",publicDomain: "public.example.org",identityConfirmed: true });
+    if (recon.mode !== "recon") throw new Error("Expected recon preview");
     expect(renderResearchQueries(recon)).toEqual([
       '"Public Example" product releases "public.example.org"',
       '"Public Example" engineer conference presentation',
@@ -21,9 +24,35 @@ describe("bounded public research preview", () => {
       product: "Vercel",version: "2026",topic: "build cache" });
     expect(renderResearchQueries(practices)[0]).toBe(
       '"Vercel" "2026" "build cache" official documentation');
+    const subject = researchPublicSubjectSchema.parse({
+      version: "public-research-subject-v1",basis: "user_confirmed_scope",mode: "recon",
+      publicName: recon.publicName,publicDomain: recon.publicDomain,
+    });
+    expect(subject).toMatchObject({ publicName: "Public Example",basis: "user_confirmed_scope" });
+    const receipt = { version: "research-v1",id: customerId,requestId: conversationId,
+      state: "partial",mode: "recon",startedAt: null,deadline: "2026-10-29T12:00:00Z",
+      safeReasonCode: null,searchesUsed: 1,fetchesUsed: 1,retainedCitationIds: [] };
+    expect(researchRunReceiptSchema.safeParse(receipt).success).toBe(true);
+    expect(researchRunReceiptSchema.parse({ ...receipt,publicSubject: subject }).publicSubject).toEqual(subject);
+    expect(researchRunReceiptSchema.safeParse({ ...receipt,publicSubject: {
+      version: "public-research-subject-v1",basis: "user_confirmed_scope",mode: "fit",
+    } }).success).toBe(false);
+    expect(researchPublicSubjectSchema.safeParse({ ...subject,customerId }).success).toBe(false);
   });
 
   it("rejects likely secret or private egress terms and limits fit to no network queries", () => {
+    const older = { citationId: "older-citation",sourceKind: "accepted_profile",
+      sourceRevisionId: "older-identical-claim" };
+    const practice = { citationId: "practice-citation",sourceKind: "verified_research",
+      sourceRevisionId: "required-practice" };
+    expect(() => assertFitEvidenceCoverage([older,practice],
+      ["required-customer-fact","required-practice"])).toThrow("exact required source revision");
+    const current = { ...older,citationId: "current-citation",
+      sourceRevisionId: "required-customer-fact" };
+    expect(() => assertFitEvidenceCoverage([older,current,practice],
+      ["required-customer-fact","required-practice"])).not.toThrow();
+    expect(() => assertFitEvidenceCoverage([current],["required-customer-fact"]))
+      .toThrow("classes missing");
     const unsafe = researchPreviewInputSchema.parse({ ...common,mode: "practices",
       product: "Vercel",version: "2026",topic: "api_key=hidden-value" });
     expect(() => renderResearchQueries(unsafe)).toThrow();

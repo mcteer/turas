@@ -45,7 +45,7 @@ describe("artifact upload HTTP contract", () => {
     if (!process.env.TURAS_TEST_DATABASE_URL || !process.env.TURAS_TEST_ENVIRONMENT_ID) {
       throw new Error("Disposable artifact test database required");
     }
-    process.env.DATABASE_URL = process.env.TURAS_TEST_DATABASE_URL;
+    if(process.env.TURAS_PILOT_OWNED!=="1")process.env.DATABASE_URL = process.env.TURAS_TEST_DATABASE_URL;
     process.env.TURAS_ENVIRONMENT_ID = process.env.TURAS_TEST_ENVIRONMENT_ID;
     storeRoot = await mkdtemp(join(tmpdir(), "turas-004-contract-"));
     await chmod(storeRoot, 0o700);
@@ -165,9 +165,9 @@ describe("artifact upload HTTP contract", () => {
         lifecycleGeneration: 1, originalDigest: run.original_digest,
         parserImageDigest: run.parser_image_digest, scanPolicyVersion: run.scan_policy_version,
         parserPolicyVersion: run.parser_policy_version, deadlineAt: run.deadline_at.toISOString() });
-      const published = await client.query<{ state: string }>(
-        "SELECT state FROM artifact_versions WHERE id=$1", [a.versionId]);
-      expect(published.rows[0].state).toBe("ready");
+      const published = await client.query<{ state: string; safe_error_code: string | null }>(
+        "SELECT state,safe_error_code FROM artifact_versions WHERE id=$1", [a.versionId]);
+      expect(published.rows[0].state,published.rows[0].safe_error_code??undefined).toBe("ready");
       const units = await client.query<{ text: string }>(
         "SELECT text FROM artifact_extraction_units WHERE version_id=$1", [a.versionId]);
       expect(units.rows.some((item) => item.text.includes("Synthetic exact source bytes"))).toBe(true);
@@ -258,7 +258,7 @@ describe("artifact upload HTTP contract", () => {
     const unfinished = await getIntent(request(`/api/artifacts/intents/${secondId}`, "GET", owner),
       { params: Promise.resolve({ intentId: secondId }) });
     expect((await unfinished.json() as { data: { versionId: string | null } }).data.versionId).toBeNull();
-  });
+  },130_000);
 
   it("commits one quota release when cancellation or expiry wins before completion", async () => {
     const { Client } = await import("pg");

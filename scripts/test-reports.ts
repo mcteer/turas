@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {reportsSourceDigest} from './reports-source';
+import {setupFailureMetadata} from './ci-process-diagnostics';
 import { withReportsTestEnvironment } from './reports-test-environment';
 import {withReportsLocalEnvironment} from './reports-local-environment';
 import {verifyExecutionTestReport} from './test-execution';
@@ -98,7 +99,7 @@ async function main() {
        if (!suite.startsWith('tests/integration/') && !['tests/contracts/report-publication-api.test.ts','tests/contracts/report-audience.test.ts'].includes(suite)) await run(); else await withReportsTestEnvironment(run);
     }catch(error){
       await writeFile(resolve(directory,'failure.json'),JSON.stringify({suite,stage:'suite-or-owned-environment',error:error instanceof Error?{name:error.name,message:error.message,stack:error.stack}:String(error)}),{mode:0o600,flag:'wx'});
-      console.error(JSON.stringify({gate:'reports-deterministic',suite,stage:'suite-or-owned-environment',status:'failed'}));
+      console.error(JSON.stringify({gate:'reports-deterministic',suite,status:'failed',...setupFailureMetadata({stage:'suite-or-owned-environment',error})}));
       throw new Error(`Report check failed at ${suite}; inspect private failure.json`);
     }
   }

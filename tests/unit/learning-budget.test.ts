@@ -1,6 +1,6 @@
 import { describe,it,expect } from 'vitest';
 import { assertLearningPrice,learningStepCeiling,type LearningPrice } from '../../lib/server/learning/pricing';
-const price:LearningPrice={version:'learning-price-v1',modelId:'spacexai/grok-4.7',inputMicroUsdPerMillion:'8000000',outputMicroUsdPerMillion:'24000000',providerInputLimit:500000,providerOutputLimit:500000,hardOutputCapIncludesReasoning:true,pricingSource:'https://ai-gateway.vercel.sh/v1/models',outputContractSource:'https://vercel.com/ai-gateway/models/grok-4.7',pricingCaptureDigest:'a'.repeat(64),outputContractCaptureDigest:'b'.repeat(64),verifiedAt:'2026-10-09T12:00:00Z',expiresAt:'2026-10-10T12:00:00Z'};
+const price:LearningPrice={version:'learning-price-v1',modelId:'anthropic/claude-sonnet-5.5',inputMicroUsdPerMillion:'8000000',outputMicroUsdPerMillion:'24000000',providerInputLimit:500000,providerOutputLimit:500000,hardOutputCapIncludesReasoning:true,pricingSource:'https://ai-gateway.vercel.sh/v1/models',outputContractSource:'https://vercel.com/ai-gateway/models/claude-sonnet-5.5',pricingCaptureDigest:'a'.repeat(64),outputContractCaptureDigest:'b'.repeat(64),verifiedAt:'2026-10-09T12:00:00Z',expiresAt:'2026-10-10T12:00:00Z'};
 describe('finite learning price contracts',()=>{
  it('uses the complete provider input bound and reasoning-inclusive output contract',()=>{
   expect(learningStepCeiling(price,4096)).toMatchObject({ceilingMicroUsd:16000000n,inputCeiling:500000,outputCeiling:500000});

@@ -6,6 +6,7 @@ import { Client } from "pg";
 import { withPlanEvalEnvironment, type PlanEvalEnvironment } from "./plan-eval-environment";
 import { ownedEvalTimeout } from "./eval-deadline";
 import { copyOwnedEvalFiles } from "./eval-owned-copy";
+import {requireOwnedPilotDatabase} from './pilot-environment';
 
 export type StaffingEvalEnvironment = PlanEvalEnvironment & {
   workforceRoot: string;
@@ -17,6 +18,10 @@ export type StaffingEvalEnvironment = PlanEvalEnvironment & {
 export function requireOwnedStaffingClone(
   environment: Record<string, string | undefined> = process.env,
 ): string {
+  if(environment.TURAS_PILOT_OWNED==='1'){
+    const url=requireOwnedPilotDatabase(environment as NodeJS.ProcessEnv,true);
+    if(url!==environment.TURAS_TEST_DATABASE_URL||url===environment.DATABASE_URL)throw Error('Owned pilot runtime/owner separation required');return url;
+  }
   const url = environment.DATABASE_URL;
   if (!url || url !== environment.DATABASE_URL_UNPOOLED ||
       url !== environment.TURAS_TEST_DATABASE_URL ||

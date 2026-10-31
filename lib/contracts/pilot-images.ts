@@ -1,0 +1,11 @@
+import {z} from 'zod';
+const digest=z.string().regex(/^[a-f0-9]{64}$/),uuid=z.string().regex(/^[a-f0-9]{32}$/);
+const image=z.object({kind:z.enum(['scanner','parser','renderer']),localTag:z.string().regex(/^turas-pilot-016-[a-f0-9]{32}-(scanner|parser|renderer):local$/),localImageId:z.string().regex(/^sha256:[a-f0-9]{64}$/),architecture:z.literal('amd64'),recipeDigest:digest,baseRecipeDigest:digest,hostedOci:z.string().regex(/^vcr\.vercel\.com\/[a-zA-Z0-9_/-]+@sha256:[a-f0-9]{64}$/).nullable()}).strict();
+export const pilotImagePreparationSchema=z.object({contract:z.literal('pilot-image-preparation-v1'),preparedAt:z.iso.datetime({offset:true}),owner:uuid,platform:z.literal('linux/amd64'),images:z.array(image).length(3),scanner:z.object({engine:z.literal('ClamAV 1.5.4'),signatureVersion:z.string().regex(/^\d+$/),signatures:z.array(z.object({name:z.string().regex(/^(main|daily|bytecode)\.(cvd|cld)$/),sizeBytes:z.number().int().positive().max(1073741824),digest}).strict()).min(3).max(3)}).strict(),ocr:z.object({digest:z.literal('7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2'),license:z.literal('Apache-2.0'),source:z.literal('https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/eng.traineddata')}).strict(),hostedVerified:z.literal(false)}).strict().superRefine((value,context)=>{
+ if(new Set(value.images.map(i=>i.kind)).size!==3)context.addIssue({code:'custom',message:'Every image kind is required'});
+ if(value.images.some(i=>i.localTag!==`turas-pilot-016-${value.owner}-${i.kind}:local`))context.addIssue({code:'custom',message:'Image ownership differs'});
+ if(new Set(value.scanner.signatures.map(s=>s.name.split('.')[0])).size!==3)context.addIssue({code:'custom',message:'Complete signature snapshot required'});
+});
+export type PilotImagePreparation=z.infer<typeof pilotImagePreparationSchema>;
+/** Preparation alone cannot prove registry readiness or an actual hosted execution. */
+export function parsePilotImagePreparation(bytes:Uint8Array):PilotImagePreparation{if(bytes.byteLength>65536)throw Error('Image manifest exceeds metadata limit');return pilotImagePreparationSchema.parse(JSON.parse(Buffer.from(bytes).toString('utf8')));}

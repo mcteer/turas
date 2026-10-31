@@ -1,4 +1,5 @@
 "use client";
+import {uploadPrivateOriginal} from "../direct-upload";
 import { EmptyState } from "../empty-state";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
@@ -59,8 +60,7 @@ export function StaffingImports({ csrfToken }: { csrfToken: string }) {
     if (!intent || !file || uploadUncertain) return;
     setUploading(true); setMessage("");
     try {
-      const response = await fetch(`/api/staffing/imports/${intent.importId}/content`, { method: "PUT", body: file,
-        headers: { "x-csrf-token": csrfToken, "content-type": intent.format === "csv" ? "text/csv" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } });
+      const response = await uploadPrivateOriginal({domain:"workforce",id:intent.importId,file,csrfToken,localContentType:intent.format === "csv" ? "text/csv" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
       if (!response.ok) {
         if (response.status >= 500) throw new Error();
         setMessage("Original was not uploaded. Check the file and intake status before trying again."); return;

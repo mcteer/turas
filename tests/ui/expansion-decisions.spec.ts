@@ -1,3 +1,5 @@
+import {installExpansionEntryDiagnostics} from '../fixtures/expansion/ui-diagnostics';
+installExpansionEntryDiagnostics();
 import {randomUUID} from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
 import {createProfileTestSession} from '../fixtures/profiles';

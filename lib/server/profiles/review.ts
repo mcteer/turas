@@ -9,7 +9,8 @@ import { validateMaturityAssessment } from "./maturity";
 import type { ProfilePayload } from "../../contracts/profile-payloads";
 import { validateProfileRelationships } from "./profile-records";
 import { persistApprovedQuality } from "./evidence";
-import { retireRetrievalProjection } from "../retrieval/projections";
+import { retireRetrievalProjection, materializeCurrentProjection } from "../retrieval/projections";
+import {retrievalIntakeEnabled,retrievalSchemaVersion} from '../retrieval/policy';
 import { enqueuePlanCleanupForSource } from "../plans/cleanup";
 
 type ReviewCommand = Extract<ProfileCommand, { action: "accept_revision" | "reject_revision" }>;
@@ -146,6 +147,16 @@ export async function reviewRevision(client: PoolClient, actor: ProfileActor, cu
       internal_generation=internal_generation+1,
       delivery_generation=delivery_generation+$1,updated_at=now() WHERE customer_id=$2`,
     [deliveryAffected ? 1 : 0, customerId]);
+    // Prepare governed passages atomically with the exact accepted head. This
+    // does not embed, publish shared knowledge or widen the source audience.
+    // Earlier 003 schemas and the 005 rollback switch retain their own behavior.
+    if(retrievalIntakeEnabled()){
+      const installed=(await client.query('SELECT schema_version FROM turas_environment')).rows;
+      if(installed.length===1&&Number(installed[0].schema_version)>=retrievalSchemaVersion){
+        await materializeCurrentProjection(client,'accepted_profile',row.revision_id,'internal');
+        await materializeCurrentProjection(client,'accepted_profile',row.revision_id,'delivery');
+      }
+    }
   }
   return { recordId: row.record_id, revisionId: row.revision_id, reviewState: state, recordVersion: version };
 }

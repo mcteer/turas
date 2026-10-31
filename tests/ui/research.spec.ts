@@ -19,7 +19,13 @@ async function visitAfterSignIn(page: Page,path: string) {
 }
 
 test("public research preview stays explicit in an owned synthetic chat",async ({ page },testInfo) => {
+  const startedAt = Date.now();
+  let phase = "sign-in";
+  const phases: { phase: string; elapsedMs: number }[] = [];
+  const mark = (next: string) => { phase = next; phases.push({ phase: next,elapsedMs: Math.min(30000,Math.max(0,Date.now()-startedAt)) }); };
+  let refreshRequests = 0,refreshFulfilled = 0;
   await signIn(page,"mcteer");
+  mark("fixture-database");
   const db = new Client({ connectionString: requireUiFixtureDatabaseUrl() });
   await db.connect();
   const id = randomUUID();
@@ -39,14 +45,15 @@ test("public research preview stays explicit in an owned synthetic chat",async (
       (id,environment_id,workspace_id,customer_id,owner_principal_id,
        eve_session_id,creation_operation_id,binding_state,title,
        context_snapshot_schema,context_login_session_id,context_membership_id,
-       context_audience,context_generation,context_valid_until)
+       context_audience,context_generation,context_valid_until,live_customer_context)
       VALUES($1,$2,$3,$4,$5,$6,$7,'bound','Synthetic research preview',
-        'customer-context-v1',$8,$9,'internal',$10,now()+interval '1 hour')`,
+        'customer-context-v1',$8,$9,'internal',$10,now()+interval '1 hour',true)`,
     [id,process.env.TURAS_TEST_ENVIRONMENT_ID,DEMO_IDS.workspace,
       DEMO_IDS.sharedCustomer,DEMO_IDS.mcteer,`synthetic_${randomUUID().replaceAll("-","")}`,
       randomUUID(),session.rows[0].id,DEMO_IDS.mcteerMembership,
       state.rows[0]?.internal_generation ?? 0]);
     await page.route("**/api/research/refresh?**",async (route) => {
+      refreshRequests = Math.min(256,refreshRequests+1);
       await route.fulfill({ status: 200,contentType: "application/json",body: JSON.stringify({
         data: [{ sourceRevisionId: randomUUID(),title: "Synthetic public identity",
           dueAt: "2026-09-28T00:00:00.000Z",state: "due",
@@ -54,12 +61,32 @@ test("public research preview stays explicit in an owned synthetic chat",async (
           mode: "recon",publicFields: { publicName: "Example Organization",
             publicDomain: "example.org",identityConfirmed: true } }],
       }) });
+      refreshFulfilled = Math.min(256,refreshFulfilled+1);
     });
+    // Keep capability-dependent controls settled before the context can open.
+    // Otherwise Customer sources can appear during a research-button click.
+    let releaseCapabilities!: () => void;
+    const capabilities = new Promise<void>((resolve) => { releaseCapabilities = resolve; });
+    await page.route(`**/api/conversations/${id}`,async (route) => {
+      const response = await route.fetch();
+      await capabilities;
+      await route.fulfill({ response });
+    });
+    mark("visit-chat");
     await visitAfterSignIn(page,`/s/${id}`);
+    try {
+      await expect(page.getByRole("button",{ name: "Customer context",exact: true })).toBeDisabled();
+    } finally {
+      releaseCapabilities();
+    }
+    mark("open-context");
     await page.getByRole("button",{ name: "Customer context",exact: true }).click();
+    mark("open-research");
     await page.getByRole("button",{ name: "Start public research" }).click();
     const panel = page.getByRole("region",{ name: "Public Research" });
+    mark("prepare-refresh");
     await panel.getByRole("button",{ name: "Prepare refresh" }).click();
+    mark("assert-prefill");
     await expect(panel.getByLabel("Mode")).toHaveValue("recon");
     await expect(panel.getByLabel("Public name")).toHaveValue("Example Organization");
     await expect(panel.getByLabel("Public domain")).toHaveValue("example.org");
@@ -80,15 +107,47 @@ test("public research preview stays explicit in an owned synthetic chat",async (
             wallSeconds: 120 } },
       }) });
     });
+    mark("preview-scope");
     await panel.getByRole("button",{ name: "Preview scope" }).click();
     await expect(panel.getByRole("region",{ name: "Research scope preview" }))
       .toContainText('"Vercel" "2026" "build cache" official documentation');
+    mark("accessibility");
     const axe = await new AxeBuilder({ page }).analyze();
     expect(axe.violations.filter((item) => ["critical","serious"].includes(item.impact ?? "")))
       .toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth+1)).toBe(true);
     mkdirSync("local-artifacts/005",{ recursive: true });
+    mark("capture");
     await sanitizedScreenshot(page,`local-artifacts/005/research-${testInfo.project.name}.png`);
+  } catch (error) {
+    // Failure-only, fixed booleans/counts. Never publish DOM, URLs, IDs or error prose.
+    let observation: Record<string,boolean> = { unavailable: true };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      observation = await Promise.race([
+        page.evaluate(() => {
+          const research = document.querySelector('[aria-label="Public Research"]');
+          const due = research?.querySelector('[aria-label="Research review due"]');
+          const buttons = [...(research?.querySelectorAll('button') ?? [])];
+          return { unavailable: false,researchPanelPresent: Boolean(research),duePanelPresent: Boolean(due),
+            researchExpanded: buttons.some(button => button.getAttribute('aria-expanded') === 'true'),
+            refreshPresent: buttons.some(button => button.textContent?.trim() === 'Prepare refresh'),
+            refreshEnabled: buttons.some(button => button.textContent?.trim() === 'Prepare refresh' && !(button as HTMLButtonElement).disabled),
+            loading: due?.textContent?.includes('Checking review dates…') ?? false,
+            refreshUnavailable: due?.textContent?.includes('Review dates are unavailable.') ?? false,
+            noneDue: due?.textContent?.includes('No attributed research requires review.') ?? false,
+            chatUnavailable: [...document.querySelectorAll('h1')].some(heading => heading.textContent === 'Chat Unavailable') };
+        }),
+        new Promise<Record<string,boolean>>(resolve => { timer = setTimeout(() => resolve({ unavailable: true }),1000); }),
+      ]);
+    } catch { /* Keep the original test failure. */ }
+    finally { if (timer) clearTimeout(timer); }
+    try {
+      console.error(JSON.stringify({ kind: "research_refresh_ui_failure",phase,
+        elapsedMs: Math.min(120000,Math.max(0,Date.now()-startedAt)),phases,
+        refreshRequests,refreshFulfilled,observation }));
+    } catch { /* Diagnostics must not replace the original failure. */ }
+    throw error;
   } finally {
     await db.query("DELETE FROM conversations WHERE id=$1",[id]).catch(() => undefined);
     await db.end();
@@ -134,6 +193,7 @@ test("keyboard cancellation retains only checked public findings",async ({ page 
   const db = new Client({ connectionString: requireUiFixtureDatabaseUrl() });
   await db.connect();
   const conversationId = randomUUID();
+  const nativeId = `synthetic_${randomUUID().replaceAll("-","")}`;
   const runId = randomUUID();
   const observationId = randomUUID();
   let cancelled = false;
@@ -153,12 +213,12 @@ test("keyboard cancellation retains only checked public findings",async ({ page 
       (id,environment_id,workspace_id,customer_id,owner_principal_id,
        eve_session_id,creation_operation_id,binding_state,title,
        context_snapshot_schema,context_login_session_id,context_membership_id,
-       context_audience,context_generation,context_valid_until)
+       context_audience,context_generation,context_valid_until,live_customer_context)
       VALUES($1,$2,$3,$4,$5,$6,$7,'bound','Synthetic cancelled research',
-        'customer-context-v1',$8,$9,'internal',$10,now()+interval '1 hour')`,
+        'customer-context-v1',$8,$9,'internal',$10,now()+interval '1 hour',true)`,
     [conversationId,process.env.TURAS_TEST_ENVIRONMENT_ID,DEMO_IDS.workspace,
       DEMO_IDS.sharedCustomer,DEMO_IDS.mcteer,
-      `synthetic_${randomUUID().replaceAll("-","")}`,randomUUID(),
+      nativeId,randomUUID(),
       session.rows[0].id,DEMO_IDS.mcteerMembership,
       state.rows[0]?.internal_generation ?? 0]);
     await page.route("**/api/research/requests",async (route) => route.fulfill({
@@ -193,6 +253,17 @@ test("keyboard cancellation retains only checked public findings",async ({ page 
       route.fulfill({ status: 200,contentType: "application/json",
         body: JSON.stringify({ data: { dispatchState: "dispatched",
           responseState: cancelled ? "cancelled" : "running",watchdogState: null } }) }));
+    // Ordinary schema064+ chats keep live context after accepted customer
+    // knowledge changes. This fixture must not become a frozen legacy chat.
+    await db.query('UPDATE customer_profile_state SET internal_generation=internal_generation+1 WHERE customer_id=$1 AND workspace_id=$2',[DEMO_IDS.sharedCustomer,DEMO_IDS.workspace]);
+    const current = await page.request.get(`/api/conversations/${conversationId}`);
+    expect(current.status()).toBe(200);
+    expect((await current.json()).data.contextStatus).toBe('current');
+    // This UI fixture owns no native provider session. Resume an idle synthetic
+    // transport explicitly so the real non-ready chat guard remains enforced.
+    let idleReads=0;
+    await page.route(`**/eve/v1/session/${nativeId}/stream**`,route=>{idleReads++;return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':'-1'},body:''});});
+    await page.route(`**/eve/v1/session/${nativeId}`,route=>route.fulfill({status:503,json:{code:'synthetic_research_delivery_unavailable'}}));
     await visitAfterSignIn(page,`/s/${conversationId}`);
     await page.getByRole("button",{ name: "Customer context",exact: true }).click();
     await page.getByRole("button",{ name: "Start public research" }).click();
@@ -201,6 +272,8 @@ test("keyboard cancellation retains only checked public findings",async ({ page 
     await panel.getByLabel("Version",{ exact: true }).fill("2026");
     await panel.getByLabel("Topic",{ exact: true }).fill("build cache");
     await panel.getByRole("button",{ name: "Preview scope" }).click();
+    await expect.poll(()=>idleReads).toBeGreaterThan(0);
+    await expect(panel.getByRole("button",{name:"Confirm and start"})).toBeEnabled();
     await panel.getByRole("button",{ name: "Confirm and start" }).click();
     const cancel = panel.getByRole("button",{ name: "Cancel research" });
     await expect(cancel).toBeVisible();

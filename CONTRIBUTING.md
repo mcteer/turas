@@ -35,6 +35,8 @@ templates and agent skills; do not rerun initialization over project policy.
    Record the Preview URL, commit, results and unresolved checks in the PR. The hosted
    Customer Profiles check must use real HTTP data with no response substitution:
    `npm run profiles:preview:check -- --origin <Preview origin> --commit <PR SHA> --output local-artifacts/customer-profile-fixes/preview-check`.
+   Supply each target's existing credential through protected inputs:
+   `TURAS_DEMO_PASSWORD` for Preview and `TURAS_PRODUCTION_DEMO_PASSWORD` for Production.
    Inspect its desktop and mobile WebKit captures before recording acceptance.
    The check compares the real directory and 1Password/Notion research with Production
    and verifies navigation, overview placement, products, sources and evidence search.

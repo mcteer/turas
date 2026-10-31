@@ -1,0 +1,22 @@
+import {it,expect} from 'vitest';
+import {Client} from 'pg';
+import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
+import {randomUUID} from 'node:crypto';
+import {withPilotEnvironment,requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
+import {pilotStorageMigrate} from '../../../scripts/pilot-storage-migrate';
+import {environmentObjectId} from '../../../lib/server/storage/private-objects';
+let environment:string,owner:Client;
+let root:string,recoveryId:string,revision:number;const artifact='a'.repeat(64),bytes=Buffer.from('Synthetic retained legacy original');
+async function fixture(run:()=>Promise<void>){
+ await withPilotEnvironment(async scope=>{
+  environment=scope.environmentId;owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
+  try{recoveryId=randomUUID();revision=Number((await owner.query("UPDATE operations_control SET mode='locked',recovery_id=$2,revision=revision+1 WHERE environment_id=$1 RETURNING revision",[environment,recoveryId])).rows[0].revision);await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});root=await mkdtemp(resolve('local-artifacts/016/storage-command-'));for(const kind of ['artifact','workforce','report']){const directory=join(root,kind);await mkdir(directory,{mode:0o700});await writeFile(join(directory,`.turas-${kind}-store.json`),JSON.stringify({environmentId:environment}),{mode:0o600});for(const part of kind==='report'?['objects']:['objects','staged'])await mkdir(join(directory,part),{mode:0o700});}await mkdir(join(root,'destination'),{mode:0o700});await writeFile(join(root,'artifact','objects',artifact),bytes,{mode:0o600});
+   await run();
+  }finally{await owner.end();if(root)await rm(root,{recursive:true,force:true});}
+ },{postgresMajor:18,deadlineMs:180000});
+}
+const args=(output:string)=>['--copy-owned-legacy','--environment',environment,'--recovery-id',recoveryId,'--control-revision',String(revision),'--artifact-root',join(root,'artifact'),'--workforce-root',join(root,'workforce'),'--report-root',join(root,'report'),'--destination-root',join(root,'destination'),'--output',join(root,output)];
+it('copies fenced legacy stores through the actual owner command and cold resume',async()=>fixture(async()=>{const receipt=await pilotStorageMigrate(args('first'));expect(receipt).toMatchObject({objectCount:1,copied:1,coldParityVerified:true,sourceLayout:'legacy-domain-stores',configurationChanged:false,hostedCopyVerified:false});expect(await readFile(join(root,'artifact','objects',artifact))).toEqual(bytes);expect(await readFile(join(root,'destination','e_'+environmentObjectId(environment),'artifact',artifact))).toEqual(bytes);expect(await pilotStorageMigrate(args('resume'))).toMatchObject({copied:0,inventoryDigest:receipt.inventoryDigest});expect((await owner.query('SELECT mode FROM operations_control WHERE environment_id=$1',[environment])).rows[0].mode).toBe('locked');}),30000);
+it('retains content-free failure evidence and originals for unclassified legacy reports',async()=>fixture(async()=>{const id=randomUUID();await writeFile(join(root,'report','objects',id),bytes,{mode:0o600});await expect(pilotStorageMigrate(args('failed'))).rejects.toThrow('classification unavailable');const failure=JSON.parse(await readFile(join(root,'failed','failure.json'),'utf8'));expect(failure).toMatchObject({state:'fail',safeFailure:'incomplete_storage_copy',originalsRetained:true,configurationChanged:false,cutoverAuthorized:false,providerCalls:0});expect(JSON.stringify(failure)).not.toContain(id);expect(await readFile(join(root,'report','objects',id))).toEqual(bytes);}),30000);
+it('denies a changed lock before copying legacy originals',async()=>fixture(async()=>{revision--;await expect(pilotStorageMigrate(args('wrong-lock'))).rejects.toThrow('locked capture boundary');expect(await readFile(join(root,'artifact','objects',artifact))).toEqual(bytes);expect(JSON.parse(await readFile(join(root,'wrong-lock','failure.json'),'utf8')).state).toBe('fail');}),30000);

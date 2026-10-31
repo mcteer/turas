@@ -38,7 +38,7 @@ export async function checkSupportReviewAdmission(db: Pick<PoolClient, "query">,
   const row = (await db.query(`SELECT e.environment_id,e.schema_version,
       EXISTS(SELECT 1 FROM customer_profile_state c WHERE c.customer_id=$7 AND c.workspace_id=m.workspace_id) AS customer_allowed
     FROM memberships m JOIN principals p ON p.id=m.principal_id
-    JOIN login_sessions s ON s.principal_id=p.id AND s.id=$3
+    JOIN login_sessions s ON s.principal_id=p.id AND s.id=$3 AND s.membership_id=m.id AND s.workspace_id=m.workspace_id
     JOIN workspaces w ON w.id=m.workspace_id CROSS JOIN turas_environment e
     WHERE m.id=$1 AND m.principal_id=$2 AND m.workspace_id=$4 AND m.kind=$5 AND m.role=$6
       AND m.active AND p.active AND w.active AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp()`,

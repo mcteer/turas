@@ -3,6 +3,7 @@ import { normalizePublicDocument, exactPublicPassage,
   passageSupportsResearchScope } from
   "../../lib/server/research/normalize";
 import { corroborationScore } from "../../lib/server/retrieval/context";
+import { checkedResearchExcerpt } from "../../lib/server/research/excerpt";
 
 describe("inert public evidence", () => {
   it("drops active or hidden HTML and keeps a verbatim visible passage", () => {
@@ -18,6 +19,11 @@ describe("inert public evidence", () => {
     expect(normalized.text).not.toMatch(/Secret title|Private navigation|Ignore all|private value|Hidden misleading|Screen reader hidden|private.example.org/);
     const passage = exactPublicPassage(normalized.text,"build stage");
     expect(normalized.text.slice(passage.start,passage.end)).toBe(passage.text);
+    const checked = checkedResearchExcerpt(passage.text);
+    expect(checked).not.toBeNull();
+    expect(passage.text).toContain(checked);
+    expect(checked!.length).toBeLessThanOrEqual(100);
+    expect(checked!.replace(/\s+/g," ").length).toBeGreaterThanOrEqual(40);
     expect(normalized.spans.some((span) => span.sourceStart !== null)).toBe(true);
   });
 
@@ -32,6 +38,15 @@ describe("inert public evidence", () => {
     expect(passageSupportsResearchScope("Example Incorporated overview", "recon",
       { publicName: "Other Incorporated" })).toBe(false);
     expect(passageSupportsResearchScope("Anything", "recon",{ publicName: "" })).toBe(false);
+    expect(checkedResearchExcerpt("Develop. Preview. Ship.")).toBeNull();
+    expect(checkedResearchExcerpt("short" + " ".repeat(200) + "quote")).toBeNull();
+    expect(checkedResearchExcerpt("😀".repeat(20))).toBeNull();
+    expect(checkedResearchExcerpt("a".repeat(99) + "😀 trailing text")).toBe("a".repeat(99));
+    expect(checkedResearchExcerpt("😀".repeat(40))).toBe("😀".repeat(40));
+    const later = "heading" + " ".repeat(110) + "Vercel build cache stores reusable build outputs for subsequent deployments.";
+    const excerpt = checkedResearchExcerpt(later);
+    expect(later).toContain(excerpt);
+    expect(excerpt!.replace(/\s+/g," ").length).toBeGreaterThanOrEqual(40);
   });
 
   it("does not count copies or supplied links as independent corroboration", () => {

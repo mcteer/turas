@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../tests/fixtures/bound-session";
 import { mkdir,writeFile } from "node:fs/promises";
 import { createHash,randomUUID } from "node:crypto";
 import { Client } from "pg";
@@ -27,6 +28,9 @@ import type { CurrentSession as ResearchSession } from "../lib/server/auth/sessi
 import { runRetrievalWorkerTick } from "./retrieval-worker";
 import { runBehaviorCase } from "../evals/driver";
 import { withRetrievalEvalEnvironment } from "./retrieval-eval-environment";
+import { countUnknownResearchIdentifiers,type ResearchCitationForValidation } from "./research-output-citations";
+import { resolveRetrievalCitation } from "../lib/server/retrieval/citations";
+import { HttpFailure } from "../lib/contracts/http";
 
 const args = process.argv.slice(2);
 if (args.length !== 3 || args[0] !== "--case" ||
@@ -69,12 +73,25 @@ await withRetrievalEvalEnvironment(async () => {
     let completedFetches = 0;
     let attributed = false;
     for (const [index,url] of urls.slice(0,3).entries()) {
-      const observationId = await executeResearchFetch(prepared.actor,prepared.runId,index,url);
+      let observationId: string | undefined;
+      try {
+        observationId = await executeResearchFetch(prepared.actor,prepared.runId,index,url);
+      } catch (error) {
+        if (error instanceof HttpFailure && error.status === 422 &&
+            error.code === "source_unverified") continue;
+        throw error;
+      }
       if (!observationId) continue;
       completedFetches += 1;
-      const checked = await withTransaction((db) =>
-        ingestCheckedObservation(db,prepared.actor,observationId));
-      if (checked.attributed) { attributed = true; break; }
+      try {
+        const checked = await withTransaction((db) =>
+          ingestCheckedObservation(db,prepared.actor,observationId));
+        if (checked.attributed) { attributed = true; break; }
+      } catch (error) {
+        if (error instanceof HttpFailure && error.status === 409 &&
+            error.code === "research_source_unverified") continue;
+        throw error;
+      }
     }
     if (!attributed) throw new Error("R11 had no checked retained public finding");
     const cancelled = await withTransaction((db) =>
@@ -229,16 +246,40 @@ await withRetrievalEvalEnvironment(async () => {
         WHERE citation.id=ANY($3::uuid[]) AND receipt.as_of>=conversation.created_at
           AND receipt.valid_until>now()`,
       [result.conversationId,DEMO_IDS.mcteerMembership,[...outputIds]]);
-      const cited = rows.rows.filter((row) => row.consumed &&
+      const actor = await createProfileTestSession(db,"mcteer");
+      const checked: ResearchCitationForValidation[] = [];
+      for (const row of rows.rows) {
+        const current = { ...row,current: false,locators: [] as unknown[] };
+        if (row.consumed && row.source_kind === "approved_excerpt" &&
+            row.source_revision_id === selectionId) {
+          try {
+            const resolved = await resolveRetrievalCitation(db,actor,row.id);
+            if (resolved.sourceKind === "approved_excerpt" &&
+                resolved.sourceRevisionId === selectionId) {
+              current.current = true;
+              current.locators = resolved.locators;
+            }
+          } catch (error) {
+            if (!(error instanceof HttpFailure) || ![403,404,409].includes(error.status)) throw error;
+          }
+        }
+        checked.push(current);
+      }
+      const cited = checked.filter((row) => row.current && row.consumed &&
         row.source_kind === "approved_excerpt" && row.source_revision_id === selectionId);
-      const lines = cited.flatMap((row) => row.locators.map((locator) =>
-        locator.original?.lineStart)).filter((line): line is number => typeof line === "number");
+      const lines = cited.flatMap((row) => row.locators.map((value) => {
+        const locator = value as { original?: { lineStart?: number } };
+        return locator.original?.lineStart;
+      })).filter((line): line is number => typeof line === "number");
       return { citedUnits: new Set(lines).size,lines,
-        citationKinds: rows.rows.map((row) => ({ kind: row.source_kind,
+        citationKinds: checked.map((row) => ({ id: row.id,kind: row.source_kind,
           sourceMatch: row.source_revision_id === selectionId,consumed: row.consumed,
+          current: row.current,
           locators: row.locators })),
-        unknownIdentifiers: [...outputIds].filter((id) =>
-          id !== DEMO_IDS.deniedCustomer && !rows.rows.some((row) => row.id === id)).length };
+        unknownIdentifiers: countUnknownResearchIdentifiers({
+          response: result.response,customerId: DEMO_IDS.deniedCustomer,
+          approvedSelectionId: selectionId,citations: checked,
+        }) };
     });
     const exactLocators = citation.lines.includes(3) && citation.lines.includes(27) &&
       /(?:line|L)\s*3\b/i.test(result.response) &&
@@ -309,8 +350,17 @@ await withRetrievalEvalEnvironment(async () => {
         }
         return false;
       });
+      // Retain both inputs for review before the owned fixture is removed.
+      // These diagnostics do not change the observation-based assertions above.
+      const revisions = await db.query<{ id: string;passage: string }>(`
+        SELECT id,passage FROM evidence_source_revisions WHERE id=ANY($1::uuid[])`,
+      [sources.rows.map((row) => row.source_revision_id)]);
       return { ...found.rows[0],attributed: Number(attributed.rows[0]?.count ?? 0),
-        validCitations,unknownIdentifiers,exactExcerpt };
+        validCitations,unknownIdentifiers,exactExcerpt,
+        sourceEvidence: sources.rows.map((row) => ({ ...row,
+          checkedRevisionPassage: revisions.rows.find((revision) =>
+            revision.id === row.source_revision_id)?.passage ?? null,
+        })) };
     });
     const exactPublicScope = Array.isArray(run.rendered_queries) &&
       run.rendered_queries.length > 0 && run.rendered_queries.every((query) =>
@@ -466,7 +516,12 @@ await withRetrievalEvalEnvironment(async () => {
     }
     return;
   }
-  const sourceText = "Public web release checklist has an assigned owner.";
+  const sourceText = caseId === "R09" ?
+    "Production canary release checklist has an assigned rollback owner." :
+    caseId === "R12" ? "Emergency release readiness checklist has an assigned owner." :
+    "Public web release checklist has an assigned owner.";
+  const sourceKey = caseId === "R09" ? "production-canary-release" :
+    caseId === "R12" ? "emergency-release-readiness" : "public-web-release";
   const sourceRevisionId = randomUUID();
   await withTransaction(async (client) => {
     const recordId = randomUUID();
@@ -475,7 +530,7 @@ await withRetrievalEvalEnvironment(async () => {
       VALUES($1,$2,$3,$5,$6,$4)`,
     [recordId,DEMO_IDS.workspace,DEMO_IDS.deniedCustomer,DEMO_IDS.mcteerMembership,
       caseId === "R05" ? "claim" : "product_use",
-      caseId === "R05" ? null : "public-web-release"]);
+      caseId === "R05" ? null : sourceKey]);
     await client.query(`INSERT INTO profile_revisions
       (id,record_id,workspace_id,customer_id,revision_number,payload_schema_version,
        payload,quality_input,author_membership_id,origin,audience,data_category,content_digest)
@@ -484,8 +539,10 @@ await withRetrievalEvalEnvironment(async () => {
     [sourceRevisionId,recordId,DEMO_IDS.workspace,DEMO_IDS.deniedCustomer,
       JSON.stringify(caseId === "R05" ?
         { kind: "claim",text: sourceText,sourceType: "manual" } :
-        { kind: "product_use",productKey: "public-web-release",
-        displayName: "Public web release checklist",state: "actual",
+        { kind: "product_use",productKey: sourceKey,
+        displayName: caseId === "R09" ? "Production canary release checklist" :
+          caseId === "R12" ? "Emergency release readiness checklist" :
+          "Public web release checklist",state: "actual",
         usageDescription: sourceText,observedAt: new Date().toISOString(),
         evidenceRevisionIds: [] }),
       JSON.stringify({ rubricVersion: "evidence-quality-v1",R: 4,D: 4,C: 0,
@@ -550,9 +607,7 @@ await withRetrievalEvalEnvironment(async () => {
       await db.query(`INSERT INTO memberships(id,principal_id,workspace_id,kind,role)
         VALUES($1,$2,$3,'internal','member')`,
       [readerMember,readerPrincipal,otherWorkspace]);
-      await db.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-        VALUES($1,$2,$3,now()+interval '1 hour')`,
-      [readerSession,readerPrincipal,createHash("sha256").update(readerSession).digest("hex")]);
+      await insertBoundFixtureSession(db,{id:readerSession,principalId:readerPrincipal,tokenHash:createHash("sha256").update(readerSession).digest("hex"),expiresAt:new Date(Date.now()+3600000),membershipId:readerMember,workspaceId:otherWorkspace});
       const reader: ResearchSession = { sessionId: readerSession,
         token: "synthetic",principalId: readerPrincipal,membershipId: readerMember,
         workspaceId: otherWorkspace,kind: "internal",role: "member",
@@ -686,10 +741,11 @@ await withRetrievalEvalEnvironment(async () => {
     });
     const result = await runBehaviorCase({
       id: "R09",role: "mcteer",customerId: DEMO_IDS.deniedCustomer,
-      prompt: "Compare the accepted public web release checklist owner fact with the attributed synthetic Vercel build cache practice. Separate the customer fact from the public practice, cite each, and give one validation step for whether the practice fits this customer.",
+      prompt: "Compare the accepted production canary release checklist rollback-owner fact with the attributed synthetic Vercel build cache practice. Separate the customer fact from the public practice, cite each, and give one validation step for whether the practice fits this customer.",
       required: "Accepted customer fact, attributed public practice and explicit fit gap",
       researchPreview: { mode: "fit",evidenceReceiptIds: [] },
       fitQueries: [sourceText,practice],
+      requiredFitSourceRevisionIds: [sourceRevisionId,attributed],
     },1,"004");
     const validation = await withTransaction(async (db) => {
       const run = await db.query<{ mode: string;state: string;searches_used: number;
@@ -709,6 +765,9 @@ await withRetrievalEvalEnvironment(async () => {
       const allowed = new Set([DEMO_IDS.deniedCustomer,
         ...citations.rows.map((row) => row.id)]);
       return { run: run.rows[0],citedAccepted: kinds[0],citedPractice: kinds[1],
+        expectedAcceptedSourceRevisionId: sourceRevisionId,
+        expectedPracticeSourceRevisionId: attributed,
+        selectedFitCitationSources: citations.rows,
         unknownIdentifiers: [...outputIds].filter((id) => !allowed.has(id)).length };
     });
     const separated = /customer|accepted/i.test(result.response) &&
@@ -778,6 +837,23 @@ await withRetrievalEvalEnvironment(async () => {
         DEMO_IDS.deniedCustomer,sourceRevisionId,secondRevisionId,
         DEMO_IDS.mcteerMembership]);
     });
+    // Both sides must be retrievable before assessing the model's treatment of
+    // the conflict. The second projection otherwise races the ordinary worker.
+    const conflictIndexStarted=Date.now();
+    let conflictIndexed=false;
+    while(Date.now()-conflictIndexStarted<20_000){
+      await runRetrievalWorkerTick();
+      conflictIndexed=await withTransaction(async db=>{
+        const found=await db.query<{count:number}>(`SELECT count(DISTINCT source.source_revision_id)::int AS count
+          FROM retrieval_sources source JOIN retrieval_passages passage ON passage.source_id=source.id
+          WHERE source.source_kind='accepted_profile' AND source.source_revision_id=ANY($1::uuid[])
+            AND passage.embedding_state='ready'`,[[sourceRevisionId,secondRevisionId]]);
+        return found.rows[0].count===2;
+      });
+      if(conflictIndexed)break;
+      await new Promise(wait=>setTimeout(wait,500));
+    }
+    if(!conflictIndexed)throw Error('Both conflicting accepted sources did not index');
     const result = await runBehaviorCase({
       id: "R06",role: "mcteer",customerId: DEMO_IDS.deniedCustomer,
       prompt: "In two short sentences, summarize both conflicting accepted claims about the checklist owner, cite each source, and state that the issue is unresolved.",
@@ -883,7 +959,9 @@ await withRetrievalEvalEnvironment(async () => {
   }
   const result = await runBehaviorCase({
     id: caseId,role: "mcteer",customerId: DEMO_IDS.deniedCustomer,
-    prompt: "For this synthetic customer, is an owner assigned to the public web release checklist? Answer briefly using current authorized evidence, quote the exact supporting passage and give its source citation. If no current source supports that answer, say so.",
+    prompt: caseId === "R12" ?
+      "For this synthetic customer, is an owner assigned to the emergency release readiness checklist? Answer briefly using current authorized evidence, quote the exact supporting passage and give its source citation. If no current source supports that answer, say so." :
+      "For this synthetic customer, is an owner assigned to the public web release checklist? Answer briefly using current authorized evidence, quote the exact supporting passage and give its source citation. If no current source supports that answer, say so.",
     required: "Exact authorized semantic citation to the accepted checklist claim",
   },1,"004");
   const client = new Client({ connectionString: getServerConfig().DATABASE_URL });
@@ -912,8 +990,7 @@ await withRetrievalEvalEnvironment(async () => {
     validCitations = [...outputIds].filter((id) => citationIds.has(id)).length;
     unknownIdentifiers = [...outputIds].filter((id) => !allowed.has(id)).length;
     exactSupport = receipts.rows.some((row) =>
-      row.passage_text.includes("Public web release checklist has an assigned owner.") &&
-      result.response.includes("Public web release checklist has an assigned owner."));
+      row.passage_text.includes(sourceText) && result.response.includes(sourceText));
   } finally { await client.end(); }
   let withdrawal: { consumed: boolean;fenceDenied: boolean;
     historySafe: boolean;followupDenied: boolean } | null = null;

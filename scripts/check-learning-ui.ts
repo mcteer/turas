@@ -1,3 +1,4 @@
+import {browserFailureMetadata} from './ci-browser-diagnostics';
 import { readFile,readdir,mkdir,mkdtemp,writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -18,7 +19,7 @@ export async function checkLearningUi(){
  if(!files.length||files.some(f=>!manifest.includes(f)))throw Error("Invalid development journeys");
  const digest=await featureSourceDigest("014");await mkdir("local-artifacts/014",{recursive:true,mode:0o700});const directory=await mkdtemp(resolve("local-artifacts/014/ui-"));let passed=0;
  await withLearningEnvironment(async environment=>{
- process.env.TURAS_014_PRICE_CONTRACT=JSON.stringify({version:"learning-price-v1",modelId:"spacexai/grok-4.7",inputMicroUsdPerMillion:"8000000",outputMicroUsdPerMillion:"24000000",providerInputLimit:500000,providerOutputLimit:500000,hardOutputCapIncludesReasoning:true,pricingSource:"https://ai-gateway.vercel.sh/v1/models",outputContractSource:"https://vercel.com/ai-gateway/models/grok-4.7",pricingCaptureDigest:"a".repeat(64),outputContractCaptureDigest:"b".repeat(64),verifiedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+3600000).toISOString()});
+ process.env.TURAS_014_PRICE_CONTRACT=JSON.stringify({version:"learning-price-v1",modelId:"anthropic/claude-sonnet-5.5",inputMicroUsdPerMillion:"8000000",outputMicroUsdPerMillion:"24000000",providerInputLimit:500000,providerOutputLimit:500000,hardOutputCapIncludesReasoning:true,pricingSource:"https://ai-gateway.vercel.sh/v1/models",outputContractSource:"https://vercel.com/ai-gateway/models/claude-sonnet-5.5",pricingCaptureDigest:"a".repeat(64),outputContractCaptureDigest:"b".repeat(64),verifiedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+3600000).toISOString()});
  await withLearningDatabase(async db=>{await seedLearningPublicPractice(db);await db.query("UPDATE learning_workspace_state SET enabled=true WHERE workspace_id=$1",[DEMO_IDS.workspace]);});
  await environment.startProduction();process.env.TURAS_UI_BASE_URL=environment.origin;process.env.TURAS_LEARNING_UI_FIXTURE_READY="1";
   const routes=(await readdir("app",{recursive:true})).filter(f=>f.includes("learning")&&/(?:route\.ts|page\.tsx)$/.test(f));
@@ -28,8 +29,8 @@ export async function checkLearningUi(){
    const run=await gapNodeProcess([...args,"--output="+resolve(directory,project)],600000,environment.signal);await writeFile(resolve(directory,project+".json"),run.stdout,{mode:0o600});await writeFile(resolve(directory,project+".log"),run.stderr,{mode:0o600});
    if(run.status!==0||run.error){
     // Never echo assertion messages, DOM snapshots, request bodies or prose.
-    const locations:Array<{file:string;line:number;column:number;status:string;signatures:string[]}>=[];
-    try{const report=JSON.parse(run.stdout);const visit=(suite:{suites?:unknown[];specs?:Array<{file?:string;line?:number;column?:number;tests?:Array<{results?:Array<{status:string;error?:{message?:string;stack?:string}}>}>}>})=>{for(const spec of suite.specs??[])for(const test of spec.tests??[])for(const result of test.results??[])if(!["passed","skipped"].includes(result.status)){const error=result.error,match=error?.stack?.match(/tests\/ui\/(learning-[a-z-]+\.spec\.ts):(\d+):(\d+)/),message=error?.message??"";locations.push({file:match?.[1]??spec.file?.match(/(?:^|\/)(learning-[a-z-]+\.spec\.ts)$/)?.[1]??"unknown",line:Number(match?.[2]??spec.line??0),column:Number(match?.[3]??spec.column??0),status:["failed","timedOut","interrupted"].includes(result.status)?result.status:"unknown",signatures:["Timeout","toBeFocused","toBeVisible","toEqual","toHaveCount","ECONNREFUSED","Execution context was destroyed","Fast Refresh","503","429"].filter(signature=>message.toLowerCase().includes(signature.toLowerCase()))});}for(const child of suite.suites??[])visit(child as Parameters<typeof visit>[0]);};for(const suite of report.suites??[])visit(suite);}catch{}
+    let locations:ReturnType<typeof browserFailureMetadata>=[];
+    try{locations=browserFailureMetadata(JSON.parse(run.stdout),new Set(manifest.map(file=>file.split('/').at(-1)!)));}catch{}
     const stage=run.stdout.match(/LEARNING_WITHDRAWAL_STAGE (fixture|open-current-head|withdraw|accessibility|reload-withdrawn|reactivate|rollback-review|rollback-picker|rollback-originals|rollback-rationale|rollback-submit|rollback-refresh)/)?.[1];console.error(JSON.stringify({project,failedLocations:locations.slice(0,20),...(stage?{withdrawalStage:stage}:{}),processFailure:Boolean(run.error)}));throw Error("Learning UI failed: "+project);
    }passed+=verifyExecutionUiReport(JSON.parse(run.stdout),cases).expected;console.log(JSON.stringify({project,passed:cases.length,skipped:0}));}
  },{deadlineMs:2580000});

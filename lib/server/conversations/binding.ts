@@ -87,7 +87,7 @@ export async function lockOwnedOrdinaryCleanup(client: PoolClient, session: Curr
 export type BindingClaim =
   | { state: "bound"; eveSessionId: string }
   | { state: "pending" }
-  | { state: "claimed"; claimToken: string; operationId: string };
+  | { state: "claimed"; claimToken: string; operationId: string; firstAttempt: boolean };
 
 export async function claimBinding(
   session: CurrentSession, id: string, operationId: string, now = new Date(),
@@ -116,7 +116,8 @@ export async function claimBinding(
       binding_claim_token = $3, binding_claim_expires_at = $4,
       updated_at = now(), revision = revision + 1 WHERE id = $1`,
     [id, now, claimToken, new Date(now.getTime() + 5_000)]);
-    return { state: "claimed" as const, claimToken, operationId: row.creation_operation_id };
+    return { state: "claimed" as const, claimToken, operationId: row.creation_operation_id,
+      firstAttempt: row.binding_attempts === 0 };
   });
   if (decision.state === "failed") {
     throw new HttpFailure(409, "binding_failed", "Start a new conversation");

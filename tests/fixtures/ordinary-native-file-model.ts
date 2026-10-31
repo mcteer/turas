@@ -3,11 +3,12 @@ import {wrapLanguageModel} from 'ai';
 import {createHash,randomUUID} from 'node:crypto';
 import {query} from '../../lib/server/db/client';
 import {assertDeterministicTestMode} from './runtime';
+import {waitForNativeFileFixtureCorrection} from './ordinary-native-file-steering';
 export function createOrdinaryNativeFileFixtureModel(attemptId:string){
  assertDeterministicTestMode();
  if(process.env.TURAS_ORDINARY_NATIVE_FILE_FIXTURE!=='1'||process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||!/^\/turas_test_010_eval_[a-f0-9]{12}$/.test(new URL(process.env.DATABASE_URL!).pathname))throw Error('Owned unpaid native-file fixture required');
  let generationSignal:AbortSignal|undefined;
- const model=mockModel({provider:'owned-native-file-fixture',modelId:'spacexai/grok-4.7',respond:async({toolResults,lastUserMessage:runtimeLastUserMessage,messages})=>{
+ const model=mockModel({provider:'owned-native-file-fixture',modelId:'anthropic/claude-sonnet-5.5',respond:async({toolResults,lastUserMessage:runtimeLastUserMessage,messages})=>{
   // Provider middleware may append an attributed file/context packet. Match
   // the actual synthetic user delivery rather than mistaking that packet for
   // a correction, memory request or checklist action.
@@ -34,7 +35,7 @@ export function createOrdinaryNativeFileFixtureModel(attemptId:string){
   }
   if(process.env.TURAS_ORDINARY_NATIVE_FILE_STEERING_FIXTURE==='1'&&lastUserMessage==='Please inspect this native file.'){
    const signal=generationSignal;if(!signal)throw Error('Steering fixture has no generation signal');
-   await new Promise<void>((resolve,reject)=>{const finish=()=>{clearTimeout(timer);reject(new DOMException('Generation aborted','AbortError'));};const timer=setTimeout(()=>{signal.removeEventListener('abort',finish);reject(Error('Steering fixture did not receive a correction'));},30000);signal.addEventListener('abort',finish,{once:true});if(signal.aborted)finish();});
+   await waitForNativeFileFixtureCorrection(signal,Number(process.env.TURAS_ORDINARY_NATIVE_FILE_FIXTURE_DEADLINE_AT));
   }
   if(process.env.TURAS_ORDINARY_MEMORY_FIXTURE==='1'&&lastUserMessage==='Recall the saved preference.'){
    if(!JSON.stringify(messages).includes('# Persistent memories for file')||!JSON.stringify(messages).includes('The caller prefers concise answers.'))throw Error('Preference was not recalled into the fresh conversation');

@@ -208,6 +208,13 @@ export async function projectNativeEventInTransaction(
   if (staffingProjection) return staffingProjection;
   const executionProjection = await projectExecutionNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, preparedStaffing?.kind === "execution" ? preparedStaffing : null);
   if (executionProjection) return executionProjection;
+  if (feature.kind === 'normal') {
+    // Stop locks the conversation before its attempts. Take the same order
+    // before an attempt lock or projection INSERT needs its conversation FK.
+    // Otherwise Stop can hold the conversation while waiting on our attempt,
+    // and the INSERT waits for Stop's conversation lock: a real deadlock.
+    await client.query('SELECT id FROM conversations WHERE id=$1 FOR UPDATE', [owned.conversation_id]);
+  }
   {
     if (["message.appended","message.completed"].includes(event.type)) {
       const scope=await client.query<{conversation_id:string;owner_principal_id:string}>(`
@@ -365,10 +372,16 @@ export async function projectNativeEventInTransaction(
           : 'NATIVE_INPUT_EVENT_CONFLICT';
         throw Object.assign(new Error("Native input does not match the reserved attempt"), {code});
       }
+      const projectedDelivery=feature.kind==='normal' && event.meta.deliveryIds?.length===1 &&
+        typeof event.meta.deliveryIds[0]==='string' && event.meta.deliveryIds[0].length>0 && event.meta.deliveryIds[0].length<=1024
+        ? event.meta.deliveryIds[0] : null;
+      if(projectedDelivery && row.native_delivery_id && projectedDelivery!==row.native_delivery_id)
+        throw Object.assign(new Error('Native input delivery differs from the reserved attempt'),{code:'NATIVE_INPUT_DELIVERY_CONFLICT'});
       await client.query(`UPDATE response_attempts SET input_event_id = $2,
-        native_turn_id = $3, dispatch_state = 'admitted', response_state = CASE WHEN response_state='stopping' THEN 'stopping' ELSE 'running' END,
+        native_turn_id = $3, native_delivery_id=COALESCE(native_delivery_id,$4),
+        dispatch_state = 'admitted', response_state = CASE WHEN response_state='stopping' THEN 'stopping' ELSE 'running' END,
         updated_at = now(), revision = revision + 1 WHERE id = $1`,
-      [attemptId, event.meta.id, data.turnId]);
+      [attemptId, event.meta.id, data.turnId,projectedDelivery]);
       await projectNativeInputDisplay(client,row.conversation_id,nativeSessionId,event.meta.id!);
       return;
     }

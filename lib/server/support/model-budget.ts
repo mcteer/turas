@@ -4,6 +4,8 @@ import { HttpFailure } from "../../contracts/http";
 import { SUPPORT_ADVICE_LIMITS, supportSummaryToolSchema, supportActionsToolSchema,
   supportEvidenceToolSchema, supportSkillToolSchema, supportAdviceResultSchema } from "../../support/advice";
 
+import { supportProviderSchema } from "./provider-schema";
+
 type Model = Parameters<typeof wrapLanguageModel>[0]["model"];
 export const supportReadSchemas = { support_summary: supportSummaryToolSchema, support_actions: supportActionsToolSchema,
   support_evidence: supportEvidenceToolSchema, load_skill: supportSkillToolSchema };
@@ -35,7 +37,7 @@ export function wrapSupportModel(model: Model, governance?: { deadlineAt: Date; 
       if (remaining <= 0) throw new HttpFailure(409, "support_advice_expired", "Support advice deadline reached");
       const deadline = AbortSignal.timeout(Math.min(remaining, SUPPORT_ADVICE_LIMITS.deadlineMs));
       return { ...params, tools,
-        responseFormat: { type: "json", name: "support_advice_v1", schema: z.toJSONSchema(supportAdviceResultSchema) },
+        responseFormat: { type: "json", name: "support_advice_v1", schema: supportProviderSchema(z.toJSONSchema(supportAdviceResultSchema)) },
         abortSignal: params.abortSignal ? AbortSignal.any([params.abortSignal, deadline]) : deadline,
         maxOutputTokens: Number.isSafeInteger(params.maxOutputTokens) && (params.maxOutputTokens ?? 0) > 0
           ? Math.min(params.maxOutputTokens!, SUPPORT_ADVICE_LIMITS.outputTokens) : SUPPORT_ADVICE_LIMITS.outputTokens };

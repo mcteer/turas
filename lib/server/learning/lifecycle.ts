@@ -22,7 +22,7 @@ export async function reconcileLearningLifecycle(at:Date,ownerId?:string):Promis
   for(const dependency of deps){
    if(!current)break;
    if(dependency.source_kind==='accepted_execution')current=!!(await db.query(`SELECT 1 FROM execution_record_revisions r JOIN execution_records record ON record.id=r.record_id AND record.accepted_revision_id=r.id WHERE r.id=$1 AND r.revision_number=$2 AND r.content_digest=$3 AND r.environment_id=$4 AND r.workspace_id=$5 AND r.customer_id=$6`,[dependency.source_revision_id,dependency.source_generation,dependency.source_digest,env,scope.workspace_id,dependency.customer_id])).rowCount;
-   else current=await originalCurrent(db,dependency);
+   else current=await originalCurrent(db,dependency,scope.workspace_id);
   }
   if(current)current=!await confirmedConflictAfterAny(db,deps.filter(d=>d.source_kind!=='accepted_execution').map(d=>({kind:d.source_kind,revisionId:d.source_revision_id})),new Date(0));
   const lossAt=!current?await learningSourceLossAt(db,env,scope.workspace_id,scope.owner_kind,scope.owner_id):null;

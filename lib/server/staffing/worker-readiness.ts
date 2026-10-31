@@ -5,14 +5,18 @@ import { WorkforceStore } from "./store";
 import { getServerConfig, parseArtifactStoreConfig } from "../config";
 import { preparedWorkforceImages } from "./prepared";
 import { assertFreshArtifactSignatures } from "../artifacts/scan";
+import {executionBackend} from '../jobs/governed';
+import {hostedFileWorkerReady} from '../operations/worker-readiness';
 export async function workforceInfrastructureReady() {
   try {
+    if(executionBackend()==='sandbox'){await (await import('../operations/dispatch')).assertHostedDispatchReady();preparedWorkforceImages();return true;}
     await new WorkforceStore().assertReady(); preparedWorkforceImages();
     await assertFreshArtifactSignatures(join(parseArtifactStoreConfig(process.env).root, "signatures"));
     return true;
   } catch { return false; }
 }
 export async function heartbeatWorkforceWorker() {
+  if(executionBackend()==='sandbox')throw Error('Hosted worker status requires a completed registry tick');
   const store = new WorkforceStore(); await store.assertReady();
   const temp = join(store.root, `heartbeat-${randomUUID()}.tmp`);
   await writeFile(temp, JSON.stringify({ environmentId: getServerConfig().TURAS_ENVIRONMENT_ID,
@@ -22,6 +26,7 @@ export async function heartbeatWorkforceWorker() {
 export async function workforceWorkerReady() {
   try {
     if (!await workforceInfrastructureReady()) return false;
+    if(executionBackend()==='sandbox')return hostedFileWorkerReady('workforce');
     const store = new WorkforceStore(); const path = join(store.root, "worker-heartbeat.json"), stat = await lstat(path);
     if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) || Date.now() - stat.mtimeMs > 15_000) return false;
     const value = JSON.parse(await readFile(path, "utf8"));

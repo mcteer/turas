@@ -1,3 +1,4 @@
+import {objectToolInput} from "../lib/object-tool-input";
 import { generalResponseScope } from "../../lib/server/conversations/general-context";
 import { responseFeature } from "../../lib/server/conversations/feature";
 import { createHash } from "node:crypto";
@@ -8,13 +9,21 @@ import { boundToolActor } from "../../lib/server/profiles/tool-actor";
 import { createResearchPreview } from "../../lib/server/research/requests";
 import { HttpFailure } from "../../lib/contracts/http";
 
-const inputSchema = z.discriminatedUnion("mode",[
+const researchInput = z.discriminatedUnion("mode",[
   z.object({ mode: z.literal("recon"),publicName: z.string().trim().min(1).max(200),
     publicDomain: z.string().trim().min(1).max(200) }).strict(),
   z.object({ mode: z.literal("practices"),product: z.string().trim().min(1).max(200),
     version: z.string().trim().min(1).max(200),topic: z.string().trim().min(1).max(200) }).strict(),
   z.object({ mode: z.literal("fit"),evidenceReceiptIds: z.array(z.uuid()).min(1).max(10) }).strict(),
 ]);
+
+// Keep the existing flat call shape and validate its selected mode server-side.
+export const inputSchema = objectToolInput(z.object({
+  ...researchInput.options[0].partial().shape,
+  ...researchInput.options[1].partial().shape,
+  ...researchInput.options[2].partial().shape,
+  mode: z.enum(["recon", "practices", "fit"]),
+}).strict(),researchInput);
 
 export const authoredTool = defineTool({
   description: "Prepare an inert public research preview for the bound customer and owned conversation. Does not send anything to a provider. Recon public identity must be confirmed by the user in the UI before a preview can be created. The user alone starts admitted research.",

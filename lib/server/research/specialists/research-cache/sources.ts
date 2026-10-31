@@ -1,3 +1,4 @@
+import {withOperationalProviderIo} from '../../../operations/admission';
 import {signCheckedPublicPage,type CheckedPublicPage} from "../../public-dossier";
 import { embedRetrievalTexts } from "../../../retrieval/embeddings";
 import { z } from "zod";
@@ -58,7 +59,7 @@ async function assertPublicMaintenanceScope(scope:MaintenanceScope){
   if(!allowed.rowCount)throw new Error('Public maintenance source is no longer eligible');
  });
 }
-async function readCachedSourceForScope(identity:AppIdentity|MaintenanceScope,accountId:string,workload:string,url:string,signal:AbortSignal,notBefore?:Date,options:ReadOptions={}) {
+async function readCachedSourceForScopeWithinFence(identity:AppIdentity|MaintenanceScope,accountId:string,workload:string,url:string,signal:AbortSignal,notBefore?:Date,options:ReadOptions={}) {
   const maintenance=maintenanceBrand in identity;
   if(maintenance){
    if(options.recordAccount!==false || identity.accountId!==accountId || identity.url!==canonicalSourceUrl(url))throw new Error('Invalid public maintenance scope');
@@ -125,7 +126,7 @@ async function readCachedSourceForScope(identity:AppIdentity|MaintenanceScope,ac
   return { source: cachedSource, truncated, cacheHit: read.hit,retentionWarning };
 }
 
-export async function indexSnapshot(identity: Pick<AppIdentity, "environmentId" | "workspaceId">, id: string, signal: AbortSignal) {
+async function indexSnapshotWithinFence(identity: Pick<AppIdentity, "environmentId" | "workspaceId">, id: string, signal: AbortSignal) {
   if (!embeddingsConfigured()) return;
   const sql = await evidenceDatabase();
   const scope = [identity.environmentId, identity.workspaceId, id];
@@ -138,7 +139,7 @@ export async function indexSnapshot(identity: Pick<AppIdentity, "environmentId" 
     const embedded:number[][]=[];
     for(let offset=0;offset<chunks.length;offset+=32) {
       signal.throwIfAborted();
-      embedded.push(...await embedRetrievalTexts(chunks.slice(offset,offset+32).map(chunk=>chunk.text)));
+      embedded.push(...await embedRetrievalTexts(chunks.slice(offset,offset+32).map(chunk=>chunk.text),{signal}));
     }
     const vectors = z.array(embeddingSchema).length(chunks.length).parse(embedded);
     signal.throwIfAborted();
@@ -227,4 +228,12 @@ export async function snapshotDependenciesValid(identity: AppIdentity, reference
   if(rows.length!==ids.length)return false;
   for(const row of rows)if(!await researchSourceIsEligible(identity,accountId,z.string().parse(row.url)))return false;
   return true;
+}
+
+export async function indexSnapshot(identity: Pick<AppIdentity, "environmentId" | "workspaceId">, id: string, signal: AbortSignal) {
+ return withOperationalProviderIo(()=>indexSnapshotWithinFence(identity,id,signal),signal);
+}
+
+async function readCachedSourceForScope(identity:AppIdentity|MaintenanceScope,accountId:string,workload:string,url:string,signal:AbortSignal,notBefore?:Date,options:ReadOptions={}) {
+ return withOperationalProviderIo(()=>readCachedSourceForScopeWithinFence(identity,accountId,workload,url,signal,notBefore,options),signal);
 }

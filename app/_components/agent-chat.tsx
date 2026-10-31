@@ -437,7 +437,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   if (stale) return <HistoricalChat key={conversationId} conversationId={conversationId}
     customerId={customerId} customerName={customerName} />;
   return <main className="chat-page chat-thread" aria-label={`Chat with Turi: ${customerName}`}>
-    {customerId && <><button type="button" className="chat-context-toggle" aria-expanded={contextOpen}
+    {customerId && <><button type="button" className="chat-context-toggle" aria-expanded={contextOpen} disabled={!historyReady}
       onClick={() => setContextOpen(value => !value)}>Customer context</button>
       {contextOpen && <div className="chat-context-details">
         <Link href={`/customers/${customerId}/plans`}>Delivery Plans</Link>

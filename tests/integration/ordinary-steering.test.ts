@@ -1,16 +1,16 @@
 import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
 import {randomUUID} from 'node:crypto';
 import {Client} from 'pg';
-import {beforeAll,expect,it} from 'vitest';
+import {beforeAll,expect,it,vi} from 'vitest';
 import {requireTestDatabaseUrl} from '../fixtures/database';
 import {issueSession,getCurrentSession,sessionCookie} from '../../lib/server/auth/sessions';
 import {createOwnedConversation} from '../../lib/server/conversations/repository';
 import {claimBinding,bindNativeSession} from '../../lib/server/conversations/binding';
 import {prepareAttempt,claimDispatch,deriveNativeAttempt} from '../../lib/server/conversations/dispatch';
-import {projectNativeEvent} from '../../lib/server/conversations/projection';
+import {projectNativeEvent,projectNativeEventInTransaction} from '../../lib/server/conversations/projection';
 import {prepareOrdinarySteering,recordSteeringReceipt,currentAttemptUserMessages} from '../../lib/server/conversations/steering';
 import {wrapOrdinaryChatModel} from '../../lib/server/conversations/model-budget';
-import {withTransaction} from '../../lib/server/db/client';
+import {getRuntimePool,withTransaction} from '../../lib/server/db/client';
 import {authorizeOwnedOrdinaryRetirement} from '../../lib/server/conversations/ordinary-retirement';
 import {reserveOrdinaryOutput,settleOrdinaryOutput} from '../../lib/server/conversations/token-allowance';
 import {requestOwnedTaskCancellation} from '../../lib/server/conversations/cancel';
@@ -204,3 +204,51 @@ it('keeps a parked question stopping until the exact native retirement is confir
   await reconcileOwnedOrdinaryRetirement(request,f.native,Response.json({ok:true,status:'no_active_session'}));expect(await state()).toBe('cancelled');
  }finally{try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
 });
+
+
+it('serializes an actual Stop with an in-flight ordinary projection without a conversation-attempt deadlock',async()=>{
+ const f=await fixture(),pool=getRuntimePool(),stopClient=await pool.connect();
+ const projectionClient=new Client({connectionString:process.env.DATABASE_URL});await projectionClient.connect();
+ let releaseStop!:()=>void,stopLocked!:()=>void;
+ const stopGate=new Promise<void>(resolve=>{releaseStop=resolve;}),locked=new Promise<void>(resolve=>{stopLocked=resolve;});
+ const originalQuery=stopClient.query.bind(stopClient);
+ // Pause the real Stop only AFTER PostgreSQL grants its conversation lock.
+ // The observer below releases it from a demonstrated wait edge, not a sleep.
+ stopClient.query=(async(...args:unknown[])=>{
+  const result=await (originalQuery as (...args:unknown[])=>Promise<unknown>)(...args);
+  const sql=typeof args[0]==='string'?args[0]:'';
+  if(sql.includes("binding_state='bound' FOR UPDATE")){stopLocked();await stopGate;}
+  return result;
+ }) as typeof stopClient.query;
+ const connect=vi.spyOn(pool,'connect').mockImplementationOnce((()=>Promise.resolve(stopClient)) as never);
+ const stopPid=(await originalQuery('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+ const projectionPid=(await projectionClient.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+ let stop:Promise<void>|undefined,projection:Promise<void>|undefined;
+ try{
+  await projectionClient.query('BEGIN');
+  await projectionClient.query("SET LOCAL statement_timeout='8000ms'");
+  stop=requestOwnedTaskCancellation(f.actor,f.native);stop.catch(()=>{});
+  await locked;connect.mockRestore();
+  projection=projectNativeEventInTransaction(projectionClient as never,f.native,f.attemptId,event('message.appended',{turnId:f.turn,messageDelta:'A bounded streamed response.'})).then(()=>{});
+  projection.catch(()=>{});
+  const deadline=Date.now()+5000;let blocked=false;
+  while(Date.now()<deadline){
+   const row=(await f.db.query('SELECT $1::int=ANY(pg_blocking_pids($2::int)) AS blocked',[stopPid,projectionPid])).rows[0];
+   if(row.blocked){blocked=true;break;}
+   await new Promise<void>(resolve=>setImmediate(resolve));
+  }
+  expect(blocked).toBe(true);releaseStop();
+  await Promise.all([stop,projection]);await projectionClient.query('COMMIT');
+  expect((await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[f.attemptId])).rows[0].response_state).toBe('stopping');
+  expect((await f.db.query("SELECT count(*)::int AS n FROM event_projections WHERE conversation_id=$1 AND event_type='message.appended'",[f.conversation.id])).rows[0].n).toBe(1);
+  // Only an actual Native cancellation event may establish cancelled.
+  await projectNativeEvent(f.native,f.attemptId,event('turn.cancelled',{turnId:f.turn}));
+  expect((await f.db.query('SELECT response_state FROM response_attempts WHERE id=$1',[f.attemptId])).rows[0].response_state).toBe('cancelled');
+ }finally{
+  releaseStop();connect.mockRestore();
+  await Promise.allSettled([...(stop?[stop]:[]),...(projection?[projection]:[])]);
+  await projectionClient.query('ROLLBACK').catch(()=>{});await projectionClient.end();
+  stopClient.query=originalQuery;
+  try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}
+ }
+},20000);

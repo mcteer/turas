@@ -1,4 +1,5 @@
 'use client';
+import {learningId} from '../../../lib/contracts/learning';
 export type LearningAuth={csrfToken:string;membership:{id:string;kind:'internal'|'partner';role:string};workspace:{id:string}};
 export class LearningClientFailure extends Error{constructor(message:string,readonly status:number|null){super(message);}}
 export async function learningFetch<T>(url:string,options?:RequestInit):Promise<T>{
@@ -8,3 +9,12 @@ export async function learningFetch<T>(url:string,options?:RequestInit):Promise<
 }
 export const learningPost=<T>(auth:LearningAuth,url:string,input:unknown,extra:Record<string,string>={})=>learningFetch<T>(url,{method:'POST',headers:{...extra,'content-type':'application/json','x-csrf-token':auth.csrfToken},body:JSON.stringify(input)});
 export type LearningReceipt={requestId:string;outcome:string;targetId:string|null;version:number|null};
+
+/** Navigation is allowed only for this exact acknowledged preparation. The
+ * destination still performs its own current authorization and source reads. */
+export function learningCommittedDraftTarget(receipt:unknown,requestId:string){
+ const row=receipt&&typeof receipt==='object'&&!Array.isArray(receipt)?receipt as Record<string,unknown>:{};
+ const target=learningId.safeParse(row.targetId);
+ if(row.contractVersion!=='learning-v1'||row.action!=='draft.prepare'||row.requestId!==requestId||row.outcome!=='committed'||typeof row.version!=='number'||!Number.isSafeInteger(row.version)||row.version<1||!target.success)throw new LearningClientFailure('Draft preparation is unconfirmed. Check its status.',null);
+ return target.data;
+}

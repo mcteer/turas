@@ -1,10 +1,9 @@
 import type {AttachSessionFn} from 'eve/channels';
-import {processLearningNativeRetirement} from '../../lib/server/learning/native-retirement';
+import {processLearningNativeRetirement,authorizeLearningRetirement,signLearningRetirement} from '../../lib/server/learning/native-retirement';
 import {readPublishedKnowledge} from '../../lib/server/knowledge/read';
-import {learningAcceptedOriginal} from '../fixtures/learning/setup';
+import {learningAcceptedOriginal,insertLearningFixtureSession} from '../fixtures/learning/setup';
 import {installLearningSyntheticPrice} from '../fixtures/learning/native-preparation';
 import {prepareLearningDraft} from '../../lib/server/learning/advisory';
-import {hashSessionToken} from '../../lib/server/auth/sessions';
 import {admitGovernedStaffingModelStep,assertGovernedStaffingProviderRelease} from '../../lib/server/staffing/native-admission';
 import {cancelLearningDraft,learningDraftMeta} from '../../lib/server/learning/advisory';
 import {readLearningBudget} from '../../lib/server/learning/budget';
@@ -97,7 +96,7 @@ describe('bounded learning maintenance',()=>{
   const f=await learningNativeFixture(db,{baseline:true});await admitGovernedStaffingModelStep(f.principal,f.identity);await assertGovernedStaffingProviderRelease(f.principal,f.identity);
   const customerId=randomUUID(),sessionId=randomUUID(),token='S'.repeat(43),actor={...f.actor,sessionId,token};
   await db.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Second synthetic learning customer',true)",[customerId,f.workspaceId]);
-  await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at) VALUES($1,$2,$3,clock_timestamp()+interval '1 hour')",[sessionId,f.actor.principalId,hashSessionToken(token)]);
+  await insertLearningFixtureSession(db,{...actor,token});
   const lineage=await learningAcceptedOriginal(db,actor,f.actors.admin,customerId);installLearningSyntheticPrice();
   const second=await prepareLearningDraft(actor,{contractVersion:'learning-v1',requestId:randomUUID(),expectedVersion:0,customerId,lineage:[lineage],feedbackIds:[],question:'Another independently admitted synthetic scope',budgetUsd:'25'});
   await db.query('UPDATE login_sessions SET revoked_at=clock_timestamp() WHERE id=$1',[f.actor.sessionId]);await db.query('UPDATE learning_workspace_state SET enabled=false WHERE workspace_id=$1',[f.workspaceId]);
@@ -125,6 +124,18 @@ describe('bounded learning maintenance',()=>{
   const f=await learningNativeFixture(db),current=await learningDraftMeta(f.actor,f.meta.id);await cancelLearningDraft(f.actor,f.meta.id,{contractVersion:'learning-v1',requestId:randomUUID(),expectedVersion:current.version,rationale:'Synthetic exact hosted reset'});
   let calls=0;const attach=((id:string)=>({reset:async()=>{expect(id).toBe(f.nativeSessionId);calls++;return {status:'reset',previousSessionId:id};}})) as unknown as AttachSessionFn;
   expect(await processLearningNativeRetirement({ownerId:f.meta.id,attachSession:attach})).toBe(true);expect(calls).toBe(1);expect(await processLearningNativeRetirement({ownerId:f.meta.id,attachSession:attach})).toBe(false);expect((await db.query('SELECT native_session_id FROM learning_native_retirement_receipts WHERE attempt_id=$1',[f.meta.id])).rows[0].native_session_id).toBe(f.nativeSessionId);
+  // Native creation may commit before its acknowledgement or first learning send.
+  installLearningSyntheticPrice();const prepared=await prepareLearningDraft(f.actor,{contractVersion:'learning-v1',requestId:randomUUID(),expectedVersion:0,customerId:f.customerId,lineage:[f.lineage],feedbackIds:[],question:'Synthetic lost bind acknowledgement',budgetUsd:'25'}),meta=await learningDraftMeta(f.actor,prepared.targetId!),late='synthetic-late-bound-'+randomUUID();
+  await db.query("UPDATE conversations SET binding_state='reconciling' WHERE id=$1",[meta.conversationId]);
+  await cancelLearningDraft(f.actor,meta.id,{contractVersion:'learning-v1',requestId:randomUUID(),expectedVersion:meta.version,rationale:'Cancel original prepared scope after unknown create acknowledgement'});
+  const lateAttach=((id:string)=>({reset:async()=>{expect(id).toBe(late);expect(await authorizeLearningRetirement(new Request('https://synthetic.example',{headers:signLearningRetirement(late,meta.id)}),late)).toBe(f.actor.principalId);expect(await authorizeLearningRetirement(new Request('https://synthetic.example',{headers:signLearningRetirement('foreign-native',meta.id)}),'foreign-native')).toBeNull();return {status:'reset',previousSessionId:id};}})) as unknown as AttachSessionFn;
+  expect(await processLearningNativeRetirement({ownerId:meta.id,attachSession:lateAttach})).toBe(false);
+  expect((await db.query('SELECT state FROM learning_cleanup_jobs WHERE owner_id=$1',[meta.id])).rows[0].state).toBe('pending');
+  await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",[meta.conversationId,late]);
+  expect(await processLearningNativeRetirement({ownerId:meta.id,attachSession:lateAttach})).toBe(true);
+  expect((await db.query('SELECT native_session_id FROM learning_native_retirement_receipts WHERE attempt_id=$1',[meta.id])).rows[0].native_session_id).toBe(late);
+  expect((await db.query('SELECT native_session_id FROM learning_attempts WHERE id=$1',[meta.id])).rows[0].native_session_id).toBeNull();
+
  }));
 
 });

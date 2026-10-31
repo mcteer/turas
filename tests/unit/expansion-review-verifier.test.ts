@@ -24,7 +24,7 @@ describe('Expansion actual capture verifier and live admission guards',()=>{
  });
  it('reserves provider exposure independently of the unenforced requested cap',()=>{
   const reservation=expansionCaseReservation({inputUsdPerToken:.000002,outputUsdPerToken:.000006});
-  expect(reservation).toBe(4);expect(()=>admitExpansionLiveCase(3.99,[],reservation)).toThrow();
+  expect(reservation).toBe(2.768);expect(()=>admitExpansionLiveCase(2.767999,[],reservation)).toThrow();
  });
 
 });

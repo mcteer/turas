@@ -15,14 +15,19 @@ if (existsSync(marker)) {
     JSON.parse(readFileSync(marker, "utf8")).environmentId !== environmentId) throw new Error("Workforce marker mismatch");
 } else writeFileSync(marker, JSON.stringify({ environmentId, ownerToken: randomUUID() }), { flag: "wx", mode: 0o600 });
 if (process.argv.slice(2).some(arg => arg !== "--attest-only")) throw new Error("Unknown workforce preparation option");
-if (!process.argv.includes("--attest-only")) execFileSync("docker", ["build", "--file", "infra/artifacts/parser.Dockerfile",
+const parser = process.env.TURAS_PILOT_PARSER_IMAGE ?? "turas-artifact-parser:007-v1";
+const scanner = process.env.TURAS_PILOT_SCANNER_IMAGE ?? "turas-artifact-scanner:004-v1";
+if ((parser !== "turas-artifact-parser:007-v1" && !/^sha256:[a-f0-9]{64}$/.test(parser)) ||
+    (scanner !== "turas-artifact-scanner:004-v1" && !/^sha256:[a-f0-9]{64}$/.test(scanner))) throw new Error("Local workforce image selection must be immutable");
+if (parser === "turas-artifact-parser:007-v1" && !process.argv.includes("--attest-only")) execFileSync("docker", ["build", "--file", "infra/artifacts/parser.Dockerfile",
   "--tag", "turas-artifact-parser:007-v1", "."], { stdio: "inherit", timeout: 600_000 });
 const imageId = (image: string) => {
   const id = execFileSync("docker", ["image", "inspect", image, "--format", "{{.Id}}"], { encoding: "utf8", timeout: 5_000 }).trim();
   if (!/^sha256:[a-f0-9]{64}$/.test(id)) throw new Error("Invalid workforce image identity");
+  if (image.startsWith("sha256:") && image !== id) throw new Error("Selected immutable workforce image differs");
   return id.slice(7);
 };
 writeFileSync(join(root, "runtime-images.json"), JSON.stringify({ contract: "workforce-table-v1", environmentId,
-  parserImage: "turas-artifact-parser:007-v1", parserDigest: imageId("turas-artifact-parser:007-v1"),
-  scannerImage: "turas-artifact-scanner:004-v1", scannerDigest: imageId("turas-artifact-scanner:004-v1") }), { mode: 0o600 });
+  parserImage: parser, parserDigest: imageId(parser),
+  scannerImage: scanner, scannerDigest: imageId(scanner) }), { mode: 0o600 });
 console.log("Workforce images prepared; no database changes");

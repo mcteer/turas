@@ -1,9 +1,10 @@
+import {seedReleasedRecoveryFixture,archiveReleasedRecoveryCode,verifyReleasedSeedArchiveMembers} from '../../scripts/recovery-legacy-seed';
+import {mkdtemp,mkdir,rm} from 'node:fs/promises';
+import {resolve} from 'node:path';
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { randomUUID } from "node:crypto";
 import { createExecutionBaseline } from "../fixtures/execution/baseline";
 import { createResource } from "../../lib/server/staffing/resources";
-import { syntheticResource } from "../fixtures/staffing/seed";
 import { Client } from "pg";
 import { describe, expect, it } from "vitest";
 import { requireOwnedExecutionClone, withExecutionEvalEnvironment } from "../../scripts/execution-eval-environment";
@@ -24,6 +25,18 @@ export const executionTables = ["execution_workspaces", "execution_baseline_bind
 describe("008 schema and grants", () => {
   it.each([34,35] as const)("upgrades an explicit schema %i fixture without rewriting its migration history", async (initialSchemaVersion) => {
     requireOwnedExecutionClone();
+    if(initialSchemaVersion===34){
+      // Same registered seed case: reproduce the ignored-cwd Git prefix without DB/model work.
+      const directory=resolve('local-artifacts/008');await mkdir(directory,{recursive:true,mode:0o700});
+      const ignored=await mkdtemp(resolve(directory,'ignored-legacy-git-'));
+      try{
+        const broken=spawnSync('git',['archive','--format=tar','699f6f4a89911b1ba33bc2d90ed51ac1ba2ee530'],{cwd:ignored,timeout:30000,maxBuffer:64*1024*1024});expect(broken.status).toBe(0);
+        expect(()=>verifyReleasedSeedArchiveMembers(broken.stdout,'008')).toThrow();
+        const archive=await archiveReleasedRecoveryCode('008',ignored),members=verifyReleasedSeedArchiveMembers(archive,'008');
+        expect(members).toContain('lib/server/bootstrap-ids.ts');expect(members).toContain('tests/fixtures/execution/baseline.ts');
+        await expect(archiveReleasedRecoveryCode('008',resolve(ignored,'absent'))).rejects.toThrow();
+      }finally{await rm(ignored,{recursive:true,force:true});}
+    }
     await withExecutionEvalEnvironment(async environment => {
       const client = new Client({ connectionString: requireOwnedExecutionClone() }); await client.connect();
       try {
@@ -31,15 +44,7 @@ describe("008 schema and grants", () => {
         requireOwnedExecutionClone();
         const bootstrap = spawnSync(process.execPath,["--experimental-strip-types","scripts/bootstrap-demo.ts"],{env:process.env,encoding:"utf8",timeout:120_000});
         if (bootstrap.error || bootstrap.status!==0) throw new Error("Owned prior-schema demo bootstrap failed");
-        const fixture = await withExecutionDatabase(async db => {
-          await db.query("BEGIN");
-          try {
-            const baseline = await createExecutionBaseline(db);
-            const resource = await createResource(baseline.reviewer, { requestKey: randomUUID(), rationale: "Synthetic pre-upgrade reviewed resource identity", resource: syntheticResource() }, db);
-            await db.query("COMMIT");
-            return { ...baseline, resource };
-          } catch (error) { await db.query("ROLLBACK"); throw error; }
-        });
+        const fixture = await seedReleasedRecoveryFixture<Awaited<ReturnType<typeof createExecutionBaseline>>&{resource:Awaited<ReturnType<typeof createResource>>}>({feature:'008',priorSchema:initialSchemaVersion,appRoot:environment.appRoot,signal:AbortSignal.timeout(120000)});
         const decisions = (await client.query("SELECT to_jsonb(d) AS metadata FROM plan_decisions d WHERE plan_id=$1", [fixture.created.planId])).rows;
         const resources = (await client.query("SELECT to_jsonb(r) AS metadata FROM workforce_resource_revisions r WHERE resource_id=$1", [fixture.resource.resourceId])).rows;
         const prior = (await client.query("SELECT name FROM turas_migrations ORDER BY name")).rows;

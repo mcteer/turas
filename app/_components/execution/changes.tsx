@@ -102,10 +102,13 @@ export function ExecutionChanges({view,activities,owners,session,save,disabled,o
     <p><Link href={`/customers/${view.customerId}`}>Open Customer Plans</Link> to review and accept a replacement through the planning workflow.</p>
   </section>;
 }
-function BaselineMapping({view,disabled,onReview}:{view:Overview;disabled:boolean;onReview:(candidate:Candidate)=>void}){
-  const [mapped,setMapped]=useState<Record<string,string>>({}),[added,setAdded]=useState<string[]>([]),scope=view.reconciliation;
-  useEffect(()=>{setMapped({});setAdded([]);},[scope?.oldBaselineId,scope?.newBaselineId]);
-  if(!scope)return null;
+type BaselineMappingProps={view:Overview;disabled:boolean;onReview:(candidate:Candidate)=>void};
+function BaselineMapping(props:BaselineMappingProps){
+  const scope=props.view.reconciliation;
+  return scope?<ScopedBaselineMapping key={JSON.stringify([scope.oldBaselineId,scope.newBaselineId])} {...props} scope={scope}/>:null;
+}
+function ScopedBaselineMapping({view,disabled,onReview,scope}:BaselineMappingProps&{scope:NonNullable<Overview["reconciliation"]>}){
+  const [mapped,setMapped]=useState<Record<string,string>>({}),[added,setAdded]=useState<string[]>([]);
   const used=new Set(scope.oldItems.flatMap(i=>mapped[`${i.kind}/${i.key}`]&&mapped[`${i.kind}/${i.key}`]!=="__retired__"?[`${i.kind}/${mapped[`${i.kind}/${i.key}`]}`]:[]));
   const mappedCount=scope.oldItems.filter(i=>mapped[`${i.kind}/${i.key}`]&&mapped[`${i.kind}/${i.key}`]!=="__retired__").length;
   const complete=used.size===mappedCount&&scope.oldItems.every(i=>!!mapped[`${i.kind}/${i.key}`])&&scope.newItems.every(i=>used.has(`${i.kind}/${i.key}`)||added.includes(`${i.kind}/${i.key}`));

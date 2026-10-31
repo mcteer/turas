@@ -1,0 +1,68 @@
+import {readdir,lstat,readFile} from 'node:fs/promises';
+import {resolve,join,relative} from 'node:path';
+import {pathToFileURL} from 'node:url';
+import {processFailureMetadata,setupFailureMetadata,vitestReportOutcome} from './ci-process-diagnostics';
+import {browserFailureMetadata} from './ci-browser-diagnostics';
+export function redactTestDiagnostic(value:string){
+ return value.replace(/\x1b\[[0-9;]*[A-Za-z]/g,'')
+  .replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-uri]')
+  .replace(/\b(?:password|passwd|secret|token|authorization|api[_-]?key)\s*[:=]\s*(?:"[^"\n]*"|'[^'\n]*'|[^\s,;]+)/gi,'[redacted-credential]')
+  .replace(/\b[A-Za-z0-9_-]{32,}\b/g,'[redacted-opaque-value]')
+  .replace(/(['"])[^'"\n]{1,1000}\1/g,'[redacted-value]').slice(0,2000);
+}
+/** CI-only bounded diagnostics. No environment, database, original artifact,
+ * workflow state, model output or complete test payload is emitted. */
+export async function printCiTestFailures(){
+ if(process.env.CI!=='true'||process.env.GITHUB_ACTIONS!=='true'||resolve(process.env.GITHUB_WORKSPACE??'')!==process.cwd())throw Error('Actual CI workspace required');
+ const root=resolve('local-artifacts'),skip=new Set(['node_modules','.git','.eve','app','store','objects','private-reports','runtime-assets','context','staging','images']);
+ const browserFiles=new Set((await readdir(resolve('tests/ui'))).filter(name=>/^[a-z-]+\.spec\.ts$/.test(name)));
+ let visited=0,bytes=0,printed=0;const seen=new Set<string>();
+ async function walk(directory:string,depth:number):Promise<void>{
+  if(depth>8||visited>=2000||bytes>=67108864||printed>=30)return;
+  let entries;try{entries=await readdir(directory,{withFileTypes:true});}catch{return;}
+  for(const entry of entries){
+   if(visited>=2000||bytes>=67108864||printed>=30)return;
+   if(entry.isSymbolicLink()||entry.name.startsWith('.')||skip.has(entry.name))continue;
+   const file=join(directory,entry.name);
+   if(entry.isDirectory()){await walk(file,depth+1);continue;}
+   if(!entry.isFile()||!entry.name.endsWith('.json'))continue;visited++;
+   const size=(await lstat(file)).size;if(size>1048576)continue;bytes+=size;
+   let report:any;try{report=JSON.parse(await readFile(file,'utf8'));}catch{continue;}
+   if(entry.name==='failure.json'&&relative(root,file).startsWith('009/')&&printed<30){
+    console.info(JSON.stringify({kind:'ci_reporting_controller_failure',...setupFailureMetadata(report)}));printed++;
+   }
+   if(relative(root,file).startsWith('eval-diagnostics/')&&['scripts/db-migrate.ts','scripts/db-roles.ts','scripts/bootstrap-demo.ts'].includes(report?.file)&&printed<30){
+    console.info(JSON.stringify({kind:'ci_owned_setup_process_failure',file:report.file,...setupFailureMetadata({code:report.status,signal:report.signal,error:{message:report.output}})}));printed++;
+   }
+   if(Array.isArray(report?.suites))for(const failure of browserFailureMetadata(report,browserFiles)){
+    if(printed>=30)break;
+    const key=JSON.stringify(['browser',failure]);if(seen.has(key))continue;seen.add(key);
+    console.info(JSON.stringify({kind:'ci_browser_failure',report:relative(root,file),...failure}));printed++;
+   }
+   if(report?.numFailedTests>0&&Array.isArray(report.testResults))for(const suite of report.testResults)for(const test of suite.assertionResults??[]){
+    if(test.status!=='failed'||printed>=30)continue;
+    const title=redactTestDiagnostic(String(test.title??'')),key=JSON.stringify([suite.name,title]);if(seen.has(key))continue;seen.add(key);
+    console.info(JSON.stringify({kind:'ci_test_failure',report:relative(root,file),suite:redactTestDiagnostic(String(suite.name??'')),title,messages:(test.failureMessages??[]).slice(0,2).map((message:unknown)=>redactTestDiagnostic(String(message)))}));printed++;
+   }
+   if(Array.isArray(report?.testResults))for(const suite of report.testResults){
+    if(printed>=30)break;
+    if(suite.status==='failed'&&!(suite.assertionResults??[]).some((test:any)=>test.status==='failed')){
+     console.info(JSON.stringify({kind:'ci_suite_setup_failure',suite:redactTestDiagnostic(String(suite.name??'')),...processFailureMetadata({message:suite.message})}));printed++;
+    }
+   }
+   if(entry.name.endsWith('-process.json')&&(report?.deadlineExpired===true||report?.code!==0||report?.signal)&&typeof report.file==='string'&&printed<30){
+    let outcome:Record<string,unknown>={reportState:'missing'};
+    // Exact sibling only; never follow a path from the child report. Preserve
+    // the traversal byte bound and do not follow symlinks or emit raw JSON.
+    try{const companion=file.replace(/-process\.json$/,'.json'),stat=await lstat(companion);
+     if(!stat.isFile()||stat.isSymbolicLink())outcome={reportState:'invalid'};
+     else if(stat.size>1048576||bytes+stat.size>67108864)outcome={reportState:'oversize'};
+     else{bytes+=stat.size;outcome=vitestReportOutcome(JSON.parse(await readFile(companion,'utf8')));}
+    }catch(error){if(!(error&&typeof error==='object'&&'code' in error&&error.code==='ENOENT'))outcome={reportState:'invalid'};}
+    console.info(JSON.stringify({kind:'ci_test_process_failure',suite:redactTestDiagnostic(report.file),...processFailureMetadata(report),...outcome}));printed++;
+   }
+  }
+ }
+ await walk(root,0);console.info(JSON.stringify({kind:'ci_test_diagnostics',visitedReports:visited,failuresPrinted:printed,bounded:true}));
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)printCiTestFailures().catch(()=>{console.error('Bounded CI diagnostics unavailable');process.exitCode=1;});

@@ -1,7 +1,8 @@
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { isAbsolute, resolve } from "node:path";
 
 const cwd = process.cwd();
+process.env.TURAS_CODE_VERSION ??= execFileSync('git',['rev-parse','HEAD'],{cwd,encoding:'utf8'}).trim();
 // Personnel storage is explicit; the supervised maintenance worker owns its
 // separate import, cleanup and heartbeat loops. Preserve the selected DB/eve data.
 if (process.env.TURAS_WORKFORCE_STORE_ROOT && !isAbsolute(process.env.TURAS_WORKFORCE_STORE_ROOT)) {

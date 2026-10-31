@@ -262,7 +262,7 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
     // bounded quotations. Full documents are retained for retrieval separately.
     const learned=researchSchema>=60 ? await recallPublicLearning(
       {...actor,userId:actor.principalId,environmentId:getServerConfig().TURAS_ENVIRONMENT_ID},
-      customerId,"",new AbortController().signal,false,client) : [];
+      customerId,"",new AbortController().signal,false,client,actor) : [];
 
     const research = await client.query<{
       id: string; title: string; location: string; supported_claim: string;
@@ -338,7 +338,12 @@ export async function readProfile(actor: ProfileActor, customerId: string, exist
     return { customer: { id: customer.rows[0].id, displayName: customer.rows[0].display_name,
       synthetic: customer.rows[0].synthetic }, workloads: workloads.rows.map((row) => ({
       id: row.id, displayName: row.display_name, lifecycle: row.lifecycle })),
-      acceptedFacts, attributedResearch, publicInventory, activeDelivery: await profileDeliverySummary(client,actor,customerId,selectedWorkloadId,allowInternal,customerWideOnly), publicResearchCoverage: await readPublicCustomerCoverage(client,actor,customerId),
+      acceptedFacts, attributedResearch, publicInventory,
+      // Staffing consumes the delivery evidence projection, not this UI summary.
+      // Its finance fence must acquire the engagement UPDATE lock first; computing
+      // the summary here would acquire SHARE and deadlock concurrent upgrades.
+      ...(!staffingFence ? { activeDelivery: await profileDeliverySummary(client,actor,customerId,selectedWorkloadId,allowInternal,customerWideOnly) } : {}),
+      publicResearchCoverage: await readPublicCustomerCoverage(client,actor,customerId),
       canReview,
       ...(openConflicts ? { openConflicts: openConflicts.rows.map((row) => ({
         id: row.id, state: row.state, version: Number(row.version),

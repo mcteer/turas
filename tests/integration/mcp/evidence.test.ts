@@ -7,6 +7,33 @@ import { withTransaction } from '../../../lib/server/db/client';
 import { materializeCurrentProjection } from '../../../lib/server/retrieval/projections';
 import { listMcpEvidence,readMcpEvidence,resolveMcpCitation } from '../../../lib/server/mcp/evidence';
 describe('MCP original evidence fences',()=>{
+  it('continues a bounded withheld page without skipping later eligible evidence or claiming exhaustion',async()=>withMcpDatabase(async db=>{
+    const {actor,browser,customerId}=await mcpFixture(db),reviewer=await mcpInternalPeer(db,browser.workspaceId,false,'admin');
+    const stale=await mcpAcceptedFact(db,browser,reviewer,customerId,{observedAt:'2010-01-01T00:00:00.000Z'});
+    const current=await mcpAcceptedFact(db,browser,reviewer,customerId);
+    await materializeCurrentProjection(db,'accepted_profile',stale.revisionId,'internal');
+    await materializeCurrentProjection(db,'accepted_profile',current.revisionId,'internal');
+    // Owned cache metadata deliberately precedes the real eligible passage.
+    // Every withheld candidate must still pass the ordinary original checks.
+    const template=(await db.query(`SELECT p.source_id,p.locators FROM retrieval_passages p JOIN retrieval_sources s ON s.id=p.source_id WHERE s.source_revision_id=$1 AND s.audience='internal' AND s.lifecycle_state='current' LIMIT 1`,[stale.revisionId])).rows[0];
+    await db.query('DELETE FROM retrieval_passages WHERE source_id=$1',[template.source_id]);
+    await db.query(`INSERT INTO retrieval_passages(id,source_id,ordinal,passage_digest,passage_text,locators)
+      SELECT ('00000000-0000-4000-8000-'||lpad(i::text,12,'0'))::uuid,$1,i,
+        encode(sha256(convert_to('Withheld synthetic passage '||i,'UTF8')),'hex'),
+        'Withheld synthetic passage '||i,$2::jsonb FROM generate_series(1,100) i`,[template.source_id,JSON.stringify(template.locators)]);
+    expect((await db.query("SELECT count(*)::int AS n FROM retrieval_passages p JOIN retrieval_sources s ON s.id=p.source_id WHERE s.id=$1 AND s.lifecycle_state='current'",[template.source_id])).rows[0].n).toBe(100);
+    const first=await withTransaction(client=>listMcpEvidence(client,actor,{customerId,limit:20}));
+    expect(first.status).toBe('available');expect(first.data?.items).toEqual([]);expect(first.nextCursor).toEqual(expect.any(String));
+    const next=await withTransaction(client=>listMcpEvidence(client,actor,{customerId,limit:20,cursor:first.nextCursor!}));
+    expect(next.status).toBe('available');expect(next.nextCursor).toBeNull();
+    expect(next.data?.items.length).toBeGreaterThan(0);
+    expect([...new Set(next.data?.items.map(item=>item.revisionId))]).toEqual([current.revisionId]);
+    await db.query('UPDATE profile_records SET current_accepted_revision_id=NULL WHERE id=$1',[current.recordId]);
+    const withheld=await withTransaction(client=>listMcpEvidence(client,actor,{customerId,limit:20}));
+    expect(withheld.status).toBe('available');expect(withheld.data?.items).toEqual([]);expect(withheld.nextCursor).toEqual(expect.any(String));
+    const exhausted=await withTransaction(client=>listMcpEvidence(client,actor,{customerId,limit:20,cursor:withheld.nextCursor!}));
+    expect(exhausted.status).toBe('empty');expect(exhausted.data?.items).toEqual([]);expect(exhausted.nextCursor).toBeNull();
+  }));
   it('withholds stale accepted observations without relying on worker refresh',async()=>withMcpDatabase(async db=>{
     const {actor,browser,customerId}=await mcpFixture(db),reviewer=await mcpInternalPeer(db,browser.workspaceId,false,'admin');
     const fact=await mcpAcceptedFact(db,browser,reviewer,customerId,{observedAt:'2010-01-01T00:00:00.000Z'});

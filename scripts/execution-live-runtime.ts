@@ -44,7 +44,24 @@ export async function executionLiveLogin(origin: string, role: "panel" | "mcteer
   if (!session.ok || !body.data?.csrfToken) throw new Error("Owned live session unavailable");
   return { cookie, csrf: body.data.csrfToken };
 }
+/** Owned harness only. Public eve health skips auth/route initialization.
+ * This deliberately invalid body is rejected before claimBinding; no session,
+ * conversation, advice reservation or provider call is created/retried here. */
+async function waitExecutionNativeValidation(origin:string,auth:ExecutionLiveAuth,deadline:number){
+ const until=Math.min(deadline,Date.now()+20000),conversationId=randomUUID();
+ while(Date.now()<until){
+  try{
+   const response=await executionLivePost(origin,auth,'/eve/v1/session',{},until,{'x-turas-conversation-id':conversationId});
+   const status=response.status;await response.body?.cancel();
+   if(status===422)return;
+   if(![500,502,503,504].includes(status))throw Error(`Owned native validation failed (${status})`);
+  }catch(error){if(error instanceof Error&&error.message.startsWith('Owned native validation failed'))throw error;}
+  if(Date.now()<until)await new Promise(resolve=>setTimeout(resolve,Math.min(200,until-Date.now())));
+ }
+ throw Error('Owned native validation readiness unavailable');
+}
 export async function prepareExecutionLive(origin: string, auth: ExecutionLiveAuth, current: Pick<Case,"customerId"|"engagementId"|"period">, instructions: string, deadline: number) {
+  await waitExecutionNativeValidation(origin,auth,deadline);
   const made=await executionLivePost(origin,auth,"/api/conversations",{customerId:current.customerId,title:"Reviewed execution explanation",requestKey:randomUUID()},deadline);
   if(!made.ok)throw new Error("Owned live conversation creation failed");
   const conversationId=(await made.json()).data.id as string;
@@ -61,7 +78,7 @@ export async function prepareExecutionLive(origin: string, auth: ExecutionLiveAu
   }
   const bound = await executionLivePost(origin, auth, "/eve/v1/session", { operationId: prepared.operationId }, deadline,
     { "x-turas-conversation-id": prepared.conversationId });
-  if (!bound.ok) throw new Error("Owned live native binding failed");
+  if (!bound.ok){let category='unclassified';try{const body=await bound.json();category=['unavailable','invalid_native_response','invalid_native_session','recovery_locked','authentication_required','turas_binding_pending'].find(code=>code===body?.code)??category;}catch{}throw new Error(`Owned live native binding failed (${bound.status}; ${category})`);}
   const nativeSessionId = (await bound.json()).sessionId as string;
   if (!/^wrun_[A-Za-z0-9_-]{1,160}$/.test(nativeSessionId)) throw new Error("Owned live native identity missing");
   return { prepared, nativeSessionId, admissionInput };

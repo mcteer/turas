@@ -13,6 +13,7 @@ const root=resolve(options.output);if(!root.startsWith(resolve('local-artifacts'
 const authFile=process.env.TURAS_VERCEL_AUTH_FILE??join(homedir(),process.platform==='darwin'?'Library/Application Support/com.vercel.cli/auth.json':'.local/share/com.vercel.cli/auth.json');
 const token=process.env.VERCEL_TOKEN??JSON.parse(await readFile(authFile,'utf8')).token;
 if(typeof token!=='string'||!token||!process.env.TURAS_DEMO_PASSWORD)throw Error('Operator credentials required');
+const productionPassword=process.env.TURAS_PRODUCTION_DEMO_PASSWORD;if(typeof productionPassword!=='string'||!productionPassword)throw Error('Original Production comparison credential required');
 const team='team_0749UEimtvZX3pzATqdf9gLx',projectId='prj_txyye8bipD1KDM4EYi0BY39Jpdbe';
 async function metadata(path:string){const response=await fetch('https://api.vercel.com'+path,{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error('Deployment metadata unavailable');return response.json();}
 const deployment=await metadata('/v13/deployments/'+new URL(options.origin).hostname+'?teamId='+team);
@@ -29,7 +30,7 @@ async function signedIn(origin:string,preview=false){
  }
  const loginPage=await context.newPage();await loginPage.goto('/login?returnTo=/customers');
  if(new URL(loginPage.url()).origin!==origin)throw Error('Unexpected hosted login origin');
- await loginPage.getByLabel('Username',{exact:true}).fill(username);await loginPage.getByLabel('Password',{exact:true}).fill(password);
+ await loginPage.getByLabel('Username',{exact:true}).fill(username);await loginPage.getByLabel('Password',{exact:true}).fill(preview?password:productionPassword);
  const loginResponse=loginPage.waitForResponse(response=>new URL(response.url()).origin===origin&&new URL(response.url()).pathname==='/api/auth/login'&&response.request().method()==='POST');
  await loginPage.getByRole('button',{name:'Sign in',exact:true}).click();const login=await loginResponse;
  if(preview?login.status()!==303:![200,303].includes(login.status()))throw Error('Hosted browser authentication failed');

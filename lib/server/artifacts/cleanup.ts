@@ -4,6 +4,11 @@ import { join } from "node:path";
 import { getServerConfig, parseArtifactStoreConfig } from "../config";
 import { withTransaction } from "../db/client";
 import { LocalArtifactStore } from "./local-store";
+import { createArtifactStore } from "./store-factory";
+import {privateObjectBackend} from '../storage/factory';
+import {BlobPrivateObjects} from '../storage/blob-objects';
+import {privateBlobAuth} from '../storage/blob-auth';
+const blobOrphanCursors=new Map<string,string>();
 import { releaseArtifactIntentReservation } from "./intake";
 import { recordArtifactMetric } from "./telemetry";
 
@@ -66,7 +71,7 @@ async function purgeDatabase(job: CleanupJob): Promise<void> {
 export async function runArtifactCleanup(job: CleanupJob): Promise<void> {
   try {
     if (job.target_kind === "original" || job.target_kind === "staged") {
-      const store = new LocalArtifactStore(parseArtifactStoreConfig(process.env));
+      const store = createArtifactStore();
       if (job.target_kind === "original") await store.delete(job.opaque_target_id);
       else await store.deleteStaged(job.opaque_target_id);
     } else {
@@ -113,7 +118,7 @@ export async function reconcileExpiredArtifactIntents(): Promise<number> {
     return rows.rows;
   });
   if (expired.length) {
-    const store = new LocalArtifactStore(parseArtifactStoreConfig(process.env));
+    const store = createArtifactStore();
     for (const row of expired) {
       if (row.staged_key) await store.deleteStaged(row.staged_key).catch(() => undefined);
     }
@@ -123,6 +128,15 @@ export async function reconcileExpiredArtifactIntents(): Promise<number> {
 
 /** Reap only unreferenced opaque files older than one hour. */
 export async function reconcileArtifactOrphans(): Promise<number> {
+  if(privateObjectBackend()==='blob'){
+    const environment=getServerConfig().TURAS_ENVIRONMENT_ID,blob=new BlobPrivateObjects(environment,privateBlobAuth(),10485760);let removed=0;
+    for(const namespace of ['artifact-staging','artifact'] as const){const cursorKey=environment+':'+namespace,page=await blob.headers(namespace,blobOrphanCursors.get(cursorKey),100);if(page.cursor)blobOrphanCursors.set(cursorKey,page.cursor);else blobOrphanCursors.delete(cursorKey);
+      for(const object of page.objects){if(Date.parse(object.createdAt)>Date.now()-3_600_000)continue;const key=object.key.split('/').at(-1)!;
+        const referenced=await withTransaction(client=>namespace==='artifact-staging'?client.query("SELECT 1 FROM artifact_upload_intents WHERE environment_id=$1 AND staged_key=$2 AND state IN ('uploading','staged') LIMIT 1",[environment,key]):client.query('SELECT 1 FROM artifact_versions WHERE environment_id=$1 AND object_key=$2 LIMIT 1',[environment,key]));
+        if(!referenced.rowCount){await blob.delete(object.key);removed++;}
+      }
+    }return removed;
+  }
   const config = parseArtifactStoreConfig(process.env);
   const store = new LocalArtifactStore(config);
   let removed = 0;

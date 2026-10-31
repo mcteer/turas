@@ -1,3 +1,4 @@
+import {insertBoundFixtureSession} from "../fixtures/bound-session";
 import { createHash, randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { withTestDatabase } from "../fixtures/database";
@@ -102,9 +103,7 @@ describe("membership lifecycle fence", () => {
           (id,principal_id,workspace_id,kind,partner_org_id,role)
           VALUES($1,$2,$3,'partner',$4,'member')`,
         [membershipId, principalId, DEMO_IDS.workspace, DEMO_IDS.partnerOrganization]);
-        await client.query(`INSERT INTO login_sessions(id,principal_id,token_hash,expires_at)
-          VALUES($1,$2,$3,now()+interval '1 hour')`,
-        [loginId, principalId, createHash("sha256").update(loginId).digest("hex")]);
+        await insertBoundFixtureSession(client,{id:loginId,principalId:principalId,membershipId:membershipId,workspaceId:DEMO_IDS.workspace,tokenHash:createHash("sha256").update(loginId).digest("hex"),expiresAt:new Date(Date.now()+3600000)});
         try {
           expect(await setMembershipActive({ actorPrincipalId: admin.principalId,
             actorSessionId: admin.sessionId, membershipId, expectedRevision: 0,

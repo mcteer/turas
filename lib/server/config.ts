@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { lstatSync, readFileSync, realpathSync } from "node:fs";
 import { isAbsolute, relative, resolve, sep } from "node:path";
+import {currentRecoveryServerConfig} from './operations/recovery-configuration-context.ts';
 
 const credential = z.string().min(1);
 const databaseUrl = z.string().url().refine((value) => {
@@ -22,6 +23,7 @@ const schema = z.object({
   PARTNER_USERNAME: z.literal("partner"),
   PARTNER_PASSWORD: credential,
   TURAS_MAINTENANCE_SECRET: z.string().min(32),
+  TURAS_PILOT_LOGIN_ENABLED: z.enum(["0", "1"]).optional(),
   TURAS_013_DISABLED: z.enum(["0", "1"]).optional(),
   TURAS_011_DISABLED: z.enum(["0", "1"]).optional(),
   TURAS_010_DISABLED: z.enum(["0", "1"]).optional(),
@@ -58,7 +60,7 @@ export function parseServerConfig(environment: Record<string, string | undefined
 }
 
 export function getServerConfig(): ServerConfig {
-  return parseServerConfig(process.env);
+  return currentRecoveryServerConfig() ?? parseServerConfig(process.env);
 }
 
 const artifactRootMarker = ".turas-artifact-store.json";

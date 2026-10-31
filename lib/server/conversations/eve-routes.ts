@@ -1,3 +1,4 @@
+import type {PrepareAttemptBoundary} from './dispatch';
 import {assertNativeFileEvaluationOpen} from './native-file-policy';
 import {inputResponsesSchema,authorizeOwnedInputResponse,implicitOwnedQuestionResponse} from "./input-responses";
 import {prepareOrdinarySteering,recordSteeringReceipt,markSteeringUncertain} from './steering';
@@ -33,13 +34,14 @@ const sendSchema = z.object({ message: z.union([z.string(),ordinaryNativeMessage
   turnPolicy:z.enum(['queue','steer']).optional() }).strict();
 const nativeSessionSchema = z.object({ ok: z.literal(true), sessionId: z.string().min(1) }).passthrough();
 
-function nativeFailure(error: unknown): Response {
+type NativeBoundaryOperation=PrepareAttemptBoundary|'native-route'|'session'|'implicit-question'|'ordinary-owner'|'ordinary-worker'|'ordinary-prepare'|'ordinary-tail'|'ordinary-dispatch'|'ordinary-forward'|'input-owner'|'input-authority'|'input-worker'|'input-context'|'input-forward';
+function nativeFailure(error: unknown,operation:NativeBoundaryOperation='native-route',elapsedMs?:number): Response {
   const known = error instanceof HttpFailure;
   if (!known) {
     const code = typeof error === "object" && error !== null && "code" in error &&
       typeof error.code === "string" && /^[A-Z0-9_]+$/.test(error.code) ? error.code : undefined;
     console.info(JSON.stringify({ kind: "turas_native_boundary_error",
-      name: error instanceof Error ? error.name : "unknown", code }));
+      name: error instanceof Error ? error.name : "unknown", code,operation,...(elapsedMs===undefined?{}:{elapsedMs:Math.min(1200000,Math.max(0,Math.trunc(elapsedMs)))}) }));
   }
   return Response.json({ ok: false, code: known ? error.code : "unavailable",
     error: known ? error.message : "Service unavailable" }, {
@@ -113,13 +115,26 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
                 return candidateResponse;
               }
               const parsedNative = nativeSessionSchema.safeParse(await candidateResponse.clone().json());
-              if (!parsedNative.success) throw new HttpFailure(503, "invalid_native_response", "Service unavailable");
-              if (parsedNative.data.sessionId === previousId) {
+              if (candidateResponse.status !== 202 || !parsedNative.success) {
+                throw new HttpFailure(503, "invalid_native_response", "Service unavailable");
+              }
+              // A fresh exclusive domain claim makes exactly one native create.
+              // Eve returns an accepted candidate before its operation owner is
+              // active; requiring a second identical receipt here starts more
+              // candidates during normal durable-workflow startup.
+              // After an ambiguous earlier create, only a repeated canonical ID
+              // is safe to adopt. The original claim token still fences either
+              // path against a concurrent domain reclaim.
+              if (claim.firstAttempt || parsedNative.data.sessionId === previousId) {
                 await bindNativeSession(session, conversationId!, claimToken, parsedNative.data.sessionId);
                 return candidateResponse;
               }
               previousId = parsedNative.data.sessionId;
-              await new Promise((resolve) => setTimeout(resolve, 50));
+              if (attempt + 1 < 5) {
+                const remaining = 20_000 - (Date.now() - started);
+                if (remaining > 0) await new Promise((resolve) =>
+                  setTimeout(resolve, Math.min(4_000, remaining)));
+              }
             }
             throw new HttpFailure(409, "turas_binding_pending", "Session binding pending");
           } catch (error) {
@@ -139,8 +154,9 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
           let attemptId: string | undefined;
           let dispatchClaimed = false;
           let steeringId:string|undefined;
+          let nativeOperation:NativeBoundaryOperation='native-route';const boundaryStartedAt=Date.now();
           try {
-            session = await getCurrentSession(request);
+            nativeOperation='session';session = await getCurrentSession(request);
             if (!session) throw new HttpFailure(401, "authentication_required", "Sign in required");
             checkSessionCsrf(request, session);
             conversationId = request.headers.get("x-turas-conversation-id") ?? undefined;
@@ -157,19 +173,19 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             try { decoded = JSON.parse(raw); }
             catch { throw new HttpFailure(422, "invalid_input", "Invalid request"); }
             let responses=inputResponsesSchema.safeParse(decoded);
-            if(!responses.success){const ordinary=sendSchema.safeParse(decoded);if(ordinary.success&&ordinary.data.turnPolicy!=='steer'){const implicit=await implicitOwnedQuestionResponse(session,args.params.sessionId,ordinary.data.message);if(implicit){if(ordinary.data.artifactSelections!==undefined||request.headers.has('x-turas-artifact-selections'))throw new HttpFailure(422,'question_answer_with_artifacts','Answer the pending question separately before sending selected evidence');responses=inputResponsesSchema.safeParse(implicit);}}}
+            if(!responses.success){const ordinary=sendSchema.safeParse(decoded);if(ordinary.success&&ordinary.data.turnPolicy!=='steer'){nativeOperation='implicit-question';const implicit=await implicitOwnedQuestionResponse(session,args.params.sessionId,ordinary.data.message);if(implicit){if(ordinary.data.artifactSelections!==undefined||request.headers.has('x-turas-artifact-selections'))throw new HttpFailure(422,'question_answer_with_artifacts','Answer the pending question separately before sending selected evidence');responses=inputResponsesSchema.safeParse(implicit);}}}
             if(responses.success) {
-              const conversation=await getOwnedConversationByNativeSession(session,args.params.sessionId);
+              nativeOperation='input-owner';const conversation=await getOwnedConversationByNativeSession(session,args.params.sessionId);
               if(conversation.id!==conversationId)throw hiddenRecord();
               assertNativeFileEvaluationOpen(conversation.id);
-              await authorizeOwnedInputResponse(session,args.params.sessionId,responses.data);
-              await startPreviewChatWorker(args.attachSession,args.waitUntil);
-              await assertNativeContextCurrent(session,args.params.sessionId,false);
+              nativeOperation='input-authority';await authorizeOwnedInputResponse(session,args.params.sessionId,responses.data);
+              nativeOperation='input-worker';await startPreviewChatWorker(args.attachSession,args.waitUntil);
+              nativeOperation='input-context';await assertNativeContextCurrent(session,args.params.sessionId,false);
               const headers=new Headers(request.headers);headers.delete("content-length");
               // The native runtime validates request IDs/options against its own
               // pending batch. This is an owner/CSRF-checked continuation, never
               // a new chat dispatch or a model-authored approval.
-              return native(new Request(request.url,{method:"POST",headers,
+              nativeOperation='input-forward';return await native(new Request(request.url,{method:"POST",headers,
                 body:JSON.stringify(responses.data)}),args);
             }
             if(!z.uuid().safeParse(requestKey).success)throw new HttpFailure(422,"invalid_input","Invalid request");
@@ -191,8 +207,8 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const selections = checkedSelections.data;
             const message=typeof parsed.data.message==='string'?normalizeMessageText(parsed.data.message.trim()||(selections.length?"Please discuss the selected customer source passages.":"")):parseOrdinaryNativeMessage(parsed.data.message);
             const text=typeof message==='string'?message:summarizeNativeMessage(message);
-            await getOwnedConversationByNativeSession(session, args.params.sessionId);
-            await startPreviewChatWorker(args.attachSession, args.waitUntil);
+            nativeOperation='ordinary-owner';await getOwnedConversationByNativeSession(session, args.params.sessionId);
+            nativeOperation='ordinary-worker';await startPreviewChatWorker(args.attachSession, args.waitUntil);
             if(parsed.data.turnPolicy==='steer'){
               if(selections.length)throw new HttpFailure(422,'steering_sources','Send new source selections after the active response');
               const steering=await prepareOrdinarySteering(session,conversationId!,args.params.sessionId,requestKey!,message);
@@ -208,8 +224,8 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
                 return response;
               }
             }
-            const prepared = await prepareAttempt(session, conversationId!, args.params.sessionId,
-              requestKey!, message, selections);
+            nativeOperation='ordinary-prepare';const prepared = await prepareAttempt(session, conversationId!, args.params.sessionId,
+              requestKey!, message, selections,undefined,stage=>{nativeOperation=stage;});
             attemptId = prepared.attemptId;
             if (!prepared.created && prepared.dispatchState !== "prepared") {
               const receipt = await getAttemptReceipt(session, conversationId!, attemptId);
@@ -218,7 +234,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             }
             if(!prepared.governed && parseAttachmentMessage(typeof message==='string'?message:nativeMessageText(message)))
               await intakeOrdinaryAttachmentContext(session,conversationId!,attemptId);
-            let tailIndex: number;
+            nativeOperation='ordinary-tail';let tailIndex: number;
             try {
               tailIndex = await args.attachSession(args.params.sessionId).getStreamTailIndex();
             } catch {
@@ -227,7 +243,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             if (!Number.isSafeInteger(tailIndex) || tailIndex < -1) {
               throw new HttpFailure(503, "native_tail_unavailable", "Service unavailable");
             }
-            try { await claimDispatch(session, conversationId!, attemptId, tailIndex + 1); }
+            nativeOperation='ordinary-dispatch';try { await claimDispatch(session, conversationId!, attemptId, tailIndex + 1); }
             catch (error) {
               if (error instanceof HttpFailure) throw error;
               throw new HttpFailure(503, "dispatch_persist_failed", "Service unavailable");
@@ -237,7 +253,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             headers.delete("content-length");
             headers.delete("x-turas-artifact-selections");
             const forwarded=typeof message==='string'?message:await prepareNativeUploadMessage(session,conversationId!,requestKey!,message);
-            let nativeResponse: Response | undefined;
+            nativeOperation='ordinary-forward';let nativeResponse: Response | undefined;
             const started = Date.now();
             const dispatches = prepared.governed ? 1 : 5;
             for (let retry = 0; retry < dispatches && Date.now() - started < 20_000; retry++) {
@@ -275,7 +291,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
               try { await markDispatchUncertain(session, conversationId, attemptId); }
               catch { /* durable claim remains blocked */ }
             }
-            return nativeFailure(error);
+            return nativeFailure(error,nativeOperation,Date.now()-boundaryStartedAt);
           }
         } };
       }
@@ -309,7 +325,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
         const native = route.handler;
         return { ...route, handler: async (request, args) => {
           try {
-            const session = await getCurrentSession(request);
+            const session = await getCurrentSession(request,"cancellation");
             if (!session) throw new HttpFailure(401, "authentication_required", "Sign in required");
             checkSessionCsrf(request, session);
             const raw = await request.text();

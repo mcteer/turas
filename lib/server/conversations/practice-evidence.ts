@@ -1,7 +1,6 @@
 import {hiddenRecord} from '../../contracts/http';
 import {withTransaction} from '../db/client';
 import {researchIdentity} from '../research/specialists/identity';
-import {requireResearchAccount} from '../research/specialists/account';
 import {searchVercelPracticeSourceReceipts} from '../research/specialists/research-cache/practice-library';
 import {customerQuestionActor,assertCustomerQuestionReads} from './customer-accounts';
 import {conversationFeature} from './feature';
@@ -26,7 +25,11 @@ export async function ordinaryPracticeAccount(principal:Principal){
  * product/topic metadata or treating documentation as customer adoption. */
 export async function readOrdinaryPracticeEvidence(principal:Principal,accountId:string|undefined,query:string,signal:AbortSignal,maximumBytes=24576){
  if(!Number.isSafeInteger(maximumBytes)||maximumBytes<1024||maximumBytes>24576)throw Error('Bounded practice response required');
- const identity=await researchIdentity(principal);if(accountId)await requireResearchAccount(identity,accountId);signal.throwIfAborted();
+ const identity=await researchIdentity(principal);
+ // Reading retained public references also supports authorized synthetic pilot
+ // context. Starting new research still requires a canonical research account.
+ if(accountId)await withTransaction(db=>lockProfileActor(db,identity,accountId,undefined,true));
+ signal.throwIfAborted();
  // Public product references use the original workspace-public library. Even
  // without a customer, authorize the ordinary owner/session before embedding.
  await withTransaction(async db=>{
@@ -62,6 +65,8 @@ export async function readOrdinaryPracticeEvidence(principal:Principal,accountId
    FROM customer_profile_state WHERE customer_id=$2 AND workspace_id=$5
    ON CONFLICT(attempt_id,customer_id) DO UPDATE SET citation_ids=ARRAY(SELECT DISTINCT unnest(general_customer_read_scopes.citation_ids||EXCLUDED.citation_ids)),checked_at=clock_timestamp()`,
    [scope.attemptId,accountId,scope.actor.kind==='internal'?'internal':'delivery',returned.map(row=>practiceCitationPrefix+row.snapshotId),scope.actor.workspaceId]);
+  if(!accountId&&returned.length)await db.query('SELECT turas_record_workspace_practice_content($1,$2,$3,$4)',[scope.attemptId,scope.actor.principalId,scope.actor.sessionId,returned.map(row=>row.snapshotId)]);
+  if(accountId&&returned.length)await db.query('SELECT turas_record_customer_practice_support($1,$2,$3,$4,$5)',[scope.attemptId,scope.actor.principalId,scope.actor.sessionId,accountId,returned.map(row=>row.snapshotId)]);
   return result;
  });
 }

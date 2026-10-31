@@ -21,7 +21,7 @@ export async function requireReportDeliveryAuthority(db:PoolClient,row:any){
  const revision=await reportRevisionFence(db,row.workspace_id,publication.revision_id,{published:true,send:true});
  const head=(await db.query('SELECT current_revision_id FROM report_scopes WHERE id=$1 FOR SHARE',[publication.report_id])).rows[0];
  if(revision.state!=='published' || head.current_revision_id!==publication.revision_id)throw new HttpFailure(409,'source_changed','Publication changed');
- const policy=(await db.query(`SELECT p.audience,h.version FROM report_recipient_policies p JOIN report_policy_heads h ON h.current_revision_id=p.id WHERE p.id=$1 AND h.state='approved' FOR SHARE OF p,h`,[row.policy_revision_id])).rows[0];
+ const policy=(await db.query(`SELECT p.audience,h.version FROM report_recipient_policies p JOIN report_policy_heads h ON h.current_revision_id=p.id WHERE p.id=$1 AND h.state='approved' FOR SHARE OF h`,[row.policy_revision_id])).rows[0];
  if(!policy || Number(policy.version)!==Number(row.authorized_policy_version))throw new HttpFailure(409,'policy_changed','Policy changed after send approval');
  const recipient=(await db.query('SELECT * FROM report_policy_recipients WHERE policy_revision_id=$1 AND recipient_identity=$2 AND expires_at>now()',[row.policy_revision_id,row.recipient_identity])).rows[0];
  if(!recipient)throw new HttpFailure(409,'policy_changed','Reviewed recipient unavailable');

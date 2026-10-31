@@ -1,15 +1,19 @@
+import {configureOwnedNextDependencyRoot} from './owned-next-config';
+import {qualityChildEnvironment} from "./pilot-quality-runtime";
 import {createServer,request as httpRequest,type Server} from 'node:http';
 import { randomUUID } from "node:crypto";
-import { spawn,spawnSync,type ChildProcess } from "node:child_process";
+import { spawnSync,type ChildProcess } from "node:child_process";
+import {spawnOwnedProcess,retireOwnedProcess,type OwnedProcessRetirement} from './pilot-owned-process';
 import { mkdir,mkdtemp,rm,symlink,writeFile,readdir,readlink,readFile,realpath,lstat } from "node:fs/promises";
 import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import { reserveOwnedEvalPort } from "./eval-port";
-import { join,resolve } from "node:path";
+import { join,resolve,dirname } from "node:path";
 import { Client } from "pg";
 import { closeRuntimePool } from "../lib/server/db/client";
-import { requireTestDatabaseUrl } from "../tests/fixtures/database";
+import { requireEvaluationSourceDatabase } from "./eval-source-database";
 import { ownedEvalTimeout } from "./eval-deadline";
+import {probePlanReadiness} from './plan-readiness-probe';
 import { copyOwnedEvalFiles } from "./eval-owned-copy";
 
 export type PlanEvalEnvironment = {
@@ -17,6 +21,7 @@ export type PlanEvalEnvironment = {
   appRoot: string;
   storeRoot: string;
   origin: string;
+  bootstrapDemo: () => void;
   start: () => Promise<void>;
   stop: () => Promise<void>;
   restart: () => Promise<void>;
@@ -39,26 +44,19 @@ export type PlanEvalOptions = {
 };
 
 const sourceFiles = ["app","agent","lib","migrations","scripts","public","evals","tests",
-  "packages","report-templates","report-renderer","next.config.ts","next-env.d.ts","tsconfig.json","package.json"] as const;
+  "packages","infra","report-templates","report-renderer","next.config.ts","next-env.d.ts","playwright.config.ts","tsconfig.json","package.json"] as const;
 
+const ownedChildren=new WeakMap<ChildProcess,OwnedProcessRetirement>();
+function spawnPlanChild(command:string,args:string[],options:{cwd:string;env:NodeJS.ProcessEnv}){
+ const owned=spawnOwnedProcess({command,args,cwd:options.cwd,environment:options.env});ownedChildren.set(owned.child,owned.retirement);return owned.child;
+}
 async function stopChild(child: ChildProcess | null): Promise<void> {
-  if (!child?.pid) return;
-  // The owned supervisor has its own process group. A parent exit alone does
-  // not prove Next/eve and maintenance descendants released their DB sockets.
-  const terminate=(signal:NodeJS.Signals)=>{try{process.kill(-child.pid!,signal);}catch(error){if((error as NodeJS.ErrnoException).code!=="ESRCH")throw error;}};
-  if(child.exitCode!==null||child.signalCode!==null){terminate("SIGKILL");return;}
-  await new Promise<void>((done) => {
-    let complete = false;
-    const finish = () => { if (complete) return;complete = true;clearTimeout(timer);terminate("SIGKILL");done(); };
-    const timer = setTimeout(finish,5_000);
-    child.once("exit",finish);
-    terminate("SIGTERM");
-  });
+ if(!child)return;const retirement=ownedChildren.get(child);if(!retirement)throw Error('Actual owned evaluation child required');await retireOwnedProcess(retirement);
 }
 
 /** eve's dev server can detach from the Next supervisor. Match only processes
  * whose current directory is the still-owned disposable app before signalling. */
-async function stopOwnedAppProcesses(appRoot:string):Promise<void>{
+export async function stopOwnedAppProcesses(appRoot:string):Promise<void>{
   const within=(cwd:string)=>cwd===appRoot||cwd.startsWith(appRoot+"/");
   const owned=async()=>{
     const pids:number[]=[];
@@ -79,6 +77,9 @@ async function stopOwnedAppProcesses(appRoot:string):Promise<void>{
   const deadline=Date.now()+5000;
   while(Date.now()<deadline){if(!(await owned()).length)return;await new Promise(done=>setTimeout(done,100));}
   for(const pid of await owned())signal(pid,"SIGKILL");
+  const killedDeadline=Date.now()+5000;
+  while(Date.now()<killedDeadline){if(!(await owned()).length)return;await new Promise(done=>setTimeout(done,100));}
+  throw Error('Owned evaluation process retirement unverified');
 }
 
 function runGuardedScript(file: string,cwd: string,env: NodeJS.ProcessEnv,
@@ -112,13 +113,35 @@ function runGuardedScript(file: string,cwd: string,env: NodeJS.ProcessEnv,
 }
 
 /** Owns only a clone of the guarded, separately marked test database. */
+type OwnedNestedCloneProof={feature:string;created:boolean;databaseName:string;
+ cloneUrl:string;sourceUrl:string;environmentId:string;ownership:string;
+ readback:{database_name:string;owner_marker:string|null;environment_id:string;schema_version:number}};
+/** Clear outer016 identity only for the fresh006/007 clone just read back by its owner. */
+export async function withOwnedNestedCloneCallback<T>(proof:OwnedNestedCloneProof,
+ run:()=>Promise<T>,environment:Record<string,string|undefined>=process.env):Promise<T>{
+ const clone=new URL(proof.cloneUrl),source=new URL(proof.sourceUrl),row=proof.readback;
+ const valid=proof.created&&['006','007'].includes(proof.feature)&&
+  new RegExp('^turas_test_'+proof.feature+'_eval_[a-f0-9]{12}$').test(proof.databaseName)&&
+  ['postgres:','postgresql:'].includes(clone.protocol)&&clone.protocol===source.protocol&&
+  clone.hostname===source.hostname&&clone.port===source.port&&clone.username===source.username&&clone.password===source.password&&
+  clone.pathname==='/'+proof.databaseName&&clone.pathname!==source.pathname&&
+  proof.ownership.startsWith('turas-owned-'+proof.feature+'-')&&
+  row.database_name===proof.databaseName&&row.owner_marker===proof.ownership&&
+  row.environment_id===proof.environmentId&&row.schema_version>=28&&
+  environment.DATABASE_URL===proof.cloneUrl&&environment.DATABASE_URL_UNPOOLED===proof.cloneUrl&&environment.TURAS_TEST_DATABASE_URL===proof.cloneUrl&&
+  environment.TURAS_TEST_SOURCE_DATABASE_URL===proof.sourceUrl&&environment.TURAS_ENVIRONMENT_ID===proof.environmentId&&environment.TURAS_TEST_ENVIRONMENT_ID===proof.environmentId;
+ if(!valid)throw Object.assign(new Error('Fresh owned nested evaluation identity required'),{code:'OWNED_NESTED_CLONE_IDENTITY'});
+ const previous=environment.TURAS_PILOT_OWNED;delete environment.TURAS_PILOT_OWNED;
+ try{return await run();}finally{if(previous===undefined)delete environment.TURAS_PILOT_OWNED;else environment.TURAS_PILOT_OWNED=previous;}
+}
+
 export async function withPlanEvalEnvironment<T>(
   run: (environment: PlanEvalEnvironment) => Promise<T>,
   options: PlanEvalOptions = {},
 ): Promise<T> {
   const remaining = (maximumMs = 5_000) => ownedEvalTimeout(options.deadlineAt,maximumMs);
   remaining();
-  const sourceUrl = new URL(requireTestDatabaseUrl(options.sourceDatabaseUrl ?
+  const sourceUrl = new URL(requireEvaluationSourceDatabase(options.sourceDatabaseUrl ?
     {...process.env,TURAS_TEST_DATABASE_URL:options.sourceDatabaseUrl}:process.env));
   const sourceName = decodeURIComponent(sourceUrl.pathname.slice(1));
   const testMarker = process.env.TURAS_TEST_ENVIRONMENT_ID;
@@ -177,6 +200,14 @@ export async function withPlanEvalEnvironment<T>(
   let productionEve:ChildProcess|null=null,productionProxy:Server|null=null;
   const closeProductionProxy=async()=>{const current=productionProxy;productionProxy=null;if(current){current.closeAllConnections();await new Promise<void>(done=>current.close(()=>done()));}};
   let startupTail = "";
+  let bodyFailed=false,bodyFailure:unknown;
+    async function stopRuntime(): Promise<void> {
+      const children=await Promise.allSettled([stopChild(child),stopChild(productionEve)]);
+      if(children[0].status==='fulfilled')child=null;if(children[1].status==='fulfilled')productionEve=null;
+      const remaining=await Promise.allSettled([closeProductionProxy(),stopOwnedAppProcesses(appRoot)]);
+      const failures=[...children,...remaining].filter((result):result is PromiseRejectedResult=>result.status==='rejected');
+      if(failures.length)throw new AggregateError(failures.map(result=>result.reason),'Owned evaluation runtime retirement unverified');
+    }
   try {
     if(options.production){evePortLease=await reserveOwnedEvalPort();eveProxyLease=await reserveOwnedEvalPort();}
     const admin = new Client({connectionString:adminUrl.toString(),connectionTimeoutMillis:remaining()});
@@ -230,6 +261,7 @@ export async function withPlanEvalEnvironment<T>(
     await symlink(resolve("node_modules"),join(appRoot,"node_modules"));
     await symlink(resolve("packages/artifact-extractor/node_modules"),
       join(appRoot,"packages/artifact-extractor/node_modules"));
+    await configureOwnedNextDependencyRoot(appRoot);
     if (options.prepare) {
       remaining();
       const extra = await options.prepare({ appRoot, storeRoot, environmentId: testMarker });
@@ -267,9 +299,8 @@ export async function withPlanEvalEnvironment<T>(
         (startupTail+chunk.toString("utf8")).slice(-200_000); };
       if(options.production&&!productionBuilt){
         const buildDeadline=Date.now()+remaining(600_000);
-        const building=spawn(process.execPath,["scripts/build-check.mjs"],{
-          cwd:appRoot,env:{...process.env,...productionEnv,NODE_ENV:"production",PORT:port,NODE_OPTIONS:""},
-          stdio:["ignore","pipe","pipe"],detached:true,
+        const building=spawnPlanChild(process.execPath,["scripts/build-check.mjs"],{
+          cwd:appRoot,env:{...process.env,NODE_OPTIONS:"",...productionEnv,NODE_ENV:"production",PORT:port,...await qualityChildEnvironment()},
         });
         child=building;building.stdout?.on("data",capture);building.stderr?.on("data",capture);
         let timedOut=false;
@@ -278,7 +309,7 @@ export async function withPlanEvalEnvironment<T>(
           building.once("error",error=>{clearTimeout(timer);reject(error);});
           building.once("exit",code=>{clearTimeout(timer);done(code);});
         });
-        child=null;remaining();
+        await stopChild(building);child=null;remaining();
         if(timedOut||code!==0){
           await writeFile(resolve(`local-artifacts/${feature}/eval-production-build-failure.log`),startupTail,{mode:0o600});
           throw Error(timedOut?"Disposable production build deadline exceeded":"Disposable production build failed");
@@ -287,10 +318,9 @@ export async function withPlanEvalEnvironment<T>(
       }
       if(options.production){
         await evePortLease!.release();
-        productionEve=spawn(process.execPath,[join(appRoot,".output/server/index.mjs")],{
-          cwd:appRoot,env:{...process.env,...productionEnv,NODE_ENV:"production",NODE_OPTIONS:"",
-            HOST:"127.0.0.1",NITRO_HOST:"127.0.0.1",PORT:String(evePortLease!.port),NITRO_PORT:String(evePortLease!.port)},
-          stdio:["ignore","pipe","pipe"],detached:true,
+        productionEve=spawnPlanChild(process.execPath,[join(appRoot,".output/server/index.mjs")],{
+          cwd:appRoot,env:{...process.env,NODE_OPTIONS:"",...productionEnv,NODE_ENV:"production",
+            HOST:"127.0.0.1",NITRO_HOST:"127.0.0.1",PORT:String(evePortLease!.port),NITRO_PORT:String(evePortLease!.port),...await qualityChildEnvironment()},
         });
         productionEve.stdout?.on("data",capture);productionEve.stderr?.on("data",capture);
         // Documented non-Vercel composition: stream the actual service response
@@ -310,35 +340,51 @@ export async function withPlanEvalEnvironment<T>(
         await new Promise<void>((done,reject)=>{productionProxy!.once("error",reject);productionProxy!.listen(eveProxyLease!.port,"127.0.0.1",done);});
       }
       await portLease.release();
-      child = spawn(process.execPath,options.production?
+      child = spawnPlanChild(process.execPath,options.production?
         ["node_modules/next/dist/bin/next","start","--hostname","127.0.0.1","--port",port]:["scripts/dev.mjs"],{
-        cwd:appRoot,env:{...process.env,...productionEnv,NODE_ENV:options.production?"production":"development",PORT:port,NODE_OPTIONS:""},
-        stdio:["ignore","pipe","pipe"],detached:true,
+        cwd:appRoot,env:{...process.env,NODE_OPTIONS:"",...productionEnv,NODE_ENV:options.production?"production":"development",PORT:port,...await qualityChildEnvironment()},
       });
       child.stdout?.on("data",capture);
       child.stderr?.on("data",capture);
+      const readinessStarted=Date.now();
+      let lastAuthStatus:number|null=null,lastEveStatus:number|null=null;
+      let authTransport='none',eveTransport='none',probeCount=0;
       const readinessDeadline = Date.now()+remaining(90_000);
       while (Date.now()<readinessDeadline) {
         if (child.exitCode !== null || productionEve&&productionEve.exitCode!==null) break;
         try {
           const [auth,eve] = await Promise.all([
-            fetch(`${origin}/api/auth/session`,{signal:AbortSignal.timeout(ownedEvalTimeout(readinessDeadline,2_000))}),
-            fetch(`${origin}/eve/v1/health`,{signal:AbortSignal.timeout(ownedEvalTimeout(readinessDeadline,2_000))}),
+            probePlanReadiness(origin,'/api/auth/session',readinessDeadline),
+            probePlanReadiness(origin,'/eve/v1/health',readinessDeadline),
           ]);
-          const ready = auth.status === 401 && eve.ok;
-          await Promise.all([auth.body?.cancel(),eve.body?.cancel()]);
+          lastAuthStatus=auth.status;lastEveStatus=eve.status;
+          probeCount++;authTransport=auth.transport;eveTransport=eve.transport;
+          const ready = auth.status === 401 && eve.status!==null && eve.status>=200 && eve.status<300;
           if (ready) { remaining();return; }
         } catch { /* App is still starting. */ }
         if (Date.now()<readinessDeadline) await new Promise((done) => setTimeout(done,ownedEvalTimeout(readinessDeadline,500)));
       }
       await writeFile(resolve(`local-artifacts/${feature}/eval-startup-failure.log`),
         startupTail,{mode:0o600});
+      const workerExitKinds=[...new Set([...startupTail.matchAll(/"kind":"turas_worker_exit","worker":"(maintenance|artifacts|reports)"/g)].map(match=>match[1]))];
+      const categories=[...new Set([
+        /ERR_MODULE_NOT_FOUND|Cannot find module/.test(startupTail)?'module_not_found':null,
+        /fatal: not a git repository/.test(startupTail)?'git_identity':null,
+        /Invalid environment|Invalid server configuration|ZodError/.test(startupTail)?'configuration':null,
+        /Failed to compile|Module not found|Build error/.test(startupTail)?'compile':null,
+        workerExitKinds.length?'worker_exit':null,
+      ].filter(Boolean))];
+      const diagnostic={kind:'owned_app_readiness_failure',mode:options.production?'production':'development',elapsedMs:Date.now()-readinessStarted,
+        nextExitCode:child.exitCode,nextExitSignal:child.signalCode,eveExitCode:productionEve?.exitCode??null,eveExitSignal:productionEve?.signalCode??null,lastAuthStatus,lastEveStatus,authTransport,eveTransport,probeCount,
+        nextReadyTextObserved:/Ready in/i.test(startupTail),compilingTextObserved:/Compiling/i.test(startupTail),eveListeningTextObserved:/server listening at http:\/\/127\.0\.0\.1:\d{1,5}\//.test(startupTail),workerExitKinds,categories};
+      await writeFile(resolve(`local-artifacts/${feature}/eval-startup-failure.json`),JSON.stringify(diagnostic),{mode:0o600});
+      console.error(JSON.stringify(diagnostic));
       throw new Error("Disposable app failed readiness");
     }
-    async function stop(): Promise<void> { await stopChild(child);child = null;await stopChild(productionEve);productionEve=null;await closeProductionProxy();await stopOwnedAppProcesses(appRoot); }
+
     remaining();
-    return await run({databaseName:name,appRoot,storeRoot,origin,start,stop,
-      restart:async () => { await stop();await start(); },
+    const callback=()=>run({databaseName:name,appRoot,storeRoot,origin,bootstrapDemo:()=>runGuardedScript("scripts/bootstrap-demo.ts",appRoot,process.env,[],options.deadlineAt),start,stop:stopRuntime,
+      restart:async () => { await stopRuntime();await start(); },
       diagnosticLines:()=>startupTail.split("\n").filter((line)=>
         line.includes("PLAN_DIAGNOSTIC")),
       diagnosticClasses:()=>["GatewayAuthenticationError","Invalid API key",
@@ -350,18 +396,23 @@ export async function withPlanEvalEnvironment<T>(
         "overloaded","fetch failed","quota"]
         .filter((value)=>startupTail.toLowerCase().includes(value.toLowerCase())),
       privateLogTail:()=>startupTail});
-  } finally {
-    await portLease.release();
-    await evePortLease?.release();
-    await eveProxyLease?.release();
-    await stopChild(child);
-    await stopChild(productionEve);
-    await closeProductionProxy();
-    await stopOwnedAppProcesses(appRoot);
-    await closeRuntimePool();
-    for (const [key,value] of Object.entries(prior)) {
-      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    if(feature==='006'||feature==='007'){
+      // Read the new clone itself; source/caller URLs cannot establish ownership.
+      const owned=new Client({connectionString:cloneUrl.toString(),connectionTimeoutMillis:remaining(),statement_timeout:remaining(),query_timeout:remaining()});
+      await owned.connect();
+      try{
+        const readback=await owned.query<{database_name:string;owner_marker:string|null;environment_id:string;schema_version:number}>(
+          "SELECT current_database() AS database_name,shobj_description((SELECT oid FROM pg_database WHERE datname=current_database()),'pg_database') AS owner_marker,environment_id,schema_version FROM turas_environment");
+        if(readback.rowCount!==1)throw Object.assign(new Error('Fresh owned nested evaluation marker required'),{code:'OWNED_NESTED_CLONE_IDENTITY'});
+        return await withOwnedNestedCloneCallback({feature,created,databaseName:name,cloneUrl:cloneUrl.toString(),sourceUrl:sourceUrl.toString(),environmentId:testMarker,ownership,readback:readback.rows[0]},callback);
+      }finally{await owned.end();}
     }
+    return await callback();
+  } catch(error){bodyFailed=true;bodyFailure=error;throw error;} finally {
+   try{
+    const retirement=await Promise.allSettled([portLease.release(),evePortLease?.release(),eveProxyLease?.release(),stopRuntime(),closeRuntimePool()]);
+    const failures=retirement.filter((result):result is PromiseRejectedResult=>result.status==='rejected');
+    if(failures.length)throw new AggregateError(failures.map(result=>result.reason),'Owned evaluation cleanup unverified; target retained');
     if (created && prepared && options.cleanupGuard) {
       await options.cleanupGuard({ appRoot, storeRoot, databaseName: name,
         databaseUrl: cloneUrl.toString(), environmentId: testMarker });
@@ -386,5 +437,7 @@ export async function withPlanEvalEnvironment<T>(
       // Retry only this owned temporary tree; keep ownership checks above intact.
       await rm(root,{recursive:true,force:true,maxRetries:5,retryDelay:200});
     }
+   }catch(error){if(bodyFailed)throw new AggregateError([bodyFailure,error],'Owned evaluation and cleanup failed');throw error;}
+   finally{for(const [key,value]of Object.entries(prior)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
   }
 }

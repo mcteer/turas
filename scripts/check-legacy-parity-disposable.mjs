@@ -4,6 +4,10 @@ import { mkdtempSync, writeFileSync, rmSync, mkdirSync, existsSync, readdirSync,
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "pg";
+import { browserFailureMetadata } from "./ci-browser-diagnostics.ts";
+import { processFailureMetadata } from "./ci-process-diagnostics.ts";
+import { nativeQueryObservationSchema } from "./ci-native-query-observer.ts";
+import { readFileSync } from 'node:fs';
 
 if (Number(process.versions.node.split(".")[0]) !== 24) throw Error("Run this check with Node 24");
 // The same supervised withEve disposable application used by native acceptance.
@@ -88,7 +92,7 @@ if (process.argv.includes("--webkit-child")) {
       if(/^(?:source-library|context-approvals|customer-journey)-webkit-(?:desktop|mobile)-(?:light|dark)\.png$/.test(name))
         copyFileSync(join(images,name),join(folder,name));
     if(result.error||result.status!==0){
-      const failures=[];let reportParseFailed=false;
+      const failures=[];let reportParseFailed=false,globalErrors=[];
       try{
         const collect=suite=>{
           for(const spec of suite.specs??[])for(const test of spec.tests??[]){
@@ -104,10 +108,12 @@ if (process.argv.includes("--webkit-child")) {
           }
           for(const child of suite.suites??[])collect(child);
         };
-        for(const suite of JSON.parse(result.stdout).suites??[])collect(suite);
+        const parsed=JSON.parse(result.stdout);
+        for(const suite of parsed.suites??[])collect(suite);
+        globalErrors=(parsed.errors??[]).slice(0,10).map(error=>({category:/timeout|timed out/i.test(String(error.message??''))?'timeout':'runner',file:String(error.location?.file??'').split(/[\\/]/).at(-1),line:error.location?.line}));
       }catch{reportParseFailed=true;}
       console.error(JSON.stringify({kind:"legacy_webkit_failure",reportParseFailed,
-        runnerFailed:Boolean(result.error),failures:failures.slice(0,20)}));
+        runnerFailed:Boolean(result.error),globalErrors,failures:failures.slice(0,20),operationFailures:reportParseFailed?[]:browserFailureMetadata(JSON.parse(result.stdout),new Set(files.map(file=>file.split("/").at(-1))))}));
       throw Error("018 actual WebKit acceptance failed; inspect private report");
     }
     const report=JSON.parse(result.stdout);
@@ -133,6 +139,14 @@ let created = false;
 let output = "";
 function docker(args) { return spawnSync("docker",args,{encoding:"utf8"}); }
 let postgresDiagnostics;
+let nativeObserver;
+let nativeObserverClosed=false,nativeObserverFailed=false,nativeObserverCompletion;
+const nativeObservationFile=join(process.cwd(),'local-artifacts/018/ci-disposable',name+'-query-observation-private.json');
+async function waitNativeObserver(milliseconds){
+  let timer;
+  try{await Promise.race([nativeObserverCompletion,new Promise(done=>{timer=setTimeout(done,milliseconds);})]);}
+  finally{clearTimeout(timer);}
+}
 function captureOwnedPostgres() {
   if (!created || postgresDiagnostics) return postgresDiagnostics;
   const logs=docker(['logs',name]);
@@ -171,7 +185,7 @@ try {
     const result = spawnSync(process.execPath,args,{env,encoding:"utf8",maxBuffer:12*1024*1024});
     output += (result.stdout??"")+(result.stderr??"");
     writeFileSync(join(directory,"checks.log"),output,{mode:0o600});
-    if(result.status!==0) { writeFileSync("local-artifacts/legacy-parity-disposable-failure-private.log",output,{mode:0o600}); throw Error(`Disposable parity check failed (${args.find(value=>value.startsWith("scripts/"))??"tests"})`); }
+    if(result.status!==0) { console.error(JSON.stringify({kind:"disposable_process_failure",...processFailureMetadata({code:result.status,signal:result.signal,stdoutTail:result.stdout,stderrTail:result.stderr})})); writeFileSync("local-artifacts/legacy-parity-disposable-failure-private.log",output,{mode:0o600}); throw Error(`Disposable parity check failed (${args.find(value=>value.startsWith("scripts/"))??"tests"})`); }
   }
   run(["--experimental-strip-types","scripts/db-migrate.ts","--init"]);
   run(["--experimental-strip-types","scripts/db-roles.ts"]);
@@ -219,7 +233,15 @@ try {
   if(!acceptanceOnly&&!process.argv.includes("--native-only")&&!process.argv.includes("--native-files-only"))run(["node_modules/vitest/vitest.mjs","run","tests/contracts/general-chat.test.ts"],{...environment,DATABASE_URL:contractUrl.toString(),DATABASE_URL_UNPOOLED:contractUrl.toString()});
   if(process.argv.includes('--chat-interaction'))run(['--import','tsx','scripts/check-chat-interaction-ui.ts',...(process.argv.includes('--preparation-race')?['--preparation-race']:[])],integrationEnvironment);
   if(process.argv.includes('--webkit'))run(['--import','tsx','scripts/check-legacy-parity-disposable.mjs','--webkit-child'],integrationEnvironment);
-  if(process.argv.includes('--native-operations'))run(['--import','tsx','scripts/check-ordinary-operations-native.ts','--knowledge'],integrationEnvironment);
+  if(process.argv.includes('--native-operations')){
+    mkdirSync('local-artifacts/018/ci-disposable',{recursive:true,mode:0o700});
+    nativeObserver=spawn(process.execPath,['scripts/ci-native-query-observer.ts'],{env:{...environment,TURAS_NATIVE_OBSERVER_URL:url,TURAS_NATIVE_OBSERVER_FILE:nativeObservationFile,TURAS_NATIVE_OBSERVER_PARENT:String(process.pid)},stdio:'ignore'});
+    nativeObserverCompletion=new Promise(done=>{
+      nativeObserver.once('close',()=>{nativeObserverClosed=true;done();});
+      nativeObserver.on('error',()=>{nativeObserverFailed=true;if(!nativeObserver.pid)done();});
+    });
+    run(['--import','tsx','scripts/check-ordinary-operations-native.ts','--knowledge'],integrationEnvironment);
+  }
   if(process.argv.includes('--native-staged-4'))run(['--import','tsx','scripts/check-ordinary-native-files.ts','--composer','--steer','--staged-4'],integrationEnvironment);
   if(process.argv.includes('--native-staged-10'))run(['--import','tsx','scripts/check-ordinary-native-files.ts','--composer','--staged-10'],integrationEnvironment);
   if(process.argv.includes('--native-questions'))run(['--import','tsx','scripts/check-ordinary-questions-native.ts'],integrationEnvironment);
@@ -247,14 +269,23 @@ try {
   writeFileSync(join("local-artifacts/018/ci-disposable",gateName+"-private.log"),output,{mode:0o600});
   console.log(JSON.stringify({gate:profileProductsOnly?"profile-products":acceptanceOnly?process.argv.find(flag=>["--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag)):"domains",ownedDisposableDatabase:true,migrationsAndRuntimeGrants:true,passed:true,paidProviderCalls:0}));
 } catch(error) {
+  mkdirSync("local-artifacts/018/ci-disposable",{recursive:true,mode:0o700});
+  writeFileSync(join("local-artifacts/018/ci-disposable","failed-"+randomUUID()+"-private.log"),output,{mode:0o600});
   console.error(error.message);
   // Tests contain only locally created fixture data. Credentials and startup
   // details stay private; report the bounded test failure section only.
   const failure=output.indexOf("Failed Tests");
   if(failure>=0) console.error(output.slice(failure,failure+5000));
-  for(const line of output.split("\n"))if(line.startsWith('{"kind":"native_file_fixture_failure"')||line.startsWith('{"kind":"legacy_webkit_failure"'))console.error(line);
+  for(const line of output.split("\n"))if(line.startsWith('{"kind":"native_file_fixture_failure"')||line.startsWith('{"kind":"legacy_webkit_failure"')||line.startsWith('{"kind":"owned_app_readiness_failure"')||line.startsWith('{"kind":"native_question_fixture_failure"'))console.error(line);
   process.exitCode=1;
 } finally {
+  if(nativeObserver){
+    if(!nativeObserverClosed&&nativeObserver.pid){nativeObserver.kill('SIGTERM');await waitNativeObserver(2500);}
+    if(!nativeObserverClosed&&nativeObserver.pid){nativeObserver.kill('SIGKILL');await waitNativeObserver(2500);}
+    if(!nativeObserverClosed&&nativeObserver.pid)process.exitCode=1;
+    try{if(nativeObserverFailed||!nativeObserverClosed)throw Error('Observer unavailable');console.log(JSON.stringify({kind:'owned_native_query_observation',...nativeQueryObservationSchema.parse(JSON.parse(readFileSync(nativeObservationFile,'utf8')))}));}
+    catch{console.log(JSON.stringify({kind:'owned_native_query_observation',instrumented:true,state:'unavailable'}));}
+  }
   try { captureOwnedPostgres(); } catch { console.error("Owned database diagnostic capture failed");process.exitCode=1; }
   if(created && docker(["rm","-f","-v",name]).status!==0) {
     console.error(`Cleanup failed for owned container ${name}`); process.exitCode=1;
