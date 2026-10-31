@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {Client} from 'pg';
 import {z} from 'zod';
 import {constants} from 'node:fs';
@@ -54,7 +55,7 @@ export async function runNativeRecoveryPgDump(input:{assetRoot:string;connection
  const parent=resolve(dirname(input.output)),name=basename(input.output),directory=await lstat(parent);
  if(!/^[A-Za-z0-9_-]{1,100}\.dump$/.test(name)||!directory.isDirectory()||directory.isSymbolicLink()||directory.uid!==process.getuid?.()||(directory.mode&0o777)!==0o700||await realpath(parent)!==parent)throw Error('Private native dump destination required');
  const db=new Client({connectionString:input.connectionString,connectionTimeoutMillis:5000,statement_timeout:5000});
- try{await db.connect();const marker=(await db.query("SELECT environment_id,schema_version,current_setting('server_version_num')::int AS version,current_database() AS name,current_user AS role FROM turas_environment")).rows;if(marker.length!==1||marker[0].environment_id!==input.environmentId||Number(marker[0].schema_version)!==80||Math.floor(Number(marker[0].version)/10000)!==18||marker[0].name!==decodeURIComponent(url.pathname.slice(1))||marker[0].role!==decodeURIComponent(url.username))throw Error('Actual native dump source differs');}finally{await db.end();}
+ try{await db.connect();const marker=(await db.query("SELECT environment_id,schema_version,current_setting('server_version_num')::int AS version,current_database() AS name,current_user AS role FROM turas_environment")).rows;if(marker.length!==1||marker[0].environment_id!==input.environmentId||Number(marker[0].schema_version)!==CURRENT_SCHEMA_VERSION||Math.floor(Number(marker[0].version)/10000)!==18||marker[0].name!==decodeURIComponent(url.pathname.slice(1))||marker[0].role!==decodeURIComponent(url.username))throw Error('Actual native dump source differs');}finally{await db.end();}
  const env:NodeJS.ProcessEnv={NODE_ENV:'production',PATH:'/usr/bin:/bin',LD_LIBRARY_PATH:join(client.root,'lib'),PGHOST:url.hostname,PGPORT:url.port||'5432',PGDATABASE:decodeURIComponent(url.pathname.slice(1)),PGUSER:decodeURIComponent(url.username),PGPASSWORD:decodeURIComponent(url.password),PGSSLMODE:local?'disable':'verify-full',PGCONNECT_TIMEOUT:'5',PGOPTIONS:'-c default_transaction_read_only=on -c statement_timeout=120000',...(!local?{PGSSLROOTCERT:await systemTrustRoots()}:{}),LANG:'C'};
  const binary=join(client.root,'bin/pg_dump');
  const version=await promisify(execFile)(binary,['--version'],{env,timeout:10000,maxBuffer:4096,signal:input.signal});if(version.stdout.trim()!=='pg_dump (PostgreSQL) 18.6')throw Error('Native PostgreSQL version differs');

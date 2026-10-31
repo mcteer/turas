@@ -9,11 +9,12 @@ export class PilotHostedResponseError extends Error{
  * mutation admission and original-key reconciliation; this never retries. */
 export function pilotHostedRequest(input:{scope:PilotHostedScope;headers:Headers;signal:AbortSignal;transport?:typeof fetch}){
  const origin=new URL(input.scope.origin).origin,transport=input.transport??fetch;
- return async(path:string,method:'GET'|'POST'|'PATCH'|'DELETE'|'PUT',body?:unknown):Promise<unknown>=>{
+ return async(path:string,method:'GET'|'POST'|'PATCH'|'DELETE'|'PUT',body?:unknown,timeoutMs=10000):Promise<unknown>=>{
   input.signal.throwIfAborted();
+  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw Error('Original bounded pilot request timeout required');
   const target=new URL(path,origin);
   if(!path.startsWith('/api/')||path.includes('\\')||target.origin!==origin||!target.pathname.startsWith('/api/'))throw Error('Fixed same-origin pilot API path required');
-  const response=await transport(origin+path,{method,headers:input.headers,body:body===undefined?undefined:JSON.stringify(body),redirect:'manual',cache:'no-store',signal:AbortSignal.any([input.signal,AbortSignal.timeout(10000)])});
+  const response=await transport(origin+path,{method,headers:input.headers,body:body===undefined?undefined:JSON.stringify(body),redirect:'manual',cache:'no-store',signal:AbortSignal.any([input.signal,AbortSignal.timeout(timeoutMs)])});
   const releaseMatches=response.headers.get('x-turas-code-version')===input.scope.sourceCommit;
   if(!releaseMatches||!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')??'')){
    await response.body?.cancel();throw new PilotHostedResponseError(response.status,releaseMatches,null);

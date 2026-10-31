@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {Client,type PoolClient} from 'pg';
 import {resolve,dirname,basename} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -17,7 +18,7 @@ export async function validatePilotFeedbackScope(db:Client|PoolClient,raw:unknow
   await db.query("SET LOCAL transaction_timeout='15s'");await db.query("SET LOCAL statement_timeout='5000ms'");await db.query("SET LOCAL lock_timeout='3000ms'");
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
   const workspace=(await db.query("SELECT id FROM workspaces WHERE id=$1 AND active AND classification='synthetic_pilot' AND pilot_environment_id=$2 FOR SHARE",[scope.workspaceId,scope.environmentId])).rows;
-  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||marker[0].schema_version!==80||workspace.length!==1)throw Error('Current pilot feedback scope required');
+  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||marker[0].schema_version!==CURRENT_SCHEMA_VERSION||workspace.length!==1)throw Error('Current pilot feedback scope required');
   const customers=await db.query('SELECT id FROM customer_references WHERE workspace_id=$1 AND id=ANY($2::uuid[]) AND synthetic FOR SHARE',[scope.workspaceId,scope.customerIds]);
   if(customers.rowCount!==scope.customerIds.length)throw Error('Synthetic feedback customer scope differs');
   for(const participant of scope.participants){

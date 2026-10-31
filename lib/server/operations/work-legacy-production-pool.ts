@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {observeRecoveryConnection} from './recovery-connection';
 import {constants} from 'node:fs';
 import {Client} from 'pg';
@@ -50,7 +51,7 @@ async function peerIdentity(db:Client,selected:Source,cleanup=false){
  const rows=(await db.query(`SELECT e.environment_id,e.schema_version,current_database() AS name,current_user AS role,clock_timestamp() AS now,
  current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='login_sessions'::regclass)) AS owner FROM turas_environment e`)).rows;
  const row=rows[0],url=new URL(selected.databaseUrl);
- if(rows.length!==1||row.environment_id!==selected.environmentId||(!cleanup?Number(row.schema_version)!==77:![77,78,79,80].includes(Number(row.schema_version)))||row.name!==decodeURIComponent(url.pathname.slice(1))||row.role!==decodeURIComponent(url.username)||row.owner!==true||Math.abs(row.now.getTime()-Date.now())>5000)throw Error('Exact current077 peer owner and clock required');return row;
+ if(rows.length!==1||row.environment_id!==selected.environmentId||(!cleanup?Number(row.schema_version)!==77:![77,78,79,80,CURRENT_SCHEMA_VERSION].includes(Number(row.schema_version)))||row.name!==decodeURIComponent(url.pathname.slice(1))||row.role!==decodeURIComponent(url.username)||row.owner!==true||Math.abs(row.now.getTime()-Date.now())>5000)throw Error('Exact current077 peer owner and clock required');return row;
 }
 function connection(selected:Source,connectionLost:AbortController){const client=new Client({connectionString:selected.databaseUrl,connectionTimeoutMillis:5000,statement_timeout:5000,query_timeout:6000,options:'-c lock_timeout=3000'});observeRecoveryConnection(client,connectionLost);return client;}
 async function retire(selected:Source,id:string,hash:string){

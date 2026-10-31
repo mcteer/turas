@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {z} from 'zod';
 import {qualityContextCreditCap,qualityStepAuthorization,verifyQualityStepAuthorization} from './pilot-quality-step-authorization';
 import {resolve,dirname,basename,join} from 'node:path';
@@ -38,7 +39,7 @@ async function syntheticScope(){
  const raw=process.env.DATABASE_URL_UNPOOLED,urls=[process.env.DATABASE_URL,raw,process.env.TURAS_TEST_DATABASE_URL];
  let connectionIdentity:string|undefined;
  for(const value of urls){if(!value)throw Error('Synthetic evaluation connection unavailable');const url=new URL(value);if(!['postgres:','postgresql:'].includes(url.protocol)||url.hostname!=='127.0.0.1'||!/^\/turas_(?:test_|eval_)[a-z0-9_]{10,60}$/.test(url.pathname))throw Error('Hosted or unowned quality source denied');const identity=url.host+url.pathname;if(connectionIdentity&&identity!==connectionIdentity)throw Error('Evaluation connection targets differ');connectionIdentity=identity;}
- const db=new Client({connectionString:raw,connectionTimeoutMillis:3000});try{await db.connect();await db.query("SET statement_timeout='3000ms'");const rows=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;if(rows.length!==1||rows[0].environment_id!==marker||Number(rows[0].schema_version)!==80)throw Error('Current synthetic evaluation schema required');}finally{await db.end();}
+ const db=new Client({connectionString:raw,connectionTimeoutMillis:3000});try{await db.connect();await db.query("SET statement_timeout='3000ms'");const rows=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;if(rows.length!==1||rows[0].environment_id!==marker||Number(rows[0].schema_version)!==CURRENT_SCHEMA_VERSION)throw Error('Current synthetic evaluation schema required');}finally{await db.end();}
 }
 /** Native Node preloader: no provider is contacted during installation. The
  * immutable fetch guard covers SDK retries, all model steps and embeddings. */

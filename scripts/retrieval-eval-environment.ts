@@ -145,6 +145,13 @@ export async function withRetrievalEvalEnvironment<T>(
       (startupOutput+chunk.toString("utf8")).slice(-10_000); };
     async function startDev(): Promise<void> {
       startupOutput = "";
+      const readiness = new Client({ connectionString: cloneUrl.toString(),
+        connectionTimeoutMillis: 2_000,query_timeout: 2_000 });
+      await readiness.connect();
+      try {
+      // A cloned source can carry an old worker row. Require a real heartbeat
+      // from this app start before admitting the first native send.
+      const workerStartedAfter = (await readiness.query("SELECT clock_timestamp() AS at")).rows[0].at;
       dev = spawn(process.execPath,["scripts/dev.mjs"],{
         cwd: app,env: { ...process.env,NODE_ENV:"development",PORT: String(port),...await qualityChildEnvironment() },
         stdio: ["ignore","pipe","pipe"] });
@@ -165,7 +172,11 @@ export async function withRetrievalEvalEnvironment<T>(
             fetch(`${origin}/eve/v1/health`,{ signal: AbortSignal.timeout(2_000) }),
           ]);
           lastAuthStatus = auth.status;lastEveStatus = eve.status;
-          if (auth.status === 401 && eve.ok) return;
+          await auth.body?.cancel();await eve.body?.cancel();
+          if (auth.status === 401 && eve.ok && (await readiness.query(
+            `SELECT 1 FROM maintenance_workers WHERE environment_id=$1
+             AND last_seen_at >= $2 AND last_seen_at >= clock_timestamp()-interval '15 seconds' LIMIT 1`,
+            [marker,workerStartedAfter])).rowCount) return;
         } catch { transportFailures += 1; }
         await new Promise((wait) => setTimeout(wait,500));
       }
@@ -175,6 +186,7 @@ export async function withRetrievalEvalEnvironment<T>(
         JSON.stringify({ lastAuthStatus,lastEveStatus,transportFailures }),
         { mode: 0o600 });
       throw new Error("Isolated evaluation app did not become ready");
+      } finally { await readiness.end(); }
     }
     await startDev();
     return await run({ appRoot: app,storeRoot: store,origin,

@@ -216,7 +216,7 @@ waive external authority, or manufacture actual-model/operator/participant proof
 - [ ] T086 Complete matched work-controlled capture and schedule integration in `scripts/pilot-backup.ts`, `lib/server/operations/{workflow-checkpoint,work-capture-read,work-backup-objects}.ts` and the existing backup scheduler: bind actual database ledger/grants/accepted history, exact private object inventory, actual configured Workflow capability and separate key availability, verify independent retained encrypted bytes and reject missing required components before recording a complete backup per FR-005, FR-006, FR-008 and T051/T054 (partial).
 - [ ] T087 Complete one protected, interruption-resumable reconciliation path in `scripts/pilot-recovery-authority.ts` and `lib/server/operations/` that applies independently current credential/grant/source/publication/expiry denials, audits permanent request fences and reconciles actual uncertain paid/native/send effects against original provider identities; preserve quarantine/history and prohibit replay or unlock with absent current proof per FR-007, FR-010, FR-011 and T052 (partial).
 - [ ] T088 Complete the isolated recovery verification path in `scripts/pilot-recovery.ts`, `lib/server/operations/{isolated-restore,work-isolated-restore,recovery-timing}.ts` and `docs/pilot-operations.md`: explicitly forward-migrate/grant, reconcile the actual managed Workflow semantics, preserve original identities without rerunning initial paid delivery, verify authenticated required service and current denials before explicit owner unlock, then measure actual accepted-work RPO and incident-to-verified-service RTO; required quarantined scope must still block full readiness per FR-005, FR-006, FR-007, FR-008, FR-019 and T053/T057–T059 (partial).
-- [ ] T089 Complete the fixed J002–J015 normal-record/role catalog in `scripts/pilot-hosted.ts` and its existing governed helpers: streaming/resume/stop and membership boundaries, approved source/retrieval/knowledge, cited plan/design and accepted delivery/report chain, reviewed workforce/allocation, assigned-partner guide/demonstration, actual scoped learning evaluation with appropriate no-benefit rejection/publication and current-source SDK revocation; emit complete exact-source/deployment/role/case receipts only after every required positive and boundary case, while recording actual hosted automated role observations per the 2026-10-19 directive and keeping release decisions separate per FR-002, FR-013, FR-014, FR-017, FR-020, FR-021 and T071/T075–T076 (partial).
+- [ ] T089 Complete the fixed J002–J015 normal-record/role catalog in `scripts/pilot-hosted.ts` and its existing governed helpers: streaming/resume/stop and membership boundaries, approved source/retrieval/knowledge, cited plan/design and accepted delivery/report chain, reviewed workforce/allocation, assigned-partner guide/demonstration, actual scoped learning evaluation with appropriate no-benefit rejection/publication and current-source SDK revocation; emit complete exact-source/deployment/role/case receipts only after every required positive and boundary case, while recording actual hosted automated role observations per the 2026-10-19 directive and keeping release decisions separate per FR-002, FR-013, FR-014, FR-017, FR-020, FR-021 and T071/T075–T076 (partial). Root transport now retains a separate UI checkpoint before bounded accounting-only re-reads; neither that checkpoint nor a recovered accounting receipt completes the original hosted journey.
 - [ ] T090 Complete the actual hosted file-job catalog in `scripts/pilot-hosted.ts` and the existing Blob/Sandbox adapters: explicitly admitted maximum-size upload/scan/parse/render, malicious/malformed input, cancellation/deadline/lost-lease/network denial, cold restart/cross-instance reads, source withholding and verified owned cleanup, with actual immutable image/signature/OCR/program/provider identities and unchanged per-job concurrency/deadline/domain bounds per FR-016, FR-023, FR-024 and T071/T073 (partial).
 - [ ] T091 Complete private target/provisioning/store/image/worker/cost manifests and exact configuration readback before hosted writes in `scripts/pilot-hosted.ts`, `infra/pilot/` and `docs/pilot-operations.md`: bind the intended Preview/Production project/team/deployment/marker/schema/grants/backend/executor/health and finite service envelopes, reuse only applicable existing authority, retain the original model-evaluation journal/cap/expiry and disabled automatic billing, and obtain only missing concrete infrastructure/release authority before external changes per FR-014, FR-016, FR-021, FR-022, FR-023, FR-024 and T072–T074 (partial).
 
@@ -1454,3 +1454,185 @@ No hosted target may be locked for release before its measured reopen path exist
   Node options before adding the explicitly validated quality-budget preload to
   every nested build/runtime child. Verify actual child propagation, then run
   fresh provider-accounted evaluation under a distinct finite allowance (FR-021).
+
+- [x] T231 Select the unique current report brand from its retained version
+  history only when all three current synthetic sample revisions bind that exact
+  brand ID/version. Continue the existing weekly/monthly/quarterly samples through
+  ordinary brand and publication previews/decisions without preparing, revising
+  or rendering replacements. Preserve forty-slide checks, artifact reads,
+  governed receipts and all earlier financial holds. Verify the operator-only
+  source correction, then separately review actual hosted continuation; retain
+  the original `cffe534` failure without relabelling its runtime evidence
+  (FR-002, FR-021).
+
+- [ ] T232 Keep the recovery category regression's real HTTP/database checks
+  within its existing deadline by reusing pools only for its exact controlled
+  target and closing them on fixture exit. Require a real post-start maintenance
+  heartbeat before the cloned research evaluation app admits a native send.
+  Preserve production readiness enforcement, all evaluation assertions, source
+  attribution and financial histories; verify the fixtures and fresh CI
+  (FR-002, FR-021).
+
+- [ ] T233 Permit the file-retention operator to compare distinct immutable
+  deployment origins while requiring the same project, team, environment,
+  workspace, target, source and configuration. Independently resolve both old
+  and new host/ID pairs through authenticated platform metadata. Verify original
+  maximum and generated bytes after restart without new jobs (FR-002, FR-021).
+
+- [ ] T234 Honor explicitly selected immutable parser/scanner images when
+  preparing an owned workforce evaluation. Inspect those exact Docker IDs,
+  preserve the default-image path, and verify the original import contracts
+  including real clean scans and the EICAR canary before the live preflight
+  (FR-002, FR-021).
+
+- [ ] T235 Honor immutable parser/scanner selections in artifact preparation and
+  retain signed CVD output through FreshClam updates without changing runtime
+  signature validation. Let staffing and execution build their own governed
+  fixtures without the unrelated walkthrough seed. Preserve all 23 original
+  quality commands, cases, assertions and finite budgets. Verify original
+  regression gates, remaining live evaluations and hosted release (FR-002,
+  FR-017, FR-021).
+
+- [ ] T236 Align the staffing browser gate's exact selectors with the current
+  canonical title-case heading and accessible work-package label. Preserve every
+  case, confirmation, withdrawal, receipt, keyboard and accessibility assertion;
+  rerun the full browser gate before the remaining live evaluation (FR-002,
+  FR-017, FR-021).
+
+- [ ] T237 Prevent staffing finance admission from upgrading an engagement lock
+  acquired by the unused profile delivery summary. Preserve ordinary profile
+  summaries, accepted evidence and authorization checks. Verify a concurrent
+  database lock regression, the actual native skill/read flow, fresh CI and live
+  model behavior before the hosted release (FR-002, FR-017, FR-021).
+
+- [ ] T238 Capture the complete required pilot object inventory within explicit
+  versioned capacity and paid-resource bounds. Preserve v1 scope digests and
+  limits; opt v2 into 192 MiB of objects, 640 metadata requests, a 320 MiB bundle
+  and a separately migrated 6 GiB retained destination. Stream packing, encryption
+  and authenticated entry verification within Functions scratch limits. Preserve
+  every required object, seven-day expiry and all earlier costs. Verify large
+  byte inventories, archive migration/replay, full cold restore and hosted
+  behavior before Production release (FR-002, FR-017, FR-021).
+- [ ] T239 Permit one explicitly reviewed manual backup after exact full-cost
+  reconciliation without waiting for another nominal scheduled slot. Bind the
+  prior failure, current configuration, budget pair and source tuple; keep the
+  manual UUID once-only across budgets, successful-capture cadence, expiry and
+  no automatic retry. Record fixed diagnostic classifications without raw
+  errors or secrets; verify actual operator capture and restore (FR-017, FR-021).
+- [ ] T240 Preserve Preview clone trigger dependencies during an isolated public
+  application restore without importing private copied-request authority. Limit
+  the compatibility fence to a fresh locked owned target and its actual owner;
+  deny runtime use, reject preexisting schema state, retain all public triggers
+  and report the adapter explicitly. Verify originals, quarantine and full
+  maintenance service behavior against an actual cold capture (FR-017, FR-021).
+
+- [ ] T241 Verify archived report renderer identity on the exact authenticated
+  recovery download without changing ordinary brand policy. Bind the original
+  artifact, revision, workspace, transaction and live admission; retain approval,
+  revocation, current assets/code, sources and per-chunk validation. Verify an
+  actual cold captured report and complete maintenance recovery before release
+  (FR-017, FR-021).
+
+- [ ] T242 Verify independent maintenance reads concurrently within each original
+  four-record lease, awaiting every retirement on success or failure. Retain all
+  access, source, byte and release checks, inventory coverage and the original
+  operation deadline; verify actual complete archived inventory (FR-017, FR-021).
+
+- [ ] T243 Avoid repeating a successfully verified recovery-probe retirement,
+  retaining fallback cleanup on every earlier failure, revoked HTTP denial and
+  final global closure checks. Verify the complete archived inventory within the
+  original deadline (FR-017, FR-021).
+
+- [ ] T244 Preserve canonical draft-sample download eligibility during owned
+  recovery while requiring brand approval for publication and denying revoked
+  brands. Verify normally rendered draft samples through authenticated HTTP
+  with both current and archived immutable renderer identities, publication
+  denial, byte integrity and probe retirement. Keep the encrypted archive
+  rejection test above the actual shared backup limit (FR-017, FR-021).
+
+- [ ] T245 Avoid per-object durable flushes for disposable per-lease canonical
+  runtime copies. Preserve awaited writes/closes, full source and destination
+  inventories/hashes, durable originals, all HTTP/access/retirement checks and
+  the original recovery deadline. Verify full cold maintenance recovery and
+  current source gates (FR-017, FR-021).
+
+- [ ] T246 Support OIDC-authenticated private Blob uploads with put-only signed
+  URLs bound to the current authenticated prepared capability. Preserve exact
+  path, size, content type, expiry, source generation, CSRF and actual-byte
+  completion checks. Verify both artifact and workforce uploads on the hosted
+  deployment without exporting a static store credential.
+
+- [ ] T247 Produce actual incident-to-ordinary-service RPO/RTO measurements after
+  the complete hosted owner verifier, explicit quarantine resolution and opening.
+  Bind immutable source incident and fresh target creation clocks, authenticate
+  the capture, verify ordinary roles, five SDK categories, native streams, health
+  and exact probe retirement, and retain partial/failed evidence (FR-008, FR-021).
+
+- [ ] T248 Confirm a delayed linked foundation approval through bounded reads of
+  its original receipt. Preserve the original 20-second command envelope and
+  never resubmit the approval, revive a provider attempt or enlarge a phase.
+
+- [ ] T249 Remove unsupported signed-upload option headers after the actual
+  WebKit preflight rejection. Preserve signed no-overwrite/path/size/type/expiry
+  constraints and verify actual browser upload, completion and original bytes.
+
+- [ ] T250 Confirm actual legacy runtime backend termination before the final
+  census. Preserve committed login denial, exact owner/control scope and bounded
+  failure; exercise a deliberately delayed exit in the owned PostgreSQL test.
+
+- [ ] T251 Retain the actual root UI checkpoint before external accounting and
+  bound temporary accounting-only re-reads of the same immutable generation.
+  Preserve model once-only dispatch, client-error/invalid-accounting failures,
+  exact charge guards and truthful partial/failed hosted status (FR-002, FR-021).
+
+- [ ] T252 Prevent killed quality startup readers from stranding the write mutex.
+  Use validated stable immutable journal snapshots only for read-only status,
+  source and authority; retain every writer lock, admission check, historic hold
+  and fail-closed interrupted-lock behavior. Verify killed-reader and concurrent
+  settlement regressions, complete model quality and hosted acceptance.
+
+- [x] T253 Prevent initial customer-context actions from opening before the
+  conversation history and attachment capabilities have loaded. Preserve the
+  research controls and server authorization; test a deliberately delayed
+  capability response and the original keyboard-cancellation journey in
+  headless WebKit without retries or longer timeouts (FR-013, FR-021).
+
+- [x] T254 Observe unexpected connection errors on checked-out transaction
+  clients. Reject the original operation, preserve its error when rollback also
+  fails, discard broken clients, and prevent callback replay or false commit
+  success. Exercise actual pg client error delivery between queries and during
+  commit; retain fresh full-catalog and hosted checks as release requirements.
+
+- [ ] T255 Persist exact native pre-admission `409 session_not_ready` rejections
+  under an explicit forward migration, with no accepted native identity or
+  provider claim. Preserve all other receipt restrictions and the no-retry
+  Learning contract; verify owned PostgreSQL constraints and fresh release gates.
+
+- [ ] T256 Verify Root streaming reload and Stop against an active provider response
+  and persisted text delta rather than terminal Gateway accounting. Preserve two
+  sends, actual cancellation, accounting, retirement and archive requirements;
+  retain request timing without buffering an unbounded response body.
+- [ ] T257 Verify expired evaluation uncertainty can be independently disposed
+  into its full permanent hold without renewing authority, changing source,
+  settling charges or adding allowance; coordinate compatible readers and require
+  a separate explicit continuation before fresh work.
+
+- [ ] T258 Restrict Turas native Sonnet5.5 requests to Anthropic through Gateway
+  using supported per-selection model options, preserving all existing model
+  admission, accounting, recovery and deadline guards. Verify generate/stream
+  transport mechanics and fresh funded Native quality without replaying failures.
+
+- [ ] T259 Keep all five owned native fixture installers compatible with the
+  routed model selection and explicit 128k context window. Preserve fake-provider
+  substitution and fail-closed metadata checks; verify production app clones can
+  typecheck with their generated root agent and complete fresh CI catalog coverage.
+
+- [ ] T260 Keep all four ordinary Native fixture preparations compatible with
+  routed model selection and explicit 128k context metadata. Exercise each actual
+  authored transformation and unknown-shape denial without provider calls; require
+  fresh CI acceptance for the affected original journeys.
+
+- [x] T261 Rewrite the README around product purpose, partner access, setup,
+  contribution, verification and operational guidance. Replace chronological
+  release detail with links to source-qualified validation records, preserve
+  deployment limitations and validate local documentation links and hygiene.

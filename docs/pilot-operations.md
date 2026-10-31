@@ -2,7 +2,7 @@
 
 016 is in implementation. None of this document establishes hosted readiness.
 The `08ef152` checkpoint passed its historical 640-case local catalog and
-43 CI jobs. Current integration targets schema 079 while Production remains
+43 CI jobs. That checkpoint targeted schema 079 while Production remains
 on released schema 077; fresh complete source-bound verification is in progress. The exact source and retained failed attempts
 are recorded in [validation](../specs/016-pilot-hardening/validation.md).
 Storage cutover, complete recovery/current-authority reconciliation and hosted
@@ -41,6 +41,17 @@ store, never an empty local directory.
 New managed backups require two actual scheduled captures twelve hours apart,
 maximum age 24 hours and seven-day expiry. Existing operator archives remain outside
 managed deletion. Current denial/replay authority must survive independently.
+
+## Current source schema compatibility
+
+The native pre-admission rejection correction requires migration 081 and exact
+schema 081 for current runtime readiness, hosted admission, maintenance and
+recovery targets. It records only a verified, undispatched `session_not_ready`
+409 as a rejected response; uncertain delivery keeps its accounting hold.
+Historical schema-080 denial snapshots and archive headers retain their original
+identity and named-content protections. Owned forward rehearsals can start at
+080 and must apply the complete current ledger before current-target checks.
+This source requirement does not assert that any hosted database has migrated.
 
 ## Current integrity verification command
 
@@ -159,7 +170,7 @@ The minimal public readiness response is `{ready: boolean}`, with 503 for failed
 
 ### Isolated physical restore and absent-authority fallback
 
-The current restore command is restricted to separately provisioned, owned loopback 016 databases on PostgreSQL 17 or 18. It does not restore Preview or Production and does not initialize the target, start processes, change aliases, or unlock. Set the explicit target owner/runtime environment through the owned runner; keep the selected checkout environment untouched. The target must already have schema 079 and be locked.
+The current restore command is restricted to separately provisioned, owned loopback 016 databases on PostgreSQL 17 or 18. It does not restore Preview or Production and does not initialize the target, start processes, change aliases, or unlock. Set the explicit target owner/runtime environment through the owned runner; keep the selected checkout environment untouched. The target must already have the current release schema (081) and be locked.
 
 Run `npm run pilot:recovery:check -- --restore-isolated --environment <source-marker> --ledger-digest <source-ledger-sha256> --manifest <private-manifest.json> --bundle <private-encrypted-bundle> --key-file <separately-controlled-key> --source-database <owned-source-database-name> --output <new-private-result-directory>`. Source and target markers/database names must differ. Recovery manifests and authenticated archive provenance bind `acceptedContentDigest`, covering every captured domain table and sequence except control/observational recovery tables. The ledger digest hashes the canonically ordered `SELECT name FROM turas_migrations ORDER BY name` rows. Recovery metadata digests canonicalize object property order; array order remains significant.
 
@@ -197,7 +208,42 @@ operator availability. Do not recreate or deploy an operator without a new user
 instruction. Retiring this project does not establish 016 recovery acceptance.
 
 
-During initial 016 preparation, the work account received a separate Neon Free resource, `turas-recovery-016`, previously connected only to the now-removed `turas-recovery-operator` project. The selected application project and `.env.local` are unchanged. Its explicitly installed schema is [neon-archive.sql](../infra/pilot/neon-archive.sql); application requests cannot install it. The current adapter bounds an encrypted archive to 64 MiB and total retained ciphertext to 400 MiB after the explicit owner migration [neon-archive-002-capacity.sql](../infra/pilot/neon-archive-002-capacity.sql). It rejects capacity exhaustion and never upgrades the plan automatically. This bounded destination is not a verified complete Production backup or a guarantee against a provider or regional failure.
+During initial 016 preparation, the work account received a separate Neon Free resource, `turas-recovery-016`, previously connected only to the now-removed `turas-recovery-operator` project. The selected application project and `.env.local` are unchanged. Its explicitly installed schema is [neon-archive.sql](../infra/pilot/neon-archive.sql); application requests cannot install it. The original v1 capacity policy bounds an encrypted archive to 64 MiB and total retained ciphertext to 400 MiB after the explicit owner migration [neon-archive-002-capacity.sql](../infra/pilot/neon-archive-002-capacity.sql). It rejects capacity exhaustion and never upgrades the plan automatically. This bounded destination is not a verified complete Production backup or a guarantee against a provider or regional failure.
+
+The explicit `pilot-work-backup-config-v2` follow-up supports larger complete
+inventories. Its resource digest includes a 320 MiB single-capture ceiling and
+640 metadata requests, even for a small payload. It allows at most 192 MiB of
+objects, retaining the 10 MiB per-object, 256-object and 1,280-read limits. The
+database dump keeps its independent 64 MiB limit. Legacy v1 configurations and
+resource digests keep their previous limits. Raising only an application limit
+is insufficient: the archive owner must explicitly apply
+[neon-archive-003-complete-captures.sql](../infra/pilot/neon-archive-003-complete-captures.sql)
+to raise chunk limits and retained capacity to 6 GiB. This is a logical storage
+ceiling, not a provider-plan change or a claim of observed seven-day cadence.
+Actual prior retained bytes, future captures, storage, compute and transfer must
+fit a separately selected finite resource allowance before activation.
+
+Capture packs owned temporary files directly into encryption, deleting each
+temporary source only after its hash and written ciphertext have been checked.
+Authoritative database and object-store originals remain intact. Verification
+streams the GCM-authenticated archive and checks every header and entry digest
+without a plaintext archive or extraction tree. For v2, the original candidate
+object carries in-process authority to discard only its own temporary ciphertext
+after destination verification; cold verification then downloads through a fresh
+connection into a separate file. Full service restore still requires an actual
+isolated database and extracted originals.
+
+A failed scheduled slot remains spent and failed. An operator can configure
+`TURAS_WORK_BACKUP_MANUAL_REVIEW` and supply its exact ID in the authenticated
+`x-turas-reviewed-capture` header for one separately reviewed manual operation.
+The review must bind the exact full-estimate reconciliation of the previous
+failure, current configuration and resource scope, current budget IDs and source
+tuple. It expires within an hour and must leave five minutes for execution.
+The manual ID cannot be reused by changing its budget, expiry or environment.
+Normal successful-backup cadence still applies. The response explicitly records
+manual execution and never declares the original scheduled slot successful.
+There is no automatic retry, refund or budget reset. Failure logs contain only
+fixed stage, code and reason classifications, with no raw error message or stack.
 
 `npm run pilot:backup -- --copy-neon-candidate --environment <owned-marker> --candidate <private-candidate.json> --bundle <private-encrypted-bundle> --key-file <separate-private-key> --destination <private-operator-config.json> --output <new-private-evidence-directory>` accepts only the existing owned synthetic candidate contract. The strict private destination configuration binds the work team, separate operator/source project IDs, exact resource/name, Neon project, schema installation UUID, capacity and explicit `verify-full` database connection. Keep its credentials in protected operator configuration. Before and after copying, the command verifies actual platform/project/resource/credential bindings and the exact declared plan. The original v1 descriptor remains Free-only. A strict v2 descriptor explicitly binds either `free_v3` or `launch_v3`; this describes identity, not pricing or spending authority. Current inspection found the retained resource already on Launch. The recreated dedicated operator is linked and connected to that resource, but has not been deployed or scheduled. No billing plan was changed. Finite spending authority and actual usage accounting remain separate requirements. It authenticates the candidate using the separately supplied key, preserves immutable chunk identity, verifies the complete ciphertext through a fresh connection and leaves restoration readiness false. It cannot capture or qualify Production recovery.
 
@@ -308,7 +354,7 @@ For a disposable owned schema-079 target already locked at an exact recovery UUI
 
 The command disables LOGIN on the legacy permission role, terminates its backends, and creates a separately bound replacement login inheriting the existing restricted grants. Exact repeats preserve the same credential; conflicts never rotate or adopt an existing role. It does not edit hosted environments, unlock recovery, or authorize a Production cutover. The actual owned command and five-case catalog passed. Hosted credential retirement and old-deployment HTTP denial must still be proven before pilot memberships are enabled.
 
-For an explicitly selected work target, use `npm run pilot:recovery:authority -- --retire-work-runtime --source <private-source.json> --input <private-input.json> --output <new-private-directory>`. Both source and protected input must bind the same project, environment and target. The source must be schema079 and the actual owner control must already be locked at the specified recovery UUID/revision. Legacy inputs without `target` remain Production-only; Preview requires explicit `target: "preview"` in both documents. Platform binding is checked before database retirement. The separate replacement password stays in protected input and database protocol. This command neither updates hosted settings nor opens service or certifies managed Workflow closure.
+For an explicitly selected work target, use `npm run pilot:recovery:authority -- --retire-work-runtime --source <private-source.json> --input <private-input.json> --output <new-private-directory>`. Both source and protected input must bind the same project, environment and target. The source must be schema081 and the actual owner control must already be locked at the specified recovery UUID/revision. Legacy inputs without `target` remain Production-only; Preview requires explicit `target: "preview"` in both documents. Platform binding is checked before database retirement. The separate replacement password stays in protected input and database protocol. This command neither updates hosted settings nor opens service or certifies managed Workflow closure.
 
 ### Read-only managed Workflow identity inspection
 
@@ -316,7 +362,7 @@ For an explicitly selected work target, use `npm run pilot:recovery:authority --
 npm run pilot:recovery:authority -- --inspect-managed-workflow --source <private-source-config.json> --team <work-team-id> --auth-file <protected-vercel-cli-auth.json> --output <new-private-evidence-directory>
 ```
 
-The explicit source contract selects Preview schema 038, 055, 057, 077 or 079, or Production schema 055, 057, 077 or 079, with verified unpooled TLS transport. Inspection is read-only at every supported schema; the separate managed inventory closure command requires schema 079 and its own finite closure authority. The command checks actual database owner/marker/schema and current work-project binding, reads only conversation/attempt identity and lifecycle metadata, and verifies each exact bound native ID through the managed Workflow provider. It repeats the application inventory after the provider reads and verifies the unchanged source and protected checkout. Provider bodies, model inputs/outputs, customer labels and credentials never enter the receipt. Missing provider runs remain explicitly unavailable; invalid or over-bound inventories fail. It creates no native run, model call, provider write, membership, retry, authority grant or unlock. Its private receipt is an inventory, not a verified recovery checkpoint.
+The explicit source contract selects Preview schema 038, 055, 057, 077 or 079, or Production schema 055, 057, 077 or 079, with verified unpooled TLS transport. Inspection is read-only at every supported schema; the separate managed inventory closure command requires schema 081 and its own finite closure authority. The command checks actual database owner/marker/schema and current work-project binding, reads only conversation/attempt identity and lifecycle metadata, and verifies each exact bound native ID through the managed Workflow provider. It repeats the application inventory after the provider reads and verifies the unchanged source and protected checkout. Provider bodies, model inputs/outputs, customer labels and credentials never enter the receipt. Missing provider runs remain explicitly unavailable; invalid or over-bound inventories fail. It creates no native run, model call, provider write, membership, retry, authority grant or unlock. Its private receipt is an inventory, not a verified recovery checkpoint.
 
 The installed eve [execution model](../node_modules/eve/docs/concepts/execution-model-and-durability.mdx) supports a settled deployment handoff that preserves the original session ID and stream. It does not move live turns, pending input/authorization, queued messages or active tasks/subagents. Target checkpoint validation can fail and leave the original deployment executing the delivery. Recovery therefore requires independently current source/authority checks, actual settled-work and checkpoint validation, original-stream/deployment availability, and exact provider/paid/send reconciliation before relying on handoff. A provider run marked `running` alone proves none of these conditions. Do not rerun the initial agent workflow as a substitute for a recovered conversation.
 
@@ -334,7 +380,7 @@ Within the owning 016 disposable PostgreSQL runner, use:
 npm run pilot:recovery:check -- --restore-work-isolated --environment <captured-environment> --candidate <private-candidate.json> --bundle <private-candidate.encrypted> --key-file <separate-private-key> --output <new-private-output>
 ```
 
-The target must be a fresh, locked schema-079 PostgreSQL 18 database in its own
+The target must be a fresh, locked schema-081 PostgreSQL 18 database in its own
 disposable cluster. The command authenticates the complete archive before SQL
 restoration, restores the public application schema without copied grants, checks
 the exact migration ledger and accepted-content digest, and restores all six
@@ -434,7 +480,7 @@ The provider paths and methods follow [Vercel Workflow's run adapter](https://gi
 
 `pilot:recovery:authority -- --audit-work-request-fences` reads the current encrypted
 work-archive snapshot through the independent destination and cold key, then checks
-an exact locked schema-079 owner target. Supply `--environment`, `--recovery-id`,
+an exact locked schema-081 owner target. Supply `--environment`, `--recovery-id`,
 `--expected-revision`, `--denials` (the retained snapshot receipt), `--destination`
 (the protected archive configuration), `--backup-captured-at` and a new private
 `--output` directory. It accepts no raw-snapshot healthy flag or supplied context
@@ -470,7 +516,7 @@ npm run pilot:recovery:authority -- --reconcile-owned-work-denials \
 The command rejects hosted/unowned connections and checks actual owner, marker,
 schema and locked revision before contacting the independent archive. It retrieves
 and authenticates current encrypted bytes and their independently retained key,
-requires the complete schema-079 v7 inventory, applies credential/grant/source/
+requires the complete schema-081 v7 inventory, applies credential/grant/source/
 publication denials and permanent request fences, then audits actual database
 functions, indexes, triggers and immutable protections. Proof older than the backup
 or five minutes, unavailable bytes and incomplete inventories cannot authorize
@@ -718,7 +764,7 @@ Both files require a direct private directory and mode 0600. Never put the
 password in CLI arguments, receipts or commits.
 
 The command accepts only the exact selected owned local cluster and a locked
-schema-079 target. It checks the actual configured credential and live admin
+schema-081 target. It checks the actual configured credential and live admin
 membership, creates a short-lived transaction-local session, performs canonical
 reads and revokes the session before committing. Callback SQL failures roll back
 the read savepoint and retire the session; command failures roll back the whole
@@ -877,7 +923,7 @@ cookies, passwords or bypass credentials in CLI arguments or receipts.
 
 Before sending that cookie, the command verifies the deployment and alias through
 the platform API. The authenticated operations status must then identify the same
-committed source, locked schema-079 environment/recovery/revision and database
+committed source, locked schema-081 environment/recovery/revision and database
 endpoint as the owner connection. A fresh endpoint digest excludes passwords and
 role names; the observation must separately show a direct runtime login, rather
 than an owner connection using SET ROLE. The complete-inventory command repeats
@@ -1628,3 +1674,155 @@ database state, fresh verification row, authenticated archive and current
 destination bytes. A changed mapping or stale existing result fails; it cannot
 fall through to new probes. Keep the existing explicit fresh-attempt, current
 denial, service, provider inventory and owner-unlock requirements.
+
+For an authenticated Preview work capture, the disposable restore can retain
+public `preview_clone_copied_request` triggers whose function lives in the private
+clone schema. The fresh, locked owned target installs only an owner-only bootstrap
+compatibility function for that exact dependency. Runtime LOGIN and CONNECT stay
+closed; the schema and function grant no runtime access. The original private
+fingerprint ledger and copied-request authority are not restored. The receipt
+records `previewCloneBootstrap` and explicitly distinguishes this adapter from
+source policy restoration. Required-original verification, quarantine and actual
+maintenance HTTP checks still apply; the adapter does not authorize promotion.
+
+Complete work restoration explicitly uses the bounded 192 MiB object allowance
+through object copying, required-original and integrity inventories, and canonical
+maintenance-store materialization. Generic owned object restore and materialization
+retain their 24 MiB default unless an explicit bounded allowance is supplied.
+Object count, individual file limits, exact bytes and digests remain enforced.
+Maintenance service descriptors share the existing 1,024-row aggregate ledger
+inventory bound. Profiles, plans and file records count together; the verifier
+must consume every descriptor. Four-record runtime leases and the original
+15-minute full recovery deadline remain unchanged.
+
+### Archived report brands during recovery
+
+The report recovery endpoint binds the live authenticated admission to its exact
+transaction, workspace, report, revision, brand and artifact. Previously rendered
+bytes may retain their archived immutable renderer reference: its digest must
+match the artifact renderer digest, the archived manifest must authenticate
+itself, and replacing only the current image reference must reproduce that
+manifest. Current assets, renderer code, fonts, templates, source eligibility
+and per-chunk checks still apply. Canonical approval policy is preserved: a
+validated unpublished sample may be downloaded with its draft brand when the
+caller does not require approval. That read grants no brand approval or
+publication authority. Publication requires an approved brand, and a revoked
+brand is always denied. This does not equate a
+hosted OCI manifest digest with a local Docker image ID, run a renderer, approve
+a new brand, or change ordinary report generation/publication/download policy.
+
+Each four-record maintenance batch runs its independent reads concurrently on
+separate owner connections and admissions. The batch waits for all read results
+and their retirement before releasing the original runtime lease, even after a
+failure. Any failed read fails the batch. The four-record limit, 60-second lease,
+complete inventory coverage and original 15-minute operation deadline remain.
+
+A successful per-record retirement verifies the admission and login session are
+revoked before the required HTTP denial check. Cleanup does not repeat that
+already verified retirement. Any earlier failure still invokes retirement in
+`finally`; the final global runtime/backend/admission closure check is unchanged.
+
+Disposable canonical runtime copies await every write and close before full
+source/destination inventory and SHA verification. They do not flush every
+temporary file to durable storage: each lease removes those copies, and the
+durable restored originals remain the source for the next lease. This changes
+no byte, admission, source, runtime retirement or recovery deadline check.
+
+### Incident-to-ordinary-service measurement
+
+`pilot:recovery:authority -- --verify-service-recovery --configuration <private-json>`
+is separate from physical restore and locked maintenance verification. Run it
+only after `--verify-work-recovery` v4 has actually completed, quarantines have
+been explicitly resolved, and the canonical owner control command has opened
+the exact verified recovery. It does not perform those transitions or authorize
+paid delivery. Existing physical/maintenance receipts remain partial.
+
+Declare the controlled incident with an explicit original-source `open` to
+`quiescing` control operation **before creating or restoring the recovery target**.
+Keep its operation UUID. The producer reads that row's database timestamp and
+requires it to be the first such source transition after the authenticated
+capture. Replaying the command or selecting a later transition cannot reset RTO.
+The old source must remain closed, with its measured HTTP, Workflow and Sandbox
+fences intact.
+
+Create the isolated Neon branch with the exact name
+`pilot-recovery-<targetAttemptId>`, where `targetAttemptId` is a fresh operator UUID.
+The producer reads the real branch and endpoint through the Neon API, checks the
+endpoint against the actual target connection, and requires branch creation
+after the original incident. An already-restored/pre-existing target cannot
+exclude restore/provisioning time from the result. `NEON_API_KEY` is supplied
+privately to the CLI process; never put it in this configuration or command line.
+
+Private configuration shape:
+
+```json
+{
+  "contract": "pilot-work-service-recovery-input-v1",
+  "verificationConfigurationFile": "/private/v4-verification-input.json",
+  "verificationId": "<actual-complete-verification-uuid>",
+  "incidentOperationId": "<original-source-quiescing-operation-uuid>",
+  "targetAttemptId": "<fresh-target-attempt-uuid>",
+  "openOperationId": "<actual-owner-open-operation-uuid>",
+  "configurationFile": "/private/expected-restored-hosted-configuration.json",
+  "serviceCustomerId": "<linked-assigned-synthetic-customer-uuid>",
+  "deniedCustomerId": "<different-synthetic-customer-uuid>",
+  "nativeReferences": [
+    {"kind": "artifact", "id": "<captured-artifact-version-uuid>"},
+    {"kind": "workforce", "id": "<captured-import-uuid>", "sourceVersionId": "<captured-source-version-uuid>"},
+    {"kind": "report", "id": "<captured-report-artifact-uuid>"}
+  ],
+  "targetNeon": {"projectId": "<actual-project-id>", "branchId": "<actual-branch-id>", "endpointId": "<actual-endpoint-id>"},
+  "output": "/private/new-service-measurement-directory"
+}
+```
+
+The v4 input supplies the original denial source, restored owner/runtime and
+credentials files, authenticated candidate/bundle/key, exact deployment and
+restored physical-store mapping. The expected configuration must equal that
+mapping. Complete all infrastructure/backup/image/worker health prerequisites
+before measuring. After opening, do not create unrelated sessions, SDK credentials
+or domain work before this command: its initial state must still match the
+complete owner's committed verification. Never give a normal Production role a
+short test `VALID UNTIL`; an isolated rehearsal's finite role must remain valid
+through its actual final measurement.
+
+The command performs three ordinary role checks and actual read-only SDK journeys
+covering all five categories, current citations and revocation. It streams one
+captured original from each artifact/workforce/report class and compares actual
+bytes against both current database rows and the authenticated archive. The
+normal operations endpoint must report healthy, open service, no quarantined
+required scope and the exact runtime/database/deployment binding. New probe
+sessions/connections are revoked through the normal paths. Existing credentials,
+domain state, schema and grants must remain unchanged; only those exact new
+probes, their audits and operational read counters are excluded from comparison.
+
+Cancellation or ordinary-request exhaustion reserves a separate finite cleanup
+allowance for exact observed credentials. A failed command may use deny-only
+owner cleanup for its actual new cookies and original SDK create receipts. It
+does not guess a session after a lost login acknowledgment. Such uncertainty and
+unconfirmed creates remain in `failure.json`; all acceptance flags stay false.
+Fence and reconcile the failed isolated target. A fresh explicitly admitted
+rehearsal uses another target attempt UUID while retaining the **same original
+incident timestamp** and every earlier failure/cost hold. No automatic retry,
+opening, clock reset or replay of an original paid/send operation occurs.
+
+`service-recovery.json` obtains its finish timestamp from the target database
+after all actual probes retire and final owner checks pass. RPO is the conservative
+capture-watermark-to-incident bound (not a zero-loss assertion); RTO includes the
+original incident through verified ordinary service. The targets remain 24 hours
+and four hours respectively. A measured overrun records false target/readiness
+flags. A planned timestamp, physical-copy duration, locked verification row or
+serialized healthy object cannot substitute for this live run.
+
+For signed browser uploads, do not send `x-add-random-suffix` or
+`x-allow-overwrite`: Blob's preflight allowlist rejects those headers. The signed
+URL already carries the immutable path and no-overwrite constraints. Verify
+actual WebKit cross-origin PUT, normal domain completion and byte integrity;
+a successful Node upload does not establish browser CORS compatibility.
+
+Runtime retirement commits the old role's `NOLOGIN` before terminating its
+backends. PostgreSQL's default termination acknowledgment proves only signal
+delivery. The operator requires confirmed exit with a three-second per-backend
+wait inside a ten-second statement bound, then checks role state and a fresh
+backend census. Failure preserves the committed login denial and locked recovery;
+it never reopens the old role or skips remaining verification.

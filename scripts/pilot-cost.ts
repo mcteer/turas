@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {Client,type PoolClient} from 'pg';
 import {z} from 'zod';
 import {resolve,dirname,basename} from 'node:path';
@@ -20,7 +21,7 @@ export async function recordPilotCost(db:Client|PoolClient,environmentId:string,
   await db.query("SET LOCAL transaction_timeout='15s'");await db.query("SET LOCAL lock_timeout='3000ms'");await db.query("SET LOCAL statement_timeout='5000ms'");
   const authority=(await db.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='operations_cost_budgets'::regclass")).rows[0];
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
-  if(!authority?.owner||marker.length!==1||marker[0].environment_id!==environmentId||marker[0].schema_version!==80)throw Error('Exact cost owner/schema/environment required');
+  if(!authority?.owner||marker.length!==1||marker[0].environment_id!==environmentId||marker[0].schema_version!==CURRENT_SCHEMA_VERSION)throw Error('Exact cost owner/schema/environment required');
   const budgetId=input.action==='provision'?input.budget.id:input.budgetId;
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16018))',[budgetId]);
   let replayed=false;

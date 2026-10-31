@@ -9,6 +9,7 @@ vi.mock('@vercel/blob',()=>{
  async del(key:string){expect(key.startsWith('e_')).toBe(true);mocked.objects.delete(key);},
  async list(options:{prefix:string;cursor?:string;limit:number}){const keys=[...mocked.objects.keys()].filter(k=>k.startsWith(options.prefix)&&(!options.cursor||k>options.cursor)).sort();return {blobs:keys.slice(0,options.limit).map(pathname=>({pathname,size:mocked.objects.get(pathname)!.length,uploadedAt:new Date()})),hasMore:keys.length>options.limit,cursor:keys[options.limit-1]};}};
 });
+import {privateUploadUrl,privateUploadHeaders} from '../../../lib/contracts/blob-upload';
 import {BlobPrivateObjects} from '../../../lib/server/storage/blob-objects';
 import type {PrivateObjects} from '../../../lib/server/storage/private-objects';
 import {LocalPrivateObjects} from '../../../lib/server/storage/local-objects';import {objectKey} from '../../../lib/server/storage/private-objects';
@@ -17,7 +18,7 @@ beforeEach(async()=>{root=await realpath(await mkdtemp(join(tmpdir(),'turas-priv
 it('writes immutable verified bytes',async()=>{for(const store of stores){expect(await store.put(key,source(),expected)).toEqual({key,...expected});expect(await store.stat(key)).toEqual({key,...expected});}});
 it('rejects incorrect size',async()=>{for(const store of stores){await expect(store.put(key,source(),{...expected,sizeBytes:expected.sizeBytes-1})).rejects.toThrow();expect(await store.stat(key)).toBeNull();}});
 it('rejects incorrect digest',async()=>{for(const store of stores){await expect(store.put(key,source(),{...expected,digest:'a'.repeat(64)})).rejects.toThrow();expect(await store.stat(key)).toBeNull();}});
-it('rejects opaque key traversal',async()=>{for(const store of stores){await expect(store.put('../private',source(),expected)).rejects.toThrow();await expect(store.stat(objectKey('foreign-environment','artifact',randomUUID()))).rejects.toThrow();}});
+it('rejects opaque key traversal',async()=>{const signed='https://vercel.com/api/blob/?pathname='+encodeURIComponent(key)+'&vercel-blob-signature=synthetic';expect(privateUploadUrl(signed,key)).toBe(signed);for(const value of [signed.replace('https:','http:'),signed.replace('vercel.com','example.com'),signed.replace('/api/blob/','/other/'),signed+'&pathname=foreign',signed+'#fragment',signed.replace('https://','https://user:password@')])expect(()=>privateUploadUrl(value,key)).toThrow();expect(()=>privateUploadUrl(signed,key+'-foreign')).toThrow();for(const store of stores){await expect(store.put('../private',source(),expected)).rejects.toThrow();await expect(store.stat(objectKey('foreign-environment','artifact',randomUUID()))).rejects.toThrow();}});
 it('reconciles an identical immutable conflict',async()=>{for(const store of stores){expect(await Promise.all([store.put(key,source(),expected),store.put(key,source(),expected)])).toEqual([{key,...expected},{key,...expected}]);expect(await store.put(key,source(),expected)).toEqual({key,...expected});}});
 it('rejects different bytes at an existing key',async()=>{for(const store of stores){await store.put(key,source(),expected);const other=Buffer.from('Other synthetic bytes');await expect(store.put(key,source(other),{sizeBytes:other.length,digest:createHash('sha256').update(other).digest('hex')})).rejects.toThrow('Immutable');expect(await store.stat(key)).toEqual({key,...expected});}});
 it('streams private bytes without a public URL',async()=>{for(const store of stores){await store.put(key,source(),expected);const chunks=[];for await(const chunk of await store.stream(key,expected))chunks.push(chunk);expect(Buffer.concat(chunks)).toEqual(bytes);expect(Object.keys((await store.stat(key))!)).toEqual(['key','sizeBytes','digest']);await expect(store.stream(key,{...expected,digest:'b'.repeat(64)})).rejects.toThrow();}
@@ -37,3 +38,11 @@ it('streams private bytes without a public URL',async()=>{for(const store of sto
 });
 it('deletes only the exact scoped object',async()=>{for(const store of stores){const second=objectKey('test-contract','artifact',randomUUID());await store.put(key,source(),expected);await store.put(second,source(),expected);expect((await store.list('artifact',undefined,1)).cursor).toBeDefined();await store.delete(key);expect(await store.stat(key)).toBeNull();expect(await store.stat(second)).toEqual({key:second,...expected});await store.delete(key);}});
 it('propagates the caller capture deadline into a stalled Blob read',async()=>{mocked.stallReads=true;const deadline=AbortSignal.timeout(20);await expect(stores[1].stream(key,expected,deadline)).rejects.toThrow();expect(deadline.aborted).toBe(true);});
+it('keeps signed upload headers within the provider browser preflight contract',()=>{
+ // Actual /api/blob/ OPTIONS allowlist; Node uploads do not enforce CORS.
+ const allowed=new Set('authorization,content-type,x-api-version,x-mpu-action,x-mpu-key,x-mpu-upload-id,x-mpu-part-number,x-content-type,x-proxy-through-alternative-api,x-api-blob-request-id,x-api-blob-request-attempt,x-content-length,x-vercel-blob-access,x-vercel-blob-store-kind,x-vercel-blob-store-id,x-vercel-blob-team-id,x-if-match'.split(','));
+ expect(Object.keys(privateUploadHeaders).every(name=>allowed.has(name))).toBe(true);
+ expect(privateUploadHeaders['content-type']).toBe('application/octet-stream');
+ expect(privateUploadHeaders['x-content-type']).toBe('application/octet-stream');
+ expect(privateUploadHeaders['x-vercel-blob-access']).toBe('private');
+});

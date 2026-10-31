@@ -1,4 +1,5 @@
 import type {Client} from 'pg';
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {z} from 'zod';
 import {hostedLearningBindingSchema,type HostedLearningBinding} from '../lib/contracts/pilot-hosted-learning';
 import {assertLearningPrice,learningStepCeiling} from '../lib/server/learning/pricing';
@@ -33,7 +34,7 @@ export async function admitHostedLearningDispatch(input:{db:Client;ledger:Qualit
    JOIN customer_references customer ON customer.id=a.customer_id AND customer.workspace_id=w.id AND customer.synthetic
    JOIN turas_environment t ON t.environment_id=a.environment_id JOIN operations_control control ON control.environment_id=t.environment_id
    WHERE a.id=$1 FOR UPDATE OF a`,[arm.learningAttemptId])).rows[0];
-  if(!row||row.owner!==true||row.schema_version!==80||row.mode!=='open'||row.environment_id!==binding.environmentMarker
+  if(!row||row.owner!==true||row.schema_version!==CURRENT_SCHEMA_VERSION||row.mode!=='open'||row.environment_id!==binding.environmentMarker
    ||row.workspace_id!==binding.workspaceId||row.pilot_environment_id!==binding.environmentMarker||row.classification!=='synthetic_pilot'
    ||!row.workspace_active||!row.principal_active||!row.membership_active||row.owner_principal_id!==binding.ownerPrincipalId
    ||row.login_name!=='mcteer'||row.kind!=='internal'||row.role!=='admin'||row.actor_membership_id!==arm.actorMembershipId

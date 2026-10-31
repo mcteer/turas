@@ -1,3 +1,5 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
+import {WORK_BACKUP_LIMITS} from './work-backup-limits';
 import {Client,type PoolClient} from 'pg';
 import {verifyRecoveryCandidate} from './candidate-verification';
 import {readFile,lstat,realpath} from 'node:fs/promises';
@@ -20,7 +22,7 @@ async function ownerTarget(db:Client|PoolClient,scope:z.infer<typeof scopeSchema
   current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner,
   encode(sha256(convert_to((pg_control_system()).system_identifier::text,'UTF8')),'hex') AS server_identity,current_user AS role,e.environment_id,e.schema_version,c.mode,c.revision,c.recovery_id
   FROM turas_environment e JOIN operations_control c USING(environment_id)`)).rows;
- if(row.length!==1||row[0].owner!==true||row[0].role!==decodeURIComponent(selected.username)||row[0].name!==decodeURIComponent(selected.pathname.slice(1))||row[0].environment_id!==scope.environmentId||Number(row[0].schema_version)!==80||row[0].mode!=='locked'||Number(row[0].revision)!==scope.controlRevision||row[0].recovery_id!==scope.recoveryId)throw Error('Exact locked owned integrity target required');
+ if(row.length!==1||row[0].owner!==true||row[0].role!==decodeURIComponent(selected.username)||row[0].name!==decodeURIComponent(selected.pathname.slice(1))||row[0].environment_id!==scope.environmentId||Number(row[0].schema_version)!==CURRENT_SCHEMA_VERSION||row[0].mode!=='locked'||Number(row[0].revision)!==scope.controlRevision||row[0].recovery_id!==scope.recoveryId)throw Error('Exact locked owned integrity target required');
  const selectedDb=new Client({connectionString:selected.toString(),connectionTimeoutMillis:5000,statement_timeout:5000});
  try{await selectedDb.connect();const actual=(await selectedDb.query("SELECT current_database() AS name,encode(sha256(convert_to((pg_control_system()).system_identifier::text,'UTF8')),'hex') AS server_identity")).rows[0];if(actual.name!==row[0].name||actual.server_identity!==row[0].server_identity)throw Error('Selected owned integrity endpoint differs');}finally{await selectedDb.end();}
  return {databaseName:String(row[0].name),serverAddress:String(row[0].address),serverPort:Number(row[0].port),serverIdentity:String(row[0].server_identity)};
@@ -56,7 +58,7 @@ export async function measureRestoredWorkIntegrity(db:Client|PoolClient,input:{c
   const installed=JSON.parse(await readFile(resolve('migrations/manifest.json'),'utf8')).migrations.map((row:{file:string})=>({name:row.file.replace(/\.cjs$/,'')})).sort((a:{name:string},b:{name:string})=>a.name.localeCompare(b.name));
   if(JSON.stringify(ledger)!==JSON.stringify(installed)||recoveryDigest(ledger)!==candidate.ledgerDigest)throw Error('Restored integrity migration ledger differs');
   if(await recoveryContentDigest(db)!==candidate.acceptedContentDigest)throw Error('Restored integrity accepted content differs');
-  const inventory=await verifiedObjectInventory(new LocalPrivateObjects(input.storeRoot,scope.environmentId,10485760),scope.environmentId,activeObjectNamespaces,input.signal,{maximumObjects:256,maximumBytes:24*1024*1024});
+  const inventory=await verifiedObjectInventory(new LocalPrivateObjects(input.storeRoot,scope.environmentId,10485760),scope.environmentId,activeObjectNamespaces,input.signal,{maximumObjects:256,maximumBytes:WORK_BACKUP_LIMITS.objectBytes});
   if(inventory.digest!==candidate.objects.inventoryDigest||inventory.objects.length!==candidate.objects.objectCount)throw Error('Restored integrity object inventory differs');
   const proof:RestoredWorkIntegrity=Object.freeze({contract:'pilot-restored-work-integrity-v1',...scope,candidateId:candidate.id,encryptedBundleDigest:candidate.encryptedBundle.digest,headerDigest:candidate.encryptedBundle.headerDigest,ledgerDigest:candidate.ledgerDigest,acceptedContentDigest:candidate.acceptedContentDigest,objectsDigest:inventory.digest,objectCount:inventory.objects.length,sourceGrantsDigest:candidate.runtimeGrantsDigest,closedTargetGrantsDigest:await recoveryGrantCheckpoint(db),measuredStateDigest,measuredAt:new Date().toISOString(),restorationReady:false});
   input.signal.throwIfAborted();await db.query('COMMIT');measured.set(proof,target);return proof;
@@ -69,7 +71,7 @@ export async function requireMeasuredWorkIntegrity(db:Client|PoolClient,proof:Re
  await db.query('SAVEPOINT measured_work_integrity');await db.query('RELEASE SAVEPOINT measured_work_integrity');
  await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
  if(JSON.stringify({...await ownerTarget(db,scopeSchema.parse(scope)),storeIdentity:await storeIdentity(storeRoot)})!==JSON.stringify(target))throw Error('Measured work integrity target changed');
- const inventory=await verifiedObjectInventory(new LocalPrivateObjects(storeRoot,scope.environmentId,10485760),scope.environmentId,activeObjectNamespaces,signal,{maximumObjects:256,maximumBytes:24*1024*1024});
+ const inventory=await verifiedObjectInventory(new LocalPrivateObjects(storeRoot,scope.environmentId,10485760),scope.environmentId,activeObjectNamespaces,signal,{maximumObjects:256,maximumBytes:WORK_BACKUP_LIMITS.objectBytes});
  if(inventory.digest!==proof.objectsDigest||inventory.objects.length!==proof.objectCount)throw Error('Measured work integrity object inventory differs');
  return proof;
 }

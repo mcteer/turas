@@ -4,10 +4,41 @@ import {Client} from 'pg';
 import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {withHostedRootBudgetFixture as fixture} from '../../fixtures/pilot/hosted-root';
 import {wrapHostedRootBudget,reserveHostedRoot,settleHostedRoot} from '../../../lib/server/conversations/hosted-root-budget';
-import {reconcileHostedRootGeneration,lookupPilotGatewayGeneration} from '../../../scripts/pilot-hosted-root-reconcile';
+import {reconcileHostedRootGeneration,lookupPilotGatewayGeneration,fetchPilotGatewayGeneration} from '../../../scripts/pilot-hosted-root-reconcile';
 import type {PilotHostedScope} from '../../../lib/contracts/pilot-hosted';
 const provider=vi.hoisted(()=>({response:undefined as unknown,calls:0}));
 vi.mock('ai',async original=>({...await original<typeof import('ai')>(),createGateway:()=>({getGenerationInfo:async()=>{provider.calls++;return provider.response;}})}));
+
+it('bounds accounting-only rereads of one immutable generation and stops on invalid scope cancellation or client errors',async()=>{
+ vi.useFakeTimers();
+ const request=new Request('https://ai-gateway.vercel.sh/v1/generation?id=gen_synthetic');
+ try{
+  const waits:number[]=[],paced=async(ms:number,signal:AbortSignal)=>{signal.throwIfAborted();waits.push(ms);};
+  let extra=0;const seen:Request[]=[],transport=vi.fn(async(r:Request)=>{seen.push(r);return new Response('{}',{status:seen.length<10?404:200});});
+  const result=fetchPilotGatewayGeneration(request,new AbortController().signal,transport as never,()=>{extra++;},paced);
+  await vi.runAllTimersAsync();expect((await result).status).toBe(200);expect(extra).toBe(9);expect(seen).toHaveLength(10);expect(waits).toEqual(Array(9).fill(2000));expect(waits.reduce((a,b)=>a+b,0)).toBe(18000);
+  expect(seen.every(r=>r.method==='GET'&&r.url===request.url)).toBe(true);
+  for(const status of [400,401,403,422]){
+   const once=vi.fn(async()=>new Response('{}',{status}));expect((await fetchPilotGatewayGeneration(request,new AbortController().signal,once as never)).status).toBe(status);expect(once).toHaveBeenCalledTimes(1);
+  }
+  const unavailable=vi.fn(async()=>new Response('{}',{status:503}));const exhausted=fetchPilotGatewayGeneration(request,new AbortController().signal,unavailable as never,()=>{},paced);await vi.runAllTimersAsync();expect((await exhausted).status).toBe(503);expect(unavailable).toHaveBeenCalledTimes(10);
+  const denied=vi.fn();await expect(fetchPilotGatewayGeneration(new Request(request.url,{method:'POST'}),new AbortController().signal,denied as never)).rejects.toThrow('Fixed generation');expect(denied).not.toHaveBeenCalled();
+  const abort=new AbortController();abort.abort();await expect(fetchPilotGatewayGeneration(request,abort.signal,denied as never)).rejects.toThrow();expect(denied).not.toHaveBeenCalled();
+  for(const name of ['TypeError','TimeoutError']){
+   let calls=0;const network=vi.fn(async()=>{if(!calls++){const error=new Error('Synthetic connection failure');error.name=name;throw error;}return new Response('{}');});
+   const recovered=fetchPilotGatewayGeneration(request,new AbortController().signal,network as never,()=>{},paced);await vi.runAllTimersAsync();expect((await recovered).status).toBe(200);expect(network).toHaveBeenCalledTimes(2);
+  }
+  const duringWait=new AbortController(),temporary=vi.fn(async()=>new Response('{}',{status:429}));
+  const waiting=fetchPilotGatewayGeneration(request,duringWait.signal,temporary as never);const waitRejected=expect(waiting).rejects.toThrow();await Promise.resolve();duringWait.abort();await waitRejected;expect(temporary).toHaveBeenCalledTimes(1);
+  const duringBody=new AbortController();let cancelled=false;
+  const body=new ReadableStream({start(controller){controller.enqueue(new Uint8Array([1]));},cancel(){cancelled=true;}});
+  const reading=fetchPilotGatewayGeneration(request,duringBody.signal,(async()=>new Response(body)) as never);const readRejected=expect(reading).rejects.toThrow();await Promise.resolve();duringBody.abort();await readRejected;expect(cancelled).toBe(true);
+  const oversized=vi.fn(async()=>new Response(new Uint8Array(1048577)));
+  await expect(fetchPilotGatewayGeneration(request,new AbortController().signal,oversized as never)).rejects.toThrow('exceeds bound');expect(oversized).toHaveBeenCalledTimes(1);
+  const malformed=vi.fn(async()=>new Response('invalid accounting'));
+  expect(await (await fetchPilotGatewayGeneration(request,new AbortController().signal,malformed as never)).text()).toBe('invalid accounting');expect(malformed).toHaveBeenCalledTimes(1);
+ }finally{vi.useRealTimers();}
+});
 
 async function accounting(f:Parameters<Parameters<typeof fixture>[0]>[0],identity=true){
  provider.calls=0;process.env.AI_GATEWAY_API_KEY='synthetic-no-provider-credential';

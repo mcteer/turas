@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {authenticateMcpCredential} from '../mcp/credentials';
 import {lockWorkspaceActor} from '../profiles/policy';
 import {authenticateRecoveryHttpRead,type RecoveryHttpRead} from './recovery-http-read';
@@ -35,7 +36,7 @@ async function withRecoveryParticipantCapability<T>(client:PoolClient,actor:Curr
   JOIN login_sessions s ON s.id=$4 AND s.principal_id=$5 AND s.membership_id=$6 AND s.workspace_id=$7
   JOIN memberships m ON m.id=s.membership_id AND m.principal_id=s.principal_id AND m.workspace_id=s.workspace_id
   JOIN principals p ON p.id=m.principal_id JOIN workspaces w ON w.id=m.workspace_id
-  WHERE c.environment_id=$1 AND c.mode='locked' AND c.recovery_id=$2 AND c.revision=$3 AND e.schema_version=80
+  WHERE c.environment_id=$1 AND c.mode='locked' AND c.recovery_id=$2 AND c.revision=$3 AND e.schema_version=${CURRENT_SCHEMA_VERSION}
    AND s.token_hash=$8 AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND m.active AND p.active AND w.active
    AND m.kind=$9 AND m.role=$10 AND p.login_name=$11
    AND (m.kind='internal' OR (m.kind='partner' AND EXISTS(SELECT 1 FROM partner_organizations o WHERE o.id=m.partner_org_id AND o.workspace_id=m.workspace_id AND o.active)))
@@ -53,7 +54,7 @@ export async function withAuthenticatedMcpRecoveryReadCapability<T>(client:PoolC
  await client.query('SAVEPOINT authenticated_mcp_recovery_probe; RELEASE SAVEPOINT authenticated_mcp_recovery_probe');
  await client.query('SELECT pg_advisory_xact_lock_shared(hashtextextended($1,16017))',[scope.environmentId]);
  const control=(await client.query(`SELECT c.environment_id FROM operations_control c JOIN turas_environment e ON e.environment_id=c.environment_id
- WHERE c.environment_id=$1 AND c.mode='locked' AND c.recovery_id=$2 AND c.revision=$3 AND e.schema_version=80
+ WHERE c.environment_id=$1 AND c.mode='locked' AND c.recovery_id=$2 AND c.revision=$3 AND e.schema_version=${CURRENT_SCHEMA_VERSION}
  AND current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) FOR SHARE OF c`,[scope.environmentId,scope.recoveryId,scope.controlRevision])).rows;
  if(control.length!==1)throw new HttpFailure(403,'forbidden','Exact locked MCP recovery owner required');
  const actor=await authenticateMcpCredential(client,authorization);
@@ -133,7 +134,7 @@ async function releaseIo(environmentId:string){
 
 /** Positive provider/cache work shares the capture fence for its entire lifetime.
  * Released schemas retain their original behavior; transitional/unknown schemas
- * cannot accidentally opt out of the schema080 operational contract. */
+ * cannot accidentally opt out of the current operational contract. */
 export async function withOperationalProviderIo<T>(run:()=>Promise<T>,signal?:AbortSignal):Promise<T>{
  signal?.throwIfAborted();
  const environmentId=getServerConfig().TURAS_ENVIRONMENT_ID;
@@ -141,7 +142,7 @@ export async function withOperationalProviderIo<T>(run:()=>Promise<T>,signal?:Ab
  if(rows.length!==1||rows[0].environment_id!==environmentId||!Number.isSafeInteger(Number(rows[0].schema_version))||Number(rows[0].schema_version)<1)throw new HttpFailure(503,'recovery_locked','Service temporarily unavailable');
  const version=Number(rows[0].schema_version);
  if(version<=77){signal?.throwIfAborted();return run();}
- if(version!==80||!await operationalAdmissionOpen())throw new HttpFailure(503,'recovery_locked','Service temporarily unavailable');
+ if(version!==CURRENT_SCHEMA_VERSION||!await operationalAdmissionOpen())throw new HttpFailure(503,'recovery_locked','Service temporarily unavailable');
  // Refuse closed service before waiting on an owner's exclusive decision lock.
  // The canonical IO fence still rechecks admission after acquiring its lock.
  return withOperationalIo(()=>{signal?.throwIfAborted();return run();});

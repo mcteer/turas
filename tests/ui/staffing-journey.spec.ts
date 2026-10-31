@@ -31,7 +31,7 @@ test("source-bound reviewed journey through keyboard demand, match, human confir
   const path = `/customers/${f.customerId}/engagements/${f.accepted.engagementId}/staffing`;
   await signIn(page, "panel"); await page.goto(path); await keyboard(page, "Create demand");
   const draft = page.locator("form").filter({ has: page.getByRole("heading", { name: "Create Demand", exact: true }) });
-  await draft.getByLabel("Work package", { exact: true }).selectOption(f.content.workPackages[0].key);
+  await draft.getByLabel("Work Package", { exact: true }).selectOption(f.content.workPackages[0].key);
   await draft.getByLabel("Demand title", { exact: true }).fill("Synthetic reviewed UI journey demand");
   await draft.getByLabel("Delivery role", { exact: true }).fill("Application delivery lead");
   await draft.getByLabel("First resource-local service date").fill(f.serviceDate);

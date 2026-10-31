@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { createHash, randomUUID } from "node:crypto";
+import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,6 +14,11 @@ type Images = {
 
 const repo = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const images = JSON.parse(readFileSync(resolve(repo, "infra/artifacts/images.json"), "utf8")) as Images;
+const parserImage = process.env.TURAS_PILOT_PARSER_IMAGE ?? images.parserImage;
+const scannerImage = process.env.TURAS_PILOT_SCANNER_IMAGE ?? images.scannerImage;
+for (const [selected, fallback] of [[parserImage, images.parserImage], [scannerImage, images.scannerImage]]) {
+  if (selected !== fallback && !/^sha256:[a-f0-9]{64}$/.test(selected)) throw new Error("Local artifact image selection must be immutable");
+}
 const rootValue = process.env.TURAS_ARTIFACT_STORE_ROOT;
 const environmentId = process.env.TURAS_ENVIRONMENT_ID;
 const requested = new Set(process.argv.slice(2));
@@ -49,9 +54,15 @@ function prepareSignatures(root: string): void {
   // FreshClam drops to UID 1000 even when the container starts as root. The
   // parent store is 0700; restore this child directory after preparation.
   chmodSync(signatures, 0o777);
+  const configPath = resolve(root, `freshclam-${randomUUID()}.conf`);
   try {
-    docker("run", "--rm", "--network", "bridge", "--user", "0:0", "--mount", `type=bind,src=${signatures},dst=/var/lib/clamav`, "--entrypoint", "freshclam", images.scannerBase, "--stdout");
-  } finally { chmodSync(signatures, 0o755); }
+    // The runtime protocol reads signed CVDs. Disable incremental CLD output
+    // using this pinned vendor image's configuration; retain its other settings.
+    const config = execFileSync("docker", ["run", "--rm", "--network", "none", "--entrypoint", "cat", images.scannerBase, "/etc/clamav/freshclam.conf"], { cwd: repo, encoding: "utf8", timeout: 30_000, maxBuffer: 1_048_576 });
+    if (!/^ScriptedUpdates\s+yes\s*$/m.test(config)) throw new Error("Expected pinned FreshClam update policy unavailable");
+    writeFileSync(configPath, config.replace(/^ScriptedUpdates\s+yes\s*$/m, "ScriptedUpdates no"), { mode: 0o644, flag: "wx" });
+    docker("run", "--rm", "--network", "bridge", "--user", "0:0", "--mount", `type=bind,src=${signatures},dst=/var/lib/clamav`, "--mount", `type=bind,src=${configPath},dst=/tmp/turas-freshclam.conf,readonly`, "--entrypoint", "freshclam", images.scannerBase, "--config-file=/tmp/turas-freshclam.conf", "--stdout");
+  } finally { rmSync(configPath, { force: true }); chmodSync(signatures, 0o755); }
   const files = readdirSync(signatures).filter((name) => /^(main|daily|bytecode)\.(cvd|cld)$/.test(name));
   if (!files.length) throw new Error("FreshClam did not prepare a signature snapshot");
   const oldest = Math.min(...files.map((name) => statSync(resolve(signatures, name)).mtimeMs));
@@ -82,14 +93,17 @@ if (requested.size && [...requested].some((flag) => !["--store", "--images", "--
 }
 const root = prepareStore();
 if (all || requested.has("--images")) {
-  docker("build", "--file", "infra/artifacts/parser.Dockerfile", "--tag", images.parserImage, ".");
-  docker("build", "--file", "infra/artifacts/scanner.Dockerfile", "--tag", images.scannerImage, ".");
-  const imageId = (name: string) => execFileSync("docker", ["image", "inspect", name, "--format", "{{.Id}}"],
-    { encoding: "utf8" }).trim().replace(/^sha256:/, "");
+  if (parserImage === images.parserImage) docker("build", "--file", "infra/artifacts/parser.Dockerfile", "--tag", parserImage, ".");
+  if (scannerImage === images.scannerImage) docker("build", "--file", "infra/artifacts/scanner.Dockerfile", "--tag", scannerImage, ".");
+  const imageId = (name: string) => {
+    const id = execFileSync("docker", ["image", "inspect", name, "--format", "{{.Id}}"], { encoding: "utf8" }).trim();
+    if (!/^sha256:[a-f0-9]{64}$/.test(id) || name.startsWith("sha256:") && name !== id) throw new Error("Selected artifact image differs");
+    return id.slice(7);
+  };
   writeFileSync(resolve(root, "runtime-images.json"), JSON.stringify({
-    contract: "artifact-intake-v1", parserImage: images.parserImage,
-    parserDigest: imageId(images.parserImage), scannerImage: images.scannerImage,
-    scannerDigest: imageId(images.scannerImage),
+    contract: "artifact-intake-v1", parserImage,
+    parserDigest: imageId(parserImage), scannerImage,
+    scannerDigest: imageId(scannerImage),
   }), { mode: 0o600 });
 }
 if (all || requested.has("--signatures")) prepareSignatures(root);

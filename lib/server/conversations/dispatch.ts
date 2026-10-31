@@ -256,7 +256,9 @@ export async function recordNativePreAdmissionRejection(
 ): Promise<void> {
   const receipt = await nativeResponse.clone().json() as unknown;
   if (nativeResponse.status !== 409 || typeof receipt !== "object" || receipt === null ||
-      !("code" in receipt) || receipt.code !== "session_not_ready") {
+      !("code" in receipt) || receipt.code !== "session_not_ready" ||
+      !("ok" in receipt) || receipt.ok !== false ||
+      "sessionId" in receipt || "deliveryId" in receipt) {
     throw new HttpFailure(503, "invalid_native_rejection", "Service unavailable");
   }
   await withTransaction(async (client) => {
@@ -265,7 +267,9 @@ export async function recordNativePreAdmissionRejection(
       response_state = 'failed', native_receipt = $2, native_response_status = 409,
       native_response_headers = '{}'::jsonb, last_error_code = 'session_not_ready',
       updated_at = now(), revision = revision + 1
-      WHERE id = $1 AND conversation_id = $3 AND dispatch_state = 'dispatching'`,
+      WHERE id = $1 AND conversation_id = $3 AND dispatch_state = 'dispatching'
+        AND native_receipt IS NULL AND native_delivery_id IS NULL
+        AND native_turn_id IS NULL AND input_event_id IS NULL`,
     [attemptId, JSON.stringify(receipt), conversationId]);
     if (!changed.rowCount) throw new HttpFailure(409, "dispatch_claimed", "Dispatch state changed");
     const governedFeature = await conversationFeature(client, conversationId);

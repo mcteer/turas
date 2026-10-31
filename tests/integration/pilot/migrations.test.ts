@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../../lib/contracts/current-schema';
 import { activateLearning } from "../../../scripts/learning-activate";
 import { assertPilotDatabaseEnvironment } from "../../../lib/server/db/readiness";
 import { afterAll, beforeAll, expect, it } from "vitest";
@@ -9,7 +10,7 @@ const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,t
 const runtime=new Client({connectionString:requireOwnedPilotDatabase()});
 beforeAll(async()=>{await owner.connect();await runtime.connect();});
 afterAll(async()=>{await runtime.end();await owner.end();});
-it("migrates the exact full ledger repeat-safely",async()=>{const result=await owner.query("SELECT schema_version FROM turas_environment");expect(result.rows[0].schema_version).toBe(80);expect((await owner.query("SELECT count(*)::int AS count FROM turas_migrations")).rows[0].count).toBe(80);});
+it("migrates the exact full ledger repeat-safely",async()=>{const result=await owner.query("SELECT schema_version FROM turas_environment");expect(result.rows[0].schema_version).toBe(CURRENT_SCHEMA_VERSION);expect((await owner.query("SELECT count(*)::int AS count FROM turas_migrations")).rows[0].count).toBe(CURRENT_SCHEMA_VERSION);});
 it("binds unambiguous primary legacy sessions",async()=>{const row=(await owner.query("SELECT membership_id,workspace_id,revoked_at FROM login_sessions WHERE token_hash=$1",["a".repeat(64)])).rows[0];expect(row).toMatchObject({membership_id:DEMO_IDS.mcteerMembership,workspace_id:DEMO_IDS.workspace,revoked_at:null});});
 it("revokes ambiguous legacy sessions",async()=>{const row=(await owner.query("SELECT membership_id,revoked_at FROM login_sessions WHERE token_hash=$1",["b".repeat(64)])).rows[0];expect(row.membership_id).toBeNull();expect(row.revoked_at).not.toBeNull();});
 it("rejects a session bound to another principal",async()=>{await expect(owner.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at,membership_id,workspace_id) VALUES($1,$2,$3,now()+interval '1 hour',$4,$5)",[randomUUID(),DEMO_IDS.panel,"c".repeat(64),DEMO_IDS.mcteerMembership,DEMO_IDS.workspace])).rejects.toMatchObject({code:"23503"});});

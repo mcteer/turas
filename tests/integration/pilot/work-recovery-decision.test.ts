@@ -1,3 +1,5 @@
+import {CURRENT_SCHEMA_VERSION} from '../../../lib/contracts/current-schema';
+import {WORK_BACKUP_LIMITS} from '../../../lib/server/operations/work-backup-limits';
 import {workMcpCaseFailureMetadata} from '../../../scripts/ci-process-diagnostics';
 import {observeWorkRecoveryStore,restoredWorkStoreDigest} from '../../../lib/server/operations/work-recovery-store-binding';
 import {execFile} from 'node:child_process';
@@ -67,7 +69,7 @@ async function fixture(run:(input:Parameters<typeof withLockedWorkRecoveryTarget
   state.connections.set(ownerUrl.href,selected);state.connections.set(runtimeUrl.href,actualRuntime.href);
   const root=await mkdtemp(resolve('local-artifacts/016/locked-work-target-'));
   try{
-   const sourceFile=join(root,'source.json');await writeFile(sourceFile,JSON.stringify({contract:'pilot-database-safety-source-v1',projectId:'prj_recovery',environmentId,target:hostedTarget,schemaVersion:80,connectionBinding:'platform-readable',databaseUrl:ownerUrl.href}),{mode:0o600});
+   const sourceFile=join(root,'source.json');await writeFile(sourceFile,JSON.stringify({contract:'pilot-database-safety-source-v1',projectId:'prj_recovery',environmentId,target:hostedTarget,schemaVersion:CURRENT_SCHEMA_VERSION,connectionBinding:'platform-readable',databaseUrl:ownerUrl.href}),{mode:0o600});
    await run({sourceFile,scope,runtimeConnection:runtimeUrl.href,signal:AbortSignal.timeout(150000),deadline:Date.now()+140000,hostedScope:{contract:'pilot-hosted-scope-v1',runId:randomUUID(),projectId:'prj_recovery',teamId:'team_recovery',deploymentId:'dpl_recovery',origin:'https://recovery.vercel.app',environmentMarker:environmentId,workspaceId:randomUUID(),target:hostedTarget,sourceCommit:state.commit,sourceDigest:state.digest,catalogDigest:state.catalog}});
   }finally{await rm(root,{recursive:true,force:true});state.connections.clear();state.platformChanged=false;state.sourceChanged=false;state.dirty=false;state.cleanupUnavailable=false;}
  },{deadlineMs:ownedDeadlineMs});
@@ -81,14 +83,19 @@ async function withSyntheticRestoredConfiguration<T>(config:ReturnType<typeof sy
  try{for(const [key,value]of Object.entries(values)){if(value===undefined)delete process.env[key];else process.env[key]=value;}return await run();}finally{for(const [key,value]of Object.entries(prior)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
 }
 let targetRuntimeTail=Promise.resolve();
-async function withTargetRuntime<T>(input:Parameters<typeof withLockedWorkRecoveryTarget>[0],target:Parameters<typeof requireLockedWorkRecoveryConnection>[1],run:()=>Promise<T>){
+let retainedTargetPoolBinding:string|undefined;
+async function withTargetRuntime<T>(input:Parameters<typeof withLockedWorkRecoveryTarget>[0],target:Parameters<typeof requireLockedWorkRecoveryConnection>[1],run:()=>Promise<T>,retainExactTargetPool=false){
  // The controlled in-process HTTP fixture shares process.env/runtimePool. Keep
  // its request scopes separate while genuine operator clients run concurrently.
  const previous=targetRuntimeTail;let release!:()=>void;targetRuntimeTail=new Promise<void>(done=>{release=done;});await previous;
  try{
  const keys=['DATABASE_URL','TURAS_APP_ORIGIN','VERCEL_DEPLOYMENT_ID','VERCEL_GIT_COMMIT_SHA','TURAS_CODE_VERSION'] as const,prior=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
- await closeRuntimePool();try{process.env.DATABASE_URL=state.connections.get(input.runtimeConnection)!;process.env.TURAS_APP_ORIGIN=target.origin;process.env.VERCEL_DEPLOYMENT_ID=target.deploymentId;process.env.VERCEL_GIT_COMMIT_SHA=target.sourceCommit;process.env.TURAS_CODE_VERSION=target.sourceCommit;return await run();}
- finally{await closeRuntimePool();for(const key of keys){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}}
+ const connection=state.connections.get(input.runtimeConnection);if(!connection)throw Error('Exact controlled runtime connection required');
+ const binding=JSON.stringify([connection,target.origin,target.deploymentId,target.sourceCommit]);
+ if(!retainExactTargetPool||retainedTargetPoolBinding!==binding){await closeRuntimePool();retainedTargetPoolBinding=undefined;}
+ if(retainExactTargetPool)retainedTargetPoolBinding=binding;
+ try{process.env.DATABASE_URL=connection;process.env.TURAS_APP_ORIGIN=target.origin;process.env.VERCEL_DEPLOYMENT_ID=target.deploymentId;process.env.VERCEL_GIT_COMMIT_SHA=target.sourceCommit;process.env.TURAS_CODE_VERSION=target.sourceCommit;return await run();}
+ finally{if(!retainExactTargetPool){await closeRuntimePool();retainedTargetPoolBinding=undefined;}for(const key of keys){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}}
  }finally{release();}
 }
 function controlledEffectsPlatform(request:Request){const url=new URL(request.url),key='controlled_effects_automation_key',host='recovery.vercel.app';
@@ -121,7 +128,9 @@ async function controlledPhysicalIntegrity(input:Parameters<typeof withLockedWor
  }finally{key.fill(0);}
 }
 
-function workCategoryTransport(input:Parameters<typeof withLockedWorkRecoveryTarget>[0],target:Parameters<typeof requireLockedWorkRecoveryConnection>[1],configuration:()=>ReturnType<typeof syntheticRestoredConfiguration>|undefined,transform:(response:Response)=>Promise<Response>=async response=>response):typeof fetch{
+function workCategoryTransport(input:Parameters<typeof withLockedWorkRecoveryTarget>[0],target:Parameters<typeof requireLockedWorkRecoveryConnection>[1],configuration:()=>ReturnType<typeof syntheticRestoredConfiguration>|undefined,transform:(response:Response)=>Promise<Response>=async response=>response,retainExactTargetPool=false):typeof fetch{
+ // Opt-in pool lifetime belongs to one immutable controlled target only.
+ const runtime=<T>(run:()=>Promise<T>)=>withTargetRuntime(input,target,run,retainExactTargetPool);
  return async(url,options)=>{
     const incoming=new Request(url,options),address=new URL(incoming.url),headers=new Headers(incoming.headers);headers.set('host',address.host);
     const platform=controlledEffectsPlatform(incoming);if(platform)return platform;
@@ -131,9 +140,9 @@ function workCategoryTransport(input:Parameters<typeof withLockedWorkRecoveryTar
      if(incoming.headers.has('x-vercel-set-bypass-cookie'))return new Response(null,{status:307,headers:{location:original,'set-cookie':'_vercel_jwt=controlled_effects_cookie; Path=/; Secure; HttpOnly; SameSite=Lax'}});
      return Response.json({error:{code:'authentication_required'}},{status:401,headers:{'x-turas-code-version':state.commit}});
     }
-    if(['/api/internal/research-maintenance','/eve/v1/turas/jobs'].includes(address.pathname))return withTargetRuntime(input,target,async()=>{if(address.pathname==='/api/internal/research-maintenance'){const {GET}=await import('../../../app/api/internal/research-maintenance/route');return GET(incoming);}const {authorizeHeavyDispatch,assertHostedDispatchReady}=await import('../../../lib/server/operations/dispatch'),{failure,success}=await import('../../../lib/contracts/http');try{authorizeHeavyDispatch(incoming);await assertHostedDispatchReady();return success({status:'accepted'});}catch(error){return failure(error);}});
+    if(['/api/internal/research-maintenance','/eve/v1/turas/jobs'].includes(address.pathname))return runtime(async()=>{if(address.pathname==='/api/internal/research-maintenance'){const {GET}=await import('../../../app/api/internal/research-maintenance/route');return GET(incoming);}const {authorizeHeavyDispatch,assertHostedDispatchReady}=await import('../../../lib/server/operations/dispatch'),{failure,success}=await import('../../../lib/contracts/http');try{authorizeHeavyDispatch(incoming);await assertHostedDispatchReady();return success({status:'accepted'});}catch(error){return failure(error);}});
     if(address.origin!==target.origin)throw Error('Controlled MCP category transport left target');
-    if(incoming.method==='GET')return withTargetRuntime(input,target,async()=>{
+    if(incoming.method==='GET')return runtime(async()=>{
      const request=new Request(incoming,{headers}),id=address.pathname.split('/')[4];
      if(address.pathname==='/api/operations/status'&&configuration())return withSyntheticRestoredConfiguration(configuration()!,async()=>{const {GET}=await import('../../../app/api/operations/status/route');const response=await GET(request);response.headers.set('x-turas-code-version',state.commit);return response;});
      if(address.pathname.startsWith('/api/customers/')){const {GET}=await import('../../../app/api/customers/[customerId]/profile/route');return GET(request,{params:Promise.resolve({customerId:address.pathname.split('/')[3]})});}
@@ -144,8 +153,8 @@ function workCategoryTransport(input:Parameters<typeof withLockedWorkRecoveryTar
      throw Error('Controlled service GET unavailable');
     });
     if(!address.pathname.endsWith('/mcp')&&address.pathname!=='/api/mcp/v1')throw Error('Controlled MCP category transport left target');
-    if(address.pathname==='/api/mcp/v1')return withTargetRuntime(input,target,()=>handleMcpRequest(new Request(incoming,{headers})));
-    const response=await withTargetRuntime(input,target,()=>maintenanceMcp(new Request(incoming,{headers}),{params:Promise.resolve({admissionId:address.pathname.split('/')[4]})}));
+    if(address.pathname==='/api/mcp/v1')return runtime(()=>handleMcpRequest(new Request(incoming,{headers})));
+    const response=await runtime(()=>maintenanceMcp(new Request(incoming,{headers}),{params:Promise.resolve({admissionId:address.pathname.split('/')[4]})}));
     return transform(response);
  };
 }
@@ -234,7 +243,7 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
    const identityObservations:{categories:unknown;mutated:boolean}[]=[];
    const transport=vi.spyOn(globalThis,'fetch').mockImplementation(workCategoryTransport(input,target,()=>restoredConfiguration,async response=>{
     if(corrupt&&response.status===200){const rpc=await response.json();if(rpc.result?.structuredContent?.data?.workspaceId){const original=rpc.result.structuredContent.data.workspaceId;if(uncorruptedIdentities>0)uncorruptedIdentities--;else rpc.result.structuredContent.data.workspaceId=randomUUID();identityObservations.push({categories:rpc.result.structuredContent.data.categories,mutated:rpc.result.structuredContent.data.workspaceId!==original});}return Response.json(rpc,{headers:response.headers});}return response;
-   }));
+   },true));
    try{
     const args={target:input,selection:{workspaceId,username:'mcteer' as const,category:'profiles' as const,customerId},password:process.env.TURAS_DEMO_PASSWORD!,retained,journalDirectory:dirname(input.sourceFile)};
     observe('initial-category');const proof=await measureWorkMcpCategory(args);expect(proof).toMatchObject({calls:5,boundaryCalls:2,actualSdkVerified:true,categoryCoverageVerified:true,probeRetirementVerified:true,requiredScopeHealthy:false,restorationReady:false});
@@ -388,7 +397,7 @@ it('measures exhaustive fresh work MCP category pages through SDK and rejects ch
 
 
 
-   }finally{for(const restore of restoreObservations)restore();transport.mockRestore();}
+   }finally{for(const restore of restoreObservations)restore();transport.mockRestore();await closeRuntimePool();retainedTargetPoolBinding=undefined;}
    expect((await owner.query('SELECT 1 FROM operations_recovery_http_reads a JOIN login_sessions s ON s.id=a.session_id JOIN mcp_connections mc ON mc.id=a.record_id WHERE a.mcp_probe_connection AND (a.revoked_at IS NULL OR s.revoked_at IS NULL OR mc.revoked_at IS NULL OR mc.credential_hash IS NOT NULL)')).rowCount).toBe(0);
   });}finally{state.retainedKey=null;if(previousCron===undefined)delete process.env.CRON_SECRET;else process.env.CRON_SECRET=previousCron;await owner.end();}
  },async owner=>{const f=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');workspaceId=f.actor.workspaceId;customerId=f.customerId;for(let i=0;i<6;i++)await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary',workspaceId);const organization=randomUUID(),partnerMembership=randomUUID();await owner.query("INSERT INTO partner_organizations(id,workspace_id,name) VALUES($1,$2,'Synthetic MCP category partner')",[organization,workspaceId]);await owner.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role,partner_org_id) VALUES($1,$2,$3,'internal','member',NULL),($4,$5,$3,'partner','member',$6)",[randomUUID(),DEMO_IDS.panel,workspaceId,partnerMembership,DEMO_IDS.partner,organization]);await owner.query("INSERT INTO customer_grants(id,membership_id,workspace_id,customer_id,state,revision,granted_by) VALUES($1,$2,$3,$4,'active',1,$5)",[randomUUID(),partnerMembership,workspaceId,customerId,DEMO_IDS.mcteer]);const {issueSession,getCurrentSession,sessionCookieName}=await import('../../../lib/server/auth/sessions');
@@ -429,7 +438,7 @@ it('authenticates real work integrity bytes and rejects forged changed-object ar
   const {providerCalls:ignored,...common}=owned;
   const candidate=workCaptureCandidateSchema.parse({...common,configurationDigest,contract:'pilot-work-capture-candidate-v1',workflow:{inventoryDigest:recoveryDigest([]),fileCount:0,entries:[],backend:'managed-workflow',capability:'interrupted-reconciliation',runtimeStoppedVerified:false,resumptionVerified:false,reconciliationVerified:false},encryptedBundle:{headerDigest:packed.headerDigest,...encrypted},modelCalls:0,mailCalls:0});
   process.env.VERCEL_BLOB_RETRIES='0';const args={target:input,candidate,bundle,keyFile,assetRoot,storeId:'syntheticStore',oidcToken:'synthetic.oidc.identity'};
-  await expect(measureWorkTargetIntegrity({...args,candidate:{...candidate,encryptedBundle:{...candidate.encryptedBundle,sizeBytes:67108865}}})).rejects.toThrow('capture allowance');
+  await expect(measureWorkTargetIntegrity({...args,candidate:{...candidate,encryptedBundle:{...candidate.encryptedBundle,sizeBytes:WORK_BACKUP_LIMITS.encryptedArchiveBytes+1}}})).rejects.toThrow('capture allowance');
   await expect(measureWorkTargetIntegrity({...args,oidcToken:''})).rejects.toThrow();
   const proof=await measureWorkTargetIntegrity(args);expect(proof).toMatchObject({objectCount:activeObjectNamespaces.length,acceptedContentDigest:candidate.acceptedContentDigest,restorationReady:false});
   const blobToken='vercel_blob_rw_syntheticStore_SYNTHETICFIXTUREONLY';await expect(measureWorkTargetIntegrity({...args,blobToken})).rejects.toThrow('Exactly one');await expect(measureWorkTargetIntegrity({...args,oidcToken:undefined,blobToken:'vercel_blob_rw_foreignStore_SYNTHETICFIXTUREONLY'})).rejects.toThrow('identity differs');const tokenProof=await measureWorkTargetIntegrity({...args,oidcToken:undefined,blobToken});expect(tokenProof).toMatchObject({objectCount:activeObjectNamespaces.length,acceptedContentDigest:candidate.acceptedContentDigest,restorationReady:false});expect(JSON.stringify(tokenProof)).not.toContain(blobToken);await withLockedWorkRecoveryDecision(input,async(db,target)=>{expect(await requireMeasuredWorkTargetIntegrity(db,target,tokenProof,signal)).toBe(tokenProof);});
@@ -817,8 +826,8 @@ it('rejects unaccounted current root model steps before provider selection while
  },async owner=>{
   await expect(resolve()).rejects.toMatchObject({status:404});
   await owner.query('UPDATE turas_environment SET schema_version=77');
-  try{expect(await resolve()).toBe('anthropic/claude-sonnet-5.5');}
-  finally{await owner.query('UPDATE turas_environment SET schema_version=80');}
+  try{expect(await resolve()).toMatchObject({model:'anthropic/claude-sonnet-5.5',modelOptions:{providerOptions:{gateway:{only:['anthropic']}}}});}
+  finally{await owner.query('UPDATE turas_environment SET schema_version=81');}
  });
 },210000);
 

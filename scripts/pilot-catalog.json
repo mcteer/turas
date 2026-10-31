@@ -256,7 +256,8 @@
         "integration.generated-byte-boundary.001",
         "integration.generated-byte-boundary.002",
         "integration.generated-byte-boundary.003",
-        "integration.generated-byte-boundary.004"
+        "integration.generated-byte-boundary.004",
+        "contracts.private-objects.010"
       ]
     },
     {
@@ -332,7 +333,12 @@
         "unit.execution-credentials.001",
         "unit.execution-credentials.002",
         "unit.execution-credentials.003",
-        "unit.execution-credentials.004"
+        "unit.execution-credentials.004",
+        "unit.report-recipe.001",
+        "unit.report-recipe.002",
+        "unit.report-recipe.003",
+        "unit.report-recipe.004",
+        "unit.report-recipe.005"
       ]
     },
     {
@@ -841,7 +847,18 @@
         "integration.work-recovery-decision.026",
         "unit.expansion-webkit-ci.001",
         "unit.expansion-webkit-ci.002",
-        "unit.expansion-webkit-ci.003"
+        "unit.expansion-webkit-ci.003",
+        "unit.backup-archive.006",
+        "unit.backup-archive.007",
+        "unit.backup-archive.008",
+        "unit.work-backup.010",
+        "unit.work-backup-objects.007",
+        "unit.backup-archive.009",
+        "integration.native-postgres.010",
+        "unit.neon-destination.007",
+        "unit.service-recovery-transport.001",
+        "unit.service-recovery-transport.002",
+        "unit.service-recovery-transport.003"
       ]
     },
     {
@@ -946,7 +963,21 @@
         "unit.research-output-citations.004",
         "unit.research-output-citations.005",
         "unit.research-output-citations.006",
-        "unit.research-output-citations.007"
+        "unit.research-output-citations.007",
+        "unit.native-model-routing.001",
+        "unit.native-model-routing.002",
+        "unit.native-model-routing.003",
+        "unit.native-model-routing.004",
+        "unit.native-fixture-selection.001",
+        "unit.native-fixture-selection.002",
+        "unit.native-fixture-selection.003",
+        "unit.native-fixture-selection.004",
+        "unit.native-fixture-selection.005",
+        "unit.native-fixture-selection.006",
+        "unit.native-fixture-selection.007",
+        "unit.native-fixture-selection.008",
+        "unit.native-fixture-selection.009",
+        "unit.native-fixture-selection.010"
       ]
     },
     {
@@ -1079,7 +1110,15 @@
         "unit.hosted-learning-capture.006",
         "integration.hosted-learning-preparation.002",
         "unit.hosted-learning-capture.007",
-        "integration.hosted-root-browser-header.001"
+        "integration.hosted-root-browser-header.001",
+        "unit.work-backup-pricing.008",
+        "integration.hosted-learning-admission.007",
+        "integration.hosted-learning-admission.008",
+        "unit.quality-expired-disposition.001",
+        "unit.native-model-routing.001",
+        "unit.native-model-routing.002",
+        "unit.native-model-routing.003",
+        "unit.native-model-routing.004"
       ]
     },
     {
@@ -1232,7 +1271,14 @@
         "operator",
         "reviewer"
       ],
-      "localCaseIds": []
+      "localCaseIds": [
+        "unit.db-client-lifecycle.001",
+        "unit.db-client-lifecycle.002",
+        "unit.db-client-lifecycle.003",
+        "unit.db-client-lifecycle.004",
+        "unit.db-client-lifecycle.005",
+        "unit.db-client-lifecycle.006"
+      ]
     },
     {
       "id": "G21",

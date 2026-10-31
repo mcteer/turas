@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../../lib/contracts/current-schema';
 import {observeRecoveryConnection} from '../../../lib/server/operations/recovery-connection';
 import {it,expect} from 'vitest';
 import {Client} from 'pg';
@@ -17,7 +18,7 @@ it('captures minimized actual denial and replay metadata without source text or 
  const conversation=await createOwnedConversation(f.actor,{customerId:f.customerId,requestKey:randomUUID(),title:'Synthetic private title omitted from recovery metadata'}),nativeId='wrun_synthetic_'+randomUUID().replaceAll('-','');
  await owner.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",[conversation.conversation.id,nativeId]);
  const snapshot=await captureRecoveryDenialSnapshot(owner,environmentId,AbortSignal.timeout(60000)),serialized=JSON.stringify(snapshot);
- expect(snapshot).toMatchObject({schemaVersion:80,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false});
+ expect(snapshot).toMatchObject({schemaVersion:CURRENT_SCHEMA_VERSION,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false});
  for(const secret of [session,credential,f.actor.token,connection.credential,'Synthetic observed build stage timing','Synthetic private title omitted from recovery metadata'])expect(serialized).not.toContain(secret);
  expect(snapshot.tables.find(t=>t.name==='mcp_connections')?.rows.find(r=>r.identity.id===connection.connection.id)?.status.credential_hash).toBe(true);
  expect(snapshot.tables.find(t=>t.name==='mcp_management_receipts')?.rows.length).toBeGreaterThan(0);

@@ -2,6 +2,7 @@ import {requireOperationalOpen} from '../lib/server/operations/admission';
 import {responseFeature} from "../lib/server/conversations/feature";
 import {wrapOrdinaryChatModel} from "../lib/server/conversations/model-budget";
 import { gateway } from "ai";
+import {selectTurasGatewayModel} from "../lib/server/models/gateway-routing";
 import { defineAgent, defineDynamic } from "eve";
 import { withTransaction } from "../lib/server/db/client";
 import { hiddenRecord } from "../lib/contracts/http";
@@ -23,7 +24,7 @@ export default defineAgent({
   // also remove eve's model/tool payloads and replay log.
   experimental: { workflow: { retention: 0 } },
   model: defineDynamic({ events: {
-    "session.started": () => selectedModel,
+    "session.started": () => selectTurasGatewayModel(selectedModel),
     async "step.started"(event, ctx) {
       const data = typeof event === "object" && event !== null && "data" in event ?
         event.data : null;
@@ -42,13 +43,13 @@ export default defineAgent({
         if (!principal?.principalId || typeof responseAttemptId !== "string") throw hiddenRecord();
         const identity = { nativeSessionId: ctx.session.id, responseAttemptId, turnId, stepIndex };
         const admitted = await admitGovernedStaffingModelStep(principal, identity);
-        return wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode, {
+        return selectTurasGatewayModel(wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode, {
           deadlineAt: admitted.deadlineAt, beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),
-        });
+        }));
       }
       if((await responseFeature(principal))?.kind==='normal')
-        return wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId,{event});
-      return withTransaction(async (client) => {
+        return selectTurasGatewayModel(wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId,{event}));
+      return selectTurasGatewayModel(await withTransaction(async (client) => {
         const marker = await client.query<{schema_version:number}>(
           "SELECT schema_version FROM turas_environment LIMIT 1");
         if ((marker.rows[0]?.schema_version ?? 0) >= 79) await requireOperationalOpen(client);
@@ -81,7 +82,7 @@ export default defineAgent({
           turnId, stepIndex,
         });
         return wrapPlanModel(parityBudgetModel(gateway(selectedModel),selectedModel));
-      });
+      }));
     },
   } }),
   reasoning: "low",

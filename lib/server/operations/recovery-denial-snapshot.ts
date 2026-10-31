@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {recoveryJobReplayTables,requireRecoveryJobReplayColumns,requiredRecoveryJobSemanticKeys} from './recovery-job-replay-keys';
 import currentReplayTables from '../../contracts/recovery-replay-tables.json' with {type:'json'};
 import type {Client,PoolClient} from 'pg';
@@ -5,7 +6,7 @@ import {z} from 'zod';
 import {randomUUID,createHash} from 'node:crypto';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
 const namedContentTables=['ordinary_named_content_dependencies','ordinary_named_content_coverage'] as const;
-const operationalSchema=(version:number)=>version===79||version===80;
+const operationalSchema=(version:number)=>version===79||version===80||version===CURRENT_SCHEMA_VERSION;
 const statusTables=['principals','memberships','login_sessions','customer_grants','mcp_connections','artifact_versions','profile_lifecycle_events','knowledge_publications','retrieval_sources','report_revision_states','report_deliveries','response_attempts'] as const;
 const authorityTables=['workspaces','partner_organizations'] as const;
 const operationalPattern=/(?:_attempts|_model_step_receipts|_native_event_receipts|_model_dispatches|_budget_(?:accounts|reservations|settlements)|_reservation_releases|_advice_(?:steps|usage)|_drafting_usage|_cost_(?:budgets|reservations|reconciliations)|_hosted_jobs|_local_jobs)$/;
@@ -13,7 +14,7 @@ const operationalNames=new Set([...namedContentTables,...recoveryJobReplayTables
 const isStatusTable=(name:string)=>statusTables.includes(name as typeof statusTables[number])||authorityTables.includes(name as typeof authorityTables[number])||operationalPattern.test(name)||operationalNames.has(name)||currentReplayTables.includes(name);
 const requiredPaidTables=['research_requests','research_runs','research_operations','plan_drafting_attempts','staffing_advisory_attempts','execution_advice_attempts','support_advice_attempts','expansion_advice_attempts','learning_attempts','learning_budget_accounts','learning_budget_reservations','learning_budget_settlements','learning_model_dispatches','learning_reservation_releases'] as const;
 const requiredOperationalTables=['operations_cost_budgets','operations_cost_reservations','operations_cost_reconciliations','operations_hosted_jobs','operations_local_jobs','operations_hosted_root_admissions','operations_hosted_root_provider_identities','operations_hosted_root_generation_receipts','operations_hosted_learning_admissions','operations_hosted_learning_consumptions','operations_hosted_learning_provider_identities'] as const;
-const requiredTables=(schemaVersion:number)=>[...statusTables,...requiredPaidTables,...(operationalSchema(schemaVersion)?requiredOperationalTables:[]),...(schemaVersion===80?namedContentTables:[])];
+const requiredTables=(schemaVersion:number)=>[...statusTables,...requiredPaidTables,...(operationalSchema(schemaVersion)?requiredOperationalTables:[]),...([80,CURRENT_SCHEMA_VERSION].includes(schemaVersion)?namedContentTables:[])];
 const replayPattern=/(?:_(?:command|request|management|cancel|retraction|native_retirement)_receipts|_retraction_requests|_lifecycle_events)$/;
 const replayNames=new Set(['admin_commands','submitted_messages','report_attempt_results','profile_command_receipts','knowledge_decisions','artifact_lifecycle_events']);
 // Only lifecycle/authority metadata. Never retain accepted facts, source text,
@@ -23,7 +24,7 @@ const timestamp=z.iso.datetime({offset:true}),digest=z.string().regex(/^[a-f0-9]
 const replayColumns=z.array(z.string().regex(/^[a-z_][a-z0-9_]*$/)).min(1).max(16);
 const row=z.strictObject({identity:z.record(z.string(),z.unknown()),status:z.record(z.string(),z.unknown()),rowDigest:digest,replayKeys:z.array(z.strictObject({columns:replayColumns,digest})).max(8).optional()});
 const table=z.strictObject({name:z.string().regex(/^[a-z_][a-z0-9_]*$/),primaryKey:replayColumns,schemaDigest:digest,replayKeyColumns:z.array(replayColumns).max(8).optional(),rows:z.array(row).max(10000)});
-export const recoveryDenialSnapshotSchema=z.strictObject({contract:z.enum(['pilot-denial-replay-snapshot-v2','pilot-denial-replay-snapshot-v3','pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7']),id:z.uuid(),environmentId:z.string().min(1).max(256),schemaVersion:z.union([z.literal(55),z.literal(57),z.literal(77),z.literal(79),z.literal(80)]),capturedAt:timestamp,transactionSnapshot:z.string().regex(/^\d+:\d+:[\d,]*$/),tables:z.array(table).min(statusTables.length).max(128),snapshotDigest:digest,currentAuthorityVerified:z.literal(false),replayReconciled:z.literal(false),restorationReady:z.literal(false)});
+export const recoveryDenialSnapshotSchema=z.strictObject({contract:z.enum(['pilot-denial-replay-snapshot-v2','pilot-denial-replay-snapshot-v3','pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7']),id:z.uuid(),environmentId:z.string().min(1).max(256),schemaVersion:z.union([z.literal(55),z.literal(57),z.literal(77),z.literal(79),z.literal(80),z.literal(CURRENT_SCHEMA_VERSION)]),capturedAt:timestamp,transactionSnapshot:z.string().regex(/^\d+:\d+:[\d,]*$/),tables:z.array(table).min(statusTables.length).max(128),snapshotDigest:digest,currentAuthorityVerified:z.literal(false),replayReconciled:z.literal(false),restorationReady:z.literal(false)});
 const quote=(value:string)=>'"'+value.replaceAll('"','""')+'"';
 /** A minimized actual owner-held repeatable-read source snapshot. The caller must
  * encrypt and independently retain it. Capturing is not current reconciliation;
@@ -35,7 +36,7 @@ export async function captureRecoveryDenialSnapshot(db:Client|PoolClient,expecte
   await db.query("SET LOCAL statement_timeout='10000ms'");await db.query("SET LOCAL transaction_timeout='120s'");
   const marker=(await db.query(`SELECT environment_id,schema_version,transaction_timestamp() AS captured_at,pg_current_snapshot()::text AS transaction_snapshot,
    current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='turas_environment'::regclass)) AS owner FROM turas_environment`)).rows;
-  if(marker.length!==1||marker[0].environment_id!==expectedEnvironmentId||![55,57,77,79,80].includes(Number(marker[0].schema_version))||marker[0].owner!==true)throw Error('Actual source owner identity and supported schema required');
+  if(marker.length!==1||marker[0].environment_id!==expectedEnvironmentId||![55,57,77,79,80,CURRENT_SCHEMA_VERSION].includes(Number(marker[0].schema_version))||marker[0].owner!==true)throw Error('Actual source owner identity and supported schema required');
   const available=(await db.query("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename")).rows.map(r=>String(r.tablename));
   if([...requiredTables(Number(marker[0].schema_version)),...(Number(marker[0].schema_version)>=77?currentReplayTables:[]),...authorityTables,'profile_records','evidence_source_revisions','evidence_source_events','conversations','watchdog_jobs',...(operationalSchema(Number(marker[0].schema_version))?['operations_replay_fences','operations_source_denials','operations_recovery_paid_holds','operations_recovery_model_holds','operations_recovery_model_observations']:[])].some(name=>!available.includes(name)))throw Error('Required current denial inventory missing');
   const names=available.filter(name=>isStatusTable(name)||replayPattern.test(name)||replayNames.has(name));
@@ -68,7 +69,7 @@ export async function captureRecoveryDenialSnapshot(db:Client|PoolClient,expecte
    if(rows.length>10000)throw Error('Current denial replay table exceeds bound');
    const entry={name,primaryKey,schemaDigest:recoveryDigest(columns),replayKeyColumns,rows};bytes+=Buffer.byteLength(JSON.stringify(entry));if(bytes>8388608)throw Error('Current denial replay snapshot exceeds bound');tables.push(entry);
   }
-  const content={contract:'pilot-denial-replay-snapshot-v7' as const,id:randomUUID(),environmentId:expectedEnvironmentId,schemaVersion:Number(marker[0].schema_version) as 55|57|77|79|80,capturedAt:marker[0].captured_at.toISOString(),transactionSnapshot:marker[0].transaction_snapshot,tables};
+  const content={contract:'pilot-denial-replay-snapshot-v7' as const,id:randomUUID(),environmentId:expectedEnvironmentId,schemaVersion:Number(marker[0].schema_version) as 55|57|77|79|80|typeof CURRENT_SCHEMA_VERSION,capturedAt:marker[0].captured_at.toISOString(),transactionSnapshot:marker[0].transaction_snapshot,tables};
   const snapshot=recoveryDenialSnapshotSchema.parse({...content,snapshotDigest:recoveryDigest(content),currentAuthorityVerified:false,replayReconciled:false,restorationReady:false});
   signal.throwIfAborted();await db.query('COMMIT');return snapshot;
  }catch(error){await db.query('ROLLBACK');throw error;}
@@ -78,7 +79,7 @@ export async function captureRecoveryDenialSnapshot(db:Client|PoolClient,expecte
  * copied out of the untrusted snapshot itself. No result authorizes unlock. */
 export function verifyRecoveryDenialSnapshot(raw:unknown,input:{environmentId:string;contextDigest:string;after:string;now:number}){
  const snapshot=recoveryDenialSnapshotSchema.parse(raw);
- if(snapshot.schemaVersion===80&&snapshot.contract!=='pilot-denial-replay-snapshot-v7')throw Error('Schema080 requires complete current denial format');
+ if([80,CURRENT_SCHEMA_VERSION].includes(snapshot.schemaVersion)&&snapshot.contract!=='pilot-denial-replay-snapshot-v7')throw Error('Schema080 requires complete current denial format');
 
  if(snapshot.contract!=='pilot-denial-replay-snapshot-v7'&&snapshot.tables.length>100)throw Error('Historical denial inventory exceeds bound');
  const {snapshotDigest,currentAuthorityVerified:_authority,replayReconciled:_replay,restorationReady:_ready,...content}=snapshot;
@@ -87,7 +88,7 @@ export function verifyRecoveryDenialSnapshot(raw:unknown,input:{environmentId:st
  if(new Set(snapshot.tables.map(t=>t.name)).size!==snapshot.tables.length||[...requiredTables(snapshot.schemaVersion),...(snapshot.contract==='pilot-denial-replay-snapshot-v7'&&snapshot.schemaVersion>=77?currentReplayTables:[]),...(snapshot.contract==='pilot-denial-replay-snapshot-v7'&&operationalSchema(snapshot.schemaVersion)?[...recoveryJobReplayTables,'operations_recovery_model_holds','operations_recovery_model_observations']:[]),...(['pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)?[...authorityTables,...(operationalSchema(snapshot.schemaVersion)?['operations_recovery_paid_holds']:[])]:[]),...(snapshot.contract!=='pilot-denial-replay-snapshot-v2'?['profile_records']:[]),...(['pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)?['conversations','watchdog_jobs']:[]),...(['pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)?['evidence_source_revisions','evidence_source_events',...(operationalSchema(snapshot.schemaVersion)?['operations_replay_fences','operations_source_denials']:[])]:[])].some(name=>!snapshot.tables.some(t=>t.name===name)))throw Error('Complete exact current denial inventory required');
   if(snapshot.contract==='pilot-denial-replay-snapshot-v7'&&operationalSchema(snapshot.schemaVersion)&&snapshot.tables.some(entry=>requiredRecoveryJobSemanticKeys(entry.name).some(columns=>!entry.replayKeyColumns?.some(value=>JSON.stringify(value)===JSON.stringify(columns)))))throw Error('Complete authored recovery job business keys required');
   if(snapshot.contract==='pilot-denial-replay-snapshot-v7'&&snapshot.schemaVersion>=77&&snapshot.tables.some(entry=>currentReplayTables.includes(entry.name)&&(!entry.replayKeyColumns?.length||!entry.replayKeyColumns.some(columns=>JSON.stringify([...columns].sort())===JSON.stringify([...entry.primaryKey].sort())))))throw Error('Complete current business replay identities required');
-  if(snapshot.schemaVersion===80){
+  if([80,CURRENT_SCHEMA_VERSION].includes(snapshot.schemaVersion)){
    const dependencies=snapshot.tables.find(t=>t.name==='ordinary_named_content_dependencies')!,coverage=snapshot.tables.find(t=>t.name==='ordinary_named_content_coverage')!;
    if(JSON.stringify(dependencies.primaryKey)!==JSON.stringify(['conversation_id','scope_key','citation_id'])||JSON.stringify(coverage.primaryKey)!==JSON.stringify(['conversation_id']))throw Error('Exact named-content metadata keys required');
    for(const row of dependencies.rows){const id=row.identity,status=row.status;

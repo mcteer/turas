@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {recordHostedTrainingObservations} from './pilot-hosted-feedback';
 import {runHostedMembershipBoundary} from './pilot-hosted-membership';
 import {writeHostedCoreEvidence} from './pilot-hosted-core-evidence';
@@ -106,7 +107,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
    await db.query('COMMIT');
   }catch(error){if(connected)await db.query('ROLLBACK');throw error;}finally{await db.end();}
   if(JSON.stringify(await platformDeployment(scope,true,signal))!==JSON.stringify(deployment)||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(protectedBefore))throw Error('Hosted identity or protected checkout changed');
-  const receipt={contract:'pilot-hosted-preflight-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,startedAt,completedAt:new Date().toISOString(),state:'pass',deployment,origin:scope.origin,schemaVersion:80,schemaLedgerDigest,runtimeGrantsVerified:true,syntheticWorkspaceVerified:true,readOnly:true,paidCalls:0,authenticatedJourneysVerified:false,hostedCatalogVerified:false,restorationReady:false};
+  const receipt={contract:'pilot-hosted-preflight-v1',id,runId:run.id,...source,environmentMarker:scope.environmentMarker,workspaceId:scope.workspaceId,startedAt,completedAt:new Date().toISOString(),state:'pass',deployment,origin:scope.origin,schemaVersion:CURRENT_SCHEMA_VERSION,schemaLedgerDigest,runtimeGrantsVerified:true,syntheticWorkspaceVerified:true,readOnly:true,paidCalls:0,authenticatedJourneysVerified:false,hostedCatalogVerified:false,restorationReady:false};
   await writeEvidence(root,'preflight.json',receipt);
   const credentials=['TURAS_PILOT_HOSTED_ADMIN_PASSWORD','TURAS_PILOT_HOSTED_MEMBER_PASSWORD','TURAS_PILOT_HOSTED_PARTNER_PASSWORD'];
   if(credentials.some(key=>!process.env[key])){
@@ -157,7 +158,7 @@ export async function pilotHosted(args=process.argv.slice(2)){
       await ownerDb.connect();
       const owner=(await ownerDb.query("SELECT current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='parity_evaluation_budgets'::regclass)) AS owner")).rows[0];
       const target=(await ownerDb.query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',[scope.environmentMarker])).rows;
-      if(target.length!==1||target[0].schema_version!==80||owner?.owner!==true||!process.env.AI_GATEWAY_API_KEY)throw Error('Actual owner accounting and Gateway lookup required before sends');
+      if(target.length!==1||target[0].schema_version!==CURRENT_SCHEMA_VERSION||owner?.owner!==true||!process.env.AI_GATEWAY_API_KEY)throw Error('Actual owner accounting and Gateway lookup required before sends');
       paidDispatchPossible=true;
       for(const [index,conversationId] of rootBinding.conversationIds.entries()){
        const proof=await runHostedRootBrowser({scope,db:readDb,ownerDb,headers:context.headers,binding:rootBinding,conversationId,signal,mobile:index===1,evidenceDirectory:root});

@@ -37,7 +37,7 @@ async function retire(application:OwnedRecoveryApplication,admission:Awaited<Ret
  });
 }
 async function readRecord(application:OwnedRecoveryApplication,record:OwnedMaintenanceRecord,input:{scope:Scope;password:string},deadline:number,signal:AbortSignal){
- let admission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
+ let admission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined,retirementConfirmed=false;
  try{
   await withOwnedRecoveryApplicationConfiguration(application,signal,async db=>{
    await db.query('BEGIN');try{
@@ -86,9 +86,11 @@ async function readRecord(application:OwnedRecoveryApplication,record:OwnedMaint
    if(!record.object||bytes.length!==record.object.sizeBytes||createHash('sha256').update(bytes).digest('hex')!==record.object.digest)throw Error('Maintenance original bytes differ');
    if(!/^attachment(?:;|$)/i.test(response.headers.get('content-disposition')??'')||response.headers.get('x-content-type-options')!=='nosniff')throw Error('Maintenance original response headers differ');
   }
-  await retire(application,owned);await denied(application,path,headers,[403],signal);
+  // The successful retire verifies actual closed SQL state. Keep fallback
+  // cleanup for every earlier failure, without repeating confirmed retirement.
+  await retire(application,owned);retirementConfirmed=true;await denied(application,path,headers,[403],signal);
   return record.object?.sizeBytes??0;
- }finally{if(admission)await retire(application,admission);}
+ }finally{if(admission&&!retirementConfirmed)await retire(application,admission);}
 }
 async function requireRetiredMaintenanceRuntime(db:import('pg').Client,scope:Scope){
   if((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin UNION ALL SELECT 1 FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016')")).rowCount)throw Error('Maintenance runtime retirement incomplete');
@@ -108,7 +110,13 @@ export async function verifyOwnedMaintenanceRecovery(input:{target:OwnedRestoreT
   for(let offset=0;offset<inventory.records.length;offset+=4){
    input.signal.throwIfAborted();const deadline=Math.min(input.deadline,Date.now()+59000),batch=inventory.records.slice(offset,offset+4);
    await withOwnedRestoredRuntime(input.target,input.scope,input.signal,async(_runtime,signal,environment)=>withOwnedRecoveryApplication(application,environment,signal,async()=>{
-    for(const record of batch){signal.throwIfAborted();bytes+=await readRecord(application,record,input,deadline,signal);verified++;}
+    // Each read has its own admission and owner connections. Keep the original
+    // four-record lease, and await every retirement before closing its runtime,
+    // including when a sibling read fails.
+    const results=await Promise.allSettled(batch.map(record=>readRecord(application,record,input,deadline,signal)));
+    const failures=results.filter((result):result is PromiseRejectedResult=>result.status==='rejected');
+    if(failures.length)throw new AggregateError(failures.map(result=>result.reason),'Maintenance batch incomplete');
+    for(const result of results)if(result.status==='fulfilled'){bytes+=result.value;verified++;}
    }));
   }
  }catch(error){failure=error;throw error;}finally{try{await retireOwnedRecoveryApplication(application);}catch(retirement){if(failure)throw new AggregateError([failure,retirement],'Maintenance verification and application retirement failed');throw retirement;}}

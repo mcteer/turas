@@ -32,3 +32,7 @@ it('rejects missing unknown or drifting v2 plans and retains resource attachment
  const explicit=neonArchiveDestinationSchema.parse(base);
  for(const change of [{billingPlan:{id:'scale_v3'}},{id:'foreign-resource'},{projects:[{id:value.sourceProjectId}]},{projects:[{id:value.operatorProjectId},{id:value.sourceProjectId}]},{ownership:'external'}])await expect(verifyWorkNeonDestination(explicit,signal,actualMetadata(value,'launch_v3',change))).rejects.toThrow();
 });
+
+it('binds expanded archive capacity to an explicitly inspected Launch destination',async()=>{
+ const value=fixture(),expanded=neonArchiveDestinationSchema.parse({...value,contract:'pilot-neon-operator-config-v3',billingPlanId:'launch_v3',maximumBytes:6442450944}),signal=AbortSignal.timeout(1000);expect((await verifyWorkNeonDestination(expanded,signal,actualMetadata(value,'launch_v3'))).plan).toBe('launch_v3');for(const change of [{contract:'pilot-neon-operator-config-v2'},{billingPlanId:'free_v3'},{maximumBytes:6442450945}])expect(()=>neonArchiveDestinationSchema.parse({...expanded,...change})).toThrow();await expect(verifyWorkNeonDestination(expanded,signal,actualMetadata(value,'free_v3'))).rejects.toThrow('billing plan');
+});

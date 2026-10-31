@@ -1,8 +1,10 @@
+import {reviewedManualBackupSchema} from '../../../lib/server/operations/work-backup-manual';
+import {workBackupFailureDiagnostic} from '../../../lib/server/operations/work-backup-diagnostics';
 import type {IncomingMessage,ServerResponse} from 'node:http';
 import {timingSafeEqual,createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
-import {workBackupConfigurationSchema,runScheduledWorkBackup,workBackupPrivateObjects} from '../../../lib/server/operations/work-backup-run';
+import {workBackupConfigurationSchema,runScheduledWorkBackup,runReviewedWorkBackup,workBackupPrivateObjects} from '../../../lib/server/operations/work-backup-run';
 
 /** Only the independent operator Function is built. No Eve conversation/model
  * transport, customer-supplied body or source application's cookies are exposed. */
@@ -31,10 +33,13 @@ export default async function backup(request:IncomingMessage,response:ServerResp
   const value=process.env[config.keyReference];if(!value||!/^[a-f0-9]{64}$/.test(value))throw Error('Separate operator key unavailable');master=Buffer.from(value,'hex');
   const metadata=JSON.parse(await readFile(join(__dirname,'source.json'),'utf8'));
   if(createHash('sha256').update(await readFile(__filename)).digest('hex')!==metadata.runtimeDigest)throw Error('Operator runtime bytes differ');
-  const result=await runScheduledWorkBackup({configuration:config,source:metadata.source,assetRoot:join(__dirname,'native-client'),objects:workBackupPrivateObjects(config.environmentId,config.storeId,config.maximumObjects,config.maximumObjectBytes),key:{master,reference:config.keyReference,version:config.keyVersion},signal:AbortSignal.timeout(280000)});
+  const input={configuration:config,source:metadata.source,assetRoot:join(__dirname,'native-client'),objects:workBackupPrivateObjects(config.environmentId,config.storeId,config.maximumObjects,config.maximumObjectBytes,config.contract),key:{master,reference:config.keyReference,version:config.keyVersion},signal:AbortSignal.timeout(280000)};
+  const manualId=request.headers['x-turas-reviewed-capture'];let result;
+  if(manualId!==undefined){const rawReview=process.env.TURAS_WORK_BACKUP_MANUAL_REVIEW;if(typeof manualId!=='string'||!rawReview||rawReview.length>8192)throw Error('Explicit protected manual review required');const manualReview=reviewedManualBackupSchema.parse(JSON.parse(rawReview));if(manualId!==manualReview.id)throw Error('Exact reviewed manual capture required');result=await runReviewedWorkBackup({...input,manualReview});}
+  else result=await runScheduledWorkBackup(input);
   console.info(JSON.stringify({event:'work-backup.complete',...result}));
-  reply(200,{state:'captured',coldDownloadAuthenticated:result.coldDownloadAuthenticated,restorationReady:false});
- }catch{
-  console.error(JSON.stringify({event:'work-backup.failed',restorationReady:false}));reply(503,{error:'backup_incomplete',restorationReady:false});
+  reply(200,{state:'captured',...(result.invocationKind?{invocationKind:result.invocationKind,reviewedManualCaptureId:result.reviewedManualCaptureId,originalScheduledSlotSucceeded:false}:{}),coldDownloadAuthenticated:result.coldDownloadAuthenticated,restorationReady:false});
+ }catch(error){
+  console.error(JSON.stringify({event:'work-backup.failed',...workBackupFailureDiagnostic(error),restorationReady:false}));reply(503,{error:'backup_incomplete',restorationReady:false});
  }finally{master?.fill(0);}
 }

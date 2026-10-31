@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from './current-schema';
 import {z} from 'zod';
 import {createHash} from 'node:crypto';
 const digest=z.string().regex(/^[a-f0-9]{64}$/),identity=z.string().min(1).max(256).regex(/^[A-Za-z0-9_.:-]+$/),timestamp=z.iso.datetime({offset:true});
@@ -6,7 +7,7 @@ const checkpoint=z.strictObject({id:z.uuid(),capturedAt:timestamp,digest});
 export const recoveryManifestSchema=z.strictObject({
  contract:z.literal('pilot-recovery-v1'),id:z.uuid(),environmentId:identity,recoveryId:z.uuid(),controlRevision:z.number().int().positive(),
  capturedAt:timestamp,expiresAt:timestamp,sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),sourceDigest:digest,
- schemaVersion:z.union([z.literal(79),z.literal(80)]),ledgerDigest:digest,runtimeGrantsDigest:digest,configurationDigest:digest,acceptedContentDigest:digest,
+ schemaVersion:z.union([z.literal(79),z.literal(80),z.literal(CURRENT_SCHEMA_VERSION)]),ledgerDigest:digest,runtimeGrantsDigest:digest,configurationDigest:digest,acceptedContentDigest:digest,
  encryptedBundle:z.strictObject({headerDigest:digest,digest,sizeBytes:z.number().int().positive().max(1024**4)}),
  database:z.strictObject({checkpoint,dumpDigest:digest,dumpBytes:z.number().int().positive().max(1024**4),serverMajor:z.union([z.literal(17),z.literal(18)]),clientMajor:z.union([z.literal(17),z.literal(18)])}),
  stores:z.array(z.strictObject({kind:z.enum(recoveryStoreKinds),checkpoint,inventoryDigest:digest,objectCount:z.number().int().nonnegative().max(100000),complete:z.literal(true)})).length(4),

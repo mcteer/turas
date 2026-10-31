@@ -9464,3 +9464,258 @@ local suites project a full CI duration near 7,400 seconds. T215 raises only the
 CI batch controller to 9,000 seconds, preserving every narrower bound and the
 failed historical result. Fresh committed CI is required. No new live-model
 batch or Production change occurred in this diagnosis.
+
+### Report operator brand history — source correction pending hosted validation
+
+The retained `cffe534` generated report samples use the current draft brand,
+while the brand-list API also returns its earlier approved version. The operator
+previously required exactly one total brand row. The correction selects only the
+unique highest version matching all three captured current report revisions and
+rejects ambiguous heads, stale revisions, mismatched brands and invalid states.
+A separate post-render entry rechecks the synthetic customer/workspace, all three
+current sample identities and API readbacks before any approval write. It uses
+the original preview/decision APIs and exact-key receipt GET reconciliation and
+has no prepare, revise, render or queue callback. Original forty-slide and artifact
+verification remain. Focused source checks are recorded separately; no hosted
+continuation, publication, release readiness or new provider job is claimed here.
+The deployed application/agent/renderer and retained `cffe534` evidence are not
+retagged to this operator-only change.
+
+The actual Preview continuation subsequently published all three existing
+samples, read all four complete PDF/PPTX streams with their original byte counts
+and SHA-256 digests, and verified the same ten cost-reservation identities, states and upper-bound/charged
+cost columns before and after. It created no reports, renders or provider jobs. This is a scoped component
+result; it does not establish a fresh uninterrupted linked journey or overall
+hosted acceptance. Five focused operator tests and pilot type checking passed.
+
+The `cffe534` CI run 40925339836 attempt 1 failed one recovery category case
+during `service-http` when its original 290-second target expired. Its other 25
+cases passed; the complete local catalog had separately passed 1,056 cases.
+The controlled fixture was closing both database pools for every HTTP request.
+Opt-in pool reuse now binds the exact database, origin, deployment and source,
+preserves serialized request scopes, and closes the pools on exit. The original
+exhaustive case passed locally in 153,118 ms with unchanged assertions and
+deadlines. That focused run skipped the other 25 cases and does not replace CI.
+
+The original-budget model continuation completed R10, then failed R11's setup
+send with a captured `maintenance_unavailable` response. Its quiescent ledger
+has 153 settled dollar dispatches, 18 settled Context dispatches, zero unresolved
+or held dispatches, and no additional allowance. The cloned evaluation app
+previously declared readiness after HTTP and Native health checks alone; the
+fixture now also requires an actual maintenance heartbeat newer than that app
+start, within the original 90-second startup window. Fresh fixture and remaining
+model results are required; no production availability claim follows from this
+diagnosis.
+
+The cold-start readiness rehearsal started an actual isolated PostgreSQL 18 clone
+and supervised Next/eve app, observed one real fresh maintenance worker, and
+closed the owned environment successfully with zero provider calls. This proves
+fixture startup readiness only; the failed R11 sample remains failed.
+
+The separate operator branch initially triggered an automatic Preview build
+because the checked-in deployment exclusions named only earlier branches. That
+Preview is READY at its own `54f8688` revision, remains outside the firewall
+allowlist, and is not used as `cffe534` release evidence. Its separate conservative
+$1.30 exposure remains reserved without a charge/refund claim. The branch now
+has an explicit Git deployment exclusion. The controlled retention build remains
+manual ordinal 38 / manual Preview sequence 33, with this additional automatic
+build recorded separately. Production remained unchanged.
+
+The immutable-host retention preflight exposed an operator assumption: it
+required both distinct deployments to share one origin, although their immutable
+Vercel hosts differ. The correction preserves all shared project/team/environment/
+workspace/source/configuration checks and independently resolves both old and new
+hosts to their exact READY deployment IDs. Actual post-restart file checks remain
+required; original manifests and their deployment origins remain unchanged.
+
+The 007 live runner stopped in its unpaid staffing preflight: the image
+preparer wrote default-tag attestations despite inherited immutable selectors.
+The preparer now validates default-or-immutable selectors, inspects the exact
+selected Docker images, verifies selected SHA identities and writes their real
+attestation. The original six import contract cases passed against the selected
+images, including real clean scans and EICAR refusal, with zero provider calls.
+The initial diagnostic rehearsal copied runtime assets to the report store
+instead of the artifact store; that rehearsal failed and was corrected without
+changing the runtime or the assertions. No extra asset-permission fixture change
+was retained.
+
+The immutable-origin correction also applies to the denial and byte-composition
+operators. Both keep the same project, team, environment, workspace, source and
+configuration requirements. Current and, when different, original immutable
+hosts remain bound to actual deployment IDs. Stable aliases retain their earlier
+behavior. The actual current cffe byte-component inventory is explicitly bound
+when composing cffe evidence; a newer operator checkout inventory cannot replace
+it. The actual post-restart byte composition passed with zero new jobs/models
+and retains the explicit `actualReportAt10MiB: false` qualification.
+
+### Draft sample recovery policy and archive test boundary
+
+Independent review identified an overstrict archived-brand guard: it required
+brand approval even when the canonical report caller permits a validated,
+unpublished draft sample. The unchanged guard failed the new unit expectation
+and the real recovery HTTP report case returned 503. Removing only that extra
+condition preserves the caller's approval requirement and unconditional revoked
+brand denial. The first real after-fix report case passes authenticated exact
+bytes, publication denial and retirement for both current and different immutable
+renderer identities. Review then required replacing an ambient legacy Docker tag
+with an owned alternate image configuration derived from the prepared renderer;
+that self-contained case also passes its real authenticated report checks. Its
+owned stopped container and alternate image are removed in final cleanup.
+
+The previous source's full catalog failed its work-integrity case because its
+forged 64 MiB-plus-one candidate is below the expanded 320 MiB archive limit.
+The test now uses the shared encrypted archive limit plus one and retains the
+same early capture-allowance rejection assertion. Its narrow actual check passes.
+The failed full catalog remains failed. Three brand unit cases and root/pilot
+TypeScript checks pass locally; these are not full catalog, hosted or Production
+acceptance. Production remains unchanged.
+
+### OIDC private upload transport
+
+The current Preview's legacy client-token mint returned HTTP 503 before any
+file bytes or native job dispatch. Its connected private store uses OIDC; the
+SDK's legacy client-token helper requires a read/write token. The replacement
+uses the installed SDK's signed-token and presigned-URL APIs with an exact
+prepared path, put-only operation, original size/content-type/expiry limits and
+no overwrite or random suffix. Authentication, CSRF, session membership and
+source generation are checked before issuing the URL. Authenticated completion
+continues to verify actual stored bytes; provider callbacks cannot publish facts.
+The browser and hosted operator use the same protocol. Focused upload integration
+checks (eight cases), private object contracts (nine cases), and root TypeScript
+pass locally. These checks do not establish hosted upload or release acceptance.
+
+### Complete service timing producer
+
+The physical restore and 301-record maintenance receipts deliberately retain
+false RPO/RTO and readiness fields. A separate owner producer now follows the
+complete hosted verification, explicit resolution and explicit opening. It reads
+the first immutable source quiescing transition after the authenticated capture,
+observes a new target branch created afterward, and measures real ordinary role,
+five-category SDK, captured artifact/workforce/report streams and healthy service.
+Its finish clock comes from the target database after probe retirement and final
+state, schema, grant and source checks. It cannot accept caller timestamps or
+healthy flags. Arithmetic helpers alone never assert recovery acceptance.
+
+Six timing unit cases and three real loopback HTTP transport cases pass locally.
+The latter exercise cancellation, exhausted request allowance, exact credential
+cleanup and lost acknowledgments; they are not hosted authentication or recovery
+proof. Live owned control checks cover immutable incident replay and preservation
+of pre-existing state around a real issued/revoked session. The actual complete
+hosted producer run remains required before acceptance.
+
+The generated-file foundation approval exceeded the transport's first request
+window on two deployments. The original approval was confirmed committed; no
+replacement approval or provider operation was submitted. Foundation confirmation
+now reuses the existing exact-receipt reader, with at most three release-matching
+503 lookups inside the original 10-second write plus 10-second confirmation
+envelope. All prior failures and their actual receipts remain retained.
+
+The ordinary-service verifier binds each native stream to the authenticated archive's `objects/<namespace>/<object-id>` entry, independently of the live Blob environment prefix. Actual archive inspection identified and corrected that distinction before hosted service acceptance; the prior revision remains unaccepted.
+
+An independent actual WebKit upload to the isolated recovery store failed its
+preflight because `x-add-random-suffix` is absent from Blob's allowed headers.
+Actual OPTIONS also excludes `x-allow-overwrite`. Both redundant headers are
+removed; their constraints remain in the signed URL. The failed original
+application uploads and partial prior-source catalog are retained without pass
+claims. Corrected-source browser, CI and release verification remain pending.
+
+With the corrected headers, a distinct actual WebKit PUT to the isolated recovery
+store returned 200 and authenticated metadata confirmed all 42 bytes. The exact
+probe object was then deleted. This proves the provider transport correction;
+it does not replace the authenticated application upload, processing, retention
+or hosted recovery checks. No model call or production change occurred.
+
+The corrected-header source's first full local run stopped at the runtime
+retirement check after 120 cases passed. A controlled owned backend reproduced
+the failure: default termination returned true while the old backend remained
+visible. The existing integration test now delays that real backend's exit;
+it fails against the original implementation. Retirement now waits for confirmed
+exit under explicit finite SQL bounds and retains the final fresh census.
+All eight recovery-authority and five runtime-retirement integration cases pass,
+including the delayed-exit regression, and type checking passes. Full-catalog, CI and actual
+hosted verification remain required.
+
+### Initial customer-context readiness regression
+
+The `1540b43` CI verification job failed the original mobile-dark research
+keyboard-cancellation case. Its retained trace shows the attachment capability
+button appearing above the research action during a click. One unchanged local
+Production-mode reproduction passed; the original CI failure remains recorded.
+
+The context toggle now waits for the existing initial history/capability read.
+A deterministic regression holds the real conversation response and requires
+the context toggle to remain disabled. Removing that guard only in a disposable
+copy fails the new assertion. The corrected candidate passed both research
+journeys across all four headless WebKit projects: eight passes, no skips,
+retries or failures, with the original 30-second test limit. Both owned test
+containers were removed and independently confirmed absent. TypeScript and
+diff checks passed; independent source review found no blocker.
+
+These are pre-commit candidate checks. Fresh committed-source full-catalog,
+CI, model, hosted and release checks remain required. Production remains at
+`f8d196f` / schema 077.
+
+### Checked-out database connection failure
+
+The `d40adf5` hosted component run stopped on the first partner-evidence GET.
+The server retained an unexpected PostgreSQL connection termination and an
+uncaught exception; no training guide or learning model call had started.
+The underlying socket-closure cause remains unproven. Inspection and a
+deterministic reproduction with the installed pg implementation confirmed that
+pool error listeners do not cover checked-out clients.
+
+The transaction wrapper now observes those errors through release, checks for
+a failed connection before accepting commit, discards broken clients, and
+preserves the original failure if rollback also fails. Six focused cases pass,
+including actual pg client error delivery between queries and during commit,
+original-error preservation, pool-listener handoff, and no callback replay.
+Type checking and diff checks pass. Fresh committed-source full-catalog, CI,
+model-quality, hosted and release verification remain required; the prior
+candidate's partial results are retained as historical evidence.
+
+## Native pre-admission rejection correction under validation
+
+An unpaid owned PostgreSQL reproduction through the installed native channel
+returned exact `409 session_not_ready` and exposed the historical receipt CHECK:
+it accepted only successful HTTP statuses, so saving the rejection failed with
+SQLSTATE23514. The hosted failure's discarded native response prevents claiming
+that exact cause for the hosted incident. Schema081 adds only the rejected/failed
+409 receipt with `ok:false`, the exact code, empty headers and no accepted native
+identifiers. Original successful statuses remain valid; broader error receipts
+remain denied. No send retry, clock extension or uncertain-charge settlement is
+introduced. All eight owned PostgreSQL admission cases pass, including the two new receipt
+constraint cases. Pilot type checking, authored-document and diff checks pass.
+Fresh complete validation, migration rehearsal and hosted release verification
+remain pending; historical receipts do not prove this uncommitted correction.
+
+## Request-local model routing compatibility mitigation
+
+A retained Native request failed on a Gateway route identified as CLAUDEAWS;
+a separate direct SDK diagnostic reached Anthropic successfully. These were not
+a controlled full-wire comparison and do not establish the failure's cause.
+The model remains `anthropic/claude-sonnet-5.5`. Supported Eve selection objects
+now carry `modelOptions.providerOptions.gateway.only: ["anthropic"]` for every
+native resolution, with the same budget-wrapped model instance and existing
+admission, recovery, deadline and no-replay logic. The restriction is request-local
+and does not change team routing, credentials or billing. Four offline SDK/selection cases pass, including actual installed Gateway wire
+serialization through an intercepted fetch with real network access forbidden.
+The existing owned recovery model guard also passes. Fresh complete deterministic, CI,
+Native actual-model and hosted verification remain release requirements.
+
+## Routed-selection fixture compatibility correction
+
+The first routed candidate's CI failures exposed two test-copy assumptions:
+five native installers still rewrote the previous bare-model return shape, and
+production clones replaced the agent module that a new unit test imported its
+selector from. An original owned production preflight retained the exact missing
+export diagnostic. The pure selector now lives in a copied library module with
+identical behavior. Each existing installer preserves the routed selection and
+adds its original 128k context metadata while replacing only its provider.
+Six new source-transformation cases exercise all five actual installers with
+filesystem copies of the real agent source, controlled SQL/ownership dependencies
+and no real network; changed metadata shapes still fail before fixture writes.
+These mechanics and the four routing cases pass. The original clone preflight passes all three artifact, retrieval and plan stages
+in 172,796ms with code0 and verified owned cleanup. The existing real owned root
+recovery guard also passes; 25 other cases were deliberately unselected. Complete
+committed-source CI validation remains required; the failed candidate and its
+partial results remain historical.

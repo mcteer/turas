@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../../lib/contracts/current-schema';
 import {captureRecoveryDenialSnapshot} from '../../../lib/server/operations/recovery-denial-snapshot';
 import {beforeAll,afterAll,it,expect} from 'vitest';
 import {Client} from 'pg';
@@ -29,7 +30,7 @@ afterAll(async()=>{if(root)await rm(root,{recursive:true,force:true});});
 it('restores schema 055 content rehearses both forward migrations and leaves runtime and recovery closed',async()=>{
  await withPilotEnvironment(async environment=>{
   const result=await restoreOwnedLegacySafetyCopy(scope,environment.signal);
-  expect(result).toMatchObject({sourceSchema:55,targetSchema:80,applicationContentVerified:true,sourceLedgerVerified:true,forwardMigrationsVerified:true,mode:'locked',runtimeConnectionDenied:true,currentAuthorityVerified:false,workflowResumed:false,restorationReady:false});
+  expect(result).toMatchObject({sourceSchema:55,targetSchema:CURRENT_SCHEMA_VERSION,applicationContentVerified:true,sourceLedgerVerified:true,forwardMigrationsVerified:true,mode:'locked',runtimeConnectionDenied:true,currentAuthorityVerified:false,workflowResumed:false,restorationReady:false});
   const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)}),runtime=new Client({connectionString:requireOwnedPilotDatabase()});await owner.connect();
   try{
    expect((await owner.query('SELECT mode FROM operations_control')).rows[0].mode).toBe('locked');

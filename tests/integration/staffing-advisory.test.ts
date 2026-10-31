@@ -1,7 +1,7 @@
 import {insertBoundFixtureSession} from "../fixtures/bound-session";
 import { createHash, randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { withTransaction } from "../../lib/server/db/client";
+import { getRuntimePool, withTransaction } from "../../lib/server/db/client";
 import { readEligibleContext, readStaffingDeliveryContext } from "../../lib/server/profiles/context";
 import { requireOwnedStaffingClone } from "../../scripts/staffing-eval-environment";
 import { createSyntheticDemandBaseline } from "../fixtures/staffing/demands";
@@ -37,6 +37,24 @@ async function fixtureDemandFence(db: PoolClient, attemptId: string) {
     Number(row.generation) !== Number(head.aggregate_version) || row.content_digest !== head.content_digest)) throw new Error("Synthetic fixture dependency changed");
 }
 describe("fresh owner-private staffing binding", () => {
+  it("leaves the engagement mutex available until the staffing finance fence acquires it", async () => {
+    requireOwnedStaffingClone(); await resetStaffingFixtureRates();
+    const f = await withTransaction(db => createSyntheticRunningAdvisoryFixture(db));
+    const competing = await getRuntimePool().connect();
+    try {
+      await withTransaction(async db => {
+        const current = await readStaffingDeliveryContext(f.actor, f.demand.customerId, f.demand.workloadId, db);
+        expect(current.customer.id).toBe(f.demand.customerId);
+        // A profile UI summary used to take SHARE here. Two finance readers
+        // could then deadlock when both upgraded to the engagement mutex.
+        await competing.query("BEGIN");
+        try {
+          const locked = await competing.query("SELECT id FROM engagements WHERE id=$1 FOR UPDATE NOWAIT", [f.demand.engagementId]);
+          expect(locked.rows).toEqual([{ id: f.demand.engagementId }]);
+        } finally { await competing.query("ROLLBACK"); }
+      });
+    } finally { competing.release(); }
+  }, 120_000);
   it("rechecks admitted delivery context without exhausting the user profile-read quota", async () => {
     requireOwnedStaffingClone(); await resetStaffingFixtureRates();
     await withTransaction(async db => {

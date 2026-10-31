@@ -2,6 +2,8 @@ import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import {mkdtemp,rm,mkdir,writeFile,readFile,readdir,cp} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
+import {fork} from 'node:child_process';
+import {once} from 'node:events';
 import {QualityBudgetLedger,qualityContinuationSchema} from '../../../scripts/pilot-quality-budget-ledger';
 import {qualityOperatorAuthorization} from '../../../scripts/pilot-quality-step-authorization';
 import {qualityChildEnvironment} from '../../../scripts/pilot-quality-runtime';
@@ -11,6 +13,24 @@ const call={modelId:'anthropic/claude-sonnet-5.5' as const,ceilingMicroUsd:16000
 const authorization=()=>({contract:'pilot-quality-budget-v1' as const,id:randomUUID(),capMicroUsd:25000000,authorizationDigest:'a'.repeat(64),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64),modelId:'anthropic/claude-sonnet-5.5' as const,expiresAt:new Date(Date.now()+60000).toISOString()});
 beforeEach(async()=>{await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});root=await mkdtemp(resolve('local-artifacts/016/quality-budget-test-'));});
 afterEach(()=>{vi.useRealTimers();return rm(root,{recursive:true,force:true});});
+it('killing a startup snapshot reader leaves no writer lock and never steals an existing writer fence',async()=>{
+ const ledger=await QualityBudgetLedger.create(join(root,'budget'),authorization()),entry=join(root,'blocked-reader.mjs');
+ await writeFile(entry,`import fsp from 'node:fs/promises';import {syncBuiltinESMExports} from 'node:module';process.on('message',()=>{});
+ const original=fsp.readdir;fsp.readdir=async function(path,...args){if(String(path)===${JSON.stringify(ledger.root)}){process.send({reading:true});await new Promise(()=>{});}return original.call(this,path,...args);};syncBuiltinESMExports();
+ const {QualityBudgetLedger}=await import(${JSON.stringify(resolve('scripts/pilot-quality-budget-ledger.ts'))});await new QualityBudgetLedger(${JSON.stringify(ledger.root)}).currentAuthority();`,{mode:0o600});
+ const child=fork(entry,[],{execArgv:['--import','tsx'],env:{NODE_ENV:'test',PATH:process.env.PATH,HOME:process.env.HOME,TSX_DISABLE_CACHE:'1'},stdio:['ignore','ignore','ignore','ipc']});
+ try{
+  await new Promise<void>((done,reject)=>{const timer=setTimeout(()=>reject(Error('Owned snapshot reader did not start')),10000);child.once('message',()=>{clearTimeout(timer);done();});child.once('error',error=>{clearTimeout(timer);reject(error);});child.once('exit',()=>{clearTimeout(timer);reject(Error('Owned snapshot reader exited before observation'));});});
+  expect(await readdir(ledger.root)).not.toContain('lock');
+ }finally{const exited=once(child,'exit');child.kill('SIGKILL');await exited;}
+ expect(await ledger.status()).toMatchObject({dispatches:0,chargedMicroUsd:0});
+ await mkdir(join(ledger.root,'lock'),{mode:0o700});
+ try{await expect(ledger.status()).rejects.toThrow('lock unavailable');expect(await readdir(join(ledger.root,'lock'))).toEqual([]);}
+ finally{await rm(join(ledger.root,'lock'),{recursive:true});}
+ const id=await ledger.dispatch({...call,ceilingMicroUsd:1000});
+ await Promise.all([ledger.settle(id,{chargedMicroUsd:100,inputTokens:1,outputTokens:1,generationId:'synthetic-stable-snapshot'}),ledger.currentAuthority(),ledger.currentSource(),ledger.status()]);
+ expect(await ledger.status()).toMatchObject({dispatches:1,chargedMicroUsd:100,admissionHeld:false});
+},20000);
 it('admits at most one concurrent provider dispatch across independent ledger clients',async()=>{
  const ledger=await QualityBudgetLedger.create(join(root,'budget'),authorization());
  const results=await Promise.allSettled([ledger.dispatch(call),new QualityBudgetLedger(ledger.root).dispatch(call)]);

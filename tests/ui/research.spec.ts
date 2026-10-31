@@ -63,8 +63,22 @@ test("public research preview stays explicit in an owned synthetic chat",async (
       }) });
       refreshFulfilled = Math.min(256,refreshFulfilled+1);
     });
+    // Keep capability-dependent controls settled before the context can open.
+    // Otherwise Customer sources can appear during a research-button click.
+    let releaseCapabilities!: () => void;
+    const capabilities = new Promise<void>((resolve) => { releaseCapabilities = resolve; });
+    await page.route(`**/api/conversations/${id}`,async (route) => {
+      const response = await route.fetch();
+      await capabilities;
+      await route.fulfill({ response });
+    });
     mark("visit-chat");
     await visitAfterSignIn(page,`/s/${id}`);
+    try {
+      await expect(page.getByRole("button",{ name: "Customer context",exact: true })).toBeDisabled();
+    } finally {
+      releaseCapabilities();
+    }
     mark("open-context");
     await page.getByRole("button",{ name: "Customer context",exact: true }).click();
     mark("open-research");

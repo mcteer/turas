@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import type {Client,PoolClient} from 'pg';
 import {z} from 'zod';
 import {currentRecoveryStateDigest} from './recovery-state';
@@ -12,7 +13,7 @@ export async function resolveRecoveryQuarantines(db:Client|PoolClient,raw:z.infe
   if((await db.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='operations_control'::regclass")).rows[0]?.owner!==true)throw Error('Recovery resolution requires actual owner authority');
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[input.environmentId]);await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[input.environmentId]);
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
-  if(marker.length!==1||marker[0].environment_id!==input.environmentId||Number(marker[0].schema_version)!==80)throw Error('Recovery resolution target differs');
+  if(marker.length!==1||marker[0].environment_id!==input.environmentId||Number(marker[0].schema_version)!==CURRENT_SCHEMA_VERSION)throw Error('Recovery resolution target differs');
   const control=(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1 FOR UPDATE',[input.environmentId])).rows[0];
   if(control?.mode!=='locked'||Number(control.revision)!==input.controlRevision||control.recovery_id!==input.recoveryId)throw Error('Exact locked recovery resolution required');
   const verified=(await db.query(`SELECT id,current_state_digest FROM operations_recovery_verifications WHERE id=$1 AND environment_id=$2 AND recovery_id=$3 AND control_revision=$4

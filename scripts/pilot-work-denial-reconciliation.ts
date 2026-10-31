@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {Client} from 'pg';
 import {resolve,dirname,basename,join} from 'node:path';
 import {mkdtemp,rm} from 'node:fs/promises';
@@ -21,7 +22,7 @@ export async function pilotWorkDenialReconciliation(args:string[]){
  const file=resolve(values.source),target=databaseSafetyCaptureSourceSchema.parse(await readEvidence(dirname(file),basename(file)));
  const revision=z.number().int().positive().parse(Number(values['expected-revision']));z.uuid().parse(values['recovery-id']);z.iso.datetime({offset:true}).parse(values['backup-captured-at']);z.string().regex(/^team_[A-Za-z0-9]+$/).parse(values.team);
  const url=new URL(target.databaseUrl);
- if(target.schemaVersion!==80||target.environmentId!==values.environment||!url.hostname.endsWith('.neon.tech')||url.hostname.includes('-pooler.')||url.searchParams.get('sslmode')!=='verify-full'
+ if(target.schemaVersion!==CURRENT_SCHEMA_VERSION||target.environmentId!==values.environment||!url.hostname.endsWith('.neon.tech')||url.hostname.includes('-pooler.')||url.searchParams.get('sslmode')!=='verify-full'
   ||url.hash||url.searchParams.getAll('sslmode').length!==1||url.searchParams.getAll('channel_binding').length>1
   ||[...url.searchParams.keys()].some(key=>!['sslmode','channel_binding'].includes(key))||(url.searchParams.has('channel_binding')&&url.searchParams.get('channel_binding')!=='require'))throw Error('Exact direct current-schema bounded work target required');
  const source=await pilotSource(),preservation=await pilotProtectedSnapshot(),root=resolve(values.output),id=randomUUID();await createEvidenceDirectory(root);
@@ -35,7 +36,7 @@ export async function pilotWorkDenialReconciliation(args:string[]){
     current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner
     FROM turas_environment e JOIN operations_control c USING(environment_id)`)).rows;
    const row=rows[0];
-   if(rows.length!==1||row.name!==decodeURIComponent(url.pathname.slice(1))||row.role!==decodeURIComponent(url.username)||row.environment_id!==target.environmentId||row.schema_version!==80||row.mode!=='locked'||row.recovery_id!==values['recovery-id']||Number(row.revision)!==revision||row.owner!==true)throw Error('Exact locked work owner required before archive access');
+   if(rows.length!==1||row.name!==decodeURIComponent(url.pathname.slice(1))||row.role!==decodeURIComponent(url.username)||row.environment_id!==target.environmentId||row.schema_version!==CURRENT_SCHEMA_VERSION||row.mode!=='locked'||row.recovery_id!==values['recovery-id']||Number(row.revision)!==revision||row.owner!==true)throw Error('Exact locked work owner required before archive access');
    await requireRetiredLegacyWorkRuntime(db);
    stage='independent_current_denials';
    const retained=await readRetainedWorkDenialSnapshot({receipt:resolve(values.denials),destination:resolve(values.destination),staging,environmentId:target.environmentId,after:values['backup-captured-at']},signal);

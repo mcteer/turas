@@ -1,3 +1,4 @@
+import {WORK_BACKUP_LIMITS} from './work-backup-limits';
 import {restoredWorkStoreSchema,requireObservedWorkRecoveryStore,restoredWorkStoreDigest,type RestoredWorkStore,type WorkRecoveryStoreObservation} from './work-recovery-store-binding';
 import{workIntegrityBlobAuth}from'./work-integrity-blob-auth';
 import type {Client} from 'pg';
@@ -55,8 +56,8 @@ async function ledger(db:Client,candidate:Candidate){
 }
 async function objects(db:Client,material:Material,target:LockedWorkRecoveryTarget,signal:AbortSignal){
  if(process.env.VERCEL_BLOB_RETRIES!=='0')throw Error('Work integrity requires disabled Blob retries');
- const store=new BoundedWorkBackupObjects(new BlobPrivateObjects(target.environmentId,workIntegrityBlobAuth(material.storeId,material),10485760),target.environmentId,256,25165824);
- const limits={maximumObjects:256,maximumBytes:25165824};
+ const store=new BoundedWorkBackupObjects(new BlobPrivateObjects(target.environmentId,workIntegrityBlobAuth(material.storeId,material),10485760),target.environmentId,256,WORK_BACKUP_LIMITS.objectBytes,'pilot-work-backup-config-v2');
+ const limits={maximumObjects:256,maximumBytes:WORK_BACKUP_LIMITS.objectBytes};
  const before=await verifiedObjectInventory(store,target.environmentId,activeObjectNamespaces,signal,limits);
  verifyRequiredObjects(before.objects,await requiredRecoveryObjects(db,target.environmentId),target.environmentId);
  const after=await verifiedObjectInventory(store,target.environmentId,activeObjectNamespaces,signal,limits);
@@ -71,7 +72,7 @@ async function objects(db:Client,material:Material,target:LockedWorkRecoveryTarg
 export async function measureWorkTargetIntegrity(input:WorkTargetIntegrityInput){
  const material:Material={candidate:workCaptureCandidateSchema.parse(input.candidate),bundle:resolve(input.bundle),keyFile:resolve(input.keyFile),assetRoot:resolve(input.assetRoot),storeId:storeIdSchema.parse(input.storeId),...(input.oidcToken!==undefined?{oidcToken:oidcSchema.parse(input.oidcToken)}:{}),...(input.blobToken!==undefined?{blobToken:z.string().min(1).max(8192).parse(input.blobToken)}:{}),...(input.restoredStore?{restoredStore:restoredWorkStoreSchema.parse(input.restoredStore),storeObservation:input.storeObservation}:{})};
  workIntegrityBlobAuth(material.storeId,material);
- if(material.candidate.encryptedBundle.sizeBytes>67108864||material.candidate.objects.objectCount>256||material.candidate.objects.entries.reduce((sum,row)=>sum+row.sizeBytes,0)>25165824)throw Error('Work integrity candidate exceeds original capture allowance');
+ if(material.candidate.encryptedBundle.sizeBytes>WORK_BACKUP_LIMITS.encryptedArchiveBytes||material.candidate.objects.objectCount>256||material.candidate.objects.entries.reduce((sum,row)=>sum+row.sizeBytes,0)>WORK_BACKUP_LIMITS.objectBytes)throw Error('Work integrity candidate exceeds bounded work capture allowance');
  const proof=await withLockedWorkRecoveryDecision(input.target,async(db,target)=>{
   const signal=liveSignal(target,input.target.signal),native=await authenticate(material,target,signal,true);
   await requireLockedWorkRecoveryConnection(db,target,scope(target));
@@ -104,7 +105,7 @@ export async function authenticateCommittedWorkTargetIntegrity(db:Client,target:
  if(!isWorkRecoveryDecisionClient(db))throw Error('Genuine committed integrity owner required');
  const material:Material={candidate:workCaptureCandidateSchema.parse(input.candidate),bundle:resolve(input.bundle),keyFile:resolve(input.keyFile),assetRoot:resolve(input.assetRoot),storeId:storeIdSchema.parse(input.storeId),...(input.oidcToken!==undefined?{oidcToken:oidcSchema.parse(input.oidcToken)}:{}),...(input.blobToken!==undefined?{blobToken:z.string().min(1).max(8192).parse(input.blobToken)}:{}),...(input.restoredStore?{restoredStore:restoredWorkStoreSchema.parse(input.restoredStore),storeObservation:input.storeObservation}:{})};
  workIntegrityBlobAuth(material.storeId,material);
- if(material.candidate.encryptedBundle.sizeBytes>67108864||material.candidate.objects.objectCount>256||material.candidate.objects.entries.reduce((sum,row)=>sum+row.sizeBytes,0)>25165824)throw Error('Work integrity candidate exceeds original capture allowance');
+ if(material.candidate.encryptedBundle.sizeBytes>WORK_BACKUP_LIMITS.encryptedArchiveBytes||material.candidate.objects.objectCount>256||material.candidate.objects.entries.reduce((sum,row)=>sum+row.sizeBytes,0)>WORK_BACKUP_LIMITS.objectBytes)throw Error('Work integrity candidate exceeds bounded work capture allowance');
  await requireLockedWorkRecoveryConnection(db,target,scope(target));const bounded=liveSignal(target,signal);await authenticate(material,target,bounded,true);await ledger(db,material.candidate);const inventory=await objects(db,material,target,bounded);bounded.throwIfAborted();
  return {bundleDigest:material.candidate.encryptedBundle.digest,ledgerDigest:material.candidate.ledgerDigest,objectsDigest:inventory.digest};
 }

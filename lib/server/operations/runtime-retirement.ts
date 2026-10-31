@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import type {Client} from 'pg';
@@ -45,7 +46,7 @@ export async function retireLockedLegacyRuntime(db:Client,input:z.infer<typeof s
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
   const control=(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1 FOR UPDATE',[scope.environmentId])).rows[0];
-  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==80||control?.mode!=='locked'||Number(control.revision)!==scope.controlRevision||control.recovery_id!==scope.recoveryId)throw Error('Exact locked runtime retirement required');
+  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==CURRENT_SCHEMA_VERSION||control?.mode!=='locked'||Number(control.revision)!==scope.controlRevision||control.recovery_id!==scope.recoveryId)throw Error('Exact locked runtime retirement required');
   if(!await restrictedPermissionRole(db,'turas_runtime'))throw Error('Restricted legacy permission role required');
   // The owner-bound role comment makes interruption after commit repeatable.
   // Never upsert a password or adopt an unrelated pre-existing login.
@@ -63,7 +64,16 @@ export async function retireLockedLegacyRuntime(db:Client,input:z.infer<typeof s
  }catch(error){await db.query('ROLLBACK');throw error;}
  // LOGIN closes reconnection first. Termination is deliberately after commit:
  // rollback cannot reopen the legacy login after killing its backends.
- await db.query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename='turas_runtime' AND pid<>pg_backend_pid()");
+ // The default timeout only acknowledges signal delivery. Wait for actual
+ // termination, bounded independently of the number of selected backends.
+ await db.query('BEGIN');
+ try{
+  await db.query("SET LOCAL statement_timeout='10000ms'; SET LOCAL transaction_timeout='15s'");
+  const terminated=await db.query("SELECT pg_terminate_backend(pid,3000) AS stopped FROM pg_stat_activity WHERE usename='turas_runtime' AND pid<>pg_backend_pid()");
+  if(terminated.rows.some(row=>row.stopped!==true))throw Error('Runtime termination unconfirmed; recovery remains locked');
+  await db.query('COMMIT');
+ }catch(error){await db.query('ROLLBACK');throw error;}
+ // Use a fresh transaction's activity snapshot after confirmed termination.
  const roles=(await db.query("SELECT rolname,rolcanlogin,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') ORDER BY rolname")).rows;
  if(roles.length!==2||roles[0].rolcanlogin!==false||roles[1].rolcanlogin!==true||roles.some(row=>row.rolsuper||row.rolcreatedb||row.rolcreaterole||row.rolreplication||row.rolbypassrls)||(await db.query("SELECT 1 FROM pg_stat_activity WHERE usename='turas_runtime'")).rowCount)throw Error('Runtime retirement incomplete; recovery remains locked');
  return {contract:'pilot-runtime-retirement-v1' as const,environmentId:scope.environmentId,recoveryId:scope.recoveryId,controlRevision:scope.controlRevision,oldLoginDisabled:true,oldBackendsTerminated:true,replacementRole:'turas_runtime_016',mode:'locked' as const,hostedCredentialsChanged:false,restorationReady:false};

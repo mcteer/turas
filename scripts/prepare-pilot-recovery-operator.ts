@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {mkdir,writeFile,readFile,cp} from 'node:fs/promises';
@@ -27,7 +28,7 @@ export async function preparePilotRecoveryOperator(args=process.argv.slice(2)){
  await promisify(execFile)(resolve('node_modules/esbuild/bin/esbuild'),['infra/pilot/recovery-operator/handler.ts','--bundle','--platform=node','--format=cjs','--target=node24','--external:pg-native','--outfile='+join(root,'src/runtime.cjs')],{timeout:60000,maxBuffer:1048576});
  const runtimeDigest=createHash('sha256').update(await readFile(join(root,'src/runtime.cjs'))).digest('hex');
  const manifest=JSON.parse(await readFile('migrations/manifest.json','utf8'));
- if(manifest.version!==80||manifest.migrations.length!==80)throw Error('Exact current operator migration ledger required');
+ if(manifest.version!==CURRENT_SCHEMA_VERSION||manifest.migrations.length!==CURRENT_SCHEMA_VERSION)throw Error('Exact current operator migration ledger required');
  const ledger=manifest.migrations.map((row:{file:string})=>({name:row.file.replace(/\.cjs$/,'')})).sort((a:{name:string},b:{name:string})=>a.name.localeCompare(b.name));
  const metadata={contract:'pilot-recovery-operator-build-v1',source:{...source,ledgerDigest:recoveryDigest(ledger)},runtimeDigest,nativeManifestDigest:client.manifestDigest};
  await writeFile(join(root,'src/source.json'),JSON.stringify(metadata),{mode:0o600,flag:'wx'});

@@ -21,3 +21,33 @@ export async function decryptRecoveryFile(input:string,output:string,key:Uint8Ar
  }finally{await source.close();await destination?.close();if(destination&&!complete)await unlink(output).catch(()=>undefined);}
 }
 export function verifyRecoveryKey(key:Uint8Array){keyAndContext(key,'0'.repeat(64));const nonce=randomBytes(12),plain=randomBytes(32),cipher=createCipheriv('aes-256-gcm',key,nonce),sealed=Buffer.concat([cipher.update(plain),cipher.final()]),decipher=createDecipheriv('aes-256-gcm',key,nonce);decipher.setAuthTag(cipher.getAuthTag());if(!Buffer.concat([decipher.update(sealed),decipher.final()]).equals(plain))throw Error('Recovery key unavailable');return createHash('sha256').update(sealed).digest('hex');}
+
+/** Same authenticated wire format as encryptRecoveryFile, without a packed
+ * plaintext file. The producer must finish before a tag or receipt is issued. */
+export async function encryptRecoveryStream(input:AsyncIterable<Uint8Array>,output:string,key:Uint8Array,contextDigest:string,maximumPlainBytes:number,signal:AbortSignal){
+ const context=keyAndContext(key,contextDigest);
+ if(!Number.isSafeInteger(maximumPlainBytes)||maximumPlainBytes<1||maximumPlainBytes>maximumBytes-68)throw Error('Bounded recovery stream required');
+ const destination=await privateFile(output,true);let complete=false;
+ try{
+  const nonce=randomBytes(12),header=Buffer.concat([magic,nonce,context]),cipher=createCipheriv('aes-256-gcm',key,nonce),hash=createHash('sha256');
+  cipher.setAAD(header);await writeBytes(destination,header,0,signal);hash.update(header);let position=header.length,plainBytes=0;
+  for await(const chunk of input){signal.throwIfAborted();plainBytes+=chunk.byteLength;if(plainBytes>maximumPlainBytes)throw Error('Recovery stream exceeds bound');const bytes=cipher.update(chunk);await writeBytes(destination,bytes,position,signal);position+=bytes.length;hash.update(bytes);}
+  const final=cipher.final(),tag=cipher.getAuthTag();await writeBytes(destination,final,position,signal);position+=final.length;hash.update(final);await writeBytes(destination,tag,position,signal);hash.update(tag);await destination.sync();complete=true;
+  return {digest:hash.digest('hex'),sizeBytes:position+tag.length};
+ }finally{await destination.close();if(!complete)await unlink(output).catch(()=>undefined);}
+}
+
+/** Plaintext is provisional until iteration reaches the authenticated end.
+ * Consumers may hash it, but must not publish a result before final() succeeds. */
+export async function* decryptRecoveryChunks(input:string,key:Uint8Array,contextDigest:string,signal:AbortSignal,expectedCiphertextDigest?:string):AsyncGenerator<Buffer>{
+ if(expectedCiphertextDigest!==undefined&&!/^[a-f0-9]{64}$/.test(expectedCiphertextDigest))throw Error('Expected encrypted digest required');const context=keyAndContext(key,contextDigest),source=await privateFile(input);
+ try{
+  const before=await source.stat();if(before.size<68)throw Error('Incomplete encrypted recovery archive');
+  const header=Buffer.alloc(52),tag=Buffer.alloc(16);if((await source.read(header,0,52,0)).bytesRead!==52||(await source.read(tag,0,16,before.size-16)).bytesRead!==16)throw Error('Recovery ciphertext truncated');
+  if(!header.subarray(0,8).equals(magic)||!header.subarray(20).equals(context))throw Error('Recovery encryption context differs');
+  const encryptedHash=createHash('sha256');encryptedHash.update(header);const decipher=createDecipheriv('aes-256-gcm',key,header.subarray(8,20));decipher.setAAD(header);decipher.setAuthTag(tag);const buffer=Buffer.alloc(65536);let position=52;
+  while(position<before.size-16){signal.throwIfAborted();const part=await source.read(buffer,0,Math.min(buffer.length,before.size-16-position),position);if(!part.bytesRead)throw Error('Recovery ciphertext changed');position+=part.bytesRead;encryptedHash.update(buffer.subarray(0,part.bytesRead));yield decipher.update(buffer.subarray(0,part.bytesRead));}
+  encryptedHash.update(tag);const final=decipher.final();if(final.length)yield final;if(expectedCiphertextDigest!==undefined&&encryptedHash.digest('hex')!==expectedCiphertextDigest)throw Error('Candidate encrypted digest differs');
+  const after=await source.stat();if(after.size!==before.size||after.mtimeMs!==before.mtimeMs||after.ctimeMs!==before.ctimeMs)throw Error('Recovery ciphertext changed');signal.throwIfAborted();
+ }finally{await source.close();}
+}

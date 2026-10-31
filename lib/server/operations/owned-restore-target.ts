@@ -1,3 +1,5 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
+import {WORK_BACKUP_LIMITS} from './work-backup-limits';
 import {retireOwnedProcess,requireOwnedProcessRetirement,type OwnedProcessRetirement} from '../../../scripts/pilot-owned-process';
 import {requiredRecoveryObjects} from './required-objects';
 import {LocalPrivateObjects} from '../storage/local-objects';
@@ -67,7 +69,7 @@ export async function mintOwnedRestoreTarget(raw:{container:string;ownerLabel:st
  try{
   db.on('error',()=>{});await db.connect();const initial=await databaseIdentity(db,base);signal.throwIfAborted();
   if(await containerIdentity(base,signal)!==containerId)throw Error('Owned restore container changed');
-  if(initial.environmentId!==input.environmentId||initial.schemaVersion!==80)throw Error('Fresh current owned restore marker required');
+  if(initial.environmentId!==input.environmentId||initial.schemaVersion!==CURRENT_SCHEMA_VERSION)throw Error('Fresh current owned restore marker required');
   const target:OwnedRestoreTarget=Object.freeze({contract:'pilot-owned-restore-target-v1',runnerEnvironmentId:input.environmentId,targetDigest:recoveryDigest({containerId,identity:initial.identity})});
   targets.set(target,{...base,containerId,runnerEnvironmentId:input.environmentId,identity:initial.identity});return target;
  }finally{await db.end();}
@@ -89,7 +91,7 @@ export async function requireOwnedRestoreConnection(db:Client,target:OwnedRestor
  if(!b.restored||active?.target!==target||recoveryDigest(scope)!==recoveryDigest(b.restored.scope)||recoveryDigest(scope)!==recoveryDigest(active.scope))throw Error('Actual bound owner recovery connection required');
  if(await containerIdentity(b,signal)!==b.containerId)throw Error('Owned restore container changed');
  const actual=await databaseIdentity(db,b),control=(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1',[scope.environmentId])).rows;
- if(actual.identity!==b.identity||actual.environmentId!==scope.environmentId||actual.schemaVersion!==80||control.length!==1||control[0].mode!=='locked'||Number(control[0].revision)!==scope.controlRevision||control[0].recovery_id!==scope.recoveryId)throw Error('Exact bound locked recovery source required');
+ if(actual.identity!==b.identity||actual.environmentId!==scope.environmentId||actual.schemaVersion!==CURRENT_SCHEMA_VERSION||control.length!==1||control[0].mode!=='locked'||Number(control[0].revision)!==scope.controlRevision||control[0].recovery_id!==scope.recoveryId)throw Error('Exact bound locked recovery source required');
  signal.throwIfAborted();return b.restored.integrity;
 }
 /** Derive required originals from the actual restored ledger, never from a
@@ -97,7 +99,7 @@ export async function requireOwnedRestoreConnection(db:Client,target:OwnedRestor
 export async function verifyOwnedRestoredRequiredObjects(db:Client,target:OwnedRestoreTarget,raw:Scope,signal:AbortSignal){
  const scope=scopeSchema.parse(raw),b=binding(target),proof=await requireOwnedRestoreConnection(db,target,scope,signal);
  await requireMeasuredWorkIntegrity(db,proof,scope,b.restored!.storeRoot,signal);
- const required=await requiredRecoveryObjects(db,scope.environmentId),physical=await verifiedObjectInventory(new LocalPrivateObjects(b.restored!.storeRoot,scope.environmentId,10485760),scope.environmentId,activeObjectNamespaces,signal,{maximumObjects:256,maximumBytes:24*1024*1024});
+ const required=await requiredRecoveryObjects(db,scope.environmentId),physical=await verifiedObjectInventory(new LocalPrivateObjects(b.restored!.storeRoot,scope.environmentId,10485760),scope.environmentId,activeObjectNamespaces,signal,{maximumObjects:256,maximumBytes:WORK_BACKUP_LIMITS.objectBytes});
  const actual=new Map(physical.objects.map(object=>[object.key,object]));
  if(required.length>256||required.some(object=>{const stored=actual.get(object.key);return !stored||stored.digest!==object.digest||stored.sizeBytes!==object.sizeBytes;}))throw Error('Required restored original coverage differs');
  return Object.freeze({contract:'pilot-owned-required-originals-v1' as const,environmentId:scope.environmentId,recoveryId:scope.recoveryId,controlRevision:scope.controlRevision,requiredObjectCount:required.length,requiredObjectBytes:required.reduce((sum,object)=>sum+object.sizeBytes,0),requiredObjectsDigest:recoveryDigest(required),physicalInventoryDigest:physical.digest,requiredOriginalsVerified:true as const,serviceVerified:false as const,restorationReady:false as const});
@@ -153,7 +155,7 @@ export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:
     await requireOwnedRestoreConnection(owner,target,scope,deadline);
     if(await recoveryGrantCheckpoint(owner)!==state.closedDigest)throw Error('Restored runtime grant boundary changed');
     await verifyOwnedRestoredRequiredObjects(owner,target,scope,deadline);
-    recoveryStores=await materializeOwnedRecoveryStores({sourceRoot:b.restored!.storeRoot,target:join(dirname(b.restored!.storeRoot),'canonical-runtime-'+randomUUID()),environmentId:scope.environmentId,signal:deadline});
+    recoveryStores=await materializeOwnedRecoveryStores({sourceRoot:b.restored!.storeRoot,target:join(dirname(b.restored!.storeRoot),'canonical-runtime-'+randomUUID()),environmentId:scope.environmentId,signal:deadline,maximumBytes:WORK_BACKUP_LIMITS.objectBytes});
     await requireMeasuredWorkIntegrity(owner,proof,scope,b.restored!.storeRoot,deadline);
     await owner.query(grants);
     await owner.query('GRANT turas_runtime TO turas_runtime_016');
@@ -171,7 +173,7 @@ export async function withOwnedRestoredRuntime<T>(target:OwnedRestoreTarget,raw:
    }catch(error){await owner.query('ROLLBACK');throw error;}
    await runtime.connect();deadline.throwIfAborted();
    const identity=(await runtime.query("SELECT current_user,session_user,current_database() AS database,environment_id,schema_version FROM turas_environment")).rows;
-   if(identity.length!==1||identity[0].current_user!=='turas_runtime_016'||identity[0].session_user!=='turas_runtime_016'||identity[0].database!==decodeURIComponent(url.pathname.slice(1))||identity[0].environment_id!==scope.environmentId||Number(identity[0].schema_version)!==80)throw Error('Actual direct restored runtime required');
+   if(identity.length!==1||identity[0].current_user!=='turas_runtime_016'||identity[0].session_user!=='turas_runtime_016'||identity[0].database!==decodeURIComponent(url.pathname.slice(1))||identity[0].environment_id!==scope.environmentId||Number(identity[0].schema_version)!==CURRENT_SCHEMA_VERSION)throw Error('Actual direct restored runtime required');
    let interrupted!:()=>void;
    const cancelled=new Promise<never>((_,reject)=>{interrupted=()=>reject(Error('Owned restored runtime interrupted'));deadline.addEventListener('abort',interrupted,{once:true});if(deadline.aborted)interrupted();});
    const applicationEnvironment=Object.freeze({DATABASE_URL:url.toString(),DATABASE_URL_UNPOOLED:url.toString(),TURAS_ENVIRONMENT_ID:scope.environmentId,TURAS_PRIVATE_OBJECT_BACKEND:'local',TURAS_ARTIFACT_STORE_ROOT:recoveryStores!.artifactRoot,TURAS_WORKFORCE_STORE_ROOT:recoveryStores!.workforceRoot,TURAS_REPORT_STORE_ROOT:recoveryStores!.reportRoot});

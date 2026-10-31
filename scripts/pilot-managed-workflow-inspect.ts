@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {managedInventoryClosurePlanSchema} from '../lib/server/operations/managed-workflow-inventory-close';
 import {bindManagedRunProvider} from '../lib/server/operations/managed-workflow-provider';
 import {inventoryManagedRuns} from '../lib/server/operations/managed-workflow-inventory';
@@ -45,7 +46,7 @@ export async function pilotManagedWorkflowInspect(args:string[]){
      if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==scope.schemaVersion||marker[0].owner!==true)throw Error('Actual owner native source differs');
      const conversations=(await db.query('SELECT id,workspace_id,owner_principal_id,binding_state,eve_session_id,context_generation FROM conversations WHERE environment_id=$1 ORDER BY id LIMIT 1001',[scope.environmentId])).rows;
      const attempts=(await db.query('SELECT a.id,a.conversation_id,a.dispatch_state,a.response_state,a.native_turn_id,a.native_delivery_id FROM response_attempts a JOIN conversations c ON c.id=a.conversation_id WHERE c.environment_id=$1 ORDER BY a.id LIMIT 1001',[scope.environmentId])).rows;
-     const control=[79,80].includes(scope.schemaVersion)?(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1',[scope.environmentId])).rows:null;
+     const control=[79,80,CURRENT_SCHEMA_VERSION].includes(scope.schemaVersion)?(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1',[scope.environmentId])).rows:null;
      if(control&&control.length!==1)throw Error('Exact native source control required');
      if(conversations.length>1000||attempts.length>1000)throw Error('Native source inventory exceeds bound');await db.query('COMMIT');return {conversations,attempts,control:control?.[0]??null,capturedAt:marker[0].captured_at.toISOString()};
     }finally{await db.query('ROLLBACK').catch(()=>undefined);await db.end();}
@@ -71,7 +72,7 @@ export async function pilotManagedWorkflowInspect(args:string[]){
    if(recoveryDigest({conversations:inventory.conversations,attempts:inventory.attempts,control:inventory.control})!==recoveryDigest({conversations:after.conversations,attempts:after.attempts,control:after.control})||JSON.stringify(await pilotSource())!==JSON.stringify(source)||JSON.stringify(await pilotProtectedSnapshot())!==JSON.stringify(before))throw Error('Native source or protected checkout changed');
    const counts:Record<string,number>={};for(const run of runs)counts[run.providerState]=(counts[run.providerState]??0)+1;
    let closurePlan:{name:string;digest:string}|null=null;
-   if([79,80].includes(scope.schemaVersion)&&inventory.control?.mode==='locked'&&inventory.control.recovery_id){
+   if([79,80,CURRENT_SCHEMA_VERSION].includes(scope.schemaVersion)&&inventory.control?.mode==='locked'&&inventory.control.recovery_id){
     const plan=managedInventoryClosurePlanSchema.parse({contract:'pilot-managed-inventory-closure-plan-v1',...source,environmentId:scope.environmentId,recoveryId:inventory.control.recovery_id,controlRevision:Number(inventory.control.revision),projectId:scope.projectId,teamId:values.team,target:scope.target,expectedIdentityDigest:managedInventory.identityDigest,expectedRuns:managedInventory.runs.length,maximumRuns:Math.max(1,managedInventory.runs.length),maximumPages:Math.max(...managedInventory.pages),expiresAt:new Date(Date.now()+900000).toISOString()});
     closurePlan={name:'closure-plan.json',digest:await writeEvidence(root,'closure-plan.json',plan)};
    }

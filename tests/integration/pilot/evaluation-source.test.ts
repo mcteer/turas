@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../../lib/contracts/current-schema';
 import {it,expect} from 'vitest';
 import {Client} from 'pg';
 import {withPilotEnvironment} from '../../../scripts/pilot-environment';
@@ -16,7 +17,7 @@ it('admits actual owned sources and prepares artifact retrieval and plan clones 
   expect(requireEvaluationSourceDatabase()).toBe(process.env.DATABASE_URL_UNPOOLED);
   expect(process.env.AI_GATEWAY_API_KEY).toBeUndefined();expect(process.env.CONTEXT_API_KEY).toBeUndefined();
   const source=process.env.DATABASE_URL_UNPOOLED,marker=process.env.TURAS_ENVIRONMENT_ID;
-  const probe=async()=>{const raw=process.env.DATABASE_URL_UNPOOLED!;expect(raw).not.toBe(source);expect(raw).toBe(process.env.TURAS_TEST_DATABASE_URL);expect(process.env.TURAS_ENVIRONMENT_ID).toBe(marker);const db=new Client({connectionString:raw});try{await db.connect();expect((await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows).toEqual([{environment_id:marker,schema_version:80}]);}finally{await db.end();}};
+  const probe=async()=>{const raw=process.env.DATABASE_URL_UNPOOLED!;expect(raw).not.toBe(source);expect(raw).toBe(process.env.TURAS_TEST_DATABASE_URL);expect(process.env.TURAS_ENVIRONMENT_ID).toBe(marker);const db=new Client({connectionString:raw});try{await db.connect();expect((await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows).toEqual([{environment_id:marker,schema_version:CURRENT_SCHEMA_VERSION}]);}finally{await db.end();}};
   observe('artifact','start');await withArtifactEvalEnvironment(probe,{production:true,deadlineAt:environment.deadlineAt});observe('artifact','complete');expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
   observe('retrieval','start');await withRetrievalEvalEnvironment(probe);observe('retrieval','complete');expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
   observe('plan','start');await withPlanEvalEnvironment(async clone=>{await clone.start();await probe();},{production:true,deadlineAt:environment.deadlineAt});observe('plan','complete');expect(process.env.DATABASE_URL_UNPOOLED).toBe(source);
@@ -26,9 +27,13 @@ it('seeds the governing behavior demo separately from the judged retrieval walkt
  const {qualityStages,qualitySeedCommand}=await import('../../../scripts/pilot-quality-live');
  const {execFile}=await import('node:child_process'),{promisify}=await import('node:util');
  await withPilotEnvironment(async environment=>{
-  const seed=async(id:string)=>{const stage=qualityStages.find(s=>s.id===id)!;await promisify(execFile)(process.execPath,['--import','tsx',...qualitySeedCommand(stage)],{cwd:environment.appRoot,env:process.env,timeout:90000,maxBuffer:1048576});};
+  const seed=async(id:string)=>{const stage=qualityStages.find(s=>s.id===id)!,args=qualitySeedCommand(stage);if(args)await promisify(execFile)(process.execPath,['--import','tsx',...args],{cwd:environment.appRoot,env:process.env,timeout:90000,maxBuffer:1048576});};
   const db=new Client({connectionString:process.env.DATABASE_URL_UNPOOLED});await db.connect();
   try{
+   expect(qualityStages.flatMap(stage=>stage.commands)).toHaveLength(23);
+   expect(qualitySeedCommand(qualityStages.find(stage=>stage.id==='007')!)).toBeNull();
+   expect(qualitySeedCommand(qualityStages.find(stage=>stage.id==='008')!)).toBeNull();
+   await seed('007');await seed('008');expect((await db.query('SELECT count(*)::int AS n FROM profile_records')).rows[0].n).toBe(0);
    await seed('003');
    const counts=async()=>(await db.query(`SELECT count(*)::int AS accepted,count(*) FILTER(WHERE v.payload->>'kind'='product_use')::int AS product_uses FROM profile_records r JOIN profile_revisions v ON v.id=r.current_accepted_revision_id`)).rows[0];
    expect(await counts()).toEqual({accepted:3,product_uses:1});

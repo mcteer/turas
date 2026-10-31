@@ -71,7 +71,7 @@ async function deriveMaintenanceInventory<C extends 'pilot-owned-maintenance-inv
     const workspaceId=id(row.workspace_id),membershipId=memberships.get(workspaceId);if(!membershipId)throw Error('Active maintenance workspace lacks authenticated owner scope');
     const value=Object.freeze({kind,recordId:id(row.record_id),workspaceId,customerId,membershipId,generation:generation(row.generation),parentId,object:object?Object.freeze({...object}):null,...(kind==='execution'?{bindingDigest:z.string().regex(/^[a-f0-9]{64}$/).parse(row.binding_digest)}:{})});
     if(records.some(prior=>prior.kind===value.kind&&prior.recordId===value.recordId))throw Error('Ambiguous maintenance record');
-    records.push(value);if(records.length>256)throw Error('Maintenance service inventory exceeds bound');if(object)classified.set(object.key,'maintenance-candidate');
+    records.push(value);if(records.length>1024)throw Error('Maintenance service inventory exceeds bound');if(object)classified.set(object.key,'maintenance-candidate');
    }
    const profiles=await rows(`SELECT c.id AS record_id,c.workspace_id,p.internal_generation AS generation FROM customer_profile_state p
     JOIN customer_references c ON c.id=p.customer_id AND c.workspace_id=p.workspace_id JOIN workspaces w ON w.id=c.workspace_id

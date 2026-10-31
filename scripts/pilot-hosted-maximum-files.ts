@@ -46,7 +46,7 @@ export async function prepareHostedMaximumFiles(input:Context&{customerId:string
  * Re-read domain rows, provider deployment metadata and every actual byte after
  * a separately created serving deployment. No upload/job/model is repeated. */
 export async function verifyHostedMaximumFiles(input:Pick<Context,'scope'|'db'|'headers'|'configuration'|'evidenceDirectory'|'signal'>&{manifest:unknown}){
- const manifest=hostedMaximumFilesManifestSchema.parse(input.manifest);for(const key of ['projectId','teamId','target','origin','environmentMarker','workspaceId','sourceCommit','sourceDigest','catalogDigest'] as const)if(manifest.scope[key]!==input.scope[key])throw Error('Exact original maximum-file scope required');
+ const manifest=hostedMaximumFilesManifestSchema.parse(input.manifest);for(const key of ['projectId','teamId','target','environmentMarker','workspaceId','sourceCommit','sourceDigest','catalogDigest'] as const)if(manifest.scope[key]!==input.scope[key])throw Error('Exact original maximum-file scope required');
  if(manifest.scope.deploymentId===input.scope.deploymentId||manifest.configurationDigest!==evidenceDigest(JSON.stringify(input.configuration))||new Set(manifest.originals.map(row=>row.kind)).size!==2)throw Error('Distinct unchanged actual file deployment required');const created=await verifyHostedFileRestart(input,manifest.scope,manifest.preparedAt);
  const request=pilotHostedRequest(input),reads=[];
  for(const entry of manifest.originals){
@@ -68,9 +68,13 @@ export async function verifyHostedMaximumFiles(input:Pick<Context,'scope'|'db'|'
 /** A separately created actual deployment of the identical source is required. */
 export async function verifyHostedFileRestart(input:Pick<Context,'scope'|'signal'>,previous:PilotHostedScope,preparedAt:string){
  pilotHostedScopeSchema.parse(previous);z.iso.datetime({offset:true}).parse(preparedAt);
- for(const key of ['projectId','teamId','target','origin','environmentMarker','workspaceId','sourceCommit','sourceDigest','catalogDigest'] as const)if(previous[key]!==input.scope[key])throw Error('Exact original file restart scope required');
+ for(const key of ['projectId','teamId','target','environmentMarker','workspaceId','sourceCommit','sourceDigest','catalogDigest'] as const)if(previous[key]!==input.scope[key])throw Error('Exact original file restart scope required');
  if(previous.deploymentId===input.scope.deploymentId)throw Error('Distinct actual file deployment required');
- await assertHostedFileTarget(input);await platformDeployment(previous,false,input.signal);
+ await assertHostedFileTarget(input);
+ // Immutable Preview hosts change on restart. Verify both old host and ID
+ // independently, as assertHostedFileTarget already does for the new pair.
+ const prior=await platformDeployment(previous,false,input.signal);
+ if(previous.origin!==input.scope.origin&&JSON.stringify(prior)!==JSON.stringify(await platformDeployment(previous,true,input.signal)))throw Error('Original file deployment and origin differ');
  const {hostedDeploymentLookupPath,verifyHostedDeployment}=await import('../lib/contracts/pilot-hosted'),raw=JSON.parse(execFileSync('vercel',['api',hostedDeploymentLookupPath(input.scope),'--raw'],{encoding:'utf8',timeout:30000,maxBuffer:1048576,env:{NODE_ENV:'production',...Object.fromEntries(['PATH','HOME','TMPDIR','LANG','LC_ALL'].flatMap(key=>process.env[key]===undefined?[]:[[key,process.env[key]]]))}}));verifyHostedDeployment(raw,input.scope);const created=Number(raw.createdAt);
  if(!Number.isSafeInteger(created)||created<=Date.parse(preparedAt)||created>Date.now())throw Error('Actual new serving deployment must follow original preparation');return created;
 }

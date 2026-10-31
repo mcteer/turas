@@ -80,9 +80,9 @@ async function requireUnusedPilotRoot(root:string,environment:NodeJS.ProcessEnv,
   return;
  }
 }
-export async function withPilotEnvironment<T>(run: (environment: PilotEnvironment) => Promise<T>, options: { priorSchema?: 38|55|57|77|79; postgresMajor?:RecoveryPostgresMajor; queryStatistics?:boolean; deadlineMs?: number } = {}): Promise<T> {
+export async function withPilotEnvironment<T>(run: (environment: PilotEnvironment) => Promise<T>, options: { priorSchema?: 38|55|57|77|79|80; postgresMajor?:RecoveryPostgresMajor; queryStatistics?:boolean; deadlineMs?: number } = {}): Promise<T> {
  if (Number(process.versions.node.split('.')[0]) !== 24) throw Error('Pilot checks require Node 24');
- if(options.priorSchema!==undefined&&![38,55,57,77,79].includes(options.priorSchema))throw Error('Explicit supported owned prior schema required');
+ if(options.priorSchema!==undefined&&![38,55,57,77,79,80].includes(options.priorSchema))throw Error('Explicit supported owned prior schema required');
  const protectedBefore=await pilotProtectedSnapshot();
  const digest = async () => createHash('sha256').update(await readFile('agent/agent.ts')).digest('hex');
  const agentDigest = await digest(), previous = { ...process.env };

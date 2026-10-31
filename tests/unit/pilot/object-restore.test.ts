@@ -31,6 +31,16 @@ it('restores exact object identities and bytes while retaining the original arch
  expect(await new WorkforceStore(materialized.workforceRoot,header.environmentId).read(workforceId)).toEqual(bytes);
  await expect(materializeOwnedRecoveryStores({sourceRoot:join(root,'restored'),target:join(root,'canonical'),environmentId:header.environmentId,signal:AbortSignal.timeout(5000)})).rejects.toThrow();
  expect(await readFile(path)).toEqual(bytes);
+ // Complete work captures explicitly opt into the larger allowance; legacy
+ // callers still reject it before creating a destination.
+ for(let index=0;index<3;index++){const large=Buffer.alloc(10485760,index+1),digest=createHash('sha256').update(large).digest('hex'),name='objects/artifact/'+digest;await writeFile(join(root,'unpacked',name),large,{mode:0o600});header.entries.push({name,sizeBytes:large.length,digest});large.fill(0);}
+ const expanded={...input(),target:join(root,'expanded'),signal:AbortSignal.timeout(30000),maximumBytes:201326592};
+ await expect(restoreOwnedRecoveryObjects({...expanded,maximumBytes:undefined})).rejects.toThrow('allowance');expect(await readdir(root)).not.toContain('expanded');
+ await expect(restoreOwnedRecoveryObjects({...expanded,maximumBytes:201326593})).rejects.toThrow('Bounded');
+ const complete=await restoreOwnedRecoveryObjects(expanded);expect(complete.objectCount).toBe(9);expect(complete.sizeBytes).toBe(31457280+bytes.length*6);
+ await expect(materializeOwnedRecoveryStores({sourceRoot:join(root,'expanded'),target:join(root,'expanded-default'),environmentId:header.environmentId,signal:AbortSignal.timeout(30000)})).rejects.toThrow();expect(await readdir(root)).not.toContain('expanded-default');
+ const canonical=await materializeOwnedRecoveryStores({sourceRoot:join(root,'expanded'),target:join(root,'expanded-canonical'),environmentId:header.environmentId,signal:AbortSignal.timeout(30000),maximumBytes:201326592});expect(canonical.objectCount).toBe(9);
+ for(const entry of header.entries.filter(entry=>entry.sizeBytes===10485760)){const restored=await readFile(join(canonical.artifactRoot,'objects',entry.digest));expect(createHash('sha256').update(restored).digest('hex')).toBe(entry.digest);}
  const reportId=header.entries.find(entry=>entry.name.startsWith('objects/report/'))!.name.split('/').at(-1)!;
  await store.put(objectKey(header.environmentId,'gap-report',reportId),(async function*(){yield bytes;})(),{sizeBytes:bytes.length,digest:header.entries[1].digest});
  await expect(materializeOwnedRecoveryStores({sourceRoot:join(root,'restored'),target:join(root,'collision'),environmentId:header.environmentId,signal:AbortSignal.timeout(5000)})).rejects.toThrow('collision');

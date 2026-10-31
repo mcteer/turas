@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../../lib/contracts/current-schema';
 import {it,expect} from 'vitest';
 import {randomUUID} from 'node:crypto';
 import {databaseTargetDigest} from '../../../lib/server/operations/database-binding';
@@ -5,7 +6,7 @@ import {verifyManagedRuntimeBinding} from '../../../scripts/pilot-managed-runtim
 const connection='postgres://owner:private-database-key@ep-synthetic.neon.tech/neondb?sslmode=verify-full';
 const scope={contract:'pilot-hosted-scope-v1' as const,runId:randomUUID(),projectId:'prj_synthetic',teamId:'team_synthetic',deploymentId:'dpl_synthetic',origin:'https://synthetic.vercel.app',environmentMarker:'synthetic-preview',workspaceId:randomUUID(),target:'production' as const,sourceCommit:'a'.repeat(40),sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64)};
 const recoveryId=randomUUID(),controlRevision=2,token='synthetic-platform-token',session={contract:'pilot-hosted-operations-session-v1' as const,origin:scope.origin,cookie:'__Host-turas_session='+'s'.repeat(43)};
-function observation(){return {contract:'pilot-operational-database-binding-v1',databaseBindingDigest:databaseTargetDigest(connection,scope.environmentMarker),environmentId:scope.environmentMarker,schemaVersion:80,codeVersion:scope.sourceCommit,mode:'locked',controlRevision,recoveryId,measuredAt:new Date().toISOString(),effectiveRuntimeRole:true,directRuntimeLogin:true};}
+function observation(){return {contract:'pilot-operational-database-binding-v1',databaseBindingDigest:databaseTargetDigest(connection,scope.environmentMarker),environmentId:scope.environmentMarker,schemaVersion:CURRENT_SCHEMA_VERSION,codeVersion:scope.sourceCommit,mode:'locked',controlRevision,recoveryId,measuredAt:new Date().toISOString(),effectiveRuntimeRole:true,directRuntimeLogin:true};}
 function fixture(patch:Record<string,unknown>={},deploymentPatch:Record<string,unknown>={}){
  const calls:{url:string;method:string}[]=[];let appCalls=0;
  const transport:typeof fetch=async(url,options)=>{
@@ -32,7 +33,7 @@ it('verifies platform deployment and alias before reading the authenticated lock
  for(const secret of [token,session.cookie,'private-database-key'])expect(JSON.stringify(result)).not.toContain(secret);
 });
 it('rejects stale foreign or role-overridden database observations',async()=>{
- for(const patch of [{databaseBindingDigest:'f'.repeat(64)},{environmentId:'foreign'},{schemaVersion:77},{codeVersion:'d'.repeat(40)},{mode:'open'},{controlRevision:3},{recoveryId:randomUUID()},{effectiveRuntimeRole:false},{directRuntimeLogin:false},{measuredAt:new Date(Date.now()-120000).toISOString()},{measuredAt:new Date(Date.now()+120000).toISOString()}]){
+ for(const patch of [{databaseBindingDigest:'f'.repeat(64)},{environmentId:'foreign'},{schemaVersion:77},{schemaVersion:80},{schemaVersion:CURRENT_SCHEMA_VERSION+1},{codeVersion:'d'.repeat(40)},{mode:'open'},{controlRevision:3},{recoveryId:randomUUID()},{effectiveRuntimeRole:false},{directRuntimeLogin:false},{measuredAt:new Date(Date.now()-120000).toISOString()},{measuredAt:new Date(Date.now()+120000).toISOString()}]){
   const f=fixture(patch);await expect(verifyManagedRuntimeBinding({...input(),transport:f.transport})).rejects.toThrow();expect(f.calls.every(call=>call.method==='GET')).toBe(true);
  }
 });

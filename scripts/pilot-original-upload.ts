@@ -1,11 +1,11 @@
-import {put,type HandleUploadBody} from '@vercel/blob/client';
+import {privateUploadUrl,privateUploadHeaders} from '../lib/contracts/blob-upload';
 import {z} from 'zod';
 import type {PilotHostedScope} from '../lib/contracts/pilot-hosted';
 import {objectKey} from '../lib/server/storage/private-objects';
 import {pilotHostedRequest} from './pilot-hosted-request';
 /** Same prepared capability and finish protocol as the UI. The client receives
- * a narrowly scoped upload token, never the store's read/write credential. */
-export async function uploadPilotOriginal(input:{scope:PilotHostedScope;headers:Headers;domain:'artifact'|'workforce';id:string;bytes:Buffer;contentType:string;signal:AbortSignal;requireBlob:boolean;transport?:typeof fetch;clientPut?:typeof put}){
+ * a narrowly scoped signed upload URL, never the store's read/write credential. */
+export async function uploadPilotOriginal(input:{scope:PilotHostedScope;headers:Headers;domain:'artifact'|'workforce';id:string;bytes:Buffer;contentType:string;signal:AbortSignal;requireBlob:boolean;transport?:typeof fetch}){
  if(input.requireBlob&&process.env.VERCEL_BLOB_RETRIES!=='0')throw Error('Hosted original requires disabled Blob SDK retries');
  const {scope,signal}=input,transport=input.transport??fetch,request=pilotHostedRequest({...input,transport});z.uuid().parse(input.id);
  if(input.bytes.length<1||input.bytes.length>10485760)throw Error('Bounded original bytes required');
@@ -19,9 +19,9 @@ export async function uploadPilotOriginal(input:{scope:PilotHostedScope;headers:
  }
  const namespace=input.domain==='artifact'?'artifact-staging':'workforce-staging',suffix=prepared.pathname.split('/').at(-1)!;
  if(prepared.pathname!==objectKey(scope.environmentMarker,namespace,suffix)||prepared.sizeBytes!==input.bytes.length||prepared.validUntil<=Date.now()||prepared.validUntil>Date.now()+600000)throw Error('Exact current original capability required');
- const body:HandleUploadBody={type:'blob.generate-client-token',payload:{pathname:prepared.pathname,multipart:false,clientPayload:JSON.stringify({capabilityId:prepared.capabilityId})}};
- const issued=z.object({type:z.literal('blob.generate-client-token'),clientToken:z.string().min(1).max(16384)}).parse(await request(base+'/upload','POST',body));
- signal.throwIfAborted();const result=await (input.clientPut??put)(prepared.pathname,new Blob([new Uint8Array(input.bytes)],{type:'application/octet-stream'}),{access:'private',token:issued.clientToken,contentType:'application/octet-stream',multipart:false,abortSignal:AbortSignal.any([signal,AbortSignal.timeout(30000)])});
- if(result.pathname!==prepared.pathname)throw Error('Uploaded private object identity differs');
+ const issued=z.object({data:z.object({presignedUrl:z.string().max(16384)})}).parse(await request(base+'/upload','POST',{type:'blob.presign',pathname:prepared.pathname,capabilityId:prepared.capabilityId}));
+ signal.throwIfAborted();
+ const uploaded=await transport(privateUploadUrl(issued.data.presignedUrl,prepared.pathname),{method:'PUT',credentials:'omit',redirect:'error',headers:privateUploadHeaders,body:new Uint8Array(input.bytes),signal:AbortSignal.any([signal,AbortSignal.timeout(30000)])});
+ try{if(!uploaded.ok)throw Error('Private original upload unavailable');}finally{await uploaded.body?.cancel();}
  await request(base+'/upload','POST',{type:'finish',capabilityId:prepared.capabilityId});
 }
