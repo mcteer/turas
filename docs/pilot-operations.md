@@ -2,7 +2,7 @@
 
 016 is in implementation. None of this document establishes hosted readiness.
 The `08ef152` checkpoint passed its historical 640-case local catalog and
-43 CI jobs. Current integration targets schema 079 while Production remains
+43 CI jobs. That checkpoint targeted schema 079 while Production remains
 on released schema 077; fresh complete source-bound verification is in progress. The exact source and retained failed attempts
 are recorded in [validation](../specs/016-pilot-hardening/validation.md).
 Storage cutover, complete recovery/current-authority reconciliation and hosted
@@ -41,6 +41,17 @@ store, never an empty local directory.
 New managed backups require two actual scheduled captures twelve hours apart,
 maximum age 24 hours and seven-day expiry. Existing operator archives remain outside
 managed deletion. Current denial/replay authority must survive independently.
+
+## Current source schema compatibility
+
+The native pre-admission rejection correction requires migration 081 and exact
+schema 081 for current runtime readiness, hosted admission, maintenance and
+recovery targets. It records only a verified, undispatched `session_not_ready`
+409 as a rejected response; uncertain delivery keeps its accounting hold.
+Historical schema-080 denial snapshots and archive headers retain their original
+identity and named-content protections. Owned forward rehearsals can start at
+080 and must apply the complete current ledger before current-target checks.
+This source requirement does not assert that any hosted database has migrated.
 
 ## Current integrity verification command
 
@@ -159,7 +170,7 @@ The minimal public readiness response is `{ready: boolean}`, with 503 for failed
 
 ### Isolated physical restore and absent-authority fallback
 
-The current restore command is restricted to separately provisioned, owned loopback 016 databases on PostgreSQL 17 or 18. It does not restore Preview or Production and does not initialize the target, start processes, change aliases, or unlock. Set the explicit target owner/runtime environment through the owned runner; keep the selected checkout environment untouched. The target must already have schema 079 and be locked.
+The current restore command is restricted to separately provisioned, owned loopback 016 databases on PostgreSQL 17 or 18. It does not restore Preview or Production and does not initialize the target, start processes, change aliases, or unlock. Set the explicit target owner/runtime environment through the owned runner; keep the selected checkout environment untouched. The target must already have the current release schema (081) and be locked.
 
 Run `npm run pilot:recovery:check -- --restore-isolated --environment <source-marker> --ledger-digest <source-ledger-sha256> --manifest <private-manifest.json> --bundle <private-encrypted-bundle> --key-file <separately-controlled-key> --source-database <owned-source-database-name> --output <new-private-result-directory>`. Source and target markers/database names must differ. Recovery manifests and authenticated archive provenance bind `acceptedContentDigest`, covering every captured domain table and sequence except control/observational recovery tables. The ledger digest hashes the canonically ordered `SELECT name FROM turas_migrations ORDER BY name` rows. Recovery metadata digests canonicalize object property order; array order remains significant.
 
@@ -343,7 +354,7 @@ For a disposable owned schema-079 target already locked at an exact recovery UUI
 
 The command disables LOGIN on the legacy permission role, terminates its backends, and creates a separately bound replacement login inheriting the existing restricted grants. Exact repeats preserve the same credential; conflicts never rotate or adopt an existing role. It does not edit hosted environments, unlock recovery, or authorize a Production cutover. The actual owned command and five-case catalog passed. Hosted credential retirement and old-deployment HTTP denial must still be proven before pilot memberships are enabled.
 
-For an explicitly selected work target, use `npm run pilot:recovery:authority -- --retire-work-runtime --source <private-source.json> --input <private-input.json> --output <new-private-directory>`. Both source and protected input must bind the same project, environment and target. The source must be schema079 and the actual owner control must already be locked at the specified recovery UUID/revision. Legacy inputs without `target` remain Production-only; Preview requires explicit `target: "preview"` in both documents. Platform binding is checked before database retirement. The separate replacement password stays in protected input and database protocol. This command neither updates hosted settings nor opens service or certifies managed Workflow closure.
+For an explicitly selected work target, use `npm run pilot:recovery:authority -- --retire-work-runtime --source <private-source.json> --input <private-input.json> --output <new-private-directory>`. Both source and protected input must bind the same project, environment and target. The source must be schema081 and the actual owner control must already be locked at the specified recovery UUID/revision. Legacy inputs without `target` remain Production-only; Preview requires explicit `target: "preview"` in both documents. Platform binding is checked before database retirement. The separate replacement password stays in protected input and database protocol. This command neither updates hosted settings nor opens service or certifies managed Workflow closure.
 
 ### Read-only managed Workflow identity inspection
 
@@ -351,7 +362,7 @@ For an explicitly selected work target, use `npm run pilot:recovery:authority --
 npm run pilot:recovery:authority -- --inspect-managed-workflow --source <private-source-config.json> --team <work-team-id> --auth-file <protected-vercel-cli-auth.json> --output <new-private-evidence-directory>
 ```
 
-The explicit source contract selects Preview schema 038, 055, 057, 077 or 079, or Production schema 055, 057, 077 or 079, with verified unpooled TLS transport. Inspection is read-only at every supported schema; the separate managed inventory closure command requires schema 079 and its own finite closure authority. The command checks actual database owner/marker/schema and current work-project binding, reads only conversation/attempt identity and lifecycle metadata, and verifies each exact bound native ID through the managed Workflow provider. It repeats the application inventory after the provider reads and verifies the unchanged source and protected checkout. Provider bodies, model inputs/outputs, customer labels and credentials never enter the receipt. Missing provider runs remain explicitly unavailable; invalid or over-bound inventories fail. It creates no native run, model call, provider write, membership, retry, authority grant or unlock. Its private receipt is an inventory, not a verified recovery checkpoint.
+The explicit source contract selects Preview schema 038, 055, 057, 077 or 079, or Production schema 055, 057, 077 or 079, with verified unpooled TLS transport. Inspection is read-only at every supported schema; the separate managed inventory closure command requires schema 081 and its own finite closure authority. The command checks actual database owner/marker/schema and current work-project binding, reads only conversation/attempt identity and lifecycle metadata, and verifies each exact bound native ID through the managed Workflow provider. It repeats the application inventory after the provider reads and verifies the unchanged source and protected checkout. Provider bodies, model inputs/outputs, customer labels and credentials never enter the receipt. Missing provider runs remain explicitly unavailable; invalid or over-bound inventories fail. It creates no native run, model call, provider write, membership, retry, authority grant or unlock. Its private receipt is an inventory, not a verified recovery checkpoint.
 
 The installed eve [execution model](../node_modules/eve/docs/concepts/execution-model-and-durability.mdx) supports a settled deployment handoff that preserves the original session ID and stream. It does not move live turns, pending input/authorization, queued messages or active tasks/subagents. Target checkpoint validation can fail and leave the original deployment executing the delivery. Recovery therefore requires independently current source/authority checks, actual settled-work and checkpoint validation, original-stream/deployment availability, and exact provider/paid/send reconciliation before relying on handoff. A provider run marked `running` alone proves none of these conditions. Do not rerun the initial agent workflow as a substitute for a recovered conversation.
 
@@ -369,7 +380,7 @@ Within the owning 016 disposable PostgreSQL runner, use:
 npm run pilot:recovery:check -- --restore-work-isolated --environment <captured-environment> --candidate <private-candidate.json> --bundle <private-candidate.encrypted> --key-file <separate-private-key> --output <new-private-output>
 ```
 
-The target must be a fresh, locked schema-079 PostgreSQL 18 database in its own
+The target must be a fresh, locked schema-081 PostgreSQL 18 database in its own
 disposable cluster. The command authenticates the complete archive before SQL
 restoration, restores the public application schema without copied grants, checks
 the exact migration ledger and accepted-content digest, and restores all six
@@ -469,7 +480,7 @@ The provider paths and methods follow [Vercel Workflow's run adapter](https://gi
 
 `pilot:recovery:authority -- --audit-work-request-fences` reads the current encrypted
 work-archive snapshot through the independent destination and cold key, then checks
-an exact locked schema-079 owner target. Supply `--environment`, `--recovery-id`,
+an exact locked schema-081 owner target. Supply `--environment`, `--recovery-id`,
 `--expected-revision`, `--denials` (the retained snapshot receipt), `--destination`
 (the protected archive configuration), `--backup-captured-at` and a new private
 `--output` directory. It accepts no raw-snapshot healthy flag or supplied context
@@ -505,7 +516,7 @@ npm run pilot:recovery:authority -- --reconcile-owned-work-denials \
 The command rejects hosted/unowned connections and checks actual owner, marker,
 schema and locked revision before contacting the independent archive. It retrieves
 and authenticates current encrypted bytes and their independently retained key,
-requires the complete schema-079 v7 inventory, applies credential/grant/source/
+requires the complete schema-081 v7 inventory, applies credential/grant/source/
 publication denials and permanent request fences, then audits actual database
 functions, indexes, triggers and immutable protections. Proof older than the backup
 or five minutes, unavailable bytes and incomplete inventories cannot authorize
@@ -753,7 +764,7 @@ Both files require a direct private directory and mode 0600. Never put the
 password in CLI arguments, receipts or commits.
 
 The command accepts only the exact selected owned local cluster and a locked
-schema-079 target. It checks the actual configured credential and live admin
+schema-081 target. It checks the actual configured credential and live admin
 membership, creates a short-lived transaction-local session, performs canonical
 reads and revokes the session before committing. Callback SQL failures roll back
 the read savepoint and retire the session; command failures roll back the whole
@@ -912,7 +923,7 @@ cookies, passwords or bypass credentials in CLI arguments or receipts.
 
 Before sending that cookie, the command verifies the deployment and alias through
 the platform API. The authenticated operations status must then identify the same
-committed source, locked schema-079 environment/recovery/revision and database
+committed source, locked schema-081 environment/recovery/revision and database
 endpoint as the owner connection. A fresh endpoint digest excludes passwords and
 role names; the observation must separately show a direct runtime login, rather
 than an owner connection using SET ROLE. The complete-inventory command repeats

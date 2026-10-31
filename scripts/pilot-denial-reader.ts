@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {observeRecoveryConnection} from '../lib/server/operations/recovery-connection';
 import {Client} from 'pg';
 import {recoveryDigest} from '../lib/contracts/pilot-recovery';
@@ -19,7 +20,7 @@ export function requireAuthenticatedRetainedDenials(value:RetainedWorkDenials,en
  const actual=authenticated.get(value);
  if(!actual||!actual.authority||actual.environmentId!==environmentId||actual.contextDigest!==value.contextDigest||actual.backupCapturedAt!==value.backupCapturedAt)throw Error('Actual independently retained current denials required');
  verifyRecoveryDenialSnapshot(value.snapshot,{environmentId,contextDigest:actual.contextDigest,after:actual.backupCapturedAt,now});
- if(value.snapshot.contract!=='pilot-denial-replay-snapshot-v7'||value.snapshot.schemaVersion!==80)throw Error('Complete current authority inventory required');
+ if(value.snapshot.contract!=='pilot-denial-replay-snapshot-v7'||value.snapshot.schemaVersion!==CURRENT_SCHEMA_VERSION)throw Error('Complete current authority inventory required');
  return value;
 }
 /** A later genuine cold read may supply current authority for replay. The

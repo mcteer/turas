@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {reconcileRestoredNamedContentSafety} from './recovery-named-content';
 import {requireRecoveryJobReplayColumns,requireRecoveryJobSemanticRows} from './recovery-job-replay-keys';
 import {currentRecoveryStateDigest} from './recovery-state';
@@ -67,7 +68,7 @@ export async function requireRetiredLegacyWorkRuntime(db:Client){
  * target before entering the same exact-schema/control/snapshot decision fence. */
 async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snapshot:z.infer<typeof recoveryDenialSnapshotSchema>,scope:z.infer<typeof command>){
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
-  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==80)throw Error('Exact credential recovery target differs');
+  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==CURRENT_SCHEMA_VERSION)throw Error('Exact credential recovery target differs');
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[scope.environmentId]);await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[scope.environmentId]);
   const control=(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1 FOR UPDATE',[scope.environmentId])).rows[0];
   if(control?.mode!=='locked'||Number(control.revision)!==scope.controlRevision||control.recovery_id!==scope.recoveryId)throw Error('Exact locked credential reconciliation required');
@@ -241,7 +242,7 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
    // Older source schemas did not declare079's authored semantic identities.
    // Their authenticated index keys remain enforceable after forward migration;
    // this deny-only legacy path still keeps every required workflow quarantined.
-   if([79,80].includes(snapshot.schemaVersion))for(const entry of snapshot.tables)await requireRecoveryJobSemanticRows(db,entry,scope.environmentId);
+   if([79,80,CURRENT_SCHEMA_VERSION].includes(snapshot.schemaVersion))for(const entry of snapshot.tables)await requireRecoveryJobSemanticRows(db,entry,scope.environmentId);
    const replayEntries=snapshot.tables.map(entry=>({name:entry.name,replayKeyColumns:entry.replayKeyColumns??[],keys:entry.rows.flatMap(row=>row.replayKeys??[])}));
    const inheritedFence=z.strictObject({environment_id:z.string(),table_name:z.string().regex(/^[a-z_][a-z0-9_]*$/),key_columns:z.array(z.string().regex(/^[a-z_][a-z0-9_]*$/)).min(1).max(16),key_digest:z.string().regex(/^[a-f0-9]{64}$/)});
    for(const row of snapshot.tables.find(entry=>entry.name==='operations_replay_fences')?.rows??[]){
@@ -267,7 +268,7 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
     }
    }
   }
-  const namedContentCoverage=snapshot.schemaVersion===80?await reconcileRestoredNamedContentSafety(db,snapshot,scope.environmentId):{historicalSnapshot:true,currentNamedContentAuthorityVerified:false,authorityGranted:false};
+  const namedContentCoverage=[80,CURRENT_SCHEMA_VERSION].includes(snapshot.schemaVersion)?await reconcileRestoredNamedContentSafety(db,snapshot,scope.environmentId):{historicalSnapshot:true,currentNamedContentAuthorityVerified:false,authorityGranted:false};
   const currentStateDigest=await currentRecoveryStateDigest(db);
   return {currentStateDigest,namedContentCoverage,contract:'pilot-owned-credential-denials-v5' as const,...scope,mode:'locked' as const,revokedWorkspaces,revokedPartnerOrganizations,revokedPrincipals,revokedMemberships,revokedSessions,revokedMcpConnections,revokedGrants,clearedAcceptedHeads,withdrawnArtifacts,withdrawnResearch,retiredProjections,suspendedPublications,permanentReplayFencesAdded,typedModelHoldsAdded,sourcePublicationDenialsApplied:snapshot.contract!=='pilot-denial-replay-snapshot-v2',scope:'credentials-grants-and-source-denials' as const,authorityGranted:false,quarantineCleared:false,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false};
 }

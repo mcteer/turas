@@ -52,7 +52,7 @@ async function setup(environment:Parameters<Parameters<typeof withPilotEnvironme
   const admitted=await admitGovernedStaffingModelStep(principal,identity);
   return {principal,identity,admitted,release:()=>assertGovernedStaffingProviderRelease(principal,identity)};
  }
- return {environment,db,client,ledger,binding,scope,dispatchBinding,dispatch,ceiling,admit,prepare,meta};
+ return {actor:f.actor,environment,db,client,ledger,binding,scope,dispatchBinding,dispatch,ceiling,admit,prepare,meta};
 }
 export async function withHostedLearningFixture(run:(fixture:Awaited<ReturnType<typeof setup>>)=>Promise<void>){
  await withPilotEnvironment(async environment=>{

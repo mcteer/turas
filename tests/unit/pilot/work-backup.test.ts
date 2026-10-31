@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../../lib/contracts/current-schema';
 import {it,expect,vi} from 'vitest';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {createServer} from 'node:http';
@@ -138,7 +139,7 @@ it('paces scheduled capture from source time with one bounded abortable wait',as
     async query(sql:string){
      if(!this.connected)throw Error('Disconnected query attempted');
      if(sql.includes('SELECT r.archive_id'))return {rows:[receipt]};
-     if(sql.includes('source_now'))return {rows:[{mode:'open',revision:1,environment_id:scope.environmentId,schema_version:80,source_now:sourceNow,owner:true}]};
+     if(sql.includes('source_now'))return {rows:[{mode:'open',revision:1,environment_id:scope.environmentId,schema_version:CURRENT_SCHEMA_VERSION,source_now:sourceNow,owner:true}]};
      if(sql.includes('current_user=pg_get_userbyid'))return {rows:[{owner:true}]};
      throw Error('Unexpected SQL after cadence admission');
     }

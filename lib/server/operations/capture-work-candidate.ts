@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {WORK_BACKUP_LIMITS} from './work-backup-limits';
 import {Client} from 'pg';
 import {randomUUID,createHash} from 'node:crypto';
@@ -59,7 +60,7 @@ export async function captureWorkRecoveryCandidate(input:{scope:z.input<typeof s
    const objects=await captureRecoveryObjects({store:input.objects,environmentId:scope.environmentId,target:join(work,'objects'),signal:input.signal,maximumBytes:Math.min(input.maximumObjectBytes??25165824,archiveLimit-native.sizeBytes-1048576-80),maximumObjects:input.maximumObjects??256,pageSize:1,requiredObjects});
    const databaseName=String((await db.query('SELECT current_database() AS name')).rows[0].name);
    const id=input.archiveId??randomUUID(),configurationDigest=recoveryDigest({environmentId:scope.environmentId,databaseName,sourceProjectId:scope.sourceProjectId,storeId:scope.storeId,backend:'private-blob',workflow:'managed-workflow',clientManifestDigest:native.clientManifestDigest});
-   const captureProvenance={recoveryId:scope.recoveryId,controlRevision:scope.controlRevision,sourceCommit:scope.sourceCommit,sourceDigest:scope.sourceDigest,schemaVersion:80 as const,ledgerDigest,runtimeGrantsDigest:boundary.runtimeGrantsDigest,configurationDigest,acceptedContentDigest:boundary.acceptedContentDigest};
+   const captureProvenance={recoveryId:scope.recoveryId,controlRevision:scope.controlRevision,sourceCommit:scope.sourceCommit,sourceDigest:scope.sourceDigest,schemaVersion:CURRENT_SCHEMA_VERSION,ledgerDigest,runtimeGrantsDigest:boundary.runtimeGrantsDigest,configurationDigest,acceptedContentDigest:boundary.acceptedContentDigest};
    const provenance={...captureProvenance,keyReference:scope.keyReference,keyVersion:scope.keyVersion};
    const header:BackupArchiveHeader={contract:'pilot-archive-v1',checkpointId:id,environmentId:scope.environmentId,capturedAt:boundary.capturedAt,provenance,entries:[{name:'database.dump',sizeBytes:database.sizeBytes,digest:database.digest},...objects.entries]};
    if(Buffer.byteLength(JSON.stringify(header))+header.entries.reduce((sum,row)=>sum+row.sizeBytes,0)+12+68>archiveLimit)throw Error('Matched encrypted archive allowance exceeded');

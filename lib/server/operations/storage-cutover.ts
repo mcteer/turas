@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import type {PoolClient} from 'pg';
 import {storageCutoverPlanSchema,type StorageCutoverPlan} from '../../contracts/pilot-storage-cutover';
 import {recoveryDigest} from '../../contracts/pilot-recovery';
@@ -11,7 +12,7 @@ export const storageCutoverOperationDigest=(plan:StorageCutoverPlan)=>recoveryDi
 async function ownerTarget(db:PoolClient,plan:StorageCutoverPlan){
  const rows=(await db.query(`SELECT environment_id,schema_version,
   current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner FROM turas_environment`)).rows;
- if(rows.length!==1||rows[0].environment_id!==plan.environmentId||Number(rows[0].schema_version)!==80||rows[0].owner!==true)throw Error('Exact storage cutover owner target required');
+ if(rows.length!==1||rows[0].environment_id!==plan.environmentId||Number(rows[0].schema_version)!==CURRENT_SCHEMA_VERSION||rows[0].owner!==true)throw Error('Exact storage cutover owner target required');
  if(Date.parse(plan.expiresAt)<=Date.now())throw Error('Storage cutover plan expired');
 }
 /** Admit the entire finite copy before quiescing. Persist the cost hold before

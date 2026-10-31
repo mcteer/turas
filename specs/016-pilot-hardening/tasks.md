@@ -1602,3 +1602,17 @@ No hosted target may be locked for release before its measured reopen path exist
   fails, discard broken clients, and prevent callback replay or false commit
   success. Exercise actual pg client error delivery between queries and during
   commit; retain fresh full-catalog and hosted checks as release requirements.
+
+- [ ] T255 Persist exact native pre-admission `409 session_not_ready` rejections
+  under an explicit forward migration, with no accepted native identity or
+  provider claim. Preserve all other receipt restrictions and the no-retry
+  Learning contract; verify owned PostgreSQL constraints and fresh release gates.
+
+- [ ] T256 Verify Root streaming reload and Stop against an active provider response
+  and persisted text delta rather than terminal Gateway accounting. Preserve two
+  sends, actual cancellation, accounting, retirement and archive requirements;
+  retain request timing without buffering an unbounded response body.
+- [ ] T257 Verify expired evaluation uncertainty can be independently disposed
+  into its full permanent hold without renewing authority, changing source,
+  settling charges or adding allowance; coordinate compatible readers and require
+  a separate explicit continuation before fresh work.

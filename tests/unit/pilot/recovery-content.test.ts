@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../../lib/contracts/current-schema';
 import {assertRestoredNamedContentSafety,reconcileRestoredNamedContentSafety} from '../../../lib/server/operations/recovery-named-content';
 import {it,expect} from 'vitest';
 import {recoveryDigest} from '../../../lib/contracts/pilot-recovery';
@@ -16,6 +17,7 @@ it('hashes identical recovery inventories independently of object property order
  expect(await assertRestoredNamedContentSafety(db('legacy_gap'),snapshot(79),'synthetic')).toMatchObject({completeConversations:0,legacyGapConversations:1,authorityGranted:false});
  await expect(assertRestoredNamedContentSafety(db('complete'),snapshot(79),'synthetic')).rejects.toThrow('Historical snapshot');
  expect(await assertRestoredNamedContentSafety(db('complete',[dependency]),snapshot(80),'synthetic')).toMatchObject({completeConversations:1,activeNamedContentVerified:true,authorityGranted:false});
+ expect(await assertRestoredNamedContentSafety(db('complete',[dependency]),snapshot(CURRENT_SCHEMA_VERSION),'synthetic')).toMatchObject({completeConversations:1,activeNamedContentVerified:true,authorityGranted:false});
  await expect(assertRestoredNamedContentSafety(db('complete',[]),snapshot(80),'synthetic')).rejects.toThrow('incomplete');
  await expect(assertRestoredNamedContentSafety(db('complete',[dependency]),snapshot(80,'legacy_gap'),'synthetic')).rejects.toThrow('cannot exceed');
  for(const patch of [{citation_id:'different'},{first_attempt_id:randomUUID()},{customer_id:randomUUID()},{consumed_at:'2026-10-29T12:00:01.000Z'},{consumed_at:'2026-10-29T12:00:00.000001Z'}])await expect(assertRestoredNamedContentSafety(db('complete',[{...dependency,...patch}]),snapshot(80),'synthetic')).rejects.toThrow('dependency differs');

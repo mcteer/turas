@@ -10,6 +10,17 @@ import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {wrapStaffingModel} from '../../../lib/server/staffing/model-budget';
 import {captureRecoveryDenialSnapshot} from '../../../lib/server/operations/recovery-denial-snapshot';
 import {admitHostedLearningDispatch} from '../../../scripts/pilot-hosted-learning-admission';
+import {prepareLearningNativeAttempt,claimLearningNativeDispatch} from '../../../lib/server/learning/native';
+import {learningEvaluationPrompt} from '../../../lib/server/learning/evaluation-context';
+import {recordNativePreAdmissionRejection,getAttemptReceipt} from '../../../lib/server/conversations/dispatch';
+
+async function unsentNative(f:Parameters<Parameters<typeof fixture>[0]>[0]){
+ await f.admit();
+ await f.db.query("INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,$2,clock_timestamp())",[f.environment.environmentId,'native-rejection-'+randomUUID()]);
+ const prepared=await prepareLearningNativeAttempt(f.actor,f.meta.conversation_id,f.dispatchBinding.nativeSessionId,f.meta.native_request_id,learningEvaluationPrompt,false);
+ await claimLearningNativeDispatch(f.actor,f.meta.conversation_id,prepared.attemptId,0);
+ return prepared.attemptId;
+}
 
 it('consumes one actual original-journal arm with immutable owner admission and separate early provider identities',async()=>fixture(async f=>{
  expect(await f.admit()).toMatchObject({alreadyAdmitted:false,originalHoldRetained:true,ceilingMicroUsd:f.ceiling});
@@ -100,4 +111,35 @@ it('rolls back hosted consumption with a failed domain claim and never releases 
  await f.db.query("CREATE FUNCTION synthetic_learning_dispatch_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Synthetic claim failure'; END $$; CREATE TRIGGER synthetic_learning_dispatch_failure BEFORE INSERT ON learning_model_dispatches FOR EACH ROW EXECUTE FUNCTION synthetic_learning_dispatch_failure()");
  await expect(a.release()).rejects.toThrow('Synthetic claim failure');expect((await f.db.query('SELECT count(*)::int AS n FROM operations_hosted_learning_consumptions')).rows[0].n).toBe(0);expect((await f.db.query('SELECT count(*)::int AS n FROM learning_model_dispatches')).rows[0].n).toBe(0);
  expect(await f.ledger.status()).toMatchObject({heldMicroUsd:f.ceiling,dispatches:1,chargedMicroUsd:0});
+}),210000);
+
+it('persists a native pre-admission rejection without a provider claim or invented native identity',async()=>fixture(async f=>{
+ const responseId=await unsentNative(f),before=await f.ledger.status();
+ const receipt={ok:false,code:'session_not_ready',error:'The session is not ready to accept messages yet.'};
+ await recordNativePreAdmissionRejection(f.actor,f.meta.conversation_id,responseId,Response.json(receipt,{status:409}));
+ const saved=(await f.db.query('SELECT dispatch_state,response_state,native_response_status,native_receipt,native_response_headers,native_delivery_id,native_turn_id,input_event_id FROM response_attempts WHERE id=$1',[responseId])).rows[0];
+ expect(saved).toEqual({dispatch_state:'rejected',response_state:'failed',native_response_status:409,native_receipt:receipt,native_response_headers:{},native_delivery_id:null,native_turn_id:null,input_event_id:null});
+ expect((await f.db.query('SELECT state,failure_code FROM learning_attempts WHERE id=$1',[f.meta.id])).rows[0]).toEqual({state:'failed',failure_code:'native_pre_admission_rejected'});
+ expect((await f.db.query('SELECT state FROM watchdog_jobs WHERE attempt_id=$1',[responseId])).rows[0].state).toBe('settled');
+ expect((await f.db.query('SELECT count(*)::int AS n FROM event_projections')).rows[0].n).toBe(0);
+ expect((await f.db.query('SELECT count(*)::int AS n FROM learning_model_dispatches')).rows[0].n).toBe(0);
+ expect((await f.db.query('SELECT count(*)::int AS n FROM operations_hosted_learning_consumptions')).rows[0].n).toBe(0);
+ // A terminal Learning attempt remains fenced; retained rejection does not reopen it.
+ await expect(getAttemptReceipt(f.actor,f.meta.conversation_id,responseId)).rejects.toThrow('Learning attempt is no longer active');
+ expect(await f.ledger.status()).toEqual(before);
+}),210000);
+
+it('refuses any broader native pre-admission status body state or identity through the database constraint',async()=>fixture(async f=>{
+ const responseId=await unsentNative(f),receipt={ok:false,code:'session_not_ready'};
+ for(const bad of [{code:'session_not_ready'},{ok:null,code:'session_not_ready'},{ok:true,code:'session_not_ready'},{ok:false,code:'session_not_active'},{...receipt,sessionId:'wrun_claimed'},{...receipt,deliveryId:'delivery_claimed'}]){
+  await expect(recordNativePreAdmissionRejection(f.actor,f.meta.conversation_id,responseId,Response.json(bad,{status:409}))).rejects.toThrow('Service unavailable');
+ }
+ await recordNativePreAdmissionRejection(f.actor,f.meta.conversation_id,responseId,Response.json(receipt,{status:409}));
+ for(const patch of ["native_response_status=400","native_response_status=500","dispatch_state='admitted'","response_state='completed'","native_delivery_id='delivery_claimed'","native_turn_id='turn_0'","input_event_id='evt_claimed'","native_response_headers='{\"x-eve-session-id\":\"wrun_claimed\"}'::jsonb","native_receipt='{\"ok\":false}'::jsonb","native_receipt='{\"code\":\"session_not_ready\"}'::jsonb","native_receipt='{\"ok\":null,\"code\":\"session_not_ready\"}'::jsonb","native_receipt='{\"ok\":true,\"code\":\"session_not_ready\"}'::jsonb","native_receipt='{\"ok\":false,\"code\":\"session_not_active\"}'::jsonb","native_receipt='{\"ok\":false,\"code\":\"session_not_ready\",\"sessionId\":\"wrun_claimed\"}'::jsonb","native_receipt='{\"ok\":false,\"code\":\"session_not_ready\",\"deliveryId\":\"delivery_claimed\"}'::jsonb"]){
+  await expect(f.db.query('UPDATE response_attempts SET '+patch+' WHERE id=$1',[responseId])).rejects.toMatchObject({code:'23514',constraint:'response_attempts_native_response_status_check'});
+ }
+ expect((await f.db.query('SELECT dispatch_state,native_response_status,native_receipt FROM response_attempts WHERE id=$1',[responseId])).rows[0]).toEqual({dispatch_state:'rejected',native_response_status:409,native_receipt:receipt});
+ // The migration retains the original successful-receipt range.
+ await f.db.query("UPDATE response_attempts SET native_response_status=202,native_receipt='{\"ok\":true}'::jsonb,dispatch_state='admitted' WHERE id=$1",[responseId]);
+ expect((await f.db.query('SELECT native_response_status FROM response_attempts WHERE id=$1',[responseId])).rows[0].native_response_status).toBe(202);
 }),210000);

@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {z} from 'zod';
 import type {Client} from 'pg';
 
@@ -19,7 +20,7 @@ export async function readRecoveryIncident(db:Client,input:{environmentId:string
  z.uuid().parse(input.operationId);timestamp.parse(input.capturedAt);
  const authority=(await db.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='operations_control'::regclass")).rows[0];
  const marker=(await db.query('SELECT e.environment_id,e.schema_version,c.mode,c.recovery_id,clock_timestamp() AS now FROM turas_environment e JOIN operations_control c USING(environment_id)')).rows;
- if(!authority?.owner||marker.length!==1||marker[0].environment_id!==input.environmentId||Number(marker[0].schema_version)!==80||!['quiescing','locked'].includes(marker[0].mode))throw Error('Closed original owner incident required');
+ if(!authority?.owner||marker.length!==1||marker[0].environment_id!==input.environmentId||Number(marker[0].schema_version)!==CURRENT_SCHEMA_VERSION||!['quiescing','locked'].includes(marker[0].mode))throw Error('Closed original owner incident required');
  const rows=(await db.query(`SELECT id,recovery_id,revision,created_at FROM operations_control_transitions
   WHERE environment_id=$1 AND from_mode='open' AND to_mode='quiescing' AND created_at>=$2::timestamptz
   ORDER BY created_at,revision LIMIT 1`,[input.environmentId,input.capturedAt])).rows,row=rows[0];

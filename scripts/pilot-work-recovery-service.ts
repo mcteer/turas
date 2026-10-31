@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {Client} from 'pg';
 import {z} from 'zod';
 import {createHash} from 'node:crypto';
@@ -68,7 +69,7 @@ export async function pilotWorkRecoveryService(args:string[]){
   async function sameSource(){need(JSON.stringify(await pilotSource())===JSON.stringify(expectedSource));need(expectedSource.sourceCommit===scope.sourceCommit&&expectedSource.sourceDigest===scope.sourceDigest&&expectedSource.catalogDigest===scope.catalogDigest);await assertHostedFileTarget({scope,signal});}
   async function ownerState(){
    const rows=(await owner.query(`SELECT e.environment_id,e.schema_version,c.*,clock_timestamp() AS now,current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner FROM turas_environment e JOIN operations_control c USING(environment_id) FOR SHARE OF e,c`)).rows,row=rows[0];
-   need(rows.length===1&&row.owner&&row.environment_id===scope.environmentMarker&&Number(row.schema_version)===80&&row.mode==='open'&&row.recovery_id===config.scope.recoveryId&&Number(row.revision)===config.scope.controlRevision+1&&row.verified_bundle_digest===candidate.encryptedBundle.digest);
+   need(rows.length===1&&row.owner&&row.environment_id===scope.environmentMarker&&Number(row.schema_version)===CURRENT_SCHEMA_VERSION&&row.mode==='open'&&row.recovery_id===config.scope.recoveryId&&Number(row.revision)===config.scope.controlRevision+1&&row.verified_bundle_digest===candidate.encryptedBundle.digest);
    const verified=(await owner.query(`SELECT * FROM operations_recovery_verifications WHERE id=$1 AND environment_id=$2 AND recovery_id=$3 AND control_revision=$4 AND required_scope_healthy AND integrity_verified AND denial_verified AND replay_verified AND workflow_verified`,[input.verificationId,scope.environmentMarker,config.scope.recoveryId,config.scope.controlRevision])).rows;
    need(verified.length===1&&verified[0].bundle_digest===candidate.encryptedBundle.digest&&verified[0].ledger_digest===candidate.ledgerDigest&&verified[0].objects_digest===candidate.objects.inventoryDigest&&verified[0].verified_at<=row.now&&row.now-verified[0].verified_at<=1800000);
    const opened=(await owner.query("SELECT * FROM operations_control_transitions WHERE id=$1 AND environment_id=$2 AND recovery_id=$3 AND revision=$4 AND from_mode='locked' AND to_mode='open'",[input.openOperationId,scope.environmentMarker,config.scope.recoveryId,row.revision])).rows;

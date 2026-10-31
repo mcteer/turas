@@ -58,6 +58,12 @@ The accompanying test fixes preserve exact original write keys during receipt
 reconciliation, isolate nested test database identities, and read released seed
 code from its verified Git root. Fresh complete validation and release are pending.
 
+Schema081 narrowly permits the native `409 session_not_ready` rejection receipt
+when dispatch is rejected, the response failed, and no accepted native identifiers
+exist. Other error statuses remain denied. This preserves the original rejection
+without retrying a governed Learning send; fresh complete validation, migration
+rehearsal and deployed verification remain pending.
+
 At development revision `bd2cac0`, the model migration selects `anthropic/claude-sonnet-5.5` through
 Vercel AI Gateway, following the request to stop xAI. New evaluation admission
 rejects the retired model while historical accounting and uncertain holds remain
@@ -579,6 +585,11 @@ Expired evaluation authority can be continued only by an explicitly approved,
 source-bound record against the exact original journal. This extends time only:
 original dollar/credit caps, charges and unknown holds remain unchanged. No real
 evaluation authority has been renewed by implementing this path.
+An expired uncertainty disposition records an audit only: it preserves every full
+hold, original unknown outcome, cap, expiry and source. It grants no dispatch or
+settlement; a separate explicit time continuation remains necessary. Coordinate
+updated ledger readers before using the versioned event, since older readers
+cannot parse it. No such event has been issued by this implementation.
 
 Recent Conversations provides owner-private Archive and Restore controls. Archived
 chats remain available in Archived Conversations and retain their history.

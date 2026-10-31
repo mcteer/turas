@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {Client} from 'pg';
 import {resolve,join} from 'node:path';
 import {mkdtemp,rm} from 'node:fs/promises';
@@ -38,9 +39,9 @@ export async function pilotOwnedDenialReconciliation(args:string[]){
    const rows=(await db.query(`SELECT current_database() AS name,current_user AS role,e.environment_id,e.schema_version,c.mode,c.recovery_id,c.revision,
     current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner
     FROM turas_environment e JOIN operations_control c ON c.environment_id=e.environment_id`)).rows;
-   if(rows.length!==1||rows[0].name!==name||rows[0].role!==decodeURIComponent(target.username)||rows[0].environment_id!==values.environment||Number(rows[0].schema_version)!==80||rows[0].mode!=='locked'||rows[0].recovery_id!==values['recovery-id']||Number(rows[0].revision)!==revision||rows[0].owner!==true)throw Error('Exact current locked owner target required before independent reads');
+   if(rows.length!==1||rows[0].name!==name||rows[0].role!==decodeURIComponent(target.username)||rows[0].environment_id!==values.environment||Number(rows[0].schema_version)!==CURRENT_SCHEMA_VERSION||rows[0].mode!=='locked'||rows[0].recovery_id!==values['recovery-id']||Number(rows[0].revision)!==revision||rows[0].owner!==true)throw Error('Exact current locked owner target required before independent reads');
    const current=await readRetainedWorkDenialSnapshot({receipt:resolve(values.denials),destination:resolve(values.destination),staging,environmentId:values.environment,after:values['backup-captured-at']},signal);
-   if(current.snapshot.contract!=='pilot-denial-replay-snapshot-v7'||current.snapshot.schemaVersion!==80)throw Error('Complete current schema-080 denial inventory required');
+   if(current.snapshot.contract!=='pilot-denial-replay-snapshot-v7'||current.snapshot.schemaVersion!==CURRENT_SCHEMA_VERSION)throw Error('Complete current schema denial inventory required');
    signal.throwIfAborted();if(JSON.stringify(await pilotSource())!==JSON.stringify(source))throw Error('Denial reconciliation source changed');
    const scope={environmentId:values.environment,recoveryId:values['recovery-id'],controlRevision:revision,snapshotDigest:current.contextDigest,backupCapturedAt:current.backupCapturedAt};
    const applied=await reconcileOwnedCredentialDenials(db,current.snapshot,scope);denialsApplied=true;

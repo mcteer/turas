@@ -1097,7 +1097,10 @@
         "integration.hosted-learning-preparation.002",
         "unit.hosted-learning-capture.007",
         "integration.hosted-root-browser-header.001",
-        "unit.work-backup-pricing.008"
+        "unit.work-backup-pricing.008",
+        "integration.hosted-learning-admission.007",
+        "integration.hosted-learning-admission.008",
+        "unit.quality-expired-disposition.001"
       ]
     },
     {

@@ -33,7 +33,13 @@ export const qualityResumptionSchema=z.strictObject({
  if(value.unknownDispatches.length===0&&value.additionalAllowanceMicroUsd!==0)
   ctx.addIssue({code:'custom',path:['additionalAllowanceMicroUsd'],message:'A source-only review cannot add allowance'});
 });
+/** Expired journals may record a reviewed permanent hold without renewing
+ * spending authority, adopting source, or adding allowance. */
+export const qualityExpiredDispositionSchema=z.strictObject({...qualityResumptionSchema.shape,
+ contract:z.literal('pilot-quality-expired-disposition-v1'),sourceCommit:z.never().optional(),sourceDigest:z.never().optional(),catalogDigest:z.never().optional(),additionalAllowanceMicroUsd:z.literal(0),
+}).refine(value=>value.unknownDispatches.length>0,'An original unknown dispatch is required');
 const event=z.discriminatedUnion('kind',[
+ z.strictObject({kind:z.literal('expired-disposition'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,approval:qualityExpiredDispositionSchema,observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('reviewed-resumption'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,approval:qualityResumptionSchema,observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('unknown-exposure'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,observedChargeMicroUsd:micro,providerProofDigest:digest,observedAt:z.iso.datetime({offset:true})}),
  z.strictObject({kind:z.literal('continuation'),id:z.uuid(),ordinal:z.number().int().positive(),previousDigest:digest,approval:qualityContinuationSchema,observedAt:z.iso.datetime({offset:true})}),
@@ -102,6 +108,11 @@ export class QualityBudgetLedger{
     continuation=approval;effectiveAuthority={...effectiveAuthority,authorizationDigest:evidenceDigest(JSON.stringify(approval)),expiresAt:approval.expiresAt};
     currentSource={sourceCommit:approval.sourceCommit,sourceDigest:approval.sourceDigest,catalogDigest:approval.catalogDigest};reviewedSource=undefined;
    }
+   else if(entry.kind==='expired-disposition'){
+    const a=entry.approval,observed=Date.parse(entry.observedAt);
+    if(entry.id!==a.id||a.budgetId!==authority.id||a.ledgerRoot!==resolve(this.root)||a.originalAuthorizationDigest!==authority.authorizationDigest||a.previousAuthorityDigest!==effectiveAuthority.authorizationDigest||a.journalHeadDigest!==previousDigest||Date.parse(a.recordedAt)<Date.parse(effectiveAuthority.expiresAt)||Date.parse(a.recordedAt)>observed||JSON.stringify(a.unknownDispatches.map(d=>d.id).sort())!==JSON.stringify([...unknown].sort())||new Set(a.unknownDispatches.map(d=>d.id)).size!==a.unknownDispatches.length||[...dispatches.keys()].some(id=>!settled.has(id)&&!unknown.has(id))||[...creditDispatches].some(id=>!creditSettled.has(id)))throw Error('Exact expired original-journal disposition required');
+    for(const proof of a.unknownDispatches){const d=dispatches.get(proof.id),u=unknownEvents.get(proof.id);if(!d||!u||proof.dispatchDigest!==evidenceDigest(JSON.stringify(d))||proof.unknownDigest!==evidenceDigest(JSON.stringify(u))||proof.permanentHoldMicroUsd!==Math.max(d.ceilingMicroUsd,observedUnknownCharges.get(proof.id)??0)||Date.parse(a.recordedAt)<Date.parse(u.observedAt))throw Error('Permanent original uncertainty hold differs');permanentHolds.set(proof.id,proof.permanentHoldMicroUsd);}
+   }
    else if(entry.kind==='reviewed-resumption'){
     const a=entry.approval,ids=a.unknownDispatches.map(d=>d.id),expected=[...unknown].sort();
     if(entry.id!==a.id||a.budgetId!==authority.id||a.ledgerRoot!==resolve(this.root)||a.originalAuthorizationDigest!==authority.authorizationDigest||a.previousAuthorityDigest!==effectiveAuthority.authorizationDigest||a.journalHeadDigest!==previousDigest||Date.parse(a.recordedAt)>Date.parse(entry.observedAt)||Date.parse(entry.observedAt)>=Date.parse(effectiveAuthority.expiresAt)||JSON.stringify([...ids].sort())!==JSON.stringify(expected)||new Set(ids).size!==ids.length||[...dispatches.keys()].some(id=>!settled.has(id)&&!unknown.has(id))||[...creditDispatches].some(id=>!creditSettled.has(id)))throw Error('Exact reviewed original-journal resumption required');
@@ -147,6 +158,15 @@ export class QualityBudgetLedger{
   for(const p of a.unknownDispatches){const d=s.dispatches.get(p.id)!,u=s.unknownEvents.get(p.id)!;if(!d||!u||p.dispatchDigest!==evidenceDigest(JSON.stringify(d))||p.unknownDigest!==evidenceDigest(JSON.stringify(u))||p.permanentHoldMicroUsd!==Math.max(d.ceilingMicroUsd,s.observedUnknownCharges.get(p.id)??0)||Date.parse(a.recordedAt)<Date.parse(u.observedAt))throw Error('Permanent original uncertainty hold differs');}
   const cap=s.authority.capMicroUsd+a.additionalAllowanceMicroUsd;if(!Number.isSafeInteger(cap)||cap>100000000||s.chargedMicroUsd+s.heldMicroUsd>cap)throw Error('Explicit additive allowance is insufficient');
   await this.append({kind:'reviewed-resumption',id:a.id,approval:a,ordinal:s.ordinal,previousDigest:s.previousDigest,observedAt:new Date().toISOString()});return {budgetId:s.originalAuthority.id,originalCapMicroUsd:s.originalAuthority.capMicroUsd,capMicroUsd:cap,permanentHeldMicroUsd:s.heldMicroUsd,unknownChargeSettled:false as const};
+ });}
+ /** Audit only: expiry, original authority, source and allowance remain unchanged.
+  * A separate fresh continuation is required before any new admission. */
+ async reviewExpiredDisposition(raw:unknown){return this.lock(async()=>{
+  const a=qualityExpiredDispositionSchema.parse(raw),s=await this.read(),now=Date.now();
+  if(a.budgetId!==s.originalAuthority.id||a.ledgerRoot!==resolve(this.root)||a.originalAuthorizationDigest!==s.originalAuthority.authorizationDigest||a.previousAuthorityDigest!==s.authority.authorizationDigest||a.journalHeadDigest!==s.previousDigest||Date.parse(a.recordedAt)<Date.parse(s.authority.expiresAt)||Date.parse(a.recordedAt)>now||JSON.stringify(a.unknownDispatches.map(d=>d.id).sort())!==JSON.stringify([...s.unknown].sort())||new Set(a.unknownDispatches.map(d=>d.id)).size!==a.unknownDispatches.length||[...s.dispatches.keys()].some(id=>!s.settled.has(id)&&!s.unknown.has(id))||[...s.creditDispatches].some(id=>!s.creditSettled.has(id)))throw Error('Exact expired original-journal disposition required');
+  for(const p of a.unknownDispatches){const d=s.dispatches.get(p.id),u=s.unknownEvents.get(p.id);if(!d||!u||p.dispatchDigest!==evidenceDigest(JSON.stringify(d))||p.unknownDigest!==evidenceDigest(JSON.stringify(u))||p.permanentHoldMicroUsd!==Math.max(d.ceilingMicroUsd,s.observedUnknownCharges.get(p.id)??0)||Date.parse(a.recordedAt)<Date.parse(u.observedAt))throw Error('Permanent original uncertainty hold differs');}
+  await this.append({kind:'expired-disposition',id:a.id,approval:a,ordinal:s.ordinal,previousDigest:s.previousDigest,observedAt:new Date().toISOString()});
+  return {budgetId:s.originalAuthority.id,capMicroUsd:s.authority.capMicroUsd,permanentHeldMicroUsd:s.heldMicroUsd,expiresAt:s.authority.expiresAt,unknownChargeSettled:false as const,authorityRenewed:false as const};
  });}
  async recordUnknownExposure(id:string,observedChargeMicroUsd:number,providerProofDigest:string){return this.lock(async()=>{const s=await this.read();if(!s.unknown.has(id)||!Number.isSafeInteger(observedChargeMicroUsd)||observedChargeMicroUsd<(s.observedUnknownCharges.get(id)??0))throw Error('Original unknown exposure cannot decrease');await this.append({kind:'unknown-exposure',id,observedChargeMicroUsd,providerProofDigest,ordinal:s.ordinal,previousDigest:s.previousDigest,observedAt:new Date().toISOString()});});}
  async currentAuthority(){const s=await this.readStable();return {...s.authority,resumptionId:s.reviewedSource?.id,additionalAllowanceMicroUsd:s.additionalAllowanceMicroUsd,originalCapMicroUsd:s.originalAuthority.capMicroUsd,originalAuthorizationDigest:s.originalAuthority.authorizationDigest,originalExpiresAt:s.originalAuthority.expiresAt,journalHeadDigest:s.previousDigest,continuationId:s.continuation?.id};}

@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {createHash,randomUUID} from 'node:crypto';
 import {query} from '../db/client';
 import {optionalOperationalCodeVersion} from './code-version';
@@ -20,7 +21,7 @@ export function privateStoreObserver(environmentId:string,env:NodeJS.ProcessEnv=
   const marker=(await query('SELECT environment_id,schema_version FROM turas_environment')).rows;
   if(marker.length!==1||marker[0].environment_id!==environmentId)throw Error('Store observation environment differs');
   if(Number(marker[0].schema_version)<79)return;
-  if(Number(marker[0].schema_version)!==80)throw Error('Store observation schema differs');
+  if(Number(marker[0].schema_version)!==CURRENT_SCHEMA_VERSION)throw Error('Store observation schema differs');
   const keyDigest=createHash('sha256').update(object.key).digest('hex');
   const proof=createHash('sha256').update(JSON.stringify({contract:'pilot-verified-private-write-v1',keyDigest,digest:object.digest,sizeBytes:object.sizeBytes})).digest('hex');
   await query('INSERT INTO operations_store_observations(id,environment_id,namespace,store_binding_digest,code_version,proof_digest) VALUES($1,$2,$3,$4,$5,$6)',[randomUUID(),environmentId,namespace,binding,version,proof]);

@@ -31,6 +31,8 @@ export async function runHostedRootBrowser(input:{scope:PilotHostedScope;db:Clie
  });
  const abort=()=>{void context.close().catch(()=>{});};signal.addEventListener('abort',abort,{once:true});
  let native:string|undefined,posts=0,forbidden=false,releaseMismatch=false;
+ const transportTrace:{kind:string;observedAt:string;monotonicMs:number;status?:number}[]=[];
+ const trace=(kind:string,extra:Partial<(typeof transportTrace)[number]>={})=>transportTrace.push({kind,observedAt:new Date().toISOString(),monotonicMs:performance.now(),...extra});
  async function nativePost(path:string,body:unknown,cleanup=false){
   const response=await fetch(origin+path,{method:'POST',headers,body:JSON.stringify(body),redirect:'error',signal:cleanup?AbortSignal.timeout(10000):AbortSignal.any([signal,AbortSignal.timeout(10000)])});
   try{if(!response.ok)throw Error('Native root command failed');return await boundedHostedJson(response);}finally{await response.body?.cancel().catch(()=>{});}
@@ -50,6 +52,7 @@ export async function runHostedRootBrowser(input:{scope:PilotHostedScope;db:Clie
    if(method==='POST'&&url.pathname==='/eve/v1/session/'+native&&++posts>2){forbidden=true;await route.abort();return;}
    await route.continue();
   });
+  page.on('request',request=>{if(request.method()==='POST'&&new URL(request.url()).pathname==='/eve/v1/session/'+native+'/cancel')trace('cancel-request');});
   page.on('response',response=>{if(new URL(response.url()).pathname.startsWith('/api/')&&response.headers()['x-turas-code-version']!==scope.sourceCommit)releaseMismatch=true;});
   await page.goto(origin+'/s/'+id,{waitUntil:'domcontentloaded'});
   const composer=page.getByRole('textbox',{name:'Message Turi'});
@@ -68,7 +71,7 @@ export async function runHostedRootBrowser(input:{scope:PilotHostedScope;db:Clie
       AND length(btrim(COALESCE(e.visible_payload->>'messageDelta','')))>0
       AND (SELECT count(*) FROM operations_hosted_root_provider_identities i
         JOIN parity_evaluation_operations o ON o.id=i.operation_id
-        WHERE o.budget_id=$4 AND i.identity_kind='gateway_generation'
+        WHERE o.budget_id=$4 AND i.identity_kind='provider_response'
           AND o.provider::jsonb->>'attemptId'=a.id::text)=1
    ) AS streaming`,[rows[0].id,id,native,binding.budgetId])).rows[0]?.streaming;
    return streaming===true&&await page.getByRole('button',{name:'Stop response',exact:true}).isVisible();
@@ -82,10 +85,28 @@ export async function runHostedRootBrowser(input:{scope:PilotHostedScope;db:Clie
   await page.screenshot({path:join(input.evidenceDirectory,'root-'+(input.mobile?'mobile':'desktop')+'-reloaded-private.png'),fullPage:true});
   await composer.fill('Clearly hypothetical training sample only. Begin exactly: This is synthetic test data. Without using tools or customer-specific facts, write an approximately 600-word contingency and handover runbook for a fictional Vercel adoption engagement. Use practical numbered steps covering readiness checks, a deployment incident, communication, evidence collection, rollback decisions, recovery validation, and follow-up ownership. Keep all examples explicitly hypothetical; do not claim any customer action or outcome occurred.');
   await page.getByRole('button',{name:'Send message',exact:true}).click();
-  await until(async()=> (await attempts()).length===2&&(await operations()).length===2&&Number((await db.query("SELECT count(*)::int AS n FROM operations_hosted_root_provider_identities i JOIN parity_evaluation_operations o ON o.id=i.operation_id WHERE o.budget_id=$1 AND i.identity_kind='gateway_generation' AND o.provider::jsonb->>'attemptId' IN(SELECT id::text FROM response_attempts WHERE conversation_id=$2)",[binding.budgetId,id])).rows[0].n)===2);
+  // Provider response identity and a persisted delta establish an active
+  // stream. Gateway generation accounting may arrive only after completion.
+  await until(async()=> {
+   const rows=await attempts();if(rows.length!==2||rows[1].response_state!=='running'||(await operations()).length!==2)return false;
+   const streaming=(await db.query(`SELECT EXISTS(
+    SELECT 1 FROM response_attempts a JOIN event_projections e
+      ON e.conversation_id=a.conversation_id AND e.turn_id=a.native_turn_id
+    WHERE a.id=$1 AND a.conversation_id=$2 AND a.response_state='running'
+      AND e.native_session_id=$3 AND e.event_type='message.appended'
+      AND length(btrim(COALESCE(e.visible_payload->>'messageDelta','')))>0
+      AND EXISTS(SELECT 1 FROM operations_hosted_root_provider_identities i
+        JOIN parity_evaluation_operations o ON o.id=i.operation_id
+        WHERE o.budget_id=$4 AND i.identity_kind='provider_response'
+          AND o.provider::jsonb->>'attemptId'=a.id::text)
+   ) AS streaming`,[rows[1].id,id,native,binding.budgetId])).rows[0]?.streaming;
+   return streaming===true&&await page.getByRole('button',{name:'Stop response',exact:true}).isVisible();
+  });
   const second=(await attempts())[1];if(second.response_state!=='running')throw Error('Response ended before actual UI Stop');
   const cancelled=page.waitForResponse(response=>new URL(response.url()).pathname==='/eve/v1/session/'+native+'/cancel'&&response.request().method()==='POST');
-  await page.getByRole('button',{name:'Stop response',exact:true}).click();if(!(await cancelled).ok())throw Error('Actual native Stop rejected');
+  trace('stop-click-start');await page.getByRole('button',{name:'Stop response',exact:true}).click();
+  const cancelResponse=await cancelled;trace('cancel-response',{status:cancelResponse.status()});
+  if(!cancelResponse.ok())throw Error('Actual native Stop rejected');
   await until(async()=> (await attempts())[1]?.response_state==='cancelled');
   await page.screenshot({path:join(input.evidenceDirectory,'root-'+(input.mobile?'mobile':'desktop')+'-stopped-private.png'),fullPage:true});
   if(Number(posts)!==2||forbidden||releaseMismatch||(await operations()).length!==2)throw Error('Root browser dispatch or release boundary differs');
@@ -108,6 +129,7 @@ export async function runHostedRootBrowser(input:{scope:PilotHostedScope;db:Clie
   }
   receipt={contract:'pilot-hosted-root-browser-v1',conversationId:id,mobile:input.mobile,actualUiSends:2,streamingReload:true,sameAttempt:true,deadlinePreserved:true,noReloadResend:true,actualStop:true,accounting,fullHostedCatalogVerified:false};
  }catch(error){failure=error;}
+ try{await writeEvidence(input.evidenceDirectory,'root-'+(input.mobile?'mobile':'desktop')+'-stop-transport-private.json',{contract:'pilot-root-stop-transport-v1',conversationId:id,nativeSessionId:native??null,observations:transportTrace,responseBodyRetained:false,responseBodyOmissionReason:'Playwright body buffering has no bounded streaming reader',transportProofOnly:true,actualCancellationEstablished:false});}catch(error){failure=failure?new AggregateError([failure,error],'Root trace retention failed'):error;}
  // Reconcile binding after an uncertain response without issuing another create.
  try{
   const row=await conversation();native=row.eve_session_id??native;

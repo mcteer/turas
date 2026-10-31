@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../../lib/contracts/current-schema';
 import {withRetainedDenialFixture} from '../../fixtures/pilot/retained-denials';
 import {issueWorkRecoveryMcpProbe} from '../../../lib/server/operations/recovery-mcp-probe-issuer';
 import {quarantineRestoredAuthority} from '../../../lib/server/operations/recovery-quarantine';
@@ -50,7 +51,7 @@ async function fixture(run:(input:Parameters<typeof withLockedWorkRecoveryTarget
   state.connections.set(ownerUrl.href,selected);state.connections.set(runtimeUrl.href,actualRuntime.href);
   const root=await mkdtemp(resolve('local-artifacts/016/locked-work-target-'));
   try{
-   const sourceFile=join(root,'source.json');await writeFile(sourceFile,JSON.stringify({contract:'pilot-database-safety-source-v1',projectId:'prj_recovery',environmentId,target:'preview',schemaVersion:80,connectionBinding:'platform-readable',databaseUrl:ownerUrl.href}),{mode:0o600});
+   const sourceFile=join(root,'source.json');await writeFile(sourceFile,JSON.stringify({contract:'pilot-database-safety-source-v1',projectId:'prj_recovery',environmentId,target:'preview',schemaVersion:CURRENT_SCHEMA_VERSION,connectionBinding:'platform-readable',databaseUrl:ownerUrl.href}),{mode:0o600});
    await run({sourceFile,scope,runtimeConnection:runtimeUrl.href,signal:AbortSignal.timeout(120000),deadline:Date.now()+110000,hostedScope:{contract:'pilot-hosted-scope-v1',runId:randomUUID(),projectId:'prj_recovery',teamId:'team_recovery',deploymentId:'dpl_recovery',origin:'https://recovery.vercel.app',environmentMarker:environmentId,workspaceId:randomUUID(),target:'preview',sourceCommit:state.commit,sourceDigest:state.digest,catalogDigest:state.catalog}});
   }finally{await rm(root,{recursive:true,force:true});state.connections.clear();state.platformChanged=false;state.sourceChanged=false;state.dirty=false;state.cleanupUnavailable=false;}
  });

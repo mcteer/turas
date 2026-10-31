@@ -9672,3 +9672,18 @@ original-error preservation, pool-listener handoff, and no callback replay.
 Type checking and diff checks pass. Fresh committed-source full-catalog, CI,
 model-quality, hosted and release verification remain required; the prior
 candidate's partial results are retained as historical evidence.
+
+## Native pre-admission rejection correction under validation
+
+An unpaid owned PostgreSQL reproduction through the installed native channel
+returned exact `409 session_not_ready` and exposed the historical receipt CHECK:
+it accepted only successful HTTP statuses, so saving the rejection failed with
+SQLSTATE23514. The hosted failure's discarded native response prevents claiming
+that exact cause for the hosted incident. Schema081 adds only the rejected/failed
+409 receipt with `ok:false`, the exact code, empty headers and no accepted native
+identifiers. Original successful statuses remain valid; broader error receipts
+remain denied. No send retry, clock extension or uncertain-charge settlement is
+introduced. All eight owned PostgreSQL admission cases pass, including the two new receipt
+constraint cases. Pilot type checking, authored-document and diff checks pass.
+Fresh complete validation, migration rehearsal and hosted release verification
+remain pending; historical receipts do not prove this uncommitted correction.

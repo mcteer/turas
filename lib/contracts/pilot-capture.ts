@@ -1,10 +1,11 @@
+import {CURRENT_SCHEMA_VERSION} from './current-schema';
 import {z} from 'zod';
 const digest=z.string().regex(/^[a-f0-9]{64}$/),identity=z.string().min(1).max(256).regex(/^[A-Za-z0-9_.:-]+$/),bytes=z.number().int().nonnegative().max(1024**4);
 const entry=z.strictObject({name:z.string().min(1).max(1024),sizeBytes:bytes,digest});
 /** Integrity candidates explicitly exclude the independent recovery proofs. */
 export const pilotCaptureCandidateSchema=z.strictObject({
  contract:z.literal('pilot-capture-candidate-v1'),id:z.uuid(),sourceCommit:z.string().regex(/^[a-f0-9]{40}$/),sourceDigest:digest,catalogDigest:digest,
- environmentId:z.string().regex(/^test-pilot-[a-f0-9]{12}$/),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),capturedAt:z.iso.datetime({offset:true}),sourceDatabaseName:z.string().regex(/^turas_test_016_eval_[a-f0-9]{12}$/),schemaVersion:z.union([z.literal(79),z.literal(80)]),ledgerDigest:digest,runtimeGrantsDigest:digest,acceptedContentDigest:digest,configurationDigest:digest,
+ environmentId:z.string().regex(/^test-pilot-[a-f0-9]{12}$/),recoveryId:z.uuid(),controlRevision:z.number().int().positive(),capturedAt:z.iso.datetime({offset:true}),sourceDatabaseName:z.string().regex(/^turas_test_016_eval_[a-f0-9]{12}$/),schemaVersion:z.union([z.literal(79),z.literal(80),z.literal(CURRENT_SCHEMA_VERSION)]),ledgerDigest:digest,runtimeGrantsDigest:digest,acceptedContentDigest:digest,configurationDigest:digest,
  database:z.strictObject({digest,sizeBytes:bytes.refine(value=>value>0),serverMajor:z.union([z.literal(17),z.literal(18)]),clientMajor:z.union([z.literal(17),z.literal(18)])}),
  objects:z.strictObject({inventoryDigest:digest,objectCount:z.number().int().nonnegative().max(100000),entries:z.array(entry).max(100000)}),
  workflow:z.strictObject({inventoryDigest:digest,fileCount:z.number().int().nonnegative().max(100000),entries:z.array(entry).max(100000),stableBytesCaptured:z.literal(true),runtimeStoppedVerified:z.literal(false),resumptionVerified:z.literal(false)}),

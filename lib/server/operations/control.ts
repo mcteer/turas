@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {currentRecoveryStateDigest} from './recovery-state';
 import {recoveryLeasesOutstanding} from './recovery-drain';
 import {createHash} from 'node:crypto';
@@ -14,7 +15,7 @@ export async function transitionRecoveryControl(db:Client|PoolClient,raw:Recover
   const authority=(await db.query("SELECT current_user=pg_get_userbyid(relowner) AS owner FROM pg_class WHERE oid='operations_control'::regclass")).rows[0];
   if(authority?.owner!==true)throw Error('Recovery requires database owner authority');
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
-  if(marker.length!==1||marker[0].environment_id!==input.environmentId||marker[0].schema_version!==80)throw Error('Recovery target identity differs');
+  if(marker.length!==1||marker[0].environment_id!==input.environmentId||marker[0].schema_version!==CURRENT_SCHEMA_VERSION)throw Error('Recovery target identity differs');
   await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16020))',[input.environmentId]);
   if(input.mode!=='quiescing')await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,16017))',[input.environmentId]);
   const replay=(await db.query('SELECT * FROM operations_control_transitions WHERE id=$1',[input.operationId])).rows[0];

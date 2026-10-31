@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {Client} from 'pg';
 import {resolve,dirname,basename} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -38,7 +39,7 @@ export async function pilotHostedRootAdmission(args=process.argv.slice(2)){
   const marker=(await db.query(`SELECT e.environment_id,e.schema_version,c.mode,
    current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='parity_evaluation_budgets'::regclass)) AS owner
    FROM turas_environment e JOIN operations_control c USING(environment_id)`)).rows;
-  if(marker.length!==1||marker[0].environment_id!==scope.environmentMarker||marker[0].schema_version!==80||marker[0].mode!=='open'||marker[0].owner!==true)throw Error('Actual open owner target at schema080 required');
+  if(marker.length!==1||marker[0].environment_id!==scope.environmentMarker||marker[0].schema_version!==CURRENT_SCHEMA_VERSION||marker[0].mode!=='open'||marker[0].owner!==true)throw Error('Actual open owner target at current schema required');
   const budget=(await db.query('SELECT * FROM parity_evaluation_budgets WHERE id=$1 FOR UPDATE',[binding.budgetId])).rows[0];
   if(!budget||budget.environment_id!==scope.environmentMarker||budget.workspace_id!==scope.workspaceId||budget.owner_principal_id!==binding.ownerPrincipalId
    ||Number(budget.cap_micro_usd)!==binding.capMicroUsd||budget.state!=='open'||budget.expires_at.getTime()<=Date.now()||budget.expires_at.getTime()>Date.parse(binding.expiresAt))throw Error('Existing original scoped budget required');

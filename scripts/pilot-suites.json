@@ -1103,6 +1103,13 @@
       ]
     },
     {
+      "file": "tests/unit/pilot/quality-expired-disposition.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "disposes expired uncertainty without renewal, refund, source adoption or historical rewrites"
+      ]
+    },
+    {
       "file": "tests/unit/pilot/quality-fetch.test.ts",
       "expectedCases": 13,
       "cases": [
@@ -1743,14 +1750,16 @@
     },
     {
       "file": "tests/integration/pilot/hosted-learning-admission.test.ts",
-      "expectedCases": 6,
+      "expectedCases": 8,
       "cases": [
         "consumes one actual original-journal arm with immutable owner admission and separate early provider identities",
         "refuses missing foreign expired or disabled hosted authority before any domain provider claim",
         "serializes concurrent native release and rejects runtime minting and repeated consumption",
         "rejects claimed journal reservations and replacement original budgets without changing either cap",
         "retains both original holds and the genuine Gateway identity after an actual wrapped SDK failure",
-        "rolls back hosted consumption with a failed domain claim and never releases its original reservation"
+        "rolls back hosted consumption with a failed domain claim and never releases its original reservation",
+        "persists a native pre-admission rejection without a provider claim or invented native identity",
+        "refuses any broader native pre-admission status body state or identity through the database constraint"
       ]
     },
     {

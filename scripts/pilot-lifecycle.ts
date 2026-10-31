@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {getServerConfig} from '../lib/server/config';
@@ -11,7 +12,7 @@ import {createEvidenceDirectory,writeEvidence} from './pilot-evidence';
 export async function runPilotLifecycle(environmentId:string){
  if(getServerConfig().TURAS_ENVIRONMENT_ID!==environmentId)throw Error('Lifecycle target differs');
  const marker=(await query('SELECT environment_id,schema_version FROM turas_environment')).rows;
- if(marker.length!==1||marker[0].environment_id!==environmentId||Number(marker[0].schema_version)!==80)throw Error('Exact lifecycle schema required');
+ if(marker.length!==1||marker[0].environment_id!==environmentId||Number(marker[0].schema_version)!==CURRENT_SCHEMA_VERSION)throw Error('Exact lifecycle schema required');
  const source=await pilotSource(),bindings=createMaintenanceBindings();
  if(validateMaintenanceBindings(bindings).some(row=>!row.configured||!row.enabled)||bindings.length!==maintenanceClasses.length)throw Error('Incomplete lifecycle catalog');
  const startedAt=new Date().toISOString(),results=[];

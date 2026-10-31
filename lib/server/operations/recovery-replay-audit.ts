@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {recoveryJobReplayTables,requireRecoveryJobReplayColumns,requireRecoveryJobSemanticRows} from './recovery-job-replay-keys';
 import currentReplayTables from '../../contracts/recovery-replay-tables.json' with {type:'json'};
 import type {Client,PoolClient} from 'pg';
@@ -32,7 +33,7 @@ export async function auditRecoveredRequestFences(db:Client|PoolClient,raw:unkno
  * until its transaction ends; returned flags never authorize service. */
 export async function auditRecoveredRequestFencesInTransaction(db:Client|PoolClient,raw:unknown,rawScope:z.infer<typeof scopeSchema>){
  const scope=scopeSchema.parse(rawScope),snapshot=recoveryDenialSnapshotSchema.parse(raw);
- if(snapshot.contract!=='pilot-denial-replay-snapshot-v7'||snapshot.schemaVersion!==80)throw Error('Complete current schema-080 replay inventory required');
+ if(snapshot.contract!=='pilot-denial-replay-snapshot-v7'||snapshot.schemaVersion!==CURRENT_SCHEMA_VERSION)throw Error('Complete current schema replay inventory required');
  // SAVEPOINT fails outside a transaction, before any audit or authority check.
  await db.query('SAVEPOINT recovered_request_fence_audit');await db.query('RELEASE SAVEPOINT recovered_request_fence_audit');
  if((await db.query("SELECT current_setting('transaction_isolation') AS isolation")).rows[0]?.isolation!=='read committed')throw Error('Request fence audit requires read committed isolation');
@@ -44,7 +45,7 @@ export async function auditRecoveredRequestFencesInTransaction(db:Client|PoolCli
   // the current committed state rather than an earlier repeatable snapshot.
   const currentStateDigest=await currentRecoveryStateDigest(db);
   const marker=(await db.query('SELECT environment_id,schema_version FROM turas_environment')).rows;
-  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==80)throw Error('Request fence audit target differs');
+  if(marker.length!==1||marker[0].environment_id!==scope.environmentId||Number(marker[0].schema_version)!==CURRENT_SCHEMA_VERSION)throw Error('Request fence audit target differs');
   const control=(await db.query('SELECT mode,revision,recovery_id FROM operations_control WHERE environment_id=$1 FOR SHARE',[scope.environmentId])).rows[0];
   if(control?.mode!=='locked'||Number(control.revision)!==scope.controlRevision||control.recovery_id!==scope.recoveryId)throw Error('Exact locked request fence audit required');
   const now=Number((await db.query('SELECT extract(epoch FROM clock_timestamp())*1000 AS now')).rows[0].now);

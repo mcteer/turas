@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {pilotWorkRecoveryVerify} from './pilot-work-recovery-verify';
 import {pilotWorkRecoveryService} from './pilot-work-recovery-service';
 import {pilotOwnedRecoveryRead} from './pilot-owned-recovery-read';
@@ -67,7 +68,7 @@ async function pilotAuditWorkRequestFences(args:string[]){
   try{
    await db.connect();const rows=(await db.query(`SELECT e.environment_id,e.schema_version,c.mode,c.recovery_id,c.revision,current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='operations_control'::regclass)) AS owner
     FROM turas_environment e JOIN operations_control c ON c.environment_id=e.environment_id`)).rows;
-   if(rows.length!==1||rows[0].environment_id!==values.environment||Number(rows[0].schema_version)!==80||rows[0].mode!=='locked'||rows[0].recovery_id!==values['recovery-id']||Number(rows[0].revision)!==revision||rows[0].owner!==true)throw Error('Exact current locked owner target required before independent reads');
+   if(rows.length!==1||rows[0].environment_id!==values.environment||Number(rows[0].schema_version)!==CURRENT_SCHEMA_VERSION||rows[0].mode!=='locked'||rows[0].recovery_id!==values['recovery-id']||Number(rows[0].revision)!==revision||rows[0].owner!==true)throw Error('Exact current locked owner target required before independent reads');
    const current=await readRetainedWorkDenialSnapshot({receipt:resolve(values.denials),destination:resolve(values.destination),staging,environmentId:values.environment,after:values['backup-captured-at']},signal);
    signal.throwIfAborted();const proof=await auditRecoveredRequestFences(db,current.snapshot,{environmentId:values.environment,recoveryId:values['recovery-id'],controlRevision:revision,snapshotDigest:current.contextDigest,backupCapturedAt:current.backupCapturedAt});
    signal.throwIfAborted();if(JSON.stringify(await pilotSource())!==JSON.stringify(source))throw Error('Independent replay audit source changed');
