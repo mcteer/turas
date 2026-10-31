@@ -7,6 +7,7 @@ import {verifyHostedConfiguration,type HostedConfiguration} from '../lib/server/
 const roles=[{name:'internal-admin',login:'mcteer',kind:'internal',role:'admin',password:'TURAS_PILOT_HOSTED_ADMIN_PASSWORD'},
  {name:'internal-member',login:'panel',kind:'internal',role:'member',password:'TURAS_PILOT_HOSTED_MEMBER_PASSWORD'},
  {name:'assigned-partner',login:'partner',kind:'partner',role:'member',password:'TURAS_PILOT_HOSTED_PARTNER_PASSWORD'}] as const;
+const primarySessionEnvelope=z.object({data:z.object({principal:z.object({id:z.uuid(),loginName:z.string()}),workspace:z.object({id:z.uuid(),classification:z.literal('primary')}),membership:z.object({id:z.uuid(),kind:z.string(),role:z.string()}),csrfToken:z.string().regex(/^[a-f0-9]{64}$/)})});
 const sessionEnvelope=z.object({data:z.object({principal:z.object({id:z.uuid(),loginName:z.string()}),workspace:z.object({id:z.uuid(),classification:z.literal('synthetic_pilot')}),membership:z.object({id:z.uuid(),kind:z.string(),role:z.string()}),csrfToken:z.string().regex(/^[a-f0-9]{64}$/)})});
 export async function boundedHostedJson(response:Response){
  if(!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')??'')||!response.body)throw Error('Hosted JSON response unavailable');
@@ -19,17 +20,27 @@ export async function boundedHostedJson(response:Response){
  * role session is always revoked. Transport follows verified platform binding. */
 export type HostedRoleProofHook=(context:{role:typeof roles[number]['name'];headers:Headers;customerIds:string[];allCustomerIds:string[];partnerCustomerIds:string[]})=>Promise<void>;
 export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signal:AbortSignal,transport:typeof fetch=fetch,env:NodeJS.ProcessEnv=process.env,proveRole?:HostedRoleProofHook,expectedConfiguration?:HostedConfiguration,selectedRoles:readonly typeof roles[number]['name'][]=roles.map(row=>row.name)){
+ return runRoleReadChecks(scope,db,signal,transport,env,proveRole,expectedConfiguration,selectedRoles,false);
+}
+/** Normal primary-role verification for restored Production service; no pilot selector. */
+export async function runPrimaryRecoveryReadChecks(...args:Parameters<typeof runHostedReadChecks>){
+ const [scope,db,signal,transport=fetch,env=process.env,hook,configuration,selectedRoles=roles.map(row=>row.name)]=args;
+ return runRoleReadChecks(scope,db,signal,transport,env,hook,configuration,selectedRoles,true);
+}
+async function runRoleReadChecks(scope:PilotHostedScope,db:Client,signal:AbortSignal,transport:typeof fetch,env:NodeJS.ProcessEnv,proveRole:HostedRoleProofHook|undefined,expectedConfiguration:HostedConfiguration|undefined,selectedRoles:readonly typeof roles[number]['name'][],primary:boolean){
+ const envelope=primary?primarySessionEnvelope:sessionEnvelope;
+ const passwords=primary?{...env,TURAS_PILOT_HOSTED_ADMIN_PASSWORD:env.TURAS_DEMO_PASSWORD??env.TURAS_PILOT_HOSTED_ADMIN_PASSWORD,TURAS_PILOT_HOSTED_MEMBER_PASSWORD:env.PANEL_PASSWORD??env.TURAS_PILOT_HOSTED_MEMBER_PASSWORD,TURAS_PILOT_HOSTED_PARTNER_PASSWORD:env.PARTNER_PASSWORD??env.TURAS_PILOT_HOSTED_PARTNER_PASSWORD}:env;
  if(!selectedRoles.length||new Set(selectedRoles).size!==selectedRoles.length||selectedRoles.some(name=>!roles.some(row=>row.name===name)))throw Error('Exact unique trusted role selection required');
  const checkedRoles=roles.filter(row=>selectedRoles.includes(row.name));
- if(roles.some(role=>!env[role.password]))throw Error('All explicit hosted role credentials required');
+ if(roles.some(role=>!passwords[role.password]))throw Error('All explicit hosted role credentials required');
  await assertPilotDatabaseOnConnection(scope.environmentMarker,<Row extends QueryResultRow=QueryResultRow>(sql:string,values:readonly unknown[]=[])=>db.query<Row>(sql,[...values]));
  const workspace=(await db.query("SELECT classification,pilot_environment_id,active FROM workspaces WHERE id=$1",[scope.workspaceId])).rows[0];
- if(workspace?.classification!=='synthetic_pilot'||workspace.pilot_environment_id!==scope.environmentMarker||!workspace.active)throw Error('Exact synthetic read scope required');
- const customers=(await db.query('SELECT id,synthetic FROM customer_references WHERE workspace_id=$1 ORDER BY id LIMIT 21',[scope.workspaceId])).rows;
- if(customers.length<2||customers.length>20||customers.some(row=>row.synthetic!==true))throw Error('Bounded positive and denied synthetic customers required');
+ if(!workspace?.active||(primary?workspace.classification!=='primary':workspace.classification!=='synthetic_pilot'||workspace.pilot_environment_id!==scope.environmentMarker))throw Error('Exact selected workspace read scope required');
+ const customers=(await db.query('SELECT id,synthetic FROM customer_references WHERE workspace_id=$1 ORDER BY id LIMIT 251',[scope.workspaceId])).rows;
+ if(customers.length<2||customers.length>(primary?250:20)||!primary&&customers.some(row=>row.synthetic!==true))throw Error('Bounded positive and denied synthetic customers required');
  const allIds=customers.map(row=>String(row.id));
- const foreign=(await db.query("SELECT c.id FROM customer_references c JOIN workspaces w ON w.id=c.workspace_id AND w.active AND w.classification='primary' WHERE c.workspace_id<>$1 ORDER BY c.id LIMIT 1",[scope.workspaceId])).rows;if(foreign.length!==1)throw Error('Existing foreign primary reference required for workspace denial');
- const foreignCustomerId=String(foreign[0].id);
+ const foreign=(await db.query("SELECT c.id FROM customer_references c JOIN workspaces w ON w.id=c.workspace_id AND w.active AND w.classification='primary' WHERE c.workspace_id<>$1 ORDER BY c.id LIMIT 1",[scope.workspaceId])).rows;if(!primary&&foreign.length!==1)throw Error('Existing foreign primary reference required for workspace denial');
+ const foreignCustomerId=foreign[0]?String(foreign[0].id):undefined;
  const members=(await db.query(`SELECT m.id,m.principal_id,m.kind,m.role,p.login_name FROM memberships m JOIN principals p ON p.id=m.principal_id AND p.active
   LEFT JOIN partner_organizations o ON o.id=m.partner_org_id AND o.workspace_id=m.workspace_id WHERE m.workspace_id=$1 AND m.active AND p.login_name=ANY($2::text[]) AND (m.kind='internal' OR o.active)`,[scope.workspaceId,roles.map(role=>role.login)])).rows;
  if(members.length!==roles.length||roles.some(role=>!members.some(row=>row.login_name===role.login&&row.kind===role.kind&&row.role===role.role)))throw Error('All exact active pilot memberships required');
@@ -51,7 +62,7 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
   let token:string|undefined,csrf:string|undefined,revoked=false;
   try{
    const probe=await call('/api/auth/session','GET',headers);await probe.body?.cancel();if(probe.status!==401)throw Error('Unauthenticated hosted session boundary differs');
-   const login=await call('/api/auth/login','POST',headers,JSON.stringify({username:role.login,password:env[role.password],workspace:'pilot'}));
+   const login=await call('/api/auth/login','POST',headers,JSON.stringify({username:role.login,password:passwords[role.password],...(primary?{}:{workspace:'pilot'})}));
    if(login.status!==200)throw Error('Hosted role login failed');
    const cookies=login.headers.getSetCookie().filter(value=>value.startsWith('__Host-turas_session='));
    const cookie=cookies.length===1?cookies[0]:'';
@@ -62,14 +73,20 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
    headers.set('cookie','__Host-turas_session='+token);headers.set('x-csrf-token',csrf);
    if(login.headers.get('x-turas-code-version')!==scope.sourceCommit)throw Error('Hosted response release version differs');
    const current=await call('/api/auth/session','GET',headers);if(current.status!==200)throw Error('Actual hosted session unavailable');
-   const session=sessionEnvelope.parse(await boundedHostedJson(current)).data;
+   const session=envelope.parse(await boundedHostedJson(current)).data;
    if(session.principal.id!==expected.principal_id||session.principal.loginName!==role.login||session.workspace.id!==scope.workspaceId||session.membership.id!==expected.id||session.membership.kind!==role.kind||session.membership.role!==role.role||session.csrfToken!==csrf)throw Error('Actual hosted membership differs');
    const row=(await db.query('SELECT principal_id,membership_id,workspace_id,revoked_at FROM login_sessions WHERE token_hash=$1',[createHash('sha256').update(token).digest('hex')])).rows[0];
    if(!row||row.principal_id!==expected.principal_id||row.membership_id!==expected.id||row.workspace_id!==scope.workspaceId||row.revoked_at!==null)throw Error('Hosted session belongs to another database or scope');
    cases.push({id:'session-bound',role:role.name,state:'pass',status:200});
-   const listing=await call('/api/customers?limit=25','GET',headers);if(listing.status!==200)throw Error('Hosted customer read failed');
-   const list=z.object({data:z.object({items:z.array(z.object({id:z.uuid(),synthetic:z.literal(true)})).max(20),nextCursor:z.null()})}).parse(await boundedHostedJson(listing)).data;
-   const ids=list.items.map(row=>row.id).sort(),expectedIds=[...(role.kind==='partner'?assigned:allIds)].sort();
+   const ids:string[]=[];let cursor:string|undefined;const seen=new Set<string>();
+   for(let page=0;;page++){
+    if(page>=10)throw Error('Hosted customer pagination exceeds bound');
+    const listing=await call('/api/customers?limit=25'+(cursor?'&cursor='+encodeURIComponent(cursor):''),'GET',headers);if(listing.status!==200)throw Error('Hosted customer read failed');
+    const list=z.object({data:z.object({items:z.array(z.object({id:z.uuid(),synthetic:z.boolean()})).max(25),nextCursor:z.string().min(1).nullable()})}).parse(await boundedHostedJson(listing)).data;
+    for(const item of list.items){if(ids.includes(item.id)||!primary&&!item.synthetic)throw Error('Hosted customer inventory differs');ids.push(item.id);}
+    if(!list.nextCursor)break;if(seen.has(list.nextCursor))throw Error('Hosted customer cursor repeated');seen.add(list.nextCursor);cursor=list.nextCursor;
+   }
+   ids.sort();const expectedIds=[...(role.kind==='partner'?assigned:allIds)].sort();
    if(JSON.stringify(ids)!==JSON.stringify(expectedIds))throw Error('Hosted customer scope leaked or missed assigned records');
    cases.push({id:'positive-customer-scope',role:role.name,state:'pass',status:200});
    const status=await call('/api/operations/status','GET',headers),expectedStatus=role.role==='admin'?200:403;
@@ -83,7 +100,13 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
    if(gaps.status!==expectedGaps)throw Error('Hosted Product Gaps read failed or disclosed partner content');
    if(role.kind==='internal'){const payload=z.object({data:z.object({contractVersion:z.literal('product-gaps-v1')})}).parse(await boundedHostedJson(gaps));void payload;}else await gaps.body?.cancel();
    cases.push({id:'product-gaps-read-boundary',role:role.name,state:'pass',status:expectedGaps});
-   const foreignProfile=await call('/api/customers/'+foreignCustomerId+'/profile','GET',headers);if(foreignProfile.status!==404){await foreignProfile.body?.cancel();throw Error('Foreign workspace profile was disclosed');}z.strictObject({error:z.strictObject({code:z.literal('not_found'),message:z.string().max(200)}),correlationId:z.uuid()}).parse(await boundedHostedJson(foreignProfile));
+   if(foreignCustomerId){const foreignProfile=await call('/api/customers/'+foreignCustomerId+'/profile','GET',headers);if(foreignProfile.status!==404){await foreignProfile.body?.cancel();throw Error('Foreign workspace profile was disclosed');}z.strictObject({error:z.strictObject({code:z.literal('not_found'),message:z.string().max(200)}),correlationId:z.uuid()}).parse(await boundedHostedJson(foreignProfile));}
+   if(primary){
+    const foreignConversation=(await db.query('SELECT id FROM conversations WHERE workspace_id=$1 AND owner_principal_id<>$2 ORDER BY id LIMIT 1',[scope.workspaceId,expected.principal_id])).rows[0];
+    if(!foreignConversation)throw Error('Existing foreign-owner conversation required for privacy proof');
+    const denied=await call('/api/conversations/'+foreignConversation.id,'GET',headers);if(denied.status!==404){await denied.body?.cancel();throw Error('Foreign owner conversation was disclosed');}await denied.body?.cancel();
+    cases.push({id:'foreign-owner-conversation-denied',role:role.name,state:'pass',status:404});
+   }
    if(proveRole)await proveRole({role:role.name,headers:new Headers(headers),customerIds:expectedIds,allCustomerIds:allIds,partnerCustomerIds:[...assigned]});
   }finally{
    // A successful login can create a session before its body is damaged. Recover
@@ -92,7 +115,7 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
    if(token&&!csrf){
     const current=await call('/api/auth/session','GET',headers,undefined,true);
     if(current.status!==200)throw Error('Exact hosted cleanup session unavailable');
-    const session=sessionEnvelope.parse(await boundedHostedJson(current)).data;
+    const session=envelope.parse(await boundedHostedJson(current)).data;
     if(session.principal.id!==expected.principal_id||session.workspace.id!==scope.workspaceId||session.membership.id!==expected.id)throw Error('Exact hosted cleanup membership differs');
     csrf=session.csrfToken;headers.set('x-csrf-token',csrf);
    }
@@ -106,5 +129,5 @@ export async function runHostedReadChecks(scope:PilotHostedScope,db:Client,signa
   }
   if(!revoked)throw Error('Hosted role cleanup incomplete');cases.push({id:'exact-session-revoked',role:role.name,state:'pass',status:200});
  }
- return {contract:'pilot-hosted-read-checks-v1' as const,cases,passedCases:cases.length,sessionsRevoked:checkedRoles.length,revokedCookieDenials:checkedRoles.length,crossWorkspaceProfileDenials:checkedRoles.length,customerReferencesVerified:allIds.length,providerCalls:0,domainWritesPerformed:0,acceptedJourneysVerified:false,fullHostedCatalogVerified:false};
+ return {contract:'pilot-hosted-read-checks-v1' as const,cases,passedCases:cases.length,sessionsRevoked:checkedRoles.length,revokedCookieDenials:checkedRoles.length,crossWorkspaceProfileDenials:foreignCustomerId?checkedRoles.length:0,customerReferencesVerified:allIds.length,providerCalls:0,domainWritesPerformed:0,acceptedJourneysVerified:false,fullHostedCatalogVerified:false};
 }

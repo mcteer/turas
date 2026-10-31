@@ -28,14 +28,23 @@ session revoked. The observed domain `deleted` state is not an independent audit
 of physical Blob deletion. These results do not establish every file format,
 renderer, restore scenario or service recovery objective.
 
-`/api/health/ready` still returns HTTP 503. This is an unresolved operational
-assurance/recovery gap, not a claim that the successful authenticated workflows
-failed. Readiness combines admission, dispatch, maintenance, required quarantines,
-active object-namespace observations, current-code image execution and verified
-backup health. Inspect the components through the canonical administrator's
-`/api/operations/status`; do not replace the composite with a successful login or
-one file journey. Full service restoration and observed backup cadence remain
-unproven. The 24-hour RPO and four-hour RTO are targets, not current guarantees.
+At the main112 deployed checkpoint, `/api/health/ready` returned HTTP 503 because
+its old composite also required recent execution and backup evidence. That result
+must remain in the execution record; it does not negate successful authenticated
+workflows. The current implementation separates actual service availability from
+retained assurance. Verify the changed endpoint after its release rather than
+assuming that a local code change changed Production.
+
+Public `{ready}` checks database/schema/runtime capability, open admission, no
+required recovery quarantine, critical maintenance freshness and valid dispatch/
+cost configuration, including fresh scanner attestation. Invalid capabilities,
+unknown cost and real recovery fences still fail closed. Administrator-only
+`/api/operations/status` additionally exposes `assurance.ready` and the unchanged
+strict store/image/backup observations. An idle namespace or an older Git-bound
+sample remains unverified assurance, without requiring artificial file writes or
+jobs to keep an otherwise available service online. Full service restoration and
+observed backup cadence remain unproven. The 24-hour RPO/four-hour RTO are targets,
+not current guarantees.
 
 ## Target, credentials and schema
 

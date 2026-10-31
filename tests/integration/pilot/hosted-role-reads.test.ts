@@ -1,3 +1,8 @@
+import {Client} from 'pg';
+import {requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
+import {runPrimaryRecoveryReadChecks} from '../../../scripts/pilot-hosted-http';
+import {GET as status} from '../../../app/api/operations/status/route';
+import {GET as gaps} from '../../../app/api/product-gaps/route';
 import {it,expect} from 'vitest';
 import {randomUUID} from 'node:crypto';
 import {withPilotEnvironment} from '../../../scripts/pilot-environment';
@@ -20,10 +25,28 @@ it('verifies normal primary role reads conversation privacy and exact logout',as
    try{
     expect((await session(new Request(env.origin+'/api/auth/session',{headers}))).status).toBe(200);
     const listed=await customers(new Request(env.origin+'/api/customers',{headers}));expect(listed.status).toBe(200);const ids=(await listed.json()).data.items.map((x:any)=>x.id);expect(ids).toContain(DEMO_IDS.sharedCustomer);if(username==='partner')expect(ids).not.toContain(DEMO_IDS.deniedCustomer);
-    if(username==='mcteer'){const created=await createConversation(new Request(env.origin+'/api/conversations',{method:'POST',headers,body:JSON.stringify({requestKey:randomUUID(),title:'Owned primary privacy check'})}));expect(created.status).toBe(201);ownerConversation=(await created.json()).data.id;}
+    if(username!=='partner'){const created=await createConversation(new Request(env.origin+'/api/conversations',{method:'POST',headers,body:JSON.stringify({requestKey:randomUUID(),title:'Owned primary privacy check'})}));expect(created.status).toBe(201);const id=(await created.json()).data.id;if(username==='mcteer')ownerConversation=id;}
     expect((await readConversation(new Request(env.origin+'/api/conversations/'+ownerConversation,{headers}),{params:Promise.resolve({id:ownerConversation!})})).status).toBe(username==='mcteer'?200:404);
    }finally{expect((await logout(new Request(env.origin+'/api/auth/logout',{method:'POST',headers}))).status).toBe(200);expect((await session(new Request(env.origin+'/api/auth/session',{headers}))).status).toBe(401);}
   }
+  const db=new Client({connectionString:requireOwnedPilotDatabase()});await db.connect();
+  const previousOrigin=process.env.TURAS_APP_ORIGIN;process.env.TURAS_APP_ORIGIN='https://recovery.example.test';
+  const transport:typeof fetch=async(input,init)=>{
+   const request=new Request(String(input),init),path=new URL(request.url).pathname;
+   if(path==='/api/auth/login')return login(request);if(path==='/api/auth/logout')return logout(request);if(path==='/api/auth/session')return session(request);
+   if(path==='/api/customers')return customers(request);if(path==='/api/operations/status')return status(request);if(path==='/api/product-gaps')return gaps(request);
+   const match=/^\/api\/conversations\/([a-f0-9-]+)$/.exec(path);if(match)return readConversation(request,{params:Promise.resolve({id:match[1]})});
+   throw Error('No external transport permitted');
+  };
+  try{
+   const scope={contract:'pilot-hosted-scope-v1' as const,runId:randomUUID(),projectId:'prj_owned',teamId:'team_owned',deploymentId:'dpl_owned',origin:process.env.TURAS_APP_ORIGIN,environmentMarker:env.environmentId,workspaceId:DEMO_IDS.workspace,target:'production' as const,sourceCommit:process.env.TURAS_CODE_VERSION!,sourceDigest:'b'.repeat(64),catalogDigest:'c'.repeat(64)};
+   const proof=await runPrimaryRecoveryReadChecks(scope,db,AbortSignal.timeout(30000),transport);
+   expect(proof).toMatchObject({sessionsRevoked:3,revokedCookieDenials:3,providerCalls:0,domainWritesPerformed:0});
+   expect(proof.cases.filter(row=>row.id==='foreign-owner-conversation-denied')).toHaveLength(3);
+   const leaking:typeof fetch=async(input,init)=>{const response=await transport(input,init);if(new URL(String(input)).pathname.startsWith('/api/conversations/'))return Response.json({data:{}},{headers:{'x-turas-code-version':scope.sourceCommit}});return response;};
+   await expect(runPrimaryRecoveryReadChecks(scope,db,AbortSignal.timeout(30000),leaking)).rejects.toThrow('Foreign owner conversation was disclosed');
+   expect((await db.query('SELECT count(*)::int AS n FROM login_sessions WHERE revoked_at IS NULL')).rows[0].n).toBe(0);
+  }finally{if(previousOrigin===undefined)delete process.env.TURAS_APP_ORIGIN;else process.env.TURAS_APP_ORIGIN=previousOrigin;await db.end();}
  },{postgresMajor:18,deadlineMs:180000});
 },210000);
 

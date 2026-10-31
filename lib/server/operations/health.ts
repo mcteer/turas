@@ -20,14 +20,13 @@ export async function requireOperationsAdministrator(request:Request){
  if(!isCanonicalAdmin(actor)||actor.loginName!=='mcteer')throw new HttpFailure(403,'forbidden','Action not allowed');
  return actor;
 }
-/** Read-only bounded diagnostics: anonymous polling cannot create health samples
- * or advance completion timestamps. Missing infrastructure acceptance remains
- * explicit until its actual producer/verifier is implemented; never infer it
- * from credentials, immutable-image strings, or another worker's heartbeat. */
+/** Read-only service availability and separately retained infrastructure assurance.
+ * An idle namespace or an old execution sample is not a failed service dependency.
+ * Polling never creates samples, performs provider IO or renews proof timestamps. */
 export async function readOperationalHealth(){
  let databaseHealthy=false;
  try{await assertPilotDatabaseEnvironment();databaseHealthy=true;}catch{}
- if(!databaseHealthy)return {ready:false,database:'unavailable' as const,admission:'unavailable' as const,maintenance:null,stores:'unverified' as const,images:'unverified' as const,backups:'unverified' as const};
+ if(!databaseHealthy)return {ready:false,assurance:{ready:false,stores:'unverified' as const,images:'unverified' as const,backups:'unverified' as const},database:'unavailable' as const,admission:'unavailable' as const,maintenance:null,stores:'unverified' as const,images:'unverified' as const,backups:'unverified' as const};
  try{
   const codeVersion=operationalCodeVersion(),environmentId=getServerConfig().TURAS_ENVIRONMENT_ID;
   const observed=await withTransaction(async db=>{
@@ -44,7 +43,8 @@ export async function readOperationalHealth(){
    const now=Number((await db.query('SELECT extract(epoch FROM clock_timestamp())*1000 AS now')).rows[0].now);
    return {connectionBinding:await readOperationalDatabaseBinding(db,{connection:getServerConfig().DATABASE_URL,environmentId,codeVersion}),dispatch:await readHostedDispatchHealth(db,environmentId),deployment:{codeVersion},...await readCapacityHealth(db,environmentId),admission:control?.mode==='open'?'open' as const:'closed' as const,recovery:{quarantinedScopes,requiredScopesQuarantined:quarantinedScopes.length},maintenance:assessMaintenanceHealth(rows,now,codeVersion),stores:await readPrivateStoreHealth(db,environmentId,codeVersion),images:await readHostedImageHealth(db,environmentId,codeVersion),backups:await readVerifiedBackupHealth(db,environmentId,codeVersion)};
   });
-  const ready=observed.dispatch==='ready'&&!observed.costs.truncated&&observed.costs.budgets.every(budget=>budget.unknownReservations===0)&&observed.admission==='open'&&observed.recovery.requiredScopesQuarantined===0&&observed.maintenance.healthy&&observed.stores==='healthy'&&observed.images==='healthy'&&observed.backups==='healthy';
-  return {ready,database:'healthy' as const,...observed,configuration:readHostedConfiguration()};
- }catch{return {ready:false,database:'healthy' as const,admission:'unavailable' as const,maintenance:null,stores:'unverified' as const,images:'unverified' as const,backups:'unverified' as const};}
+  const ready=observed.dispatch==='ready'&&!observed.costs.truncated&&observed.costs.budgets.every(budget=>budget.unknownReservations===0)&&observed.admission==='open'&&observed.recovery.requiredScopesQuarantined===0&&observed.maintenance.healthy;
+  const assurance={ready:ready&&observed.stores==='healthy'&&observed.images==='healthy'&&observed.backups==='healthy',stores:observed.stores,images:observed.images,backups:observed.backups};
+  return {ready,assurance,database:'healthy' as const,...observed,configuration:readHostedConfiguration()};
+ }catch{return {ready:false,assurance:{ready:false,stores:'unverified' as const,images:'unverified' as const,backups:'unverified' as const},database:'healthy' as const,admission:'unavailable' as const,maintenance:null,stores:'unverified' as const,images:'unverified' as const,backups:'unverified' as const};}
 }

@@ -37,7 +37,7 @@ silently transferred to another deployment.
 - [ ] T051/T086 Complete and verify a matched recurring database/private-object/workflow recovery set, independent retained encrypted bytes and separate key availability; preserve existing protected archives.
 - [ ] T052/T087 Verify current-denial and uncertain-effect reconciliation for the actual recovery target; retain permanent fences, original provider identities and all unknown financial holds.
 - [ ] T053/T057/T088/T096 Verify full hosted restored service and managed-workflow semantics, measure incident-to-service RTO/accepted-work RPO, and report any quarantined scope. Owned migration rehearsal alone does not complete this work.
-- [ ] T077 Observe actual recurring backup cadence and per-class maintenance freshness; distinguish scheduler configuration, local accelerated tests and genuinely observed captures.
+- [ ] T077 Verify the enabled stable 12-hour backup schedule with one real immediate capture/restore and current per-class maintenance freshness. Record two genuinely scheduled captures at least 12 hours apart as a nonblocking operational follow-up under the owner’s 2026-10-24 directive; do not manufacture elapsed cadence or wait 12 hours to release.
 - [ ] T059/T067 Maintain actionable recovery, key recovery, source withdrawal, worker failure, budget and rollback runbooks as production configuration changes.
 - [ ] T080 Confirm owned test-resource cleanup and physical deletion where claimed; preserve real user histories, protected backup retention and permanent audit/replay records.
 - [ ] T084 Close the current removal through normal review/CI, exact Preview verification and post-release production checks; clean up its merged feature branch afterward.

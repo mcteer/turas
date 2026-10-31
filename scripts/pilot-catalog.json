@@ -849,7 +849,9 @@
         "unit.neon-destination.007",
         "unit.service-recovery-transport.001",
         "unit.service-recovery-transport.002",
-        "unit.service-recovery-transport.003"
+        "unit.service-recovery-transport.003",
+        "integration.production-recovery.001",
+        "integration.production-recovery.002"
       ]
     },
     {

@@ -73,6 +73,50 @@ orchestration tests; its inventory validation passed. The complete new catalog
 and current PR CI have not yet passed. No new hosted release or completed
 full-service recovery is claimed. No Turas test containers remain.
 
+## Production-only recovery continuation — 2026-10-31
+
+Fresh authenticated production diagnostics found the database open and dispatch
+configured, but retrieval maintenance failed. The replacement runtime lacked
+EXECUTE on the bounded `public.turas_expire_retrieval_receipts()` function; the
+legacy runtime had that grant. The explicit role setup now reapplies it. An owned
+non-owner regression reproduced SQLSTATE42501, applied the original mapped role setup and
+verified bounded execution without owner/control privileges (3 cases passed).
+Root verified the actual Production81 database, OID/system identity and restricted
+runtime, granted only that function, and observed all 15 maintenance classes
+succeed through the regular scheduler. No application deployment was needed for
+this narrow permission repair.
+
+The operational health change separates actual service availability from retained
+execution assurance. Database/schema/runtime restrictions, current dispatch
+configuration (including Blob credentials and fresh scanner signatures), cost
+holds, maintenance, admission and recovery quarantines still gate service readiness.
+Strict namespace/image/cold-backup observations retain their actual status under
+administrator-only assurance; an idle namespace is not fabricated as verified.
+Independent source review passed. Thirteen initial health/image cases passed; the
+one invalid unknown-cost fixture was corrected to use the governed reservation
+transition sequence and its focused rerun passed. Full types and docs passed.
+
+Recovery reads now use ordinary primary roles. The opened-service verifier derives
+files from the authenticated capture and live required-object ledger and compares
+actual pinned-SDK reads with independently paginated governed projections. Genuine
+empty data is accepted only when the baseline agrees; skipped pages, false empties,
+missing required files and altered bytes are rejected. Owned role/read, SDK and
+object regressions passed, with independent source review. Actual cloud recovery
+remains pending until the real archive and isolated target are exercised.
+
+The existing independent operator now has a separately scoped $40 production backup budget lasting 30 days, divided equally between hosting and Blob. Previous
+preview budgets, archives, master and cron secret remain unchanged. Configuration
+was staged for Production81; automatic scheduling remains paused pending deployment
+and immediate verification. This is provisioning evidence, not a captured backup,
+a final invoice or restored-service proof.
+
+Current PR CI exposed obsolete deadline overrides and one remaining removed
+workspace selector in the foreign-upload test. These fixtures were corrected
+without increasing deadlines or relaxing foreign-access/cleanup assertions.
+The unrelated Gap WebKit internal-navigation failure and Partner timeout retain
+their original failures; the unchanged Partner case passed locally within its
+original limit. Exact-source CI and hosted release checks remain pending.
+
 ## Initial implementation checkpoint
 
 - T001: canonical source and preservation baseline recorded privately; no selected

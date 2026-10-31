@@ -82,10 +82,12 @@ an entire feature suite or every hosted workflow passed. Outbound mail remains
 subject to its separate exact sender/recipient/content authority.
 
 Read `/api/operations/status` as the canonical administrator and report its
-components separately. `/api/health/ready`503 remains an honest unresolved
-operational/recovery assurance signal even when application checks pass. Keep
-missing backup, store/image, maintenance or recovery evidence visible; do not
-manufacture observations or remove real safety controls to make the signal green.
+components separately. Public `/api/health/ready` checks service capability and
+its current fences, not a recent-traffic acceptance matrix. Administrator-only
+`assurance.ready` retains strict store/image/backup observations; missing evidence
+stays unverified. Verify the actual post-release behavior and keep incomplete
+backup/recovery assurance visible. Never manufacture observations, settle unknown
+cost or bypass a recovery fence to make either signal green.
 
 ## Database and recovery operations
 

@@ -1245,7 +1245,7 @@
         "requires every current image and invalidates previous deployment or recovery proof",
         "a newer unvalidated job cannot borrow an earlier successful image result",
         "image provenance and job code identity remain exact and immutable",
-        "public readiness passes only the combined observed infrastructure and maintenance gates"
+        "service availability and strict assurance retain their own infrastructure and maintenance checks"
       ]
     },
     {
@@ -2243,6 +2243,14 @@
         "preserves routing and 128k metadata through the actual ordinary operations fixture preparation",
         "preserves routing and 128k metadata through the actual ordinary questions fixture preparation",
         "preserves routing and 128k metadata through the actual ordinary chat fixture preparation"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/production-recovery.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "compares actual SDK empty and populated primary reads with governed baselines and revokes every probe",
+        "rejects omitted eligible data while allowing only opaque request and citation identities to differ"
       ]
     }
   ],

@@ -24,5 +24,5 @@ it('keeps every registered suite within a finite controller deadline',()=>{
  }
 });
 it('rejects unregistered suite names before process execution',()=>{
- for(const file of ['tests/integration/pilot/unknown.test.ts','../isolated-restore.test.ts',''])expect(()=>pilotSuiteDeadlineMs(file)).toThrow('Registered pilot suite required');
+ for(const file of ['tests/integration/pilot/unknown.test.ts','tests/integration/pilot/linked-http-reports.test.ts','tests/integration/pilot/linked-http-training.test.ts','tests/integration/pilot/linked-http-workforce.test.ts','tests/integration/pilot/hosted-browser.test.ts','tests/integration/pilot/hosted-learning-preparation.test.ts','../isolated-restore.test.ts',''])expect(()=>pilotSuiteDeadlineMs(file)).toThrow('Registered pilot suite required');
 });

@@ -195,6 +195,11 @@ production data in traces or diagnostics.
 - **FR-018**: Expose actionable, content-free operational status for deployment,
   schema/grants, storage, worker freshness, cleanup backlog, quotas and costs; include
   correlation, category, timing and ownership without private prompts or credentials.
+  Public service readiness checks supported schema/runtime privileges, open admission,
+  required quarantines, critical worker freshness and valid dispatch/cost configuration.
+  Keep strict current-source storage/image execution and verified-backup observations
+  in administrator-only `assurance` detail; no recent traffic is not itself a service
+  outage. Missing assurance stays unverified and does not waive backup/restore work.
 - **FR-019**: Provide and exercise runbooks for recovery, migration/grants, source
   withdrawal, access revocation, worker failure, budget exhaustion, uncertain sends,
   incident triage, release and rollback/disablement.

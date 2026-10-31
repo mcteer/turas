@@ -51,12 +51,15 @@ identified exclusively from the documented schema incompatibility.
 
 ## Open Production recovery gap
 
-`/api/health/ready` still returns HTTP 503. Authenticated application workflows can
-succeed while the operational assurance composite remains incomplete. Inspect
-`/api/operations/status` component results: admission, dispatch, maintenance,
-required quarantines, object namespaces, current-code image execution and verified
-backup health. Do not change the endpoint, fabricate a healthy result or treat
-application smoke checks as proof of complete recovery.
+The deployed main112 checkpoint returned `/api/health/ready`503 under the former
+availability-plus-assurance composite. The current code separates service `ready`
+from administrator-only `assurance.ready`; deployment and actual post-release
+verification of this correction must be recorded separately. Service readiness
+still requires the exact database/runtime capability, open admission, no required
+quarantine, current critical workers and valid dispatch/cost/scanner configuration.
+The strict current-source namespace/image/backup observations remain visible and
+unverified when absent. Do not fabricate those observations or equate either a
+working application route or service readiness with complete recovery.
 
 Full matched service restoration, current-denial/replay reconciliation and observed
 scheduled backup cadence have not been established as complete Production

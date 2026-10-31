@@ -1,3 +1,5 @@
+import {readFileSync} from "node:fs";
+import {randomUUID} from "node:crypto";
 import { describe,expect,it,vi } from "vitest";
 import { DEMO_IDS } from "../../lib/server/bootstrap-ids";
 import { withTestDatabase } from "../fixtures/database";
@@ -77,4 +79,26 @@ describe("bounded retrieval receipt retention",() => {
       });
     } finally { vi.unstubAllEnvs(); }
   });
+});
+
+// The migration's original runtime grant does not cover a replacement restricted role.
+it("refreshes bounded receipt maintenance for a separately provisioned restricted runtime",async()=>{
+ await withTestDatabase(async client=>{
+  const role="retrieval_runtime_"+randomUUID().replaceAll("-","");
+  await client.query("BEGIN");
+  try{
+   await client.query(`CREATE ROLE ${role} NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`);
+   await client.query(`SET LOCAL ROLE ${role}`);
+   await client.query("SAVEPOINT no_receipt_grant");
+   await expect(client.query("SELECT turas_expire_retrieval_receipts()")).rejects.toMatchObject({code:"42501"});
+   await client.query("ROLLBACK TO SAVEPOINT no_receipt_grant");
+   await client.query("RESET ROLE");
+   await client.query(readFileSync("scripts/db-role-setup.sql","utf8").replace(/\bturas_runtime\b/g,role));
+   await client.query(`SET LOCAL ROLE ${role}`);
+   const privileges=(await client.query("SELECT has_function_privilege(current_user,'turas_expire_retrieval_receipts()','EXECUTE') AS receipt_execute,has_table_privilege(current_user,'operations_control','UPDATE') AS control_update,rolsuper,rolcreatedb,rolcreaterole,rolbypassrls FROM pg_roles WHERE rolname=current_user")).rows[0];
+   expect(privileges).toEqual({receipt_execute:true,control_update:false,rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolbypassrls:false});
+   const removed=(await client.query("SELECT turas_expire_retrieval_receipts() AS removed")).rows[0].removed;
+   expect(Number(removed)).toBeGreaterThanOrEqual(0);expect(Number(removed)).toBeLessThanOrEqual(100);
+  }finally{await client.query("ROLLBACK");}
+ });
 });

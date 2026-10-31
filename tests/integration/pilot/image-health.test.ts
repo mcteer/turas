@@ -49,7 +49,7 @@ it('image provenance and job code identity remain exact and immutable',async()=>
  expect(await readHostedImageHealth(owner as unknown as PoolClient,id,version)).toBe('unverified');
 }),150000);
 
-it('public readiness passes only the combined observed infrastructure and maintenance gates',async()=>fixture(async(owner,id)=>{
+it('service availability and strict assurance retain their own infrastructure and maintenance checks',async()=>fixture(async(owner,id)=>{
  const {BlobPrivateObjects}=await import('../../../lib/server/storage/blob-objects');
  const {objectKey}=await import('../../../lib/server/storage/private-objects');
  const {activeObjectNamespaces}=await import('../../../lib/server/storage/inventory');
@@ -78,6 +78,7 @@ it('public readiness passes only the combined observed infrastructure and mainte
  process.env.TURAS_PILOT_JOB_COST_JSON=JSON.stringify({budgetId,scopeDigest,pricingDigest,costSourceDigest,bounds});
  await owner.query("INSERT INTO operations_cost_budgets(id,environment_id,category,authorization_digest,scope_digest,pricing_digest,cap_micro_usd,expires_at) VALUES($1,$2,'sandbox',$3,$4,$5,100,clock_timestamp()+interval '1 hour')",[budgetId,id,'a'.repeat(64),scopeDigest,pricingDigest]);
  const ready=await GET();expect(ready.status).toBe(200);expect(await ready.json()).toEqual({ready:true});
+ expect((await (await import('../../../lib/server/operations/health')).readOperationalHealth()).assurance.ready).toBe(true);
  process.env.BLOB_STORE_ID='different-controlled-store';expect((await GET()).status).toBe(503);
  process.env.BLOB_STORE_ID='synthetic-controlled';
  await owner.query("UPDATE operations_control SET mode='locked',revision=revision+1 WHERE environment_id=$1",[id]);
