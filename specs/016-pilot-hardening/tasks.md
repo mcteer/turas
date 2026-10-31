@@ -34,7 +34,7 @@ silently transferred to another deployment.
 
 ## Remaining production operations and this removal
 
-- [ ] T051/T086 Complete and verify a matched recurring database/private-object/workflow recovery set, independent retained encrypted bytes and separate key availability; preserve existing protected archives.
+- [x] T051/T086 Complete and verify a matched recurring database/private-object/workflow recovery set, independent retained encrypted bytes and separate key availability; preserve existing protected archives.
 - [ ] T052/T087 Verify current-denial and uncertain-effect reconciliation for the actual recovery target; retain permanent fences, original provider identities and all unknown financial holds.
 - [ ] T053/T057/T088/T096 Verify the actual isolated hosted restore of the complete persistent recovery set and restricted service, preserve managed-workflow reconciliation semantics, measure full drill duration/backup age against RTO/RPO objectives, and report quarantined scope. Keep live Production open and distinguish drill results from actual incident/failover evidence; local migration rehearsal alone does not complete this work.
 - [ ] T077 Verify the enabled stable 12-hour backup schedule with one real immediate capture/restore and current per-class maintenance freshness. Record two genuinely scheduled captures at least 12 hours apart as a nonblocking operational follow-up under the owner’s 2026-10-24 directive; do not manufacture elapsed cadence or wait 12 hours to release.

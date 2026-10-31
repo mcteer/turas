@@ -46,7 +46,7 @@ async function runRoleReadChecks(scope:PilotHostedScope,db:Client,signal:AbortSi
  if(members.length!==roles.length||roles.some(role=>!members.some(row=>row.login_name===role.login&&row.kind===role.kind&&row.role===role.role)))throw Error('All exact active pilot memberships required');
  const partner=members.find(row=>row.login_name==='partner')!;
  const assigned=(await db.query("SELECT customer_id FROM customer_grants WHERE workspace_id=$1 AND membership_id=$2 AND state='active' ORDER BY customer_id",[scope.workspaceId,partner.id])).rows.map(row=>String(row.customer_id));
- if(!assigned.length||assigned.length>=allIds.length||assigned.some(id=>!allIds.includes(id)))throw Error('Positive and denied partner scope required');
+ if((!primary&&!assigned.length)||assigned.length>=allIds.length||assigned.some(id=>!allIds.includes(id)))throw Error('Positive and denied partner scope required');
  const origin=new URL(scope.origin).origin,cases:{id:string;role:string;state:'pass';status:number}[]=[];
  async function call(path:string,method:'GET'|'POST',headers:Headers,body?:string,cleanup=false){
   if(!cleanup)signal.throwIfAborted();
@@ -88,7 +88,7 @@ async function runRoleReadChecks(scope:PilotHostedScope,db:Client,signal:AbortSi
    }
    ids.sort();const expectedIds=[...(role.kind==='partner'?assigned:allIds)].sort();
    if(JSON.stringify(ids)!==JSON.stringify(expectedIds))throw Error('Hosted customer scope leaked or missed assigned records');
-   cases.push({id:'positive-customer-scope',role:role.name,state:'pass',status:200});
+   cases.push({id:expectedIds.length?'positive-customer-scope':'customer-scope-governed-empty',role:role.name,state:'pass',status:200});
    const status=await call('/api/operations/status','GET',headers),expectedStatus=role.role==='admin'?200:403;
    if(status.status!==expectedStatus)throw Error('Hosted operational authority differs');
    if(role.role==='admin'&&expectedConfiguration){
@@ -101,6 +101,11 @@ async function runRoleReadChecks(scope:PilotHostedScope,db:Client,signal:AbortSi
    if(role.kind==='internal'){const payload=z.object({data:z.object({contractVersion:z.literal('product-gaps-v1')})}).parse(await boundedHostedJson(gaps));void payload;}else await gaps.body?.cancel();
    cases.push({id:'product-gaps-read-boundary',role:role.name,state:'pass',status:expectedGaps});
    if(foreignCustomerId){const foreignProfile=await call('/api/customers/'+foreignCustomerId+'/profile','GET',headers);if(foreignProfile.status!==404){await foreignProfile.body?.cancel();throw Error('Foreign workspace profile was disclosed');}z.strictObject({error:z.strictObject({code:z.literal('not_found'),message:z.string().max(200)}),correlationId:z.uuid()}).parse(await boundedHostedJson(foreignProfile));}
+   if(primary&&role.kind==='partner'){
+    const deniedCustomer=allIds.find(id=>!assigned.includes(id));if(!deniedCustomer)throw Error('Real denied partner customer required');
+    const denied=await call('/api/customers/'+deniedCustomer+'/profile','GET',headers);if(denied.status!==404){await denied.body?.cancel();throw Error('Unassigned partner customer was disclosed');}await denied.body?.cancel();
+    cases.push({id:'unassigned-customer-denied',role:role.name,state:'pass',status:404});
+   }
    if(primary){
     const foreignConversation=(await db.query('SELECT id FROM conversations WHERE workspace_id=$1 AND owner_principal_id<>$2 ORDER BY id LIMIT 1',[scope.workspaceId,expected.principal_id])).rows[0];
     if(!foreignConversation)throw Error('Existing foreign-owner conversation required for privacy proof');

@@ -10,6 +10,7 @@ import {DEMO_IDS} from '../../../lib/server/bootstrap-ids';
 import {POST as login} from '../../../app/api/auth/login/route';
 import {POST as logout} from '../../../app/api/auth/logout/route';
 import {GET as session} from '../../../app/api/auth/session/route';
+import {GET as profile} from '../../../app/api/customers/[customerId]/profile/route';
 import {GET as customers} from '../../../app/api/customers/route';
 import {POST as createConversation} from '../../../app/api/conversations/route';
 import {GET as readConversation} from '../../../app/api/conversations/[id]/route';
@@ -35,6 +36,7 @@ it('verifies normal primary role reads conversation privacy and exact logout',as
    const request=new Request(String(input),init),path=new URL(request.url).pathname;
    if(path==='/api/auth/login')return login(request);if(path==='/api/auth/logout')return logout(request);if(path==='/api/auth/session')return session(request);
    if(path==='/api/customers')return customers(request);if(path==='/api/operations/status')return status(request);if(path==='/api/product-gaps')return gaps(request);
+   const customerMatch=/^\/api\/customers\/([a-f0-9-]+)\/profile$/.exec(path);if(customerMatch)return profile(request,{params:Promise.resolve({customerId:customerMatch[1]})});
    const match=/^\/api\/conversations\/([a-f0-9-]+)$/.exec(path);if(match)return readConversation(request,{params:Promise.resolve({id:match[1]})});
    throw Error('No external transport permitted');
   };
@@ -43,6 +45,9 @@ it('verifies normal primary role reads conversation privacy and exact logout',as
    const proof=await runPrimaryRecoveryReadChecks(scope,db,AbortSignal.timeout(30000),transport);
    expect(proof).toMatchObject({sessionsRevoked:3,revokedCookieDenials:3,providerCalls:0,domainWritesPerformed:0});
    expect(proof.cases.filter(row=>row.id==='foreign-owner-conversation-denied')).toHaveLength(3);
+   await db.query("UPDATE customer_grants SET state='revoked',revision=revision+1 WHERE membership_id IN(SELECT m.id FROM memberships m JOIN principals p ON p.id=m.principal_id WHERE p.login_name='partner') AND state='active'");
+   const emptyPartner=await runPrimaryRecoveryReadChecks(scope,db,AbortSignal.timeout(30000),transport);
+   expect(emptyPartner.cases.some(row=>row.id==='unassigned-customer-denied'&&row.role==='assigned-partner')).toBe(true);
    const leaking:typeof fetch=async(input,init)=>{const response=await transport(input,init);if(new URL(String(input)).pathname.startsWith('/api/conversations/'))return Response.json({data:{}},{headers:{'x-turas-code-version':scope.sourceCommit}});return response;};
    await expect(runPrimaryRecoveryReadChecks(scope,db,AbortSignal.timeout(30000),leaking)).rejects.toThrow('Foreign owner conversation was disclosed');
    expect((await db.query('SELECT count(*)::int AS n FROM login_sessions WHERE revoked_at IS NULL')).rows[0].n).toBe(0);

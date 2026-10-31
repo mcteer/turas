@@ -11,16 +11,17 @@ import {mcpToolCategoryScopes} from '../lib/contracts/mcp';
 import {randomUUID} from 'node:crypto';
 import {isDeepStrictEqual} from 'node:util';
 import {z} from 'zod';
-import {mcpProtocolVersion,mcpCreateReplySchema,mcpConnectionMetadataSchema,mcpToolOutputs} from '../lib/contracts/mcp';
+import {mcpProtocolVersion,mcpCreateReplySchema,mcpConnectionMetadataSchema,mcpToolOutputs,type McpCategory} from '../lib/contracts/mcp';
 import type {PilotHostedScope} from '../lib/contracts/pilot-hosted';
 /** Trusted role callback after actual cookie/membership/database binding.
  * Fixed normal management writes only; no model, mail, accepted-state writes,
  * paid retries, customer content captures or credential persistence. */
-export async function runProductionRecoveryMcpJourney(input:{scope:PilotHostedScope;db:Database;headers:Headers;customerId:string;deniedCustomerId:string;signal:AbortSignal;transport?:typeof fetch;expectedEvidenceRevisionId?:string;expectedPublicationId?:string;expectedPlanId?:string}){
+export async function runProductionRecoveryMcpJourney(input:{scope:PilotHostedScope;db:Database;headers:Headers;customerId:string;deniedCustomerId:string;signal:AbortSignal;transport?:typeof fetch;expectedEvidenceRevisionId?:string;expectedPublicationId?:string;expectedPlanId?:string;knowledgeOnly?:true}){
  const {scope,db,headers,customerId,deniedCustomerId,signal}=input,transport=input.transport??fetch,origin=new URL(scope.origin).origin;
  const rows=(await db.query('SELECT id,synthetic FROM customer_references WHERE workspace_id=$1 AND id=ANY($2::uuid[])',[scope.workspaceId,[customerId,deniedCustomerId]])).rows;
  if(rows.length!==2||customerId===deniedCustomerId)throw Error('Exact distinct primary MCP customer scope required');
  const workspace=(await db.query("SELECT classification,active FROM workspaces WHERE id=$1",[scope.workspaceId])).rows[0];if(workspace?.classification!=='primary'||!workspace.active)throw Error('Active primary recovery workspace required');
+ const categories:McpCategory[]=input.knowledgeOnly?['knowledge' as const]:['profiles' as const,'evidence' as const,'knowledge' as const,'plans' as const,'reports' as const];
  const requestKey=randomUUID(),cases:string[]=[];let connectionId:string|undefined,credential:string|undefined,client:Client|undefined,revoked=false;
  async function json(response:Response){
   if(!response.body||!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')??''))throw Error('Bounded hosted JSON required');
@@ -44,7 +45,7 @@ export async function runProductionRecoveryMcpJourney(input:{scope:PilotHostedSc
   return new Response(new ReadableStream({async pull(controller){try{const chunk=await reader.read();if(chunk.done){controller.close();reader.releaseLock();return;}size+=chunk.value.length;if(size>1048576)throw Error('SDK response exceeds bound');controller.enqueue(chunk.value);}catch(error){await reader.cancel().catch(()=>undefined);controller.error(error);}},async cancel(){await reader.cancel().catch(()=>undefined);}}),{status:response.status,statusText:response.statusText,headers:response.headers});
  };
  try{
-  const created=z.object({data:mcpCreateReplySchema}).parse(await management('/api/mcp/connections','POST',{requestKey,name:'Production recovery read verification',categories:['profiles','evidence','knowledge','plans','reports'],customerIds:[customerId],lifetimeDays:1})).data;
+  const created=z.object({data:mcpCreateReplySchema}).parse(await management('/api/mcp/connections','POST',{requestKey,name:'Production recovery read verification',categories,customerIds:input.knowledgeOnly?[]:[customerId],lifetimeDays:1})).data;
   connectionId=created.connection.id;if(!created.secretAvailable)throw Error('Fresh personal connection required');credential=created.credential;
   client=new Client({name:'turas-production-recovery-consumer',version:'1.0.0'},{versionNegotiation:{mode:{pin:mcpProtocolVersion},probe:{maxRetries:0,timeoutMs:10000}}});
   const sdkHeaders=new Headers({authorization:'Bearer '+credential});const bypass=headers.get('x-vercel-protection-bypass');if(bypass)sdkHeaders.set('x-vercel-protection-bypass',bypass);
@@ -52,9 +53,9 @@ export async function runProductionRecoveryMcpJourney(input:{scope:PilotHostedSc
   const call=async(name:keyof typeof mcpToolOutputs,args:Record<string,unknown>)=>{
    signal.throwIfAborted();const result=await client!.callTool({name,arguments:args},{signal,timeout:10000});if(result.isError)throw Error('Required SDK tool unavailable');return result.structuredContent;
   };
-  const tools=await client.listTools({}, {signal,timeout:10000});if(tools.tools.length!==Object.keys(mcpToolOutputs).length||Object.keys(mcpToolOutputs).some(name=>!tools.tools.some(tool=>tool.name===name)))throw Error('Exact read-only tool catalog required');cases.push('tool-catalog');
-  const identity=mcpToolOutputs.turas_identity_v1.parse(await call('turas_identity_v1',{}));if(identity.status!=='available'||identity.data.workspaceId!==scope.workspaceId||identity.data.categories.length!==5)throw Error('SDK identity differs');cases.push('identity');
-  const customers=mcpToolOutputs.turas_customers_list_v1.parse(await call('turas_customers_list_v1',{limit:20}));if(customers.status!=='available'||customers.data.items.length!==1||customers.data.items[0].customerId!==customerId)throw Error('SDK customer ceiling differs');cases.push('customers');
+  const tools=await client.listTools({}, {signal,timeout:10000});const expectedTools=Object.keys(mcpToolOutputs).filter(name=>!mcpToolCategoryScopes[name as keyof typeof mcpToolOutputs].length||mcpToolCategoryScopes[name as keyof typeof mcpToolOutputs].some(category=>categories.includes(category)));if(tools.tools.length!==expectedTools.length||expectedTools.some(name=>!tools.tools.some(tool=>tool.name===name)))throw Error('Exact read-only tool catalog required');cases.push('tool-catalog');
+  const identity=mcpToolOutputs.turas_identity_v1.parse(await call('turas_identity_v1',{}));if(identity.status!=='available'||identity.data.workspaceId!==scope.workspaceId||!isDeepStrictEqual([...identity.data.categories].sort(),[...categories].sort()))throw Error('SDK identity differs');cases.push('identity');
+  if(!input.knowledgeOnly){const customers=mcpToolOutputs.turas_customers_list_v1.parse(await call('turas_customers_list_v1',{limit:20}));if(customers.status!=='available'||customers.data.items.length!==1||customers.data.items[0].customerId!==customerId)throw Error('SDK customer ceiling differs');cases.push('customers');}else cases.push('customer-tools-not-advertised');
   // Compare every observed page/read with the SAME credential's governed domain
   // projection. Empty is evidence only when that independent baseline is empty.
   const domainReaders={turas_profile_read_v1:readMcpProfile,turas_evidence_list_v1:listMcpEvidence,turas_evidence_read_v1:readMcpEvidence,turas_citation_resolve_v1:resolveMcpCitation,turas_knowledge_list_v1:listMcpKnowledge,turas_knowledge_read_v1:readMcpKnowledge,turas_plans_list_v1:listMcpPlans,turas_plan_read_v1:readMcpPlan,turas_reports_list_v1:listMcpReports,turas_report_read_v1:readMcpReport};
@@ -76,20 +77,21 @@ export async function runProductionRecoveryMcpJourney(input:{scope:PilotHostedSc
     async cursor=>mcpToolOutputs[name].parse(await call(name,{...args,limit:20,...(cursor?{cursor}:{})})),visit);
    cases.push(label+(total?'-positive':'-governed-empty'));
   };
-  for(const section of ['summary','workloads','facts'])await pages('turas_profile_read_v1',{customerId,section},'profile-'+section,async()=>{});
+  if(!input.knowledgeOnly){for(const section of ['summary','workloads','facts'])await pages('turas_profile_read_v1',{customerId,section},'profile-'+section,async()=>{});
   await pages('turas_evidence_list_v1',{customerId},'evidence',async selected=>{
    const evidence=await observed('turas_evidence_read_v1',{customerId,revisionId:selected.revisionId,passageId:selected.passageId});
    if(evidence.status!=='available'||!evidence.data||!('citationHandle' in evidence.data))throw Error('Eligible recovery evidence unavailable');
    const citation=await observed('turas_citation_resolve_v1',{citationHandle:evidence.data.citationHandle});if(citation.status!=='available')throw Error('Current recovery citation unavailable');
   });
+  }
   await pages('turas_knowledge_list_v1',{},'knowledge',async selected=>{
    const knowledge=await observed('turas_knowledge_read_v1',{publicationId:selected.publicationId});
    if(knowledge.status!=='available'||!knowledge.data||!('citationHandle' in knowledge.data))throw Error('Eligible recovery knowledge unavailable');
    const citation=await observed('turas_citation_resolve_v1',{citationHandle:knowledge.data.citationHandle});if(citation.status!=='available')throw Error('Recovery knowledge citation unavailable');
   });
-  await pages('turas_plans_list_v1',{customerId},'plan',async selected=>{const result=await observed('turas_plan_read_v1',{customerId,planId:selected.planId});if(result.status!=='available')throw Error('Eligible recovery plan unavailable');});
+  if(!input.knowledgeOnly){await pages('turas_plans_list_v1',{customerId},'plan',async selected=>{const result=await observed('turas_plan_read_v1',{customerId,planId:selected.planId});if(result.status!=='available')throw Error('Eligible recovery plan unavailable');});
   await pages('turas_reports_list_v1',{customerId},'report',async selected=>{const result=await observed('turas_report_read_v1',{customerId,reportId:selected.reportId});if(result.status!=='available')throw Error('Eligible recovery report unavailable');});
-  const denied=await client.callTool({name:'turas_profile_read_v1',arguments:{customerId:deniedCustomerId,section:'facts'}},{signal,timeout:10000});const refusal=mcpToolOutputs.turas_profile_read_v1.parse(denied.structuredContent);if(denied.isError||refusal.status!=='unavailable'||refusal.reason!=='not_found'||refusal.data!==null||refusal.nextCursor!==null)throw Error('Foreign SDK scope was disclosed');cases.push('denied-customer');
+  const denied=await client.callTool({name:'turas_profile_read_v1',arguments:{customerId:deniedCustomerId,section:'facts'}},{signal,timeout:10000});const refusal=mcpToolOutputs.turas_profile_read_v1.parse(denied.structuredContent);if(denied.isError||refusal.status!=='unavailable'||refusal.reason!=='not_found'||refusal.data!==null||refusal.nextCursor!==null)throw Error('Foreign SDK scope was disclosed');cases.push('denied-customer');}
   await management('/api/mcp/connections/'+connectionId+'/revoke','POST',{requestKey:randomUUID(),expectedConnectionId:connectionId});revoked=true;
   lastStatus=undefined;let deniedAfterRevoke=false;try{await client.callTool({name:'turas_identity_v1',arguments:{}},{signal,timeout:10000});}catch{deniedAfterRevoke=lastStatus===401;}if(!deniedAfterRevoke)throw Error('SDK revocation denial unverified');cases.push('revoked-credential');
  }finally{
@@ -99,7 +101,7 @@ export async function runProductionRecoveryMcpJourney(input:{scope:PilotHostedSc
    if(connectionId){const row=(await db.query('SELECT workspace_id,revoked_at FROM mcp_connections WHERE id=$1',[connectionId])).rows[0];if(row?.workspace_id!==scope.workspaceId||!row.revoked_at)throw Error('Exact SDK credential cleanup unverified');}
   }finally{credential=undefined;await client?.close();}
  }
- return {contract:'production-recovery-sdk-read-v1',scope:'normal-primary-recovery',customerId,deniedCustomerId,connectionId,governedBaselineCompared:true,cases:cases.map(id=>({id,state:'pass' as const})),passedCases:cases.length,credentialRevoked:true,providerCalls:0,domainAcceptedStateWrites:0};
+ return {contract:'production-recovery-sdk-read-v1',scope:'normal-primary-recovery',customerScope:input.knowledgeOnly?'none':'selected-customer',customerId,deniedCustomerId,connectionId,governedBaselineCompared:true,cases:cases.map(id=>({id,state:'pass' as const})),passedCases:cases.length,credentialRevoked:true,providerCalls:0,domainAcceptedStateWrites:0};
 }
 
 /** Dynamic handles/request IDs are intentionally opaque. Content and presence of

@@ -259,6 +259,26 @@ Missing current authority remains a stop condition. Empty records or file sets
 pass only when the independently governed database projection and authenticated
 capture agree; do not create fictional business records to obtain positive reads.
 
+Before restoring, inventory the backup's referenced roles. Recreate required
+non-login ownership/cleanup roles on the isolated branch; preserve runtime role
+attributes and keep both runtime logins closed. Use a compatible PostgreSQL18
+client and an explicit trusted system certificate bundle for verified TLS.
+
+Neon provider-owned default ACLs may be unrestorable by the database owner.
+The observed Production081 archive contains two such TOC entries: public table
+and sequence defaults owned by `cloud_admin`, granting `neon_superuser` grant
+option. If those exact entries must be excluded, retain the original TOC and
+record the exclusions. Do not exclude application ownership or ACLs. Compare
+Source and restored application metadata and effective runtime/cleanup-role
+permissions, including control-table update denial and cleanup-function execution.
+Record provider-default differences separately; a target-only digest is insufficient.
+
+Use actual partner assignments. A partner with no assigned customers must receive
+an empty customer directory and denial for an unassigned customer. Verify its
+knowledge-only MCP connection against the same credential's governed domain
+projection, exact permitted tool catalogue and revocation denial. Do not create
+customer assignments or business records to obtain positive drill results.
+
 Run the verifier in a dedicated child environment with both database variables
 set to the selected target runtime URL, the actual environment marker and preview
 origin, normal account credentials, a valid maintenance secret and MCP enabled.

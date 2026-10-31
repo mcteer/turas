@@ -9850,3 +9850,33 @@ owned PostgreSQL18 runner. An initial direct invocation lacked the owning fixtur
 a first wrapper mistakenly requested an upgrade of an already-current fixture;
 both invocation failures remain in private logs and are not reported as test passes.
 Hosted recovery, final CI, exact Preview and Production release remain pending.
+
+
+### Actual cold restore and real partner scope — 2026-10-31
+
+The matched Production081 capture `515a6032-fca3-4297-b6c6-058977b8e80d`
+was independently read and decrypted using separately retained key custody. Its
+complete persistent object inventory contained zero physical objects in all six
+namespaces; managed Workflow retains interrupted-reconciliation semantics rather
+than native execution resumption. This completes T051/T086's matched-set/cold-custody
+checkpoint, not hosted restricted-service acceptance.
+
+The actual archive restored successfully into owned Neon branch
+`br-frosty-recipe-b8l8d0dy` with both runtime logins closed. Earlier attempts failed
+on local TLS trust, missing non-login roles, a finite command deadline, and two
+provider-owned default ACLs. The successful clean restore retained every application
+ACL/owner and explicitly excluded only the two `cloud_admin` public table/sequence
+default ACL TOC entries. Actual Source/target metadata matched after those exact
+provider exclusions and the intentional runtime016 login fence; 12,471 effective
+runtime and cleanup-role permission checks matched, including denied control UPDATE
+and granted retrieval-cleanup EXECUTE. Provider-default parity is explicitly false.
+Private original failures, TOC, raw digests and comparison receipts remain retained.
+
+The actual primary workspace has 184 customers and zero active partner customer
+grants. The verifier previously assumed positive partner assignments. It now checks
+actual empty customer visibility, unassigned-customer denial and a knowledge-only
+MCP ceiling without inventing assignments. The owned route suite passed all three
+cases, including empty partner scope; hardening typecheck passed. Independent review
+found no blockers. The new SDK branch still requires actual hosted drill execution.
+The prior target is locked, with runtime016 NOLOGIN; it has not been admitted or
+reported as a successful hosted drill. A new clean-commit measured attempt follows.
