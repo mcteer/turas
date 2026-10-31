@@ -1626,3 +1626,13 @@ No hosted target may be locked for release before its measured reopen path exist
   routed model selection and explicit 128k context window. Preserve fake-provider
   substitution and fail-closed metadata checks; verify production app clones can
   typecheck with their generated root agent and complete fresh CI catalog coverage.
+
+- [ ] T260 Keep all four ordinary Native fixture preparations compatible with
+  routed model selection and explicit 128k context metadata. Exercise each actual
+  authored transformation and unknown-shape denial without provider calls; require
+  fresh CI acceptance for the affected original journeys.
+
+- [x] T261 Rewrite the README around product purpose, partner access, setup,
+  contribution, verification and operational guidance. Replace chronological
+  release detail with links to source-qualified validation records, preserve
+  deployment limitations and validate local documentation links and hygiene.

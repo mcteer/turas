@@ -44,3 +44,34 @@ it('keeps all five actual installer metadata guards fail closed before fixture w
  for(const row of installers)await copiedSource(row,async(app,source)=>{const changed=source.replace('beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),','beforeProvider: () => { throw Error("Changed fixture shape"); },');await writeFile(join(app,'agent/agent.ts'),changed,{mode:0o600});await expect(row.install({appRoot:app,databaseName:'turas_fixture_native'} as never)).rejects.toThrow(/metadata/);expect(await readFile(join(app,'agent/agent.ts'),'utf8')).toBe(changed);});
  expect(controls.query).not.toHaveBeenCalled();
 });
+const ordinaryInstallers=[
+ ['files','check-ordinary-native-files.ts','createOrdinaryNativeFileFixtureModel'],
+ ['operations','check-ordinary-operations-native.ts','createOrdinaryOperationsNativeModel'],
+ ['questions','check-ordinary-questions-native.ts','createOrdinaryQuestionsNativeModel'],
+ ['chat','check-ordinary-chat-native.ts','createOrdinaryNativeFixtureModel'],
+] as const;
+// Execute each actual authored preparation block, without starting its owned DB/browser.
+async function runOrdinaryInstallerBlock(script:string,source:string){
+ const authored=await readFile(resolve('scripts',script),'utf8');
+ const targetStart=authored.indexOf("target='return ");expect(targetStart).toBeGreaterThan(0);
+ const targetEnd=authored.indexOf('\n',targetStart),guardStart=authored.indexOf(' if(source.split(target)',targetEnd);
+ const writeStart=authored.indexOf(' await writeFile(',guardStart),writeEnd=authored.indexOf('{mode:0o600});',writeStart)+'{mode:0o600});'.length;
+ expect(guardStart).toBeGreaterThan(targetEnd);expect(writeStart).toBeGreaterThan(guardStart);expect(writeEnd).toBeGreaterThan(writeStart);
+ const body='const '+authored.slice(targetStart,targetEnd)+'\n'+authored.slice(guardStart,writeEnd);
+ const writes:Array<{path:string;source:string;options:{mode:number}}>=[];
+ const run=Object.getPrototypeOf(async function(){}).constructor('source','path','modelPath','writeFile',body) as (source:string,path:string,modelPath:string,write:(path:string,source:string,options:{mode:number})=>Promise<void>)=>Promise<void>;
+ await run(source,'owned-agent.ts','owned-agent.ts',async(path,source,options)=>{writes.push({path,source,options});});
+ return writes;
+}
+for(const [name,script,creator]of ordinaryInstallers)it(`preserves routing and 128k metadata through the actual ordinary ${name} fixture preparation`,async()=>{
+ const network=vi.spyOn(globalThis,'fetch').mockImplementation(async()=>{throw Error('Real network forbidden');});
+ const source=await readFile(resolve('agent/agent.ts'),'utf8'),writes=await runOrdinaryInstallerBlock(script,source);expect(writes).toHaveLength(1);expect(writes[0].options.mode).toBe(0o600);
+ const generated=writes[0].source,start=generated.indexOf('return {...selectTurasGatewayModel(wrapOrdinaryChatModel('+creator+'('),end=generated.indexOf('modelContextWindowTokens:128_000};',start)+'modelContextWindowTokens:128_000}'.length;
+ expect(start).toBeGreaterThan(0);expect(end).toBeGreaterThan(start);
+ const underlying={fixture:true},wrapped={guarded:true},principal={attributes:{turasAttemptId:'synthetic-attempt'}},ctx={session:{id:'synthetic-native'},messages:[]},event={type:'step.started'},factory=vi.fn((..._args:unknown[])=>underlying),guard=vi.fn(()=>wrapped);
+ const selection=Function('selectTurasGatewayModel','wrapOrdinaryChatModel',creator,'principal','ctx','turnId','stepIndex','event','return '+generated.slice(start+'return '.length,end)+';')(selectTurasGatewayModel,guard,factory,principal,ctx,'turn_0',0,event);
+ expect(factory.mock.calls[0]?.[0]).toBe('synthetic-attempt');expect(guard).toHaveBeenCalledWith(underlying,principal,'synthetic-native','turn_0',{event});
+ expect(selection).toEqual({model:wrapped,modelOptions:{providerOptions:{gateway:{only:['anthropic']}}},modelContextWindowTokens:128000});expect(selection.model).toBe(wrapped);expect(network).not.toHaveBeenCalled();
+ const changed=source.replace('return selectTurasGatewayModel(wrapOrdinaryChatModel(', 'return changedOrdinaryModel(');
+ await expect(runOrdinaryInstallerBlock(script,changed)).rejects.toThrow(/shape changed/i);
+});

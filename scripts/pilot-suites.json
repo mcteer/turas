@@ -2275,14 +2275,18 @@
     },
     {
       "file": "tests/unit/pilot/native-fixture-selection.test.ts",
-      "expectedCases": 6,
+      "expectedCases": 10,
       "cases": [
         "preserves the routed guarded model and explicit context window in the actual staffing installer",
         "preserves the routed guarded model and explicit context window in the actual execution installer",
         "preserves the routed guarded model and explicit context window in the actual support installer",
         "preserves the routed guarded model and explicit context window in the actual expansion installer",
         "preserves the routed guarded model and explicit context window in the actual learning installer",
-        "keeps all five actual installer metadata guards fail closed before fixture writes when the source shape changes"
+        "keeps all five actual installer metadata guards fail closed before fixture writes when the source shape changes",
+        "preserves routing and 128k metadata through the actual ordinary files fixture preparation",
+        "preserves routing and 128k metadata through the actual ordinary operations fixture preparation",
+        "preserves routing and 128k metadata through the actual ordinary questions fixture preparation",
+        "preserves routing and 128k metadata through the actual ordinary chat fixture preparation"
       ]
     }
   ],
