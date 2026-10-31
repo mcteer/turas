@@ -1616,3 +1616,8 @@ No hosted target may be locked for release before its measured reopen path exist
   into its full permanent hold without renewing authority, changing source,
   settling charges or adding allowance; coordinate compatible readers and require
   a separate explicit continuation before fresh work.
+
+- [ ] T258 Restrict Turas native Sonnet5.5 requests to Anthropic through Gateway
+  using supported per-selection model options, preserving all existing model
+  admission, accounting, recovery and deadline guards. Verify generate/stream
+  transport mechanics and fresh funded Native quality without replaying failures.

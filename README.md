@@ -64,6 +64,12 @@ exist. Other error statuses remain denied. This preserves the original rejection
 without retrying a governed Learning send; fresh complete validation, migration
 rehearsal and deployed verification remain pending.
 
+Turas retains Sonnet5.5 through AI Gateway and now restricts each native model
+selection to Anthropic's route. Existing admission, accounting and no-retry
+wrappers remain in place. This is a compatibility mitigation after different
+provider outcomes; it does not establish why the earlier request failed. Fresh
+Native quality and hosted verification remain pending.
+
 At development revision `bd2cac0`, the model migration selects `anthropic/claude-sonnet-5.5` through
 Vercel AI Gateway, following the request to stop xAI. New evaluation admission
 rejects the retired model while historical accounting and uncertain holds remain

@@ -963,7 +963,11 @@
         "unit.research-output-citations.004",
         "unit.research-output-citations.005",
         "unit.research-output-citations.006",
-        "unit.research-output-citations.007"
+        "unit.research-output-citations.007",
+        "unit.native-model-routing.001",
+        "unit.native-model-routing.002",
+        "unit.native-model-routing.003",
+        "unit.native-model-routing.004"
       ]
     },
     {
@@ -1100,7 +1104,11 @@
         "unit.work-backup-pricing.008",
         "integration.hosted-learning-admission.007",
         "integration.hosted-learning-admission.008",
-        "unit.quality-expired-disposition.001"
+        "unit.quality-expired-disposition.001",
+        "unit.native-model-routing.001",
+        "unit.native-model-routing.002",
+        "unit.native-model-routing.003",
+        "unit.native-model-routing.004"
       ]
     },
     {

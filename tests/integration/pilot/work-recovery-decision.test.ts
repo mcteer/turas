@@ -826,7 +826,7 @@ it('rejects unaccounted current root model steps before provider selection while
  },async owner=>{
   await expect(resolve()).rejects.toMatchObject({status:404});
   await owner.query('UPDATE turas_environment SET schema_version=77');
-  try{expect(await resolve()).toBe('anthropic/claude-sonnet-5.5');}
+  try{expect(await resolve()).toMatchObject({model:'anthropic/claude-sonnet-5.5',modelOptions:{providerOptions:{gateway:{only:['anthropic']}}}});}
   finally{await owner.query('UPDATE turas_environment SET schema_version=81');}
  });
 },210000);

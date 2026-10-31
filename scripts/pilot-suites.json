@@ -2262,6 +2262,16 @@
         "keeps the listener until release installs the pool listener and cleans up on success",
         "retains permanent replay normalization and never repeats a transaction"
       ]
+    },
+    {
+      "file": "tests/unit/pilot/native-model-routing.test.ts",
+      "expectedCases": 4,
+      "cases": [
+        "serializes the actual session selection with the same model and request-local Anthropic-only route",
+        "passes the route through the actual support guard without replacing the model or permitting a second generate call",
+        "preserves the same route and shared no-replay guard for streaming calls",
+        "serializes the selection through the installed Gateway SDK for generate and stream without real network access"
+      ]
     }
   ],
   "ui": {

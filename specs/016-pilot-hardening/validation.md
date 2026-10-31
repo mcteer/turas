@@ -9687,3 +9687,17 @@ introduced. All eight owned PostgreSQL admission cases pass, including the two n
 constraint cases. Pilot type checking, authored-document and diff checks pass.
 Fresh complete validation, migration rehearsal and hosted release verification
 remain pending; historical receipts do not prove this uncommitted correction.
+
+## Request-local model routing compatibility mitigation
+
+A retained Native request failed on a Gateway route identified as CLAUDEAWS;
+a separate direct SDK diagnostic reached Anthropic successfully. These were not
+a controlled full-wire comparison and do not establish the failure's cause.
+The model remains `anthropic/claude-sonnet-5.5`. Supported Eve selection objects
+now carry `modelOptions.providerOptions.gateway.only: ["anthropic"]` for every
+native resolution, with the same budget-wrapped model instance and existing
+admission, recovery, deadline and no-replay logic. The restriction is request-local
+and does not change team routing, credentials or billing. Four offline SDK/selection cases pass, including actual installed Gateway wire
+serialization through an intercepted fetch with real network access forbidden.
+The existing owned recovery model guard also passes. Fresh complete deterministic, CI,
+Native actual-model and hosted verification remain release requirements.
