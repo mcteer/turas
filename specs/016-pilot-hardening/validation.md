@@ -9982,3 +9982,24 @@ real Eve fixture: canonical customer resolution, native file correction, compose
 use and history reload passed, with zero paid calls and successful owned resource
 cleanup. Original CI connection-reset and WebKit-engine failures remain failures;
 GitHub requires the current run to finish before targeted reruns can start.
+
+## 2026-10-31: final removal CI repairs
+
+CI run `41251936576` at `254c204` exposed two test failures; this run is not a
+passing release gate. The hardening catalog stopped at the load fixture after
+417 preceding cases: the fixture still created a retired `synthetic_pilot`
+workspace, and ordinary session issuance correctly refused it. The owned fixture
+now creates a primary workspace, keeps every customer synthetic, and asserts that
+both retired provisioning fields are null. Its focused regression passed with
+25 issued sessions, 250 customers, 10,000 distinct reviewed passages and separate
+internal/delivery projections; no provider calls or quota resets occurred.
+
+The general verification job's research UI failure was a request-interception
+callback from the preceding case: `route.fetch: Test ended`. The case now releases
+its capability latch and awaits `unrouteAll({behavior:'wait'})` before deleting its
+conversation. Assertions and route errors remain enforced. Independent review
+found no blockers in these fixes, and both main and hardening typechecks passed.
+The first local browser runner stopped before test execution because its optional
+citation-source indexing setup lacked embeddings. A direct development-mode run
+then stopped at browser sign-in; neither attempt establishes browser acceptance.
+Production-mode WebKit verification and fresh exact-source CI remain pending.

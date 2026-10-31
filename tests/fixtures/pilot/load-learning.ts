@@ -9,8 +9,8 @@ import {saveRegister,submitRegister,reviewRegister} from '../execution/registers
 import type {pilotLoadEvidenceFixture} from './load';
 import type {pilotLoadDeliveryBaseFixture} from './load-delivery';
 /** A synthetic measured outcome and its exact quarter frame receive independent
- * ordinary execution and measurement review. Pilot classification still excludes
- * it from primary cross-customer outcomes; it proves no actual customer benefit. */
+ * ordinary execution and measurement review in the owned disposable database.
+ * The synthetic records prove no actual customer benefit. */
 export async function pilotLoadLearningFixture(db:PoolClient,evidence:Awaited<ReturnType<typeof pilotLoadEvidenceFixture>>,delivery:Awaited<ReturnType<typeof pilotLoadDeliveryBaseFixture>>){
  requireOwnedPilotDatabase(process.env,true);const author=evidence.actors[1],reviewer=evidence.actors[0],customerId=evidence.customers[0].id,workloadId=randomUUID(),revisionId=evidence.customers[0].revisionIds[0];
  await db.query("INSERT INTO customer_workloads(id,workspace_id,customer_id,display_name) VALUES($1,$2,$3,'Synthetic fixed load workload')",[workloadId,evidence.workspaceId,customerId]);

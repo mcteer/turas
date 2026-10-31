@@ -15,7 +15,7 @@ it('prepares exactly twenty-five issued sessions two hundred fifty synthetic cus
   expect(Number((await db.query("SELECT count(*) FROM login_sessions WHERE workspace_id=$1 AND membership_id IS NOT NULL AND revoked_at IS NULL",[fixture.workspaceId])).rows[0].count)).toBe(25);
   expect(Number((await db.query("SELECT count(*) FROM profile_records WHERE workspace_id=$1 AND current_accepted_revision_id IS NOT NULL",[fixture.workspaceId])).rows[0].count)).toBe(2510);
   expect(Number((await db.query("SELECT count(*) FROM profile_command_receipts WHERE workspace_id=$1 AND action='accept_revision'",[fixture.workspaceId])).rows[0].count)).toBe(2510);
-  expect((await db.query("SELECT classification FROM workspaces WHERE id=$1",[fixture.workspaceId])).rows[0].classification).toBe('synthetic_pilot');
+  expect((await db.query("SELECT classification,pilot_environment_id,pilot_provisioning_id FROM workspaces WHERE id=$1",[fixture.workspaceId])).rows[0]).toEqual({classification:'primary',pilot_environment_id:null,pilot_provisioning_id:null});
   expect(Number((await db.query('SELECT count(*) FROM retrieval_embedding_operations')).rows[0].count)).toBe(0);
  }finally{db.release();await pool.end();await closeRuntimePool();}
 },660000);
