@@ -9954,3 +9954,31 @@ including unknown-creation holds, source withdrawal, provider/pricing scope refu
 maximum-dispatch exhaustion and undispatched release. Independent review found no
 blocker. This test/doc-only follow-up does not relabel the766 hosted drill as a
 new-source execution; exact final Preview/CI and Production release remain pending.
+
+
+### Real-data Preview acceptance and checker metadata fix — 2026-10-31
+
+Git-backed Preview `dpl_DdC696k5qRTmDaQNgriY6KD4c8fS` on exactc581 passed
+real form login at both deployment and branch URLs, all184 real customer directory
+entries matching Production, unchanged1Password/Notion research, overview placement,
+product/source interaction and evidence search. Retrieval correctly reported
+`lexical_degraded` with the isolated embedding provider disabled; it was not a live
+embedding/model evaluation. Desktop-dark and fresh-context mobile-light WebKit
+captures were visually inspected. The first media-switch mobile captures retained
+stale dark link backgrounds; a fresh light context confirmed intended dark-on-white
+styles without any application CSS change.
+
+Vercel's deployment `alias` field remained empty despite assigned aliases. The
+checker now queries the authoritative deployment-alias collection and individual
+alias record, verifies exact deployment/project and no redirect, then performs the
+real branch-origin login. Git-backed deployment supplies trusted branch-origin
+metadata; a manually aliased CLI-only deployment correctly refused the alias POST.
+No origin policy or firewall setting was weakened. Independent review found no
+blocker; typecheck and actual corrected-checker acceptance passed. The targetc581
+and the checker follow-up remain separately identified.
+
+The local paid-provider-disabled file-correction reproduction also completed its
+real Eve fixture: canonical customer resolution, native file correction, composer
+use and history reload passed, with zero paid calls and successful owned resource
+cleanup. Original CI connection-reset and WebKit-engine failures remain failures;
+GitHub requires the current run to finish before targeted reruns can start.

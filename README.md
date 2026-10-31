@@ -231,8 +231,8 @@ budgets; uncertain charges remain accounted for until they can be reconciled.
 Email delivery, learning and other governed features require their documented
 activation rather than being enabled by setup alone.
 
-Start with [pilot operations](docs/pilot-operations.md),
-[pilot lifecycle and recovery](docs/pilot-lifecycle.md) and the
+Start with [production operations](docs/pilot-operations.md),
+[data lifecycle and recovery](docs/pilot-lifecycle.md) and the
 [environment handoff](docs/environment-handoff.md). Feature-specific runbooks cover
 [reporting](docs/reporting-operations.md), [support](docs/support-operations.md),
 [partners](docs/partner-operations.md), [learning](docs/learning-operations.md) and
