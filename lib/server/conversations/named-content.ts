@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {getServerConfig} from '../config';
 import type {PoolClient} from 'pg';
 import type {CurrentSession} from '../auth/sessions';
@@ -6,7 +7,7 @@ import {lockProfileActors} from '../profiles/policy';
 import {historicalContentWithdrawn,type HistoricalSource} from '../retrieval/content-withdrawal';
 export async function assertHistoricalNamedContentRetained(db:PoolClient,actor:CurrentSession,conversationId:string){
  const marker=Number((await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version??0);
- if(marker!==80)throw new HttpFailure(503,'evidence_history_unavailable','Current source retention is unavailable');
+ if(marker!==CURRENT_SCHEMA_VERSION)throw new HttpFailure(503,'evidence_history_unavailable','Current source retention is unavailable');
  const coverage=(await db.query<{coverage:string|null}>(`SELECT coverage.coverage FROM conversations conversation LEFT JOIN ordinary_named_content_coverage coverage ON coverage.conversation_id=conversation.id
   WHERE conversation.id=$1 AND conversation.owner_principal_id=$2 AND conversation.workspace_id=$3 AND conversation.environment_id=$4`,[conversationId,actor.principalId,actor.workspaceId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
  if(!coverage)throw hiddenRecord();
