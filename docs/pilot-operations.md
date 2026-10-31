@@ -266,7 +266,9 @@ capture agree; do not create fictional business records to obtain positive reads
 Before restoring, inventory the backup's referenced roles. Recreate required
 non-login ownership/cleanup roles on the isolated branch; preserve runtime role
 attributes and keep both runtime logins closed. Use a compatible PostgreSQL18
-client and an explicit trusted system certificate bundle for verified TLS.
+client and an explicit trusted system certificate bundle for verified TLS. Refresh
+planner statistics with `ANALYZE` on the closed isolated target after restore,
+before the bounded authority-metadata digest and denial reconciliation.
 
 Neon provider-owned default ACLs may be unrestorable by the database owner.
 The observed Production081 archive contains two such TOC entries: public table

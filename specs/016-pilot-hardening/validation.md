@@ -9899,3 +9899,58 @@ Resumption retains the original Source-clock start receipt and fresh branch,
 restores the genuine archive again, and separately records provisioning's
 `startedSource` and the current exact clean verifier/Preview source. It cannot
 reset elapsed recovery time by recompiling the verifier or reuse a prior pass.
+
+
+### Actual isolated hosted recovery passed — 2026-10-31
+
+On exact verifier/Preview commit `76646cb30cfd4ad23c703179dc185462db12bc4b`,
+Preview `https://turas-dh36dgoq8-turas-6e414af3.vercel.app`
+(`dpl_FZfGyCGTVJwCr2fmnHoodowPfFhW`) passed the actual non-disruptive isolated
+read-service recovery drill. The original provisioning revision remains5ac; the
+original Source clock and all intervening failed attempts are retained. Full elapsed
+time was1,840,816ms (30m41s), with backup age2,369,644ms (39m30s) at that start:
+within the four-hour/24-hour drill objectives, not an observed outage guarantee.
+
+The authenticated archive restored into `br-ancient-dew-b83zjr63` on endpoint
+`ep-empty-cell-b8fnjdnn`. Actual permission comparison passed12,471 effective
+checks with only documented provider-default differences and the closed-login
+posture qualified separately. Current independently retained denial/replay state
+covered114 tables. Nineteen HTTP role cases passed; pinned SDK/canonical-baseline
+journeys passed12 administrator,12 member and5 knowledge-only partner cases. The
+partner's actual zero-customer ceiling was preserved. All three probe sessions and
+MCP credentials were retired, including measured revocation denials. Database,
+required-object and authenticated physical inventories all agreed on zero objects;
+no artificial files or business assignments were created. Production remained open,
+with zero Source SQL writes, firewall operations, model calls, mail or paid jobs.
+Managed Workflow retains interrupted-reconciliation semantics; no native execution
+resumption or live failover is claimed.
+
+A prior retry correctly refused an aged denial snapshot; another stopped before
+admission on a metadata-query timeout. After isolated post-restore ANALYZE, the
+complete digest passed in5,236ms under unchanged10s statement/12s query limits.
+A fresh capture immediately followed by verification produced the successful
+receipt. Original failures, closures, archive, key references and receipts remain
+private and separately identified.
+
+T077's actual current112 Production observation reports healthy database,
+dispatch, open admission, all15 maintenance classes, zero unknown reservations,
+no required quarantines and healthy backup. Its public readiness remained false
+because the older code also gated on unverified store/image assurance; the current
+PR separates availability and retained administrator assurance. The stable backup
+operator remains enabled on its12-hour schedule. Two genuinely scheduled captures
+12hours apart remain a nonblocking operational follow-up; no elapsed cadence has
+been manufactured or awaited for release.
+
+
+### Governed-execution CI fixture correction — 2026-10-31
+
+CI766 reached34 passing jobs before the deterministic catalogue failed in
+`governed-execution.test.ts`: its positive dispatcher-readiness fixture supplied
+controlled Sandbox images and budget but lacked the Blob credential shape and
+matching scanner attestation now required by the retained production check. The
+fixture now supplies explicitly synthetic matching values; provider execution
+remains mocked and the production guard is unchanged. All four owned cases passed,
+including unknown-creation holds, source withdrawal, provider/pricing scope refusal,
+maximum-dispatch exhaustion and undispatched release. Independent review found no
+blocker. This test/doc-only follow-up does not relabel the766 hosted drill as a
+new-source execution; exact final Preview/CI and Production release remain pending.
