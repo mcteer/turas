@@ -41,14 +41,14 @@ See the [evidence policy](docs/evidence-policy.md) and
 
 ## Project status
 
-Turas is under active development. Feature 016, **pilot hardening**, is the current
-release effort: hosted runtime reliability, private storage, bounded processing,
-backup and recovery, access checks, and verified pilot journeys.
+Turas is under active development. The current production hardening work covers
+chat reliability, access control, durable private storage, bounded processing,
+and database backup and recovery. Production configuration keeps test-workspace
+login and evaluation-only bindings disabled.
 
-Pilot hardening is **not yet release-complete**. Implementation, local checks, CI,
-Preview acceptance and Production verification are recorded separately. A passing
-local test does not establish hosted behavior, and a feature listed above may
-require environment preparation or explicit activation.
+Implementation, local checks, CI, Preview acceptance and Production verification
+are recorded separately. A passing local test does not establish hosted behavior,
+and a feature listed above may require environment preparation or explicit activation.
 
 Use the [pilot validation record](specs/016-pilot-hardening/validation.md) and
 [release handoff](specs/016-pilot-hardening/handoff.md) for evidence and remaining

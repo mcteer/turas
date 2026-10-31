@@ -9719,3 +9719,35 @@ in 172,796ms with code0 and verified owned cleanup. The existing real owned root
 recovery guard also passes; 25 other cases were deliberately unselected. Complete
 committed-source CI validation remains required; the failed candidate and its
 partial results remain historical.
+
+### Production-focused release scope — 2026-10-31
+
+The release scope is application hardening: chat reliability, authorization,
+durable private files, and verified database migration and recovery. Production
+must disable test-workspace login and omit evaluation-only Root/Learning bindings.
+Vercel's default firewall is restored; custom deployment-host rules are not part
+of the release or subsequent deployment work.
+
+A real Stop request exposed PostgreSQL deadlock `40P01`: cancellation locked the
+conversation before the attempt, while ordinary event projection used the reverse
+order. The correction uses conversation-before-attempt locking. A two-connection
+owned PostgreSQL regression reproduces the original deadlock and passes with the
+correction; all eleven neighboring steering tests pass. Cancellation and financial
+uncertainty semantics are unchanged. Fresh hosted Stop verification remains required.
+
+Support's raw structured-output schema included provider-unsupported length and
+array constraints. The transport projection follows the provider's documented
+subset while preserving closed objects, required fields, enums and supported
+formats; the original Zod and evidence validation remains authoritative. Six
+focused generate/stream and validation regressions pass. The earlier HTTP400
+responses remain failed observations with their uncertainty retained; a corrected
+actual-model request is still required.
+
+The CI failure was a stale migration-count expectation of eighty after schema81.
+Both matching restore assertions now use the current schema contract. The focused
+Preview restore case and four released-snapshot restore cases pass. A fresh
+Production schema77 database backup was encrypted, copied and cold-verified, then
+actually restored and migrated to81 in an owned database with runtime grant,
+append-denial and constraint checks. This is database recovery evidence;
+Production Blob/Sandbox configuration and authenticated deployment checks remain
+separate release requirements.

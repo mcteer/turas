@@ -208,6 +208,13 @@ export async function projectNativeEventInTransaction(
   if (staffingProjection) return staffingProjection;
   const executionProjection = await projectExecutionNativeEventInTransaction(client, nativeSessionId, attemptId, event, streamIndex, preparedStaffing?.kind === "execution" ? preparedStaffing : null);
   if (executionProjection) return executionProjection;
+  if (feature.kind === 'normal') {
+    // Stop locks the conversation before its attempts. Take the same order
+    // before an attempt lock or projection INSERT needs its conversation FK.
+    // Otherwise Stop can hold the conversation while waiting on our attempt,
+    // and the INSERT waits for Stop's conversation lock: a real deadlock.
+    await client.query('SELECT id FROM conversations WHERE id=$1 FOR UPDATE', [owned.conversation_id]);
+  }
   {
     if (["message.appended","message.completed"].includes(event.type)) {
       const scope=await client.query<{conversation_id:string;owner_principal_id:string}>(`
