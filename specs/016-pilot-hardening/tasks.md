@@ -1590,3 +1590,9 @@ No hosted target may be locked for release before its measured reopen path exist
   source and authority; retain every writer lock, admission check, historic hold
   and fail-closed interrupted-lock behavior. Verify killed-reader and concurrent
   settlement regressions, complete model quality and hosted acceptance.
+
+- [x] T253 Prevent initial customer-context actions from opening before the
+  conversation history and attachment capabilities have loaded. Preserve the
+  research controls and server authorization; test a deliberately delayed
+  capability response and the original keyboard-cancellation journey in
+  headless WebKit without retries or longer timeouts (FR-013, FR-021).

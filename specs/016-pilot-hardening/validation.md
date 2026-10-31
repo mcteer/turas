@@ -9634,3 +9634,23 @@ exit under explicit finite SQL bounds and retains the final fresh census.
 All eight recovery-authority and five runtime-retirement integration cases pass,
 including the delayed-exit regression, and type checking passes. Full-catalog, CI and actual
 hosted verification remain required.
+
+### Initial customer-context readiness regression
+
+The `1540b43` CI verification job failed the original mobile-dark research
+keyboard-cancellation case. Its retained trace shows the attachment capability
+button appearing above the research action during a click. One unchanged local
+Production-mode reproduction passed; the original CI failure remains recorded.
+
+The context toggle now waits for the existing initial history/capability read.
+A deterministic regression holds the real conversation response and requires
+the context toggle to remain disabled. Removing that guard only in a disposable
+copy fails the new assertion. The corrected candidate passed both research
+journeys across all four headless WebKit projects: eight passes, no skips,
+retries or failures, with the original 30-second test limit. Both owned test
+containers were removed and independently confirmed absent. TypeScript and
+diff checks passed; independent source review found no blocker.
+
+These are pre-commit candidate checks. Fresh committed-source full-catalog,
+CI, model, hosted and release checks remain required. Production remains at
+`f8d196f` / schema 077.

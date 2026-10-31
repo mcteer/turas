@@ -757,6 +757,9 @@ disabled. See [learning operations](docs/learning-operations.md), the
 
 ### Pilot Hardening and Launch Readiness
 
+Customer-context actions wait for the initial history and capability read, so
+attachment controls settle before public research can be opened.
+
 Current acceptance: Production remains at `f8d196f` / schema 077. Candidate
 `5c8c45f` passed all 61 CI jobs and its 1,053-case deterministic catalog,
 with the original failures and unchanged-source reruns retained separately.
