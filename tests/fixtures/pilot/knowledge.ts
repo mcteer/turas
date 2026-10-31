@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { DEMO_IDS } from "../../../lib/server/bootstrap-ids";
-import { issueSession,getCurrentSession,sessionCookieName } from "../../../lib/server/auth/sessions";
+import { issueSession,getCurrentSession,sessionCookieName,createSessionToken,hashSessionToken,sessionExpiresAt,type CurrentSession } from "../../../lib/server/auth/sessions";
 import { submitProfileCommand } from "../../../lib/server/profiles/service";
 import { createKnowledgeCandidate,submitKnowledgeCandidate,decideKnowledgeCandidate } from "../../../lib/server/knowledge/service";
 import { requireOwnedPilotDatabase } from "../../../scripts/pilot-environment";
@@ -16,8 +16,20 @@ export async function pilotPublishedKnowledgeFixture(db:PoolClient,classificatio
  if(!workspaceId){workspaceId=randomUUID();await db.query("INSERT INTO workspaces(id,name,classification,pilot_environment_id,pilot_provisioning_id) VALUES($1,'Synthetic shared-origin fixture',$2,$3,$4)",[workspaceId,classification,classification==="synthetic_pilot"?process.env.TURAS_ENVIRONMENT_ID:null,classification==="synthetic_pilot"?randomUUID():null]);}
  await db.query("INSERT INTO memberships(id,principal_id,workspace_id,kind,role) VALUES($1,$2,$3,'internal','admin') ON CONFLICT(principal_id,workspace_id) DO NOTHING",[randomUUID(),DEMO_IDS.mcteer,workspaceId]);
  const membershipId=(await db.query("SELECT id FROM memberships WHERE principal_id=$1 AND workspace_id=$2",[DEMO_IDS.mcteer,workspaceId])).rows[0].id as string;
- const issued=await issueSession({principalId:DEMO_IDS.mcteer,loginName:"mcteer",displayName:"mcteer",membershipId,workspaceId,kind:"internal",role:"admin"});
- const actor=(await getCurrentSession(new Request(process.env.TURAS_APP_ORIGIN!,{headers:{cookie:`${sessionCookieName()}=${issued.token}`}})))!;
+ const identity={principalId:DEMO_IDS.mcteer,loginName:"mcteer",displayName:"mcteer",membershipId,workspaceId,kind:"internal" as const,role:"admin" as const,workspaceClassification:classification};
+ let actor:CurrentSession;
+ if(classification==="synthetic_pilot"){
+  // Historical rows exercise domain isolation only. Public session admission
+  // deliberately rejects this workspace, including retained session rows.
+  const sessionId=randomUUID(),token=createSessionToken(),expiresAt=sessionExpiresAt();
+  await db.query("INSERT INTO login_sessions(id,principal_id,token_hash,expires_at,membership_id,workspace_id) VALUES($1,$2,$3,$4,$5,$6)",[sessionId,identity.principalId,hashSessionToken(token),expiresAt,membershipId,workspaceId]);
+  actor={...identity,sessionId,token,expiresAt};
+ }else{
+  const issued=await issueSession(identity);
+  const current=await getCurrentSession(new Request(process.env.TURAS_APP_ORIGIN!,{headers:{cookie:`${sessionCookieName()}=${issued.token}`}}));
+  if(!current)throw Error('Primary knowledge fixture session required');
+  actor=current;
+ }
  const customerId=randomUUID();await db.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Synthetic shared-origin customer',true)",[customerId,workspaceId]);await db.query("INSERT INTO customer_profile_state(customer_id,workspace_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[customerId,workspaceId]);
  await db.query("INSERT INTO learning_workspace_state(environment_id,workspace_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[process.env.TURAS_ENVIRONMENT_ID,workspaceId]);
  await db.query("BEGIN");

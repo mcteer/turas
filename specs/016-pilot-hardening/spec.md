@@ -166,8 +166,11 @@ production data in traces or diagnostics.
   deleted/withdrawn evidence or expired content, nor duplicate uncertain sends or
   paid work. Reconcile current denial state before reopening; fail closed if absent.
 - **FR-008**: Define a recovery objective of at most 24 hours of lost accepted
-  work and four hours to verified restricted service; measure a full drill and
-  verify the backup cadence needed to support those objectives.
+  work and four hours to verified restricted service; measure an actual isolated
+  hosted restore drill, including target provisioning, and verify the backup
+  cadence needed to support those objectives. Keep live Production open during
+  the drill; do not require pilot hostname/firewall policy or represent measured
+  drill duration as an actual incident/failover result.
 - **FR-009**: Inventory and verify existing content-specific retention/deletion
   policies, private files, indexes, cached derivatives, audit payloads and permanent
   replay records. Do not silently shorten or extend previously approved periods.

@@ -239,30 +239,41 @@ quarantine unsupported scope. Do not replay a paid request, mail send or native 
 to discover whether it completed. Managed Workflow inventory/retirement must cover
 every page and report uncertain identities explicitly.
 
-For restored Blob objects, the retained `pilot-work-recovery-verification-input-v4`
-binds the original and distinct destination stores, exact restored deployment and
-configuration, authenticated archive, live integrity capability and current denial
-proof. Copy original bytes with full count/size/hash parity under the locked IO
-fence; retain the source for reconciliation. Rollback must use a verified populated
-store, never an empty local directory. A serialized healthy object or old-store
-comparison cannot stand in for a live recovered application.
+For a planned drill, leave live Production open. Create a distinct private Blob
+store and fresh owned Neon branch, restore the authenticated archive with its
+separate key, and keep that target's runtime closed until verification. The drill
+must not inspect or modify firewall rules or require a hostname allowlist.
 
-Owner verification, quarantine resolution and opening service are separate actions.
-Only resolve quarantines with a fresh complete verification for the exact locked
-revision, then explicitly open the verified target. Preserve auth-first denials,
-owner/partner isolation, withdrawn-content withholding and permanent replay fences
-through temporary maintenance reads. Restore/load compatibility must preserve
-named-content dependency and coverage metadata exactly; it cannot upgrade legacy
-coverage or allow the application runtime to suppress capture.
+```sh
+npm run recovery:drill -- --start --source <current-production81-owner.json> --output <new-private-start-directory>
+npm run recovery:drill -- --verify --configuration <private-isolated-drill-configuration.json>
+```
 
-The retained `--verify-service-recovery` operation measures incident-to-ordinary
-service only after complete locked verification, explicit quarantine resolution
-and owner opening. It includes actual authenticated reads, private-byte hashes,
-probe retirement and final state checks. Its RPO/RTO clock starts at the original
-incident, including target provisioning and restoration. Failed attempts and cost
-holds survive a new attempt; selecting a later timestamp cannot reset that clock.
-Report missing stages honestly rather than declaring full recovery from a dump,
-locked maintenance read or one working application route.
+The start command reads the actual live database clock and identity. Name the new
+branch `turas-recovery-drill-<drill-id>` and create it after that observation.
+The verifier authenticates provider branch/endpoint identity, distinct target
+connection, cold archive, complete contents, schema/grants, required private bytes,
+current denial/replay state and the closed runtime before explicit target-only
+admission. It cannot open the live source or manufacture a full failover record.
+Missing current authority remains a stop condition. Empty records or file sets
+pass only when the independently governed database projection and authenticated
+capture agree; do not create fictional business records to obtain positive reads.
+
+Run the verifier in a dedicated child environment with both database variables
+set to the selected target runtime URL, the actual environment marker and preview
+origin, normal account credentials, a valid maintenance secret and MCP enabled.
+Disable automatic paid producers on the isolated deployment. Never overwrite the
+selected checkout's `.env.local`, copy a Source budget into new spending authority,
+resume an old paid/send request, or let canonical domain reads fall back to Source.
+
+Actual authenticated primary-role HTTP, pinned-SDK reads, owner/customer denials,
+private-byte parity and exact probe-credential retirement establish restricted
+restored service. On a failed or uncertain target admission, refence that same
+owned target and report uncertainty; do not mark the drill successful. Record
+backup age and full provisioning-to-verification drill duration separately from
+an actual incident's RTO. A successful drill does not claim that a real outage or
+canonical production failover occurred. Remove the temporary deployment, branch,
+store and target credentials after retaining private receipts.
 
 ## Monitoring and release checks
 

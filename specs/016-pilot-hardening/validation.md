@@ -9833,3 +9833,20 @@ actually restored and migrated to81 in an owned database with runtime grant,
 append-denial and constraint checks. This is database recovery evidence;
 Production Blob/Sandbox configuration and authenticated deployment checks remain
 separate release requirements.
+
+### Production-only continuation after cleanup — 2026-10-31
+
+The current continuation adds a non-disruptive isolated recovery drill command,
+explicit target-only runtime configuration, real provider branch identity and
+chronology checks, authenticated archive/object proofs, denial/replay reconciliation,
+and deny-only compensation for a lost admission acknowledgement. This command does
+not close live Production or read/change firewall configuration. A clean committed
+source is required before starting its measured interval.
+
+Local validation: hardening TypeScript passed; documentation checks passed for 243
+Markdown files. Four targeted recovery/native-client/backup suites passed all 27
+cases. The historical workspace-isolation suite passed all nine cases through its
+owned PostgreSQL18 runner. An initial direct invocation lacked the owning fixture;
+a first wrapper mistakenly requested an upgrade of an already-current fixture;
+both invocation failures remain in private logs and are not reported as test passes.
+Hosted recovery, final CI, exact Preview and Production release remain pending.

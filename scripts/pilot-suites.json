@@ -2252,6 +2252,14 @@
         "compares actual SDK empty and populated primary reads with governed baselines and revokes every probe",
         "rejects omitted eligible data while allowing only opaque request and citation identities to differ"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/production-recovery-drill.test.ts",
+      "expectedCases": 2,
+      "cases": [
+        "binds an isolated drill to actual provider readback and refuses Production or pre-start targets",
+        "requires actual closed restricted runtimes and rejects serialized drill approval without changing control"
+      ]
     }
   ],
   "ui": {

@@ -46,7 +46,7 @@ it('provisions one bounded work authorization without expanding or resetting cat
  expect(result).toMatchObject({costProvisionVerified:true,hostedVerified:false});
 });
 it('runs complete bounded scheduled capture, cold copy, cleanup and cost accounting without changing service control',()=>{
- expect(result).toMatchObject({scheduledRunVerified:true,hostedVerified:false});
+ expect(result).toMatchObject({scheduledRunVerified:true,notDueRunVerified:true,hostedVerified:false});
 });
 
 it('runs one reviewed manual capture with full prior costs retained and rejects replay without changing the scheduled slot',()=>{

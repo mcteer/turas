@@ -851,7 +851,9 @@
         "unit.service-recovery-transport.002",
         "unit.service-recovery-transport.003",
         "integration.production-recovery.001",
-        "integration.production-recovery.002"
+        "integration.production-recovery.002",
+        "integration.production-recovery-drill.001",
+        "integration.production-recovery-drill.002"
       ]
     },
     {
