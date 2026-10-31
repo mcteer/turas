@@ -9880,3 +9880,22 @@ cases, including empty partner scope; hardening typecheck passed. Independent re
 found no blockers. The new SDK branch still requires actual hosted drill execution.
 The prior target is locked, with runtime016 NOLOGIN; it has not been admitted or
 reported as a successful hosted drill. A new clean-commit measured attempt follows.
+
+
+### Hosted inventory-query failure and preserved-clock resumption — 2026-10-31
+
+The exact5ac isolated Preview `dpl_66uSHHkZDTcbZCE48G4xfW7QxiJW` reached
+closed-database integrity, current-denial/replay reconciliation, explicit isolated
+admission and the administrator MCP journey. It then failed the normal file-download
+inventory SQL: report object keys are UUIDs while artifact/workforce object keys
+are text. The failure receipt confirms target refencing and exact probe credential
+cleanup, with zero Source SQL writes. No hosted-drill pass is claimed.
+
+The UNION projections now use explicit text representations for identifiers and
+object keys, preserving canonical eligibility checks. A real owned PostgreSQL18
+empty-ledger query reproduced the type failure and passed after correction; the
+two-case drill suite and typecheck passed. Independent review found no blocker.
+Resumption retains the original Source-clock start receipt and fresh branch,
+restores the genuine archive again, and separately records provisioning's
+`startedSource` and the current exact clean verifier/Preview source. It cannot
+reset elapsed recovery time by recompiling the verifier or reuse a prior pass.

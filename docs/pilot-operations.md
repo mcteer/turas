@@ -249,7 +249,11 @@ npm run recovery:drill -- --start --source <current-production81-owner.json> --o
 npm run recovery:drill -- --verify --configuration <private-isolated-drill-configuration.json>
 ```
 
-The start command reads the actual live database clock and identity. Name the new
+The start command reads the actual live database clock and identity. Retain that
+original start receipt when fixing a verifier and restoring the isolated target
+again; do not restart its elapsed-time clock. The final verifier and Preview must
+match the current clean commit, and the result separately records the source
+revision that started provisioning. Name the new
 branch `turas-recovery-drill-<drill-id>` and create it after that observation.
 The verifier authenticates provider branch/endpoint identity, distinct target
 connection, cold archive, complete contents, schema/grants, required private bytes,

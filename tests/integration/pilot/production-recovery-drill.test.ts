@@ -1,5 +1,9 @@
 import {it,expect,vi} from 'vitest';
 import {Client} from 'pg';
+import {productionRecoveryHttpFiles} from '../../../scripts/production-recovery-objects';
+import {authenticateDemoPrincipal} from '../../../lib/server/auth/credentials';
+import {issueSession} from '../../../lib/server/auth/sessions';
+import {DEMO_IDS} from '../../../lib/server/bootstrap-ids';
 import {randomUUID} from 'node:crypto';
 import {withPilotEnvironment,requireOwnedPilotDatabase} from '../../../scripts/pilot-environment';
 import {closeRuntimePool} from '../../../lib/server/db/client';
@@ -27,6 +31,8 @@ it('requires actual closed restricted runtimes and rejects serialized drill appr
  await withPilotEnvironment(async environment=>{
   const owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await owner.connect();
   try{
+   const identity=await authenticateDemoPrincipal('mcteer',process.env.TURAS_DEMO_PASSWORD!),session=await issueSession(identity!);
+   expect(await productionRecoveryHttpFiles(owner,environment.environmentId,DEMO_IDS.workspace,new Headers({cookie:'__Host-turas_session='+session.token}))).toEqual([]);
    await closeRuntimePool();await owner.query('BEGIN');
    const before=await readDrillDatabaseIdentity(owner);expect(before).toMatchObject({environmentId:environment.environmentId,schemaVersion:81,owner:true,mode:'open'});
    await expect(requireClosedDrillRuntime(owner)).rejects.toThrow('Legacy work runtime');
