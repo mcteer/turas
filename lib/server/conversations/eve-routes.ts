@@ -1,3 +1,4 @@
+import {confirmNativeEndReceipt} from './retirement-confirmation';
 import {readEveTail} from "./eve-reader";
 import type {PrepareAttemptBoundary} from './dispatch';
 import {assertNativeFileEvaluationOpen} from './native-file-policy';
@@ -358,7 +359,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
         } };
       }
       if (route.method === "POST" && ["/eve/v1/session/:sessionId/reset","/eve/v1/session/:sessionId/end"].includes(route.path)) {
-        const native = route.handler;
+        const native=route.handler;
         return { ...route, handler: async (request, args) => {
           try {
             const sessionId = args.params.sessionId;
@@ -366,7 +367,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const governed=await authorizeNativeRetirement(request,sessionId) || await authorizeExecutionRetirement(request,sessionId) || await authorizeSupportRetirement(request,sessionId) || await authorizeExpansionRetirement(request,sessionId) || await authorizeLearningRetirement(request,sessionId);
             const ordinary=!governed && (await authorizeOrdinaryNativeRetirementRecovery(request,sessionId) || await authorizeOwnedOrdinaryRetirement(request,sessionId));
             if(!governed&&!ordinary)return closed();
-            const response=await native(request,args);
+            const response=await confirmNativeEndReceipt(sessionId,await native(request,args));
             if(ordinary)await reconcileOwnedOrdinaryRetirement(request,sessionId,response);
             return response;
           } catch (error) { return nativeFailure(error); }

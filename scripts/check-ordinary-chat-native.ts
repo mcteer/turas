@@ -69,7 +69,7 @@ try{await withPlanEvalEnvironment(async environment=>{
   const cancellation=page.waitForResponse(response=>new URL(response.url()).pathname==='/eve/v1/session/'+nativeSessionId+'/cancel');await page.getByRole('button',{name:'Stop response',exact:true}).click();const cancellationResponse=await cancellation;await writeFile(join(output,'cancel-response-private.json'),JSON.stringify({status:cancellationResponse.status(),body:await cancellationResponse.text()}),{mode:0o600});
   if(!cancellationResponse.ok())throw Error('Native cancellation request failed');
   await until(async()=>Number((await query("SELECT count(*) AS n FROM response_attempts WHERE conversation_id=$1 AND response_state IN('pending','running','stopping')",[conversation.id])).rows[0].n)===0,'native cancellation');
-  const retired=await context.request.post('/eve/v1/session/'+nativeSessionId+'/reset',{headers,data:{reason:'Owned unpaid native check complete'}});
+  const retired=await context.request.post('/eve/v1/session/'+nativeSessionId+'/end',{headers,data:{reason:'Owned unpaid native check complete'}});
   if(!retired.ok())throw Error('Owned ordinary native retirement failed');
   const operations=(await query('SELECT sum(COALESCE(actual_tokens,ceiling_tokens))::int AS tokens FROM ordinary_model_operations WHERE conversation_id=$1',[conversation.id])).rows[0];
   if(operations.tokens>20000)throw Error('Native interruptions exceeded the ordinary allowance');

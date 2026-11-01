@@ -31,12 +31,12 @@ try{await withPlanEvalEnvironment(async environment=>{
  const interruptedStepMarker=join(environment.appRoot,'.eve','native-file-interruption.json');
  if(process.argv.includes('--staged-10')){
   const hookPath=join(environment.appRoot,'agent/hooks/persist-conversation.ts'),hook=await readFile(hookPath,'utf8');
-  const target='await projectNativeEvent(ctx.session.id, attemptId, event);';
+  const target='await projectNativeEvent(ctx.session.id, attemptId, projectEveFact(ctx.session.id,event,ctx.position,ctx.now.toISOString(),ctx.view),ctx.position.line);';
   if(hook.split(target).length!==2)throw Error('Owned interruption hook shape changed');
   const addition=`
         const eventBytes=Buffer.byteLength(JSON.stringify(event));
         appendFileSync(${JSON.stringify(interruptedStepMarker+'.stream-metrics')},JSON.stringify({type:event.type,eventBytes,base64Bytes:Math.ceil(eventBytes/3)*4})+'\\n');
-        if(event.type==='message.received'&&!existsSync(${JSON.stringify(interruptedStepMarker)})){
+        if(event.type==='delivery.consumed'&&!existsSync(${JSON.stringify(interruptedStepMarker)})){
           const captured=(await query("SELECT a.input_event_id,a.input_digest,a.native_delivery_id,a.deadline_at,(SELECT count(*) FROM ordinary_model_operations WHERE attempt_id=a.id) AS operations FROM response_attempts a WHERE a.id=$1",[attemptId])).rows[0];
           writeFileSync(${JSON.stringify(interruptedStepMarker)},JSON.stringify(captured),{flag:'wx',mode:0o600});
           console.error('OWNED_NATIVE_FILE_POST_RECEIVED_INTERRUPTION');
@@ -97,7 +97,7 @@ try{await withPlanEvalEnvironment(async environment=>{
     try{await Promise.race([paused,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('Upload chunk did not reach the pause boundary')),30000);})]);}
     finally{if(timer)clearTimeout(timer);}
     if(!await page.getByRole('button',{name:`Remove ${filename}`,exact:true}).isDisabled()||
-       !await page.getByRole('button',{name:/^Attach documents?$/}).isDisabled())throw Error('Attachment mutation remained enabled during a staged send');
+       !await page.getByRole('button',{name:'Add attachments',exact:true}).isDisabled())throw Error('Attachment mutation remained enabled during a staged send');
     attachmentMutationBlockedDuringUpload=true;
    }finally{resume();await clicked;}
   };
@@ -212,7 +212,7 @@ try{await withPlanEvalEnvironment(async environment=>{
      const bound=await isolated.request.post('/eve/v1/session',{headers:{...ownHeaders,'x-turas-conversation-id':ownedId},data:{operationId}});if(!bound.ok())throw Error('Preference session binding failed');const ownedNative=(await bound.json()).sessionId;
      const sent=await isolated.request.post('/eve/v1/session/'+ownedNative,{headers:{...ownHeaders,'x-turas-conversation-id':ownedId,'x-turas-request-key':randomUUID()},data:{message:prompt}});if(!sent.ok())throw Error('Preference check send failed');
      fixturePhase='preference_thread_navigation';const page=await isolated.newPage();await page.goto('/s/'+ownedId,{waitUntil:'domcontentloaded'});await page.getByText(expected,{exact:true}).waitFor({timeout:60000});
-     const retired=await isolated.request.post('/eve/v1/session/'+ownedNative+'/reset',{headers:ownHeaders,data:{reason:'Owned preference fixture complete'}});if(!retired.ok())throw Error('Preference session retirement failed');
+     const retired=await isolated.request.post('/eve/v1/session/'+ownedNative+'/end',{headers:ownHeaders,data:{reason:'Owned preference fixture complete'}});if(!retired.ok())throw Error('Preference session retirement failed');
     }finally{if(token)await isolated.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':token}}).catch(()=>{});await isolated.close();}
    };
    await check('mcteer','Check for a stored preference.','No stored preference is visible.');personalPreferenceIsolated=true;
@@ -241,7 +241,7 @@ try{await withPlanEvalEnvironment(async environment=>{
     const ownNative=(await binding.json()).sessionId;
     const sent=await outsider.request.post('/eve/v1/session/'+ownNative,{headers:{...ownHeaders,'x-turas-conversation-id':ownId,'x-turas-request-key':randomUUID()},data:{message:'Check private checklist isolation.'}});if(!sent.ok())throw Error('Checklist isolation send failed');
     const ownPage=await outsider.newPage();await ownPage.goto('/s/'+ownId,{waitUntil:'domcontentloaded'});await ownPage.getByText('New conversation has no private checklist.',{exact:true}).waitFor({timeout:60000});
-    if(!(await outsider.request.post('/eve/v1/session/'+ownNative+'/reset',{headers:ownHeaders,data:{reason:'Owned checklist isolation complete'}})).ok())throw Error('Checklist isolation retirement failed');
+    if(!(await outsider.request.post('/eve/v1/session/'+ownNative+'/end',{headers:ownHeaders,data:{reason:'Owned checklist isolation complete'}})).ok())throw Error('Checklist isolation retirement failed');
    }finally{if(outsiderCsrf)await outsider.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':outsiderCsrf}}).catch(()=>{});await outsider.close();}
    await writeFile(join(out,'task-state-receipt.json'),JSON.stringify({actualNativeTool:true,deterministicProvider:true,paidProviderCalls:0,
     replacedRevision:1,items:[{id:'source-review',text:'Inspect the exact supplied file.',status:'in_progress'}],freshOwnerLogin:true,
@@ -275,7 +275,7 @@ try{await withPlanEvalEnvironment(async environment=>{
    failedProviderCalls=failedCalls.length;if(!failedCalls.length||failedCalls.some(row=>row.bytes_digest!==createHash('sha256').update(bytes).digest('hex')))throw Error('Failed provider turn did not receive original file bytes');
    if(!(await query("SELECT 1 FROM event_projections e JOIN response_attempts a ON a.conversation_id=e.conversation_id AND a.native_turn_id=e.turn_id WHERE a.id=$1 AND e.event_type IN('step.failed','turn.failed') AND e.visible_payload->>'code'='MODEL_CALL_FAILED'",[failedAttempt])).rowCount)throw Error('Actual synthetic SDK failure was not projected');
    failedOperationSnapshot=(await query('SELECT id,ceiling_tokens,actual_tokens,settled_at FROM ordinary_model_operations WHERE attempt_id=$1 ORDER BY id',[failedAttempt])).rows;if(!failedOperationSnapshot.length)throw Error('Synthetic failed provider did not reserve original allowance');
-   const cookie=(await context.cookies()).map(c=>c.name+'='+c.value).join('; ');const nativeClient=new NativeClient({host:environment.origin,headers:{cookie,origin:environment.origin}});const nativeEvents=[];for await(const event of nativeClient.sessions.attach(native).stream({follow:false,signal:AbortSignal.timeout(30000)}))nativeEvents.push(event);activeFailedNativeSnapshot={messages:nativeEvents.filter(event=>event.type==='message.received'||event.type==='message.completed').length,events:nativeEvents.length};await writeFile(join(out,'active-failed-native-snapshot-private.json'),JSON.stringify(nativeEvents,null,2),{mode:0o600});
+   const cookie=(await context.cookies()).map(c=>c.name+'='+c.value).join('; ');const nativeClient=new NativeClient({host:environment.origin,headers:{cookie,origin:environment.origin}});const nativeEvents=[];for await(const event of nativeClient.sessions.attach(native).stream({follow:false,signal:AbortSignal.timeout(30000)}))nativeEvents.push(event);activeFailedNativeSnapshot={messages:nativeEvents.filter(event=>event.type==='delivery.consumed'||event.type==='content.completed').length,events:nativeEvents.length};await writeFile(join(out,'active-failed-native-snapshot-private.json'),JSON.stringify(nativeEvents,null,2),{mode:0o600});
    const assertFailedUser=async()=>{await page.locator('article.chat-message-user').filter({hasText:failedPrompt}).waitFor({timeout:30000});const users=await page.locator('article.chat-message-user').allTextContents();if(users.filter(text=>text.includes(failedPrompt)).length!==1)throw Error('Failed native user turn lost or duplicated');await page.locator('article.chat-message-user').filter({hasText:failedPrompt}).getByText('pixel.png',{exact:true}).waitFor();};
    await page.reload();await page.getByRole('button',{name:'Send message',exact:true}).waitFor();await assertFailedUser();
    fixturePhase='successful_turn_after_provider_failure';await page.getByLabel('Message Turi').fill(recoveryPrompt);await page.getByRole('button',{name:'Send message',exact:true}).click();await page.getByText('Native file recovery completed.',{exact:true}).waitFor({timeout:60000});await page.reload();await page.getByText('Native file recovery completed.',{exact:true}).waitFor({timeout:30000});await assertFailedUser();
@@ -284,7 +284,7 @@ try{await withPlanEvalEnvironment(async environment=>{
    const held=Number((await query('SELECT COALESCE(sum(COALESCE(actual_tokens,ceiling_tokens)),0) AS n FROM ordinary_model_operations WHERE conversation_id=$1',[id])).rows[0].n);if(held>20000)throw Error('Failed turn reset cumulative conversation allowance');
    failedUnknownHoldsPreserved=true;failedFileHistoryRecovery=true;
   }
-  const retired=await context.request.post('/eve/v1/session/'+native+'/reset',{headers,data:{reason:'Owned native file fixture complete'}});if(!retired.ok())throw Error('Native file retirement unconfirmed');
+  const retired=await context.request.post('/eve/v1/session/'+native+'/end',{headers,data:{reason:'Owned native file fixture complete'}});if(!retired.ok())throw Error('Native file retirement unconfirmed');
   if(failedFileHistoryRecovery){await page.reload();await page.getByText('Native file recovery completed.',{exact:true}).waitFor({timeout:30000});const retiredDetail=await context.request.get('/api/conversations/'+id);if(!retiredDetail.ok()||(await retiredDetail.json()).data.nativeRetired!==true)throw Error('Failed-file fixture retirement missing');const users=await page.locator('article.chat-message-user').allTextContents();if(users.filter(text=>text.includes(failedPrompt)).length!==1)throw Error('Retired failed file user lost or duplicated');await page.getByText('pixel.png',{exact:true}).first().waitFor();}
   if(boundaryMiB&&(!uploadRequestBytes.length||Math.max(...uploadRequestBytes)>512*1024||!sendRequestBytes.length||Math.max(...sendRequestBytes)>4096))throw Error('Large native file bypassed bounded staging transport');
   const receipt={failedFileHistoryRecovery,failedProviderCalls,failedUnknownHoldsPreserved,activeFailedNativeSnapshot,activeFailedNativeEmpty:activeFailedNativeSnapshot?activeFailedNativeSnapshot.events===0:null,retirementEmptyIsActiveFailureProof:false,interruptedStepRecovery,kind:'ordinary-native-file-bytes',actualEveRuntime:true,fixtureProvider:true,paidProviderCalls:0,runtimeDependencyInstallation:false,providerBytesPreserved:!process.argv.includes('--memory'),stagedFileBytes:boundaryMiB?bytes.length:null,maximumUploadRequestBytes:uploadRequestBytes.length?Math.max(...uploadRequestBytes):null,maximumSendRequestBytes:sendRequestBytes.length?Math.max(...sendRequestBytes):null,attachmentMutationBlockedDuringUpload,readyDraftRemovalReleasedQuota,uncertainDraftRemovalPreserved,previousFileAvailableAfterReload,personalPreferenceSaved:process.argv.includes('--memory')||process.argv.includes('--memory-files'),personalPreferenceCrossSession,personalPreferenceIsolated,personalPreferenceRemoved,providerToolSets:calls.map(row=>row.tool_names),actualCanonicalCustomerResolved:true,nativeFileCorrection:process.argv.includes('--steer'),toolNames:calls[0].tool_names,composerUsed:process.argv.includes('--composer'),reloadedHistory:true,nativeRetirementStatus:retired.status()};await writeFile(join(out,'receipt.json'),JSON.stringify(receipt,null,2),{mode:0o600});console.log(JSON.stringify(receipt));for(const name of ['failure-private.json','failure-private.log','failure-page-private.png','send-private.json'])await rm(join(out,name),{force:true});
@@ -312,12 +312,10 @@ try{await withPlanEvalEnvironment(async environment=>{
 },{feature:'010',empty:true,deadlineAt:fixtureDeadlineAt,prepare:async({appRoot,environmentId})=>{
  marker=fixtureOwner;
  await writeFile(join(appRoot,'package-lock.json'),await readFile(resolve('package-lock.json')),{mode:0o600});
- // Eve's native runtime can request its documented optional local provider.
- // Install it before the browser turn, into a fully owned dependency tree;
- // never let an in-turn install replace the shared checkout's dependency link.
- await rm(join(appRoot,'node_modules'));
- const prepared=spawnSync('npm',['install','--save-dev','--ignore-scripts','--no-audit','--no-fund','just-bash@3.6.0'],{cwd:appRoot,env:{...process.env,AI_GATEWAY_API_KEY:'',VERCEL_OIDC_TOKEN:''},encoding:'utf8',timeout:120000,maxBuffer:4*1024*1024});
- if(prepared.status!==0){await writeFile(join(out,'dependency-preparation-private.log'),String(prepared.stderr??''),{mode:0o600});throw Error('Owned native dependency preparation failed');}
+ // npm ci installs the pinned local provider before any agent turn. Keep the
+ // shared dependency link intact; no in-turn or fixture-specific installs.
+ const provider=JSON.parse(await readFile(join(appRoot,'node_modules/just-bash/package.json'),'utf8'));
+ if(provider.version!=='3.6.0')throw Error('Pinned local sandbox provider required');
  // Eve prepares every declared environment on the first native file. Keep all
  // owned fixture environments on its selected Docker provider, rather than
  // auto-installing an unrelated default provider during the browser turn.

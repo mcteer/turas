@@ -83,6 +83,9 @@ npm ci
 npm ci --prefix packages/artifact-extractor
 ```
 
+`npm ci` also installs the pinned local sandbox provider used by Eve during
+local execution and session shutdown; agent turns must not install it on demand.
+
 On a **new checkout**, create local configuration:
 
 ```sh

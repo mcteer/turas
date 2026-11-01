@@ -42,7 +42,7 @@ try{await withPlanEvalEnvironment(async environment=>{
     await send('Complete this unrelated follow-up.');await until(async()=>{if((environment.privateLogTail().includes('BoundaryHookError')||environment.privateLogTail().includes('model call failed')||environment.privateLogTail().includes('conversation.projection_failed')))throw Error('Actual native followup boundary failed');return page.getByText('Unrelated follow-up completed.',{exact:true}).isVisible();},'actual unrelated followup');
     await until(async()=>Number((await query("SELECT count(*)::int n FROM response_attempts WHERE conversation_id=$1 AND id<>$2 AND response_state='completed'",[id,initial.id])).rows[0].n)===1,'intervening response');
 
-     for(const requestId of requestIds)await until(async()=>!!(await query("SELECT 1 FROM ordinary_question_reconstructions receipt JOIN response_attempts a ON a.id=receipt.attempt_id WHERE a.conversation_id=$1 AND $2=ANY(receipt.settled_request_ids)",[id,requestId])).rowCount,'actual typed dismissed result receipt');
+     for(const requestId of requestIds)await until(async()=>!!(await query("SELECT 1 FROM event_projections event CROSS JOIN LATERAL jsonb_array_elements(event.visible_payload->'resolutions') resolution WHERE event.conversation_id=$1 AND event.event_type='input.resolved' AND resolution->>'requestId'=$2 AND resolution->>'nativeOutcome'='withdrawn'",[id,requestId])).rowCount,'actual withdrawn interaction receipt');
      await page.reload();await page.getByRole('region',{name:'Turi question'}).waitFor({state:'detached',timeout:30000});
      for(const requestId of requestIds){const stale=await context.request.post('/eve/v1/session/'+native,{headers:headers(),data:{inputResponses:[{requestId,optionId:'Desktop'}]}});if(stale.ok())throw Error('Dismissed question accepted a stale answer');}
 
@@ -62,7 +62,8 @@ try{await withPlanEvalEnvironment(async environment=>{
    const state=(await query('SELECT id,response_state,native_turn_id FROM response_attempts WHERE conversation_id=$1 ORDER BY created_at',[id])).rows;
    const operations=(await query('SELECT attempt_id,ceiling_tokens,actual_tokens FROM ordinary_model_operations WHERE conversation_id=$1 ORDER BY created_at',[id])).rows,providerCalls=Number((await query('SELECT count(*)::int n FROM ordinary_question_native_calls calls JOIN response_attempts a ON a.id=calls.attempt_id WHERE a.conversation_id=$1',[id])).rows[0].n);if(operations.length!==providerCalls||operations.some(row=>row.actual_tokens===null))throw Error('Question replay created an unmatched or unsettled provider reservation');
    const active=state.filter(row=>['pending','running','stopping'].includes(row.response_state));if(active.length)throw Error('Question left an unresolved active allowance');
-   const reset=await context.request.post('/eve/v1/session/'+native+'/reset',{headers:headers(),data:{reason:'Owned unpaid question fixture complete'}});if(!reset.ok())throw Error('Question retirement unconfirmed');
+   const reset=await context.request.post('/eve/v1/session/'+native+'/end',{headers:headers(),data:{reason:'Owned unpaid question fixture complete'}});
+   if(!reset.ok()){await writeFile(join(out,'retirement-failure-private.json'),JSON.stringify({status:reset.status(),body:await reset.text()}),{mode:0o600});throw Error('Question retirement unconfirmed');}
    receipts.push({mode,actualEve:true,fixtureProvider:true,paidCalls:0,freshOwnerLogin:true,originalDeadlinePreserved:true,reloaded:true,providerCalls,operations,states:state.map(row=>row.response_state)});await page.close();
   }
   await writeFile(join(out,'receipt.json'),JSON.stringify({passed:true,cases:receipts},null,2),{mode:0o600});console.log(JSON.stringify({passed:true,cases:receipts.length,paidCalls:0}));await rm(join(out,'failure-private.json'),{force:true});await rm(join(out,'failure-private.log'),{force:true});
@@ -71,5 +72,6 @@ try{await withPlanEvalEnvironment(async environment=>{
 },{feature:'010',empty:true,deadlineAt:Date.now()+480000,prepare:async({appRoot})=>{const path=join(appRoot,'scripts/dev.mjs'),source=await readFile(path,'utf8');await writeFile(path,source.replace('["dev"]','["dev","--webpack"]'),{mode:0o600});return {};}});}catch(error){
  const category=error instanceof Error&&error.name==='TimeoutError'?'browser_timeout':error instanceof Error&&error.message.includes('Disposable app failed readiness')?'app_readiness':'question_fixture_failure';
  const frame=error instanceof Error?error.stack?.match(/check-ordinary-questions-native\.ts:(\d+):(\d+)/):null;
+ await writeFile(join(out,'top-failure-private.json'),JSON.stringify({message:error instanceof Error?error.message:String(error),stack:error instanceof Error?error.stack:undefined}),{mode:0o600});
  console.error(JSON.stringify({kind:'native_question_fixture_failure',phase:fixturePhase,category,sourceLine:frame?Number(frame[1]):null}));throw error;
 }finally{delete process.env.TURAS_ORDINARY_QUESTION_FIXTURE;if(createHash('sha256').update(await readFile(authored)).digest('hex')!==digest)throw Error('Selected authored model changed');}

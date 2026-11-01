@@ -27,7 +27,7 @@ export async function authorizeOrdinaryNativeRetirementRecovery(request:Request,
  return withTransaction(async db=>(await intent(db,native,id))?.owner_principal_id??null);
 }
 export function terminalNativeRetirementReceipt(native:string,value:unknown){return z.discriminatedUnion('status',[
- z.object({ok:z.literal(true),status:z.literal('reset'),previousSessionId:z.literal(native)}),z.object({ok:z.literal(true),status:z.literal('no_active_session')})]).safeParse(value).success;}
+ z.object({ok:z.literal(true),status:z.literal('reset'),previousSessionId:z.literal(native)}),z.object({ok:z.literal(true),status:z.literal('ended'),sessionId:z.literal(native),confirmationBasis:z.literal('native-end-returned-after-inbox-release')}),z.object({ok:z.literal(true),status:z.literal('no_active_session')})]).safeParse(value).success;}
 /** Receipt, terminal response admission and durable byte-purge eligibility commit together. */
 export async function confirmOrdinaryNativeRetirement(native:string,id?:string){return withTransaction(async db=>{
  const row=await intent(db,native,id);if(!row)return false;
@@ -47,7 +47,7 @@ export async function processOrdinaryNativeRetirement(){
   const configured=process.env.TURAS_EVE_INTERNAL_ORIGIN||getServerConfig().TURAS_DEPLOYMENT_ORIGIN||getServerConfig().TURAS_APP_ORIGIN;
   const target=new URL(configured);if(target.username||target.password||target.hash||target.search||target.pathname!=='/'||!(target.protocol==='https:'||target.protocol==='http:'&&['127.0.0.1','localhost'].includes(target.hostname)))throw Error();
   const origin=target.origin+'/';
-  const response=await fetch(`${origin}eve/v1/session/${encodeURIComponent(job.native_session_id)}/reset`,{method:'POST',redirect:'error',headers:{'content-type':'application/json',...(target.protocol==='https:'&&process.env.VERCEL_AUTOMATION_BYPASS_SECRET?{'x-vercel-protection-bypass':process.env.VERCEL_AUTOMATION_BYPASS_SECRET}:{}),...signOrdinaryNativeRetirement(job.id,job.native_session_id)},body:JSON.stringify({reason:'Owner-requested conversation retirement recovery'}),signal:AbortSignal.timeout(5000)});
+  const response=await fetch(`${origin}eve/v1/session/${encodeURIComponent(job.native_session_id)}/end`,{method:'POST',redirect:'error',headers:{'content-type':'application/json',...(target.protocol==='https:'&&process.env.VERCEL_AUTOMATION_BYPASS_SECRET?{'x-vercel-protection-bypass':process.env.VERCEL_AUTOMATION_BYPASS_SECRET}:{}),...signOrdinaryNativeRetirement(job.id,job.native_session_id)},body:JSON.stringify({reason:'Owner-requested conversation retirement recovery'}),signal:AbortSignal.timeout(5000)});
   if(!response.ok||!terminalNativeRetirementReceipt(job.native_session_id,await response.json()))throw Error();
   await confirmOrdinaryNativeRetirement(job.native_session_id,job.id);
  }catch{await withTransaction(async db=>{await db.query("UPDATE ordinary_native_retirements SET safe_error_code='native_retirement_unconfirmed' WHERE id=$1 AND state='requested'",[job.id]);});}
