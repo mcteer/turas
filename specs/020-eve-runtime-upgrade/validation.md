@@ -2,6 +2,58 @@
 
 ## Current Acceptance State
 
+### Current Hosted Follow-up on c69870d9
+
+The embedding follow-up passes771 ordinary units across175 files with explicit
+synthetic local configuration (`/tmp/turas-020-all-units-configured-final.txt`).
+The first unconfigured run passed769 but two cursor tests correctly rejected
+missing server configuration; no application assertion was weakened. Six provider
+boundary/completion cases plus ten native-installer cases pass. The real learning
+native25 checks pass on the embedding change before the subsequent custody-only
+fixture adjustment (`/tmp/turas-020-learning-native-embedding-final.txt`).
+Independent review found no blocker in the new boundary/completion behavior.
+
+Cleanup observed the actual `dev-cleanup-intent` run identity while the owned
+learning app was active, verified its app root absent afterward, and removed only
+its21 matching sandbox containers. `/tmp/turas-020-owned-learning-world-custody-private.json`
+retains that proof. Dev-host generation UUIDs differ from sandbox run IDs; the
+owned007/008 resume launcher now captures both identities for future precise
+cleanup. Its actual generated Node24 supervisor passes syntax validation; no
+selected service was started or changed by that check. Shared images and other
+unverified sandbox worlds were preserved.
+
+
+Exact Preview `https://turas-1xby8pakm-turas-6e414af3.vercel.app` is Ready on
+schema085, with verified explicit grants and endpoint-free pre085 recovery branch
+`br-icy-violet-awb53wpc`. Actual existing mcteer login, four composer layouts,
+keyboard attachment/link dialog and draft preservation passed without model calls;
+all four captures were inspected (`local-artifacts/020/preview-085-ui`). The real
+Production/Preview Customer Profiles comparison passed and four captures were
+inspected (`local-artifacts/020/preview-085-profiles`). Production code/schema and
+credentials remain unchanged. Focused units/contracts all588/103files passed.
+
+The actual c698 specialist exercise is **not a positive refinement pass**: first
+assignment completed, second became unavailable with `specialist_usage_unconfirmed`.
+Its six model operations settled at$0.113615; two embedding ceilings totaling
+$0.000022 remain held. Retirement returned202. No hold was repaired, released or
+relabeled. Lower retrieval metadata records a successful202-character embedding
+while the specialist hold remains unfinished. This supports investigating the
+completion boundary, not assuming all failures were external-provider failures.
+
+Review found two source gaps: specialist embedding admission preceded fallible
+prerequisites; and a post-response abort preceded recording actual completion.
+The follow-up moves admission to the internal provider boundary and records a
+validated returned vector before rejecting cancelled downstream use. No vector or
+completion is invented when the underlying provider path throws. Six focused
+regressions pass (`/tmp/turas-020-embedding-boundary-tests.txt`), including no
+provider call after a prerequisite/boundary denial and retained uncertainty after
+a dispatched failure. Final updated-source CI/Preview remain pending.
+
+CI c698 also reported a Linux WebKit internal navigation error in the workspace
+suite. Its actual local40-case suite and latest built launcher journeys pass;
+this engine failure is not being represented as a successful rendered page.
+
+
 ### Recovery Acceptance Follow-up
 
 Final focused recovery results supersede the earlier pending bullet below:

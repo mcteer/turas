@@ -126,3 +126,5 @@ production change occurs as part of the planning/model-switch handoff.
 
 - [x] T046 Preserve authenticated pre-083 whole-line replay denials on the fact-indexed schema; verify valid ready indexes and enabled guards, including inherited fences (FR-005, FR-015).
 - [x] T047 Extend existing recovery snapshots, typed holds, quarantine and specialist allowance accounting to preserve post-backup specialist spending and deny old dispatch identities; explicit migration and restore regressions (FR-005, FR-015).
+
+- [x] T048 Move specialist embedding reservation after prerequisite admissions and record a confirmed validated response before rejecting cancelled downstream use; preserve unknown dispatched holds, with provider-boundary and cancellation regressions (FR-004, FR-005, FR-015).

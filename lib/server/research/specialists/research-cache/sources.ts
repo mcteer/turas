@@ -145,8 +145,10 @@ async function indexSnapshotWithinFence(identity: Pick<AppIdentity, "environment
       const texts=chunks.slice(offset,offset+32).map(chunk=>chunk.text);
       const actor=identity as Partial<AppIdentity>;
       const guard=actor.workerSessionId?await specialistResearchGuard(identity as AppIdentity,'index:'+id+':'+offset):undefined;
-      const operation=await guard?.beforeRequest(JSON.stringify(texts),{inputTokens:texts.reduce((total,text)=>total+Buffer.byteLength(text)+256,0)});
-      embedded.push(...await embedRetrievalTexts(texts,{signal}));
+      let operation:Awaited<ReturnType<NonNullable<typeof guard>['beforeRequest']>>|undefined;
+      embedded.push(...await embedRetrievalTexts(texts,{signal,beforeProvider:async()=>{
+        operation=await guard?.beforeRequest(JSON.stringify(texts),{inputTokens:texts.reduce((total,text)=>total+Buffer.byteLength(text)+256,0)});
+      }}));
       await operation?.complete();
     }
     const vectors = z.array(embeddingSchema).length(chunks.length).parse(embedded);
