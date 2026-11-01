@@ -18,6 +18,17 @@ Use the checked-in Spec Kit skills in `.agents/skills/`. Feature branches use
 Git extension is not installed. Do not overwrite customized governance during an
 upgrade. Review installed version and manifest changes in their own PR.
 
+## Dependency and framework upgrades
+
+An upgrade spanning **3 or more dot releases** (minor or patch), or **any major
+version change** (including **0.x → 1.x**), requires a dedicated spec before
+implementation. This applies to dependency-bot PRs before merge or deployment.
+Review the intervening release notes, identify new capabilities useful to Turas,
+and include wiring the selected capabilities into the app/platform, with governed
+scope and acceptance tests. A package bump, compatibility fixes, or a list of
+unused capabilities alone is insufficient. Explain each excluded or deferred
+capability. Smaller upgrades still follow the normal material-change rules.
+
 ## Implementation boundaries
 
 - The private pilot programme is removed. Do not restore its workspace login,

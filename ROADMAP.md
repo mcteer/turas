@@ -8,6 +8,17 @@ meaningful tests; verify actual changed production behavior through normal relea
 
 # Turas delivery roadmap
 
+## In Progress: Eve Upgrade and Specialist Continuity
+
+[Feature020](specs/020-eve-runtime-upgrade/spec.md) governs the 0.67.1 → 0.91.0
+upgrade in [PR #52](https://github.com/mcteer/turas/pull/52). It includes useful
+new capability adoption: owned specialist follow-ups, task-specific cancellation
+and truthful progress. The requested composer, Dependabot and README changes
+remain in that PR. Compatibility fixes are in progress; the new specialist
+capabilities and full release acceptance are not yet complete. Production remains
+on the release recorded below until a separately verified promotion.
+
+
 Current runtime release: main `f3518f5` is deployed in Production on schema081 after
 [PR49](https://github.com/mcteer/turas/pull/49) and
 [PR50](https://github.com/mcteer/turas/pull/50). Production verified all three ordinary

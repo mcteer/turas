@@ -60,6 +60,18 @@ project documentation. Do not add harness co-author trailers, bylines, or genera
 notices. Tool names may appear where necessary for setup/configuration. Preserve
 upstream tooling's required license and provenance metadata.
 
+## Dependency and Framework Upgrades
+
+Create a dedicated spec before implementing an upgrade that spans **three or more
+dot releases** (minor or patch), or crosses **any major-version boundary**,
+including **0.x → 1.x**. Apply the same gate to dependency-bot PRs before merge or
+deployment. Review the intervening release notes and assess new capabilities for
+Turas. The spec must select useful additions and include their application wiring
+and acceptance checks, alongside compatibility, authorization, accounting,
+migration, recovery and release requirements. Record why other capabilities are
+excluded or deferred; a version bump and compatibility fixes alone do not meet
+this policy. Smaller upgrades still follow the normal material-change rules.
+
 ## Engineering standards
 
 - Prefer small, typed modules with explicit inputs/outputs. Validate untrusted
