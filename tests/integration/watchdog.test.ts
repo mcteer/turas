@@ -24,8 +24,8 @@ async function dueFixture(secondsUntilDeadline = -10): Promise<{ conversationId:
   await db(async (client) => {
     await client.query(`INSERT INTO conversations
       (id, environment_id, workspace_id, customer_id, owner_principal_id,
-       creation_operation_id, binding_state, eve_session_id, title)
-      VALUES ($1,$2,$3,$4,$5,$6,'bound',$7,'Watchdog synthetic')`,
+       creation_operation_id, binding_state, eve_session_id, native_protocol, title)
+      VALUES ($1,$2,$3,$4,$5,$6,'bound',$7,27,'Watchdog synthetic')`,
     [conversationId, process.env.TURAS_TEST_ENVIRONMENT_ID, DEMO_IDS.workspace,
       DEMO_IDS.sharedCustomer, DEMO_IDS.panel, randomUUID(), `wrun_${randomUUID()}`]);
     await client.query(`INSERT INTO submitted_messages
@@ -116,7 +116,7 @@ describe("maintenance request authority", () => {
     });
     const cancelled: string[] = [];
     const attachSession = (() => ({
-      getStreamTailIndex: async () => -1,
+      stream: async function* () {},
       cancel: async ({ turnId }: { turnId: string }) => {
         cancelled.push(turnId);
         if (cancelled.length === 1) throw new Error("injected lost cancel receipt");

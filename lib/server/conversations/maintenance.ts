@@ -41,6 +41,10 @@ async function readThroughTail(
 export async function performMaintenance(
   payload: MaintenancePayload, attachSession: AttachSessionFn,
 ): Promise<"settled" | "cancel_requested" | "retry"> {
+  if(payload.action==='cancel_specialist'){
+    const {reconcileSpecialistControl}=await import('../research/specialists/discussion-maintenance');
+    return reconcileSpecialistControl(attachSession,payload.discussionId,payload.attemptId);
+  }
   const before = await loadAttempt(payload.attemptId);
   if (!before) return "settled";
   if (payload.action === "cancel_due" &&

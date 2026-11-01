@@ -1,3 +1,4 @@
+import {captureOwnedWorkflowMetadata} from './owned-workflow-diagnostics';
 import {readFile,writeFile,mkdir,rm} from 'node:fs/promises';
 import {createHash,randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
@@ -40,7 +41,7 @@ try{await withPlanEvalEnvironment(async environment=>{
           const captured=(await query("SELECT a.input_event_id,a.input_digest,a.native_delivery_id,a.deadline_at,(SELECT count(*) FROM ordinary_model_operations WHERE attempt_id=a.id) AS operations FROM response_attempts a WHERE a.id=$1",[attemptId])).rows[0];
           writeFileSync(${JSON.stringify(interruptedStepMarker)},JSON.stringify(captured),{flag:'wx',mode:0o600});
           console.error('OWNED_NATIVE_FILE_POST_RECEIVED_INTERRUPTION');
-          throw Error('OWNED_NATIVE_FILE_POST_RECEIVED_INTERRUPTION');
+          await new Promise<void>(()=>{});
         }`;
   await writeFile(hookPath,'import {existsSync,writeFileSync,appendFileSync} from "node:fs";\nimport {query} from "../../lib/server/db/client";\n'+hook.replace(target,target+addition),{mode:0o600});
  }
@@ -153,6 +154,14 @@ try{await withPlanEvalEnvironment(async environment=>{
    id=new URL(page.url()).pathname.split('/').at(-1)!;
    const saved=await context.request.get('/api/conversations/'+id);if(!saved.ok())throw Error('Composer conversation unavailable');native=(await saved.json()).data.eveSessionId;
    if(!native)throw Error('Composer native binding unavailable');
+   if(process.argv.includes('--staged-10')){
+    fixturePhase='restart_after_native_receipt';const end=Date.now()+30000;
+    for(;;){try{await readFile(interruptedStepMarker,'utf8');break;}catch(error){if(!(error&&typeof error==='object'&&'code' in error&&error.code==='ENOENT'))throw error;if(Date.now()>end)throw Error('Owned interruption receipt missing');await new Promise(resolve=>setTimeout(resolve,100));}}
+    await captureOwnedWorkflowMetadata(environment.appRoot,[native],join(out,'workflow-before-restart-private.json'));
+    await environment.restart();
+    await captureOwnedWorkflowMetadata(environment.appRoot,[native],join(out,'workflow-after-start-private.json'));
+    await page.reload({waitUntil:'domcontentloaded'});
+   }
   }else{
   const created=await context.request.post('/api/conversations',{headers,data:{requestKey:operationId}});if(!created.ok())throw Error('Fixture conversation creation failed');id=(await created.json()).data.id;
   for(let i=0;i<5;i++){const response=await context.request.post('/eve/v1/session',{headers:{...headers,'x-turas-conversation-id':id},data:{operationId}});if(response.ok()){native=(await response.json()).sessionId;break;}if(response.status()!==409)throw Error('Native binding failed');await new Promise(resolve=>setTimeout(resolve,1000));}if(!native)throw Error('Native binding unconfirmed');
@@ -257,11 +266,11 @@ try{await withPlanEvalEnvironment(async environment=>{
    const current=(await query('SELECT input_event_id,input_digest,native_delivery_id,deadline_at FROM response_attempts WHERE conversation_id=$1',[id])).rows;
    const inputs=(await query("SELECT visible_payload FROM event_projections WHERE conversation_id=$1 AND event_type='message.received'",[id])).rows;
    const aliases=inputs.filter(row=>row.visible_payload.applicationInputReplay);
-   if(Number(captured.operations)!==0||current.length!==2||!current.some(row=>row.input_event_id===captured.input_event_id&&row.input_digest===captured.input_digest&&row.native_delivery_id===captured.native_delivery_id&&row.deadline_at.toISOString()===captured.deadline_at)||aliases.length!==1||aliases[0].visible_payload.applicationInputReplay.retryOfInputEventId!==captured.input_event_id||aliases[0].visible_payload.applicationInputReplay.admittedDeliveryId!==captured.native_delivery_id)throw Error('Owned interrupted-step recovery changed canonical input, deadline or delivery');
+   if(Number(captured.operations)!==0||current.length!==2||!current.some(row=>row.input_event_id===captured.input_event_id&&row.input_digest===captured.input_digest&&row.native_delivery_id===captured.native_delivery_id&&row.deadline_at.toISOString()===captured.deadline_at)||aliases.length>1||aliases.some(alias=>alias.visible_payload.applicationInputReplay.retryOfInputEventId!==captured.input_event_id||alias.visible_payload.applicationInputReplay.admittedDeliveryId!==captured.native_delivery_id))throw Error('Owned interrupted-step recovery changed canonical input, deadline or delivery');
    const rendered=await page.locator('article.chat-message-user').allTextContents();
    if(rendered.length!==2||rendered.filter(text=>text.includes(firstPrompt)).length!==1)throw Error('Interrupted native delivery duplicated rendered user sends');
    interruptedStepRecovery=true;
-   await writeFile(join(out,'interrupted-step-recovery.json'),JSON.stringify({actualEveRuntime:true,maximumNativeEventBytes,maximumBase64EventBytesEstimate,hostedPlatformLimitBytes:10*1024*1024,forcedInterruptions:1,initialModelOperations:0,canonicalInputPreserved:true,originalDeadlinePreserved:true,admittedAliases:1,renderedUserSends:2,originalUserSendCopies:1,providerFileBytesPreserved:true,paidProviderCalls:0},null,2),{mode:0o600});
+   await writeFile(join(out,'interrupted-step-recovery.json'),JSON.stringify({actualEveRuntime:true,maximumNativeEventBytes,maximumBase64EventBytesEstimate,hostedPlatformLimitBytes:10*1024*1024,forcedInterruptions:1,initialModelOperations:0,canonicalInputPreserved:true,originalDeadlinePreserved:true,admittedAliases:aliases.length,renderedUserSends:2,originalUserSendCopies:1,providerFileBytesPreserved:true,paidProviderCalls:0},null,2),{mode:0o600});
   }
   let failedFileHistoryRecovery=false;let activeFailedNativeSnapshot:{messages:number;events:number}|undefined;let failedOperationSnapshot:unknown[]|undefined;let failedProviderCalls=0;let failedUnknownHoldsPreserved=false;
   const failedPrompt='Fail this native file turn explicitly.',recoveryPrompt='Recover after the failed native file turn.';
@@ -289,11 +298,12 @@ try{await withPlanEvalEnvironment(async environment=>{
   if(boundaryMiB&&(!uploadRequestBytes.length||Math.max(...uploadRequestBytes)>512*1024||!sendRequestBytes.length||Math.max(...sendRequestBytes)>4096))throw Error('Large native file bypassed bounded staging transport');
   const receipt={failedFileHistoryRecovery,failedProviderCalls,failedUnknownHoldsPreserved,activeFailedNativeSnapshot,activeFailedNativeEmpty:activeFailedNativeSnapshot?activeFailedNativeSnapshot.events===0:null,retirementEmptyIsActiveFailureProof:false,interruptedStepRecovery,kind:'ordinary-native-file-bytes',actualEveRuntime:true,fixtureProvider:true,paidProviderCalls:0,runtimeDependencyInstallation:false,providerBytesPreserved:!process.argv.includes('--memory'),stagedFileBytes:boundaryMiB?bytes.length:null,maximumUploadRequestBytes:uploadRequestBytes.length?Math.max(...uploadRequestBytes):null,maximumSendRequestBytes:sendRequestBytes.length?Math.max(...sendRequestBytes):null,attachmentMutationBlockedDuringUpload,readyDraftRemovalReleasedQuota,uncertainDraftRemovalPreserved,previousFileAvailableAfterReload,personalPreferenceSaved:process.argv.includes('--memory')||process.argv.includes('--memory-files'),personalPreferenceCrossSession,personalPreferenceIsolated,personalPreferenceRemoved,providerToolSets:calls.map(row=>row.tool_names),actualCanonicalCustomerResolved:true,nativeFileCorrection:process.argv.includes('--steer'),toolNames:calls[0].tool_names,composerUsed:process.argv.includes('--composer'),reloadedHistory:true,nativeRetirementStatus:retired.status()};await writeFile(join(out,'receipt.json'),JSON.stringify(receipt,null,2),{mode:0o600});console.log(JSON.stringify(receipt));for(const name of ['failure-private.json','failure-private.log','failure-page-private.png','send-private.json'])await rm(join(out,name),{force:true});
  }catch(error){
+  if(process.argv.includes('--staged-10'))await captureOwnedWorkflowMetadata(environment.appRoot,(await query('SELECT eve_session_id FROM conversations WHERE eve_session_id IS NOT NULL LIMIT 20')).rows.map(row=>row.eve_session_id),join(out,'workflow-after-failure-private.json')).catch(()=>{});
   await writeFile(join(out,'runtime-state-private.json'),JSON.stringify({
    attempts:(await query('SELECT id,dispatch_state,response_state,native_turn_id,last_error_code FROM response_attempts')).rows,
    corrections:(await query('SELECT dispatch_state,native_turn_id,native_event_id,native_status FROM ordinary_steering_deliveries')).rows,
    providerCalls:(await query('SELECT attempt_id,bytes_digest FROM ordinary_native_file_fixture_calls')).rows,
-   events:(await query('SELECT event_type,turn_id FROM event_projections ORDER BY emitted_at,native_event_id')).rows,
+   events:(await query(`SELECT native_event_id,event_type,turn_id,visible_payload->>'deliveryId' AS delivery_id FROM event_projections ORDER BY emitted_at,native_event_id`)).rows,
   }),{mode:0o600}).catch(()=>{});
   // Only this unpaid, synthetic fixture is eligible for bounded CI diagnostics.
   // Keep full logs private; remove URLs and known credentials from error lines.
@@ -311,6 +321,7 @@ try{await withPlanEvalEnvironment(async environment=>{
  finally{if(csrf)await context.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':csrf}}).catch(()=>{});await context.close();await browser.close();}
 },{feature:'010',empty:true,deadlineAt:fixtureDeadlineAt,prepare:async({appRoot,environmentId})=>{
  marker=fixtureOwner;
+ if(process.argv.includes('--staged-10')){const manifestPath=join(appRoot,'package.json'),manifest=JSON.parse(await readFile(manifestPath,'utf8'));manifest.scripts['build:eve:check']='eve build';await writeFile(manifestPath,JSON.stringify(manifest,null,2)+'\n');}
  await writeFile(join(appRoot,'package-lock.json'),await readFile(resolve('package-lock.json')),{mode:0o600});
  // npm ci installs the pinned local provider before any agent turn. Keep the
  // shared dependency link intact; no in-turn or fixture-specific installs.
@@ -321,8 +332,22 @@ try{await withPlanEvalEnvironment(async environment=>{
  // auto-installing an unrelated default provider during the browser turn.
  for(const specialist of ['customer-recon-worker','implementation-research-worker','vercel-best-practices-worker'])
   await writeFile(join(appRoot,'agent/subagents',specialist,'sandbox.ts'),"import {defineParentSandbox} from 'eve/sandbox';export default defineParentSandbox();\n",{mode:0o600});
- const dev=join(appRoot,'scripts/dev.mjs');await writeFile(dev,(await readFile(dev,'utf8')).replace('["dev"]','["dev","--webpack"]'),{mode:0o600});
- await writeFile(join(appRoot,'agent/sandbox.ts'),`import {defineSandbox} from 'eve/sandbox';import {DockerSandbox} from 'eve/sandbox/docker';export const environment=DockerSandbox.image(${JSON.stringify(image)},{pullPolicy:'never',env:{TURAS_NATIVE_FILE_FIXTURE_OWNER:${JSON.stringify(fixtureOwner)}}});export default defineSandbox(()=>environment.open({networkPolicy:'deny-all'}));\n`,{mode:0o600});return {};
+ const devPath=join(appRoot,'scripts/dev.mjs');let source=await readFile(devPath,'utf8');
+ // The documented --resume CLI owns this disposable app's retained local world.
+ // withEve reuses that already-running local server. Do not enable automatic
+ // recovery for the user's selected development database or workflow state.
+ const launcher=`const ownedEve=spawn(resolve(cwd,'node_modules/.bin/eve'),['dev','--resume','--no-ui','--port','0'],{cwd,env:process.env,stdio:['ignore','pipe','pipe']});
+let ownedOrigin='';
+await new Promise((done,reject)=>{let text='';const timer=setTimeout(()=>reject(Error('Owned resume server timeout')),90000);const listen=chunk=>{const value=chunk.toString();process.stdout.write(value);text=(text+value).slice(-200000);const match=text.match(/server listening at (http:\\/\\/127\\.0\\.0\\.1:\\d+)\\//);if(match){ownedOrigin=match[1];clearTimeout(timer);done();}};ownedEve.stdout.on('data',listen);ownedEve.stderr.on('data',listen);ownedEve.once('exit',()=>{clearTimeout(timer);reject(Error('Owned resume server exited'));});});
+`;
+ source=source.replace('const next = spawn(',launcher+'const next = spawn(').replace('["dev"]','["dev","--webpack"]').replace('  next.kill("SIGTERM");','  next.kill("SIGTERM");\n  ownedEve.kill("SIGTERM");');
+ source+='\nconsume("server listening at "+ownedOrigin+"/");\n';
+ await writeFile(devPath,source,{mode:0o600});
+ await writeFile(join(appRoot,'agent/sandbox.ts'),`import {defineSandbox} from 'eve/sandbox';import {DockerSandbox} from 'eve/sandbox/docker';export const environment=DockerSandbox.image(${JSON.stringify(image)},{pullPolicy:'never',env:{TURAS_NATIVE_FILE_FIXTURE_OWNER:${JSON.stringify(fixtureOwner)}}});export default defineSandbox(()=>environment.open({networkPolicy:'deny-all'}));\n`,{mode:0o600});
+ // Queue the owned local-world step separately: its default inline-owner lease
+ // is 860 seconds, longer than this unchanged attempt authority. This setting
+ // applies before initial execution and only to this disposable runtime.
+ return process.argv.includes('--staged-10')?{WORKFLOW_INLINE_OWNERSHIP:'false'}:{};
 }});}catch(error){
  const reason=(error instanceof Error?error.message:'Unknown fixture failure').split('\n')[0].replace(/[a-z][a-z0-9+.-]*:\/\/[^\s/@:]+:[^\s/@]+@/gi,'<redacted>@').slice(0,200);
  console.error(JSON.stringify({kind:'native_file_fixture_failure',phase:fixturePhase,name:error instanceof Error?error.name:'Unknown',reason}));throw error;

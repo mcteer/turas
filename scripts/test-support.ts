@@ -11,6 +11,7 @@ import { featureSourceDigest } from "./execution-source-digest";
 
 export const SUPPORT_SUITES = [
   "tests/unit/support-environment.test.ts", "tests/unit/support-policy.test.ts",
+  "tests/unit/support-instruction-routing.test.ts",
   "tests/unit/support-readiness.test.ts", "tests/unit/support-command-identity.test.ts",
   "tests/unit/support-ordering.test.ts",
   "tests/unit/support-owner-batch.test.ts",

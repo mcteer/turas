@@ -132,3 +132,16 @@ export async function authorizeOwnedInputResponse(actor:CurrentSession,nativeSes
  });
  return attemptId;
 }
+
+/** Only owned, unresolved ordinary questions may be replaced by an explicit
+ * correction. Keep the original attempt/turn identity for terminal proof. */
+export async function pendingOwnedQuestionTurn(actor:CurrentSession,nativeSessionId:string){
+ const {pending}=await ownedInputResponseBinding(actor,nativeSessionId,null,true);
+ if(!pending.length||pending.some(item=>item.request.kind!=='question'))return null;
+ if(new Set(pending.map(item=>item.attempt_id)).size!==1)throw new HttpFailure(409,'question_turn_ambiguous','Stop the pending response before starting a new message.');
+ return withTransaction(async db=>{
+  if((await conversationFeature(db,pending[0].conversation_id)).kind!=='normal')return null;
+  const row=(await db.query<{native_turn_id:string|null;response_state:string}>('SELECT native_turn_id,response_state FROM response_attempts WHERE id=$1',[pending[0].attempt_id])).rows[0];
+  return row?.native_turn_id&&row.response_state==='waiting_input'?{attemptId:pending[0].attempt_id,turnId:row.native_turn_id}:null;
+ });
+}

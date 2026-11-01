@@ -45,7 +45,7 @@ No runtime changes or deployments are part of that handoff.
 | III: Evidence lifecycle | Existing evidence policy applies. | Recheck sources/context before continuation and provider calls; invalidate unsafe retained context. |
 | IV: Server authorization | Native task IDs are not credentials. | Domain checks environment, workspace, owner, conversation, customer and purpose. |
 | V: Decision rights | No new approval/send authority. | Replayed or interrupted questions cannot authorize effects. |
-| VI: Eve core | Installed workflow/task docs reviewed. | Native serve/reply lifecycle and public cancellation API; no private imports or redundant continuation engine. |
+| VI: Eve core | Installed workflow/task docs reviewed. | Native serve/reply lifecycle and public durable Stop hook and native task-end confirmation; no private imports or redundant continuation engine. |
 | VII: Meaningful verification | Real runtime and UI checks required. | Unit, contract, integration, native and hosted evidence distinguished; independent review before merge. |
 | VIII: Operability | Existing accounting and explicit migrations. | Fixed expiry, cumulative reservations, cancellation and replay recovery. |
 

@@ -163,8 +163,8 @@ release notes and the adoption assessment, and inspect dependency-update configu
 
 | Newly Available Capability | Decision and User Value |
 | --- | --- |
-| Durable specialist conversations and resumable task controls | **Implement** owned specialist follow-ups and task-specific cancellation across the three existing specialist types. |
-| Structured task/interaction/session observations | **Implement** truthful progress, exact recovery positions and cancellation/result-delivery evidence. |
+| Durable specialist conversations and resumable task controls | **Implemented, locally verified; release pending.** Owned specialist follow-ups and task-specific cancellation across the three existing specialist types. |
+| Structured task/interaction/session observations | **Implemented, locally verified; release pending.** Truthful progress, exact commit/fact positions and cancellation/result-delivery evidence. |
 | Delivery acceptance separate from execution results | **Adopt** throughout dispatch, specialist work and recovery so acknowledgement never masquerades as completion. |
 | Improved client session state | **Adopt** in the composer, pending questions, failure recovery and specialist progress. |
 | Framework cancellation, approval, Anthropic and memory/performance fixes | **Inherit and verify** the portions exercised by Turas; maintain application authorization and accounting fences. |

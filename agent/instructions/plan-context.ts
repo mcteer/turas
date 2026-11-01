@@ -11,7 +11,7 @@ import { planDraftContentSchema } from "../../lib/contracts/plan-content";
 
 export default defineDynamic(async (ctx) => {
     const principal=ctx.session.auth.current;
-    if (["staffing", "execution", "expansion", "learning"].includes((await responseFeature(principal))?.kind ?? "")) return null;
+    if (["staffing", "execution", "support", "expansion", "learning"].includes((await responseFeature(principal))?.kind ?? "")) return null;
     if (!principal?.principalId ||
         typeof principal.attributes?.turasAttemptId!=="string") return null;
     return withTransaction(async(client)=>{

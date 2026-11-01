@@ -38,5 +38,5 @@ Other ordinary technical questions may still be answered directly.`,
 export default defineDynamic(async (ctx) => {
     const kind = (await responseFeature(ctx.session.auth.current))?.kind;
     if (kind === "normal") return ordinaryConflictInstructions;
-    return ["staffing", "execution", "expansion", "learning"].includes(kind ?? "") ? null : instructions;
+    return ["staffing", "execution", "support", "expansion", "learning"].includes(kind ?? "") ? null : instructions;
   });

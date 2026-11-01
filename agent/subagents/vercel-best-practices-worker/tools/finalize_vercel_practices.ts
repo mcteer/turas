@@ -24,7 +24,7 @@ const tool = defineTool({
       return { kind: "best-practices" as const, status: "incomplete" as const, reference: null, reason: `These source IDs were not retrieved in this task: ${[...new Set(invalid)].join(", ")}. Correct the brief without searching again.` };
     try {
       const reference = await recordVercelPracticeRun(identity, input.product, input.topic, { summary: input.summary, practices: input.practices, gaps: input.gaps }, state.sources.filter((source) => input.practices.some((practice) => practice.sourceIds.includes(source.id))).map((source) => source.url), ctx.abortSignal);
-      await finishPracticeResearch(identity, state.requestTicket, input.practices.length, ctx.abortSignal);
+      await finishPracticeResearch(identity, state.requestTicket, input.practices.length, ctx.abortSignal,reference);
       researchState.update((current) => ({ ...current, finalized: true }));
       return { kind: "best-practices" as const, status: input.gaps.length ? "incomplete" as const : "ready" as const, reference, reason: "Best-practices evidence was stored in the shared library with source URLs, freshness metadata and explicit caveats. Implementation-research can retrieve it by product and topic." };
     } catch {

@@ -193,12 +193,12 @@ export async function finishResearchRequest(identity: AppIdentity, ticket: Reque
   if (!rows.length) throw new Error("Research lease expired before publication.");
 }
 
-export async function finishPracticeResearch(identity: AppIdentity, ticket: RequestTicket | undefined, sourceCount: number, signal: AbortSignal) {
+export async function finishPracticeResearch(identity: AppIdentity, ticket: RequestTicket | undefined, sourceCount: number, signal: AbortSignal,reference?:string) {
   if (!ticket) return;
   signal.throwIfAborted();
   const sql = await evidenceDatabase();
   const rows = await sql.query(`UPDATE turas_research_requests SET receipt=$6::jsonb,dependencies='[]'::jsonb,completed_at=now(),lease_until=now(),refresh_after=now()+interval '30 days'
     WHERE environment_id=$1 AND workspace_id=$2 AND owner_user_id=$3 AND key=$4 AND lease_id=$5 AND scope->>'kind'='best-practices' AND lease_until>now() AND receipt IS NULL RETURNING key`,
-    [...principal(identity), ticket.key, ticket.lease, JSON.stringify({ kind: "best-practices", sourceCount, completedAt: new Date().toISOString() })]);
+    [...principal(identity), ticket.key, ticket.lease, JSON.stringify({ kind: "best-practices", sourceCount,...(reference?{reference}:{}), completedAt: new Date().toISOString() })]);
   if (!rows.length) throw new Error("Practice research reservation expired.");
 }

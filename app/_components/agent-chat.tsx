@@ -1,4 +1,6 @@
 "use client";
+import {readUnsentChatDraft,saveUnsentChatDraft} from './unsent-chat-draft';
+import {SpecialistTasks} from './specialist-tasks';
 import {activeTurn,openInteractions} from 'eve/events';
 
 import { useEveAgent } from "eve/react";
@@ -95,6 +97,9 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const [initialDraft, setInitialDraft] = useState<OrdinarySendMessage | null>(initialMessage?.autoSend===false?null:initialMessage?.message??null);
   const initialSent = useRef(false);
   const [draft, setDraft] = useState(initialMessage?.autoSend===false?splitOrdinaryMessage(initialMessage.message).prompt:"");
+  const [draftRestored,setDraftRestored]=useState(false);
+  const draftEdited=useRef(false);
+  function changeDraft(value:string){draftEdited.current=true;setDraft(value);}
   const [notice, setNotice] = useState("");
   const clientFailures=useRef(0);
   const noticeEpoch=useRef(0),preparingSend=useRef<symbol|null>(null),responding=useRef<{requestId:string;operation:number}|null>(null),stoppingNow=useRef(false);
@@ -147,6 +152,9 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const agent = useEveAgent({
     initialSession: { sessionId: nativeSessionId, streamIndex: 0 },
     resume: true,
+    // Canonical delivery IDs let live and retained history join exactly. Eve's
+    // optimistic IDs stay local even after confirmation and cannot make that join.
+    optimistic: false,
     headers: () => ({ "x-csrf-token": csrfToken,
       "x-turas-conversation-id": conversationId }),
     onError(){clientFailures.current++;},
@@ -341,6 +349,20 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     } catch { /* A corrupt local draft cannot dispatch a turn. */ }
   }, [conversationId]);
 
+  useEffect(()=>{
+    let active=true;
+    void readUnsentChatDraft(conversationId,csrfToken).then(saved=>{
+      if(!active)return;
+      if(saved!==null&&!draftEdited.current&&!initialMessage&&!keyRef.current)setDraft(current=>current||saved);
+      setDraftRestored(true);
+    }).catch(()=>{if(active)setDraftRestored(true);});
+    return ()=>{active=false;};
+  },[conversationId,csrfToken]);
+  useEffect(()=>{
+    if(!draftRestored)return;
+    void saveUnsentChatDraft(conversationId,csrfToken,denied||stale?'':draft).catch(()=>{/* Storage failure never dispatches or removes the in-memory draft. */});
+  },[conversationId,csrfToken,draft,draftRestored,denied,stale]);
+
   useEffect(() => {
     if (!initialDraft || initialSent.current || agent.status !== "idle" || !historyReady) return;
     initialSent.current = true;
@@ -473,6 +495,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         (working||reconnecting||Boolean(initialDraft&&!initialSent.current))&&
         (!agent.error||reconnecting)&&<p className="chat-thinking" role="status">Thinking</p>}
     </ChatViewport>
+    <SpecialistTasks conversationId={conversationId} csrfToken={csrfToken}/>
     <form className="chat-composer" onSubmit={(event) => { event.preventDefault(); void send(); }}>
       {customerId && attachmentsOpen && <ComposerAttachments conversationId={conversationId} customerId={customerId}
         customerName={customerName} csrfToken={csrfToken}
@@ -482,7 +505,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
        onLink={()=>linkControl.current?.open()} onFiles={canAttachDocuments?()=>documentInput.current?.click():undefined}
        filesDisabled={!documentsReady||(!canSteer&&(busy||Boolean(pendingKey)))||answering}
        onSources={customerId?()=>setAttachmentsOpen(value=>!value):undefined}/>
-      <textarea id="chat-message" aria-label="Message Turi" rows={1} placeholder="Message Turi…" value={draft} onChange={(event) => setDraft(event.target.value)}
+      <textarea id="chat-message" aria-label="Message Turi" rows={1} placeholder="Message Turi…" value={draft} onChange={(event) => changeDraft(event.target.value)}
         onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); } }}
         maxLength={16_384} disabled={preparingDocuments || (!canSteer && busy) || (Boolean(pendingKey) && dispatchState !== "prepared" && !(canSteer&&busy)) || stopping || steering} />
         <button className="composer-send" type={stopButton ? "button" : "submit"} aria-label={stopButton ? "Stop response" : "Send message"}

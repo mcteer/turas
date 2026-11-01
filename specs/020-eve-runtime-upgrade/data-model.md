@@ -67,6 +67,23 @@ An admission transaction commits before external I/O. Record accepted identities
 without treating acceptance as completion. Settlement is idempotent by existing
 operation receipt; never release unknown usage because a task closed or failed.
 
+### Durable Operation Reservations
+
+`specialist_operations` records assignment/discussion linkage, the unique native
+step identity, selected model, pricing observation, input/output/cost ceilings,
+complete actual usage when available and settlement time. Identity and populated
+settlement are immutable. This is an admission projection of native/provider
+receipts, not a billing system. A repeated step identity cannot dispatch again.
+Incomplete receipts retain every original ceiling; an observed overrun is
+recorded truthfully and blocks later work.
+
+The conversation's existing ordinary-chat allowance remains enforced. A separate
+cumulative specialist backstop is the sum of the three existing worker envelopes
+(1,200,000 input tokens, 92,000 output tokens and 8,000,000 micro-USD). Replacing or
+closing a discussion cannot replenish it. Per-worker envelopes are unchanged and
+shared between native session limits and domain admission. Reservation and
+settlement use conversation → discussion → assignment → operation lock order.
+
 ## State Transitions and Observations
 
 - Discussion: `open → stopping → closed`; `open → expired/failed` when evidenced.
@@ -93,3 +110,18 @@ permitted audit/accounting identities. No raw child messages enter routine logs
 or new status records. Backfill no reusable discussion from an old cache row or
 protocol-25 session. Rehearse migration/grants and coordinated recovery before
 applying to any hosted target.
+
+### Durable Stop Binding
+
+A discussion also retains an immutable, unique server-only `control_hook_token`.
+The native workflow registers it before dispatching child work and races that
+hook against work, receive and its original expiry. Authenticated Stop and the
+existing signed maintenance lane may signal it after fencing admission. A
+cooperative reply does not prove termination: only the native task/session end
+closes the discussion. `control_next_attempt_at` and `control_attempts` bound
+cleanup retries; they never admit provider work or release usage holds.
+
+This replaces the initially proposed direct `getRun.cancel()` control: actual
+local native tests accepted that SDK cancellation without producing a native
+parent task-end event. The public hook lets the authored workflow exit normally
+and leaves final confirmation to actual native facts.

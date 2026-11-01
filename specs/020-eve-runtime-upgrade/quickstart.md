@@ -25,24 +25,28 @@ node scripts/check-legacy-parity-disposable.mjs --native-staged-4
 node scripts/check-legacy-parity-disposable.mjs --native-staged-10
 ```
 
+The staged-10 owned runtime explicitly disables the SDK inline ownership lease
+before execution and uses `eve dev --resume`; the input/deadline assertions stay
+unchanged. This is local-world recovery evidence, separate from hosted acceptance.
+
 Run file fixtures sequentially because their private diagnostic directory is
 shared. Run builds sequentially because they share generated Eve output. Use the
 full required CI suites after source is stable, including governed workflow
 regressions; the narrow commands alone are not complete release acceptance.
 
-## Specialist Acceptance Harness (To Be Implemented)
+## Specialist Acceptance Harness
 
-Task T021 adds `scripts/check-specialist-continuity.ts` and integrates this flag
+Task T021 provides `scripts/check-specialist-continuity.ts` and integrates this flag
 into the existing disposable controller:
 
 ```sh
 node scripts/check-legacy-parity-disposable.mjs --native-specialists
+node scripts/check-legacy-parity-disposable.mjs --chat-interaction
 ```
 
-This command does not exist yet. Its implementation must fail closed unless it
-owns the disposable database, native workflow store and fixture app. It uses
+The command fails closed unless it owns the disposable database, native workflow store and fixture app. It uses
 deterministic provider fixtures with real native workflows, not fabricated task
-events. It must verify:
+events. It verifies:
 
 1. Each of the three specialists completes an initial request and two refinements
    with the same child/discussion, current per-call authority and cumulative usage.

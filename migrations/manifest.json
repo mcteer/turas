@@ -1,5 +1,5 @@
 {
-  "version": 83,
+  "version": 84,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -332,6 +332,10 @@
     {
       "file": "083-native-stream-fact-positions.cjs",
       "sha256": "4b4c3032f1773f8f558b151cc2421cb84491f2e4ca41f67a7f0302914f638a4d"
+    },
+    {
+      "file": "084-specialist-discussions.cjs",
+      "sha256": "4f02a742a59a0b376b238b613822723ceba67512e9e0337c52a8f3404135868b"
     }
   ]
 }

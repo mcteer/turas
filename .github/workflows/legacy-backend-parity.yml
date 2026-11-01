@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gate: [domains, webkit, native-operations, native-staged-4, native-staged-10, native-task-state, native-questions]
+        gate: [domains, webkit, native-operations, native-staged-4, native-staged-10, native-task-state, native-questions, native-specialists]
     env:
       AI_GATEWAY_API_KEY: ''
       VERCEL_OIDC_TOKEN: ''

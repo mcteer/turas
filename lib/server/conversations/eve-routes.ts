@@ -1,3 +1,4 @@
+import {stopOwnedQuestionsForSteering} from './question-steering';
 import {confirmNativeEndReceipt} from './retirement-confirmation';
 import {readEveTail} from "./eve-reader";
 import type {PrepareAttemptBoundary} from './dispatch';
@@ -213,6 +214,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             nativeOperation='ordinary-worker';await startPreviewChatWorker(args.attachSession, args.waitUntil);
             if(parsed.data.turnPolicy==='steer'){
               if(selections.length)throw new HttpFailure(422,'steering_sources','Send new source selections after the active response');
+              await stopOwnedQuestionsForSteering(session,args.params.sessionId,args.attachSession);
               const steering=await prepareOrdinarySteering(session,conversationId!,args.params.sessionId,requestKey!,message);
               if(steering){
                 if(steering.kind==='replay')return steering.response;

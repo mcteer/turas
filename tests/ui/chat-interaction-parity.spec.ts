@@ -319,3 +319,33 @@ test('customer picker searches authorized customers beyond the first directory p
  await page.getByRole('option',{name:last.displayName,exact:true}).click();
  await expect(trigger).toHaveText(last.displayName);expect(laterReads).toBe(1);
 });
+
+test('specialist Stop targets one task and preserves the composer through reload',async({page},info)=>{
+ const chat=await ownedChat(page,native=>transcript(native,'Synthetic specialist progress.'));
+ const first=randomUUID(),second=randomUUID(),updatedAt=new Date().toISOString();
+ let stopped=false,confirmed=false,stops=0;
+ const items=()=>[
+  {discussionId:first,assignmentId:randomUUID(),specialistKind:'customer-update',state:confirmed?'cancelled':stopped?'stopping':'working',canContinue:false,canCancel:!stopped,reasonCode:confirmed?'cancelled':stopped?'stopping':'running',updatedAt},
+  {discussionId:second,assignmentId:randomUUID(),specialistKind:'solution',state:'waiting_input',canContinue:false,canCancel:true,reasonCode:'question',updatedAt},
+ ];
+ await page.route(`**/api/conversations/${chat.id}/specialists`,route=>route.fulfill({status:200,json:{data:{contract:'specialist-discussions-v1',items:items()}}}));
+ await page.route(`**/api/conversations/${chat.id}/specialists/*/cancel`,async route=>{
+  expect(new URL(route.request().url()).pathname).toBe(`/api/conversations/${chat.id}/specialists/${first}/cancel`);
+  expect(Object.keys(route.request().postDataJSON())).toEqual(['requestKey']);stops++;stopped=true;
+  await route.fulfill({status:202,json:{data:{state:'stopping'}}});
+ });
+ const panel=page.getByRole('region',{name:'Specialist tasks'}),text=page.getByLabel('Message Turi',{exact:true});
+ await expect(panel.getByRole('button',{name:'Stop Customer Research',exact:true})).toBeVisible();
+ await text.fill('Keep this unsent draft.');
+ await panel.getByRole('button',{name:'Stop Customer Research',exact:true}).focus();await page.keyboard.press('Enter');
+ await expect.poll(()=>stops).toBe(1);
+ await expect(panel.getByText('Customer Research — Stopping',{exact:true})).toBeVisible();
+ await expect(panel.getByRole('button',{name:'Stop Implementation Research',exact:true})).toBeEnabled();
+ await expect(text).toHaveValue('Keep this unsent draft.');
+ confirmed=true;await page.reload();
+ await expect(panel.getByText('Customer Research — Stopped',{exact:true})).toBeVisible();
+ await expect(panel.getByText('Implementation Research — Waiting for your answer',{exact:true})).toBeVisible();
+ await expect(text).toHaveValue('Keep this unsent draft.');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ await page.screenshot({path:`local-artifacts/019/specialists-${info.project.name}.png`,fullPage:true});
+});

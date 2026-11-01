@@ -52,8 +52,9 @@ chat request passed verification; service readiness and all 15 maintenance class
 were healthy at the release check.
 
 The [Eve upgrade and specialist continuity](specs/020-eve-runtime-upgrade/spec.md)
-work is in progress; specialist follow-ups and task-specific controls are not yet
-released.
+implementation includes retained specialist follow-ups, task-specific Stop and
+progress controls, verified in local native and WebKit checks. Compatibility and
+hosted release acceptance are still in progress; these changes are not yet released.
 
 Implementation, local checks, CI, Preview acceptance and Production verification
 are recorded separately. A passing local test does not establish hosted behavior,

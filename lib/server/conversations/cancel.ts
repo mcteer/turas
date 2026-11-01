@@ -58,6 +58,12 @@ export async function requestCancellation(
       await client.query(`UPDATE response_attempts SET response_state = 'stopping',
         updated_at = now(), revision = revision + 1 WHERE id = $1`, [attempt.rows[0].id]);
     }
+    if((marker.rows[0]?.schema_version??0)>=84){
+      await client.query(`UPDATE specialist_discussions SET state='stopping',close_reason='cancelled',version=version+1
+        WHERE conversation_id=$1 AND state='open'`,[id]);
+      await client.query(`UPDATE specialist_assignments a SET state='stopping',updated_at=clock_timestamp()
+        FROM specialist_discussions d WHERE a.discussion_id=d.id AND d.conversation_id=$1 AND a.state IN('admitted','working','waiting_input')`,[id]);
+    }
     // This is the first durable acknowledgement of native cancellation. Close
     // the draft in the same transaction so a late save cannot win the gap
     // before the separate drafting-status request or turn.cancelled projection.
@@ -103,8 +109,12 @@ export async function requestCancellation(
  * acknowledgement has completed. A task receipt never grants cross-session
  * control, and cancellation closes database admission before the native call. */
 export async function requestOwnedTaskCancellation(session:CurrentSession,nativeSessionId:string){
- await withTransaction(async db=>{
+ const runs=await withTransaction(async db=>{
   const row=await lockOwnedOrdinaryCleanup(db,session,nativeSessionId);
+  const marker=(await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0];
+  const discussions=(marker?.schema_version??0)>=84?(await db.query(`UPDATE specialist_discussions SET state='stopping',close_reason=COALESCE(close_reason,'cancelled'),version=version+1
+    WHERE conversation_id=$1 AND state IN('open','stopping') RETURNING id,workflow_run_id,control_hook_token`,[row.id])).rows:[];
+  if(discussions.length)await db.query(`UPDATE specialist_assignments SET state='stopping',updated_at=clock_timestamp() WHERE discussion_id=ANY($1::uuid[]) AND state IN('admitted','working','waiting_input')`,[discussions.map(d=>d.id)]);
   const requests=(await db.query(`SELECT r.key,parent.id AS attempt_id FROM turas_research_requests r
    LEFT JOIN LATERAL(SELECT a.id FROM response_attempts a JOIN general_context_receipts g ON g.attempt_id=a.id
     WHERE a.conversation_id=$1 AND g.as_of<=r.started_at ORDER BY g.as_of DESC LIMIT 1) parent ON true
@@ -114,7 +124,12 @@ export async function requestOwnedTaskCancellation(session:CurrentSession,native
    updated_at=now(),revision=revision+1 WHERE conversation_id=$1 AND (response_state IN('pending','running','waiting_input','stopping') OR id=ANY($2::uuid[]))`,[row.id,requests.map(r=>r.attempt_id).filter(Boolean)]);
   await db.query(`UPDATE turas_research_requests SET lease_until=least(lease_until,clock_timestamp())
    WHERE environment_id=$1 AND workspace_id=$2 AND owner_user_id=$3 AND parent_session_id=$4 AND receipt IS NULL AND lease_until>now()`,[getServerConfig().TURAS_ENVIRONMENT_ID,session.workspaceId,session.principalId,nativeSessionId]);
+  return discussions.map(d=>({runId:d.workflow_run_id as string,token:d.control_hook_token as string}));
  });
+ if(runs.length){
+  const {resumeHook}=await import('eve/workflow/api');
+  await Promise.allSettled(runs.map(run=>resumeHook(run.token,{stop:true})));
+ }
 }
 
 /** Reconcile only the runtime's explicit no-active-turn acknowledgment. An

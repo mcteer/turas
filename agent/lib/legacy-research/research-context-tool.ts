@@ -68,7 +68,7 @@ export function researchContextTool(mode: "solution" | "customer-update") {
           ...(request ? { requestTicket: request.ticket, requestScope: request.scope,
             refreshAfter: request.refresh ? request.started_at.toISOString() : undefined } : {}),
           ...(receipt && boundReconReference && !state.customerRecon ? {
-            sources: inheritedSources, inheritedSourceCount: inheritedSources.length,
+            sources: [...inheritedSources,...state.sources.filter(source=>!inheritedSources.some(inherited=>inherited.id===source.id))], inheritedSourceCount: inheritedSources.length,
             customerRecon: { ...boundReconReference, checkedAt: receipt.payload.reusedFrom?.researchedAt ?? receipt.payload.issuedAt, blockers: receipt.payload.blockers, conflicts: receipt.payload.update.conflicts, unknowns: receipt.payload.update.unknowns },
           } : {}),
         }));

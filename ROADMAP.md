@@ -14,8 +14,8 @@ meaningful tests; verify actual changed production behavior through normal relea
 upgrade in [PR #52](https://github.com/mcteer/turas/pull/52). It includes useful
 new capability adoption: owned specialist follow-ups, task-specific cancellation
 and truthful progress. The requested composer, Dependabot and README changes
-remain in that PR. Compatibility fixes are in progress; the new specialist
-capabilities and full release acceptance are not yet complete. Production remains
+remain in that PR. Specialist continuity and controls pass local native/UI checks;
+attachment restart compatibility and full release acceptance remain open. Production remains
 on the release recorded below until a separately verified promotion.
 
 

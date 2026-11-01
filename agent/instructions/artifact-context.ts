@@ -7,7 +7,7 @@ import { readCurrentArtifactDraft } from "../../lib/server/artifacts/context";
 export default defineDynamic(async (ctx) => {
       const turnId = ctx.turn?.id;
       const principal = ctx.session.auth.current;
-      if (["staffing", "execution", "expansion", "learning"].includes((await responseFeature(principal))?.kind ?? "")) return null;
+      if (["staffing", "execution", "support", "expansion", "learning"].includes((await responseFeature(principal))?.kind ?? "")) return null;
       const attemptId = principal?.attributes?.turasAttemptId;
       if (typeof attemptId !== "string" || !principal?.principalId || !turnId) {
         throw new Error("Artifact context is unavailable");

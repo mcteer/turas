@@ -1,3 +1,5 @@
+import {registerSpecialistSources} from '../discussions';
+import {specialistResearchGuard} from '../discussion-research-guard';
 import {withOperationalProviderIo} from '../../../operations/admission';
 import {signCheckedPublicPage,type CheckedPublicPage} from "../../public-dossier";
 import { embedRetrievalTexts } from "../../../retrieval/embeddings";
@@ -70,7 +72,7 @@ async function readCachedSourceForScopeWithinFence(identity:AppIdentity|Maintena
   if(!maintenance && options.recordAccount!==false && !await researchSourceIsEligible(identity,accountId,canonical))
     throw new Error("The customer source is no longer eligible; explicit source recovery is required.");
   const key = "page:" + digest(canonical);
-  const read = await cachedFetch(identity, key, pageSchema, () => readPublicSource(canonical, signal), signal, { notBefore });
+  const read = await cachedFetch(identity, key, pageSchema, async () => readPublicSource(canonical, signal,maintenance?undefined:await specialistResearchGuard(identity,'source:'+key)), signal, { notBefore });
   const { source, truncated,proof:originalProof } = read.value;
   const discovery=options.independentDiscovery;
   if(discovery && (discovery.accountId!==accountId || !discovery.searchId || !['context','gateway_exa'].includes(discovery.provider) || !Number.isFinite(Date.parse(discovery.checkedAt))))throw new Error('Invalid independent discovery association');
@@ -105,6 +107,7 @@ async function readCachedSourceForScopeWithinFence(identity:AppIdentity|Maintena
   await sql.query(`INSERT INTO turas_evidence_passages(environment_id,workspace_id,snapshot_id,ordinal,text,model)
     SELECT $1,$2,$3,ordinality::integer,value,$4 FROM jsonb_array_elements_text($5::jsonb) WITH ORDINALITY
     ON CONFLICT DO NOTHING`, [identity.environmentId, identity.workspaceId, id, embeddingModel, JSON.stringify(chunks)]);
+  if(!maintenance)await registerSpecialistSources(identity,[{snapshotId:id,checkedAt:read.checkedAt,refreshAfter:read.refreshAfter}]);
   await indexSnapshot(identity, id, signal);
   signal.throwIfAborted();
   const cachedSource = { ...source,...(options.informationType?{informationType:options.informationType}:{}),cache: { snapshotId: id, checkedAt: read.checkedAt, refreshAfter: read.refreshAfter } };
@@ -139,7 +142,12 @@ async function indexSnapshotWithinFence(identity: Pick<AppIdentity, "environment
     const embedded:number[][]=[];
     for(let offset=0;offset<chunks.length;offset+=32) {
       signal.throwIfAborted();
-      embedded.push(...await embedRetrievalTexts(chunks.slice(offset,offset+32).map(chunk=>chunk.text),{signal}));
+      const texts=chunks.slice(offset,offset+32).map(chunk=>chunk.text);
+      const actor=identity as Partial<AppIdentity>;
+      const guard=actor.workerSessionId?await specialistResearchGuard(identity as AppIdentity,'index:'+id+':'+offset):undefined;
+      const operation=await guard?.beforeRequest(JSON.stringify(texts),{inputTokens:texts.reduce((total,text)=>total+Buffer.byteLength(text)+256,0)});
+      embedded.push(...await embedRetrievalTexts(texts,{signal}));
+      await operation?.complete();
     }
     const vectors = z.array(embeddingSchema).length(chunks.length).parse(embedded);
     signal.throwIfAborted();
@@ -168,7 +176,7 @@ export async function storedSourceCandidates(identity: AppIdentity, accountId: s
   if (embeddingsConfigured() && query) {
     try {
       const key = "query:" + digest(JSON.stringify([identity.userId, accountId, normalized(workload), normalized(query), embeddingModel]));
-      vector = (await cachedFetch(identity, key, embeddingSchema, () => embedQuery(query, signal), signal)).value;
+      vector = (await cachedFetch(identity, key, embeddingSchema, async () => embedQuery(query, signal,await specialistResearchGuard(identity,key)), signal)).value;
     } catch { signal.throwIfAborted(); }
   }
   const rows = await sql.query(`WITH eligible AS MATERIALIZED (
@@ -210,6 +218,7 @@ export async function storedSourceCandidates(identity: AppIdentity, accountId: s
     signal.throwIfAborted();
     if(await researchSourceIsEligible(identity,accountId,row.source.url))eligible.push(row);
   }
+  await registerSpecialistSources(identity,eligible.filter(row=>row.refresh_after.getTime()>Date.now()).map(row=>({snapshotId:row.id,checkedAt:row.checked_at.toISOString(),refreshAfter:row.refresh_after.toISOString()})));
   return { retrieval: vector ? "hybrid" as const : "keyword" as const, sources: eligible.map(row => ({
     id: row.source.id, url: row.source.url, title: row.source.title, truncated: row.truncated,
     checkedAt: row.checked_at.toISOString(), refreshAfter: row.refresh_after.toISOString(),

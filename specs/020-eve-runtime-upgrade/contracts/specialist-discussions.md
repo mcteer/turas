@@ -36,7 +36,7 @@ and non-cacheable. This endpoint never calls a model or launches research.
 
 Body: `{ requestKey: UUID }`. Existing CSRF/origin and rate rules apply. Validate
 ownership, mark stopping and fence paid admission in a transaction, then invoke
-public workflow cancellation using the stored run ID. Browser-supplied run/task
+the public durable Stop hook bound to that workflow. The hook token stays server-side; the existing workflow returns and closes its owned child. Browser-supplied hook/run/task
 IDs are not accepted. A crash after marking stopping is recoverable by existing
 reconciliation; no database lock remains held during I/O.
 
