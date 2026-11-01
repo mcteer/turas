@@ -10071,3 +10071,24 @@ blocked during setup. All six non-passing cases required the absent local report
 renderer; CI prepares that dependency explicitly. This diagnostic is not a full
 catalog pass. Its scoped temporary directory was removed. Complete exact-source
 CI and Preview remain required before merge and Production release.
+
+## 2026-11-01: CLI release stamping failed and baseline restored
+
+PR #49 merged as `d4564bff48c90aa7b57a17cacf753c067f0ec773` after all 54
+main-workflow and seven parity jobs passed, plus exact-head real-data Preview and
+three-role checks. Eve deployed that clean tree as
+`dpl_3eUn6LR6WeM8hP5E7tqPLBWUnGR1`. Provider metadata confirmed the project,
+Production target and actual `gitCommitSha`, but runtime responses lacked the
+release header and readiness returned 503. Verification stopped before claiming
+release success. Production was rolled back to the previously verified
+`dpl_5HrzmzzX41iXn4gRXAfEGiHr1GqF`; its `11240b6` runtime header returned.
+No schema change or customer-data restoration was performed. The selected local
+environment remained unchanged.
+
+An empty provider Git-SHA value reproduces the version-selection failure: the
+nullish selector treated it as authoritative and suppressed a valid staged
+`TURAS_CODE_VERSION`. The resolver now permits that fallback for an empty value,
+while nonempty malformed provider metadata remains fail closed and a valid
+provider SHA still takes precedence. All five focused header tests passed.
+A CLI Preview and complete CI remain required before the next Production attempt;
+the earlier Git-backed Preview did not establish CLI-runtime stamping.

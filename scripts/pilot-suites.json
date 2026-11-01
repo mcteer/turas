@@ -934,11 +934,13 @@
     },
     {
       "file": "tests/unit/pilot/http-code-version.test.ts",
-      "expectedCases": 3,
+      "expectedCases": 5,
       "cases": [
         "binds successful and denied API responses to the exact serving version",
         "does not expose unknown malformed or arbitrary operational version strings",
-        "uses actual Vercel release metadata before a local operator override"
+        "uses actual Vercel release metadata before a local operator override",
+        "uses the staged release fallback when CLI provider metadata is empty",
+        "keeps nonempty malformed provider metadata fail closed"
       ]
     },
     {
