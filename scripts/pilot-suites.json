@@ -1714,16 +1714,17 @@
     },
     {
       "file": "tests/integration/pilot/hosted-learning-admission.test.ts",
-      "expectedCases": 8,
+      "expectedCases": 9,
       "cases": [
-        "consumes one actual original-journal arm with immutable owner admission and separate early provider identities",
-        "refuses missing foreign expired or disabled hosted authority before any domain provider claim",
-        "serializes concurrent native release and rejects runtime minting and repeated consumption",
+        "checks explicit historical journal consumption and immutable admission independently of ordinary learning",
+        "refuses invalid authority in the explicit historical consumption contract",
+        "serializes ordinary release and explicit historical consumption while refusing runtime ticket minting",
         "rejects claimed journal reservations and replacement original budgets without changing either cap",
-        "retains both original holds and the genuine Gateway identity after an actual wrapped SDK failure",
-        "rolls back hosted consumption with a failed domain claim and never releases its original reservation",
+        "retains domain and historical holds with explicit identity capture after a wrapped SDK failure",
+        "rolls back explicit historical consumption and a failed ordinary domain claim without releasing holds",
         "persists a native pre-admission rejection without a provider claim or invented native identity",
-        "refuses any broader native pre-admission status body state or identity through the database constraint"
+        "refuses any broader native pre-admission status body state or identity through the database constraint",
+        "keeps primary learning on its domain budget despite missing malformed foreign or expired retired pilot configuration"
       ]
     },
     {

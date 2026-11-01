@@ -22,11 +22,13 @@ async function unsentNative(f:Parameters<Parameters<typeof fixture>[0]>[0]){
  return prepared.attemptId;
 }
 
-it('consumes one actual original-journal arm with immutable owner admission and separate early provider identities',async()=>fixture(async f=>{
+it('checks explicit historical journal consumption and immutable admission independently of ordinary learning',async()=>fixture(async f=>{
  expect(await f.admit()).toMatchObject({alreadyAdmitted:false,originalHoldRetained:true,ceilingMicroUsd:f.ceiling});
  expect(await f.admit()).toMatchObject({alreadyAdmitted:true});const a=await f.prepare(),generation='gen_'+randomUUID(),upstream='synthetic-upstream-'+randomUUID();
  const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},doGenerate:async()=>({content:[{type:'text',text:'Synthetic accounting output'}],response:{id:upstream},usage:{inputTokens:{total:10},outputTokens:{total:10}},providerMetadata:{gateway:{generationId:generation,cost:'0.001'}}})} as unknown as Parameters<typeof wrapLanguageModel>[0]['model'];
- await wrapStaffingModel(model,a.admitted.mode,{deadlineAt:a.admitted.deadlineAt,beforeProvider:a.release}).doGenerate({prompt:[]});
+ await f.consumeHistorical();
+ const result=await wrapStaffingModel(model,a.admitted.mode,{deadlineAt:a.admitted.deadlineAt,beforeProvider:a.release}).doGenerate({prompt:[]});
+ await f.rememberHistorical('gateway_generation',(result.providerMetadata?.gateway as {generationId:string}).generationId);await f.rememberHistorical('provider_response',result.response?.id);
  expect((await f.db.query('SELECT count(*)::int AS n FROM operations_hosted_learning_consumptions')).rows[0].n).toBe(1);
  expect((await f.db.query('SELECT identity_kind,provider_key FROM operations_hosted_learning_provider_identities ORDER BY identity_kind')).rows).toEqual([{identity_kind:'gateway_generation',provider_key:generation},{identity_kind:'provider_response',provider_key:upstream}]);
  expect(await f.ledger.status()).toMatchObject({heldMicroUsd:f.ceiling,chargedMicroUsd:0,dispatches:1});
@@ -44,9 +46,9 @@ it('consumes one actual original-journal arm with immutable owner admission and 
  const snapshot=await captureRecoveryDenialSnapshot(f.db,f.environment.environmentId,f.environment.signal);expect(snapshot.tables.filter(row=>row.name.startsWith('operations_hosted_learning_'))).toHaveLength(3);
 }),210000);
 
-it('refuses missing foreign expired or disabled hosted authority before any domain provider claim',async()=>{
+it('refuses invalid authority in the explicit historical consumption contract',async()=>{
  await fixture(async f=>{
-  const a=await f.prepare();await expect(a.release()).rejects.toThrow();
+  const a=await f.prepare();await expect(f.consumeHistorical()).rejects.toThrow();
   expect((await f.db.query('SELECT count(*)::int AS n FROM learning_model_dispatches')).rows[0].n).toBe(0);
   expect(await f.ledger.status()).toMatchObject({heldMicroUsd:f.ceiling});
  });
@@ -54,7 +56,7 @@ it('refuses missing foreign expired or disabled hosted authority before any doma
   // An unrelated configured workspace must not govern ordinary real-customer work.
   await f.db.query('UPDATE customer_references SET synthetic=false WHERE id=$1',[f.meta.customer_id]);
   process.env.TURAS_PILOT_HOSTED_LEARNING_LEDGER_JSON=JSON.stringify({...f.binding,workspaceId:randomUUID()});
-  const a=await f.prepare();await a.release();
+  const a=await f.prepare();await f.consumeHistorical();await a.release();
   expect((await f.db.query('SELECT count(*)::int AS n FROM learning_model_dispatches')).rows[0].n).toBe(1);
   expect((await f.db.query('SELECT count(*)::int AS n FROM operations_hosted_learning_consumptions')).rows[0].n).toBe(0);
  });
@@ -63,19 +65,19 @@ it('refuses missing foreign expired or disabled hosted authority before any doma
   for(const changed of [null,{...f.binding,workspaceId:randomUUID()},{...f.binding,projectId:'prj_foreign'},{...f.binding,sourceCommit:'e'.repeat(40)},
    {...f.binding,budgetId:randomUUID()},{...f.binding,recordedAt:new Date(Date.now()-7200000).toISOString(),expiresAt:new Date(Date.now()-3600000).toISOString()}]){
    if(changed)process.env.TURAS_PILOT_HOSTED_LEARNING_LEDGER_JSON=JSON.stringify(changed);else delete process.env.TURAS_PILOT_HOSTED_LEARNING_LEDGER_JSON;
-   await expect(a.release()).rejects.toThrow();
+   await expect(f.consumeHistorical()).rejects.toThrow();
    expect((await f.db.query('SELECT count(*)::int AS n FROM learning_model_dispatches')).rows[0].n).toBe(0);
    expect((await f.db.query('SELECT count(*)::int AS n FROM operations_hosted_learning_consumptions')).rows[0].n).toBe(0);
   }
-  process.env.TURAS_PILOT_HOSTED_LEARNING_LEDGER_JSON=original;await a.release();
+  process.env.TURAS_PILOT_HOSTED_LEARNING_LEDGER_JSON=original;await f.consumeHistorical();await a.release();
   expect(await f.ledger.status()).toMatchObject({heldMicroUsd:f.ceiling,dispatches:1});
  });
 },300000);
 
-it('serializes concurrent native release and rejects runtime minting and repeated consumption',async()=>fixture(async f=>{
- await f.admit();const a=await f.prepare(),results=await Promise.allSettled([a.release(),a.release()]);expect(results.filter(row=>row.status==='fulfilled')).toHaveLength(1);
+it('serializes ordinary release and explicit historical consumption while refusing runtime ticket minting',async()=>fixture(async f=>{
+ await f.admit();const a=await f.prepare(),consumptions=await Promise.allSettled([f.consumeHistorical(),f.consumeHistorical()]);expect(consumptions.filter(row=>row.status==='fulfilled')).toHaveLength(1);const results=await Promise.allSettled([a.release(),a.release()]);expect(results.filter(row=>row.status==='fulfilled')).toHaveLength(1);
  expect((await f.db.query('SELECT count(*)::int AS n FROM learning_model_dispatches')).rows[0].n).toBe(1);expect((await f.db.query('SELECT count(*)::int AS n FROM operations_hosted_learning_consumptions')).rows[0].n).toBe(1);
- await expect(a.release()).rejects.toThrow();
+ await expect(a.release()).rejects.toThrow();await expect(f.consumeHistorical()).rejects.toThrow();
  const runtime=new Client({connectionString:requireOwnedPilotDatabase()});await runtime.connect();try{await expect(runtime.query('INSERT INTO operations_hosted_learning_admissions SELECT * FROM operations_hosted_learning_admissions')).rejects.toThrow('permission denied');await expect(runtime.query('DELETE FROM operations_hosted_learning_consumptions')).rejects.toThrow('permission denied');}finally{await runtime.end();}
  expect(await f.ledger.status()).toMatchObject({dispatches:1,heldMicroUsd:f.ceiling});
 }),210000);
@@ -88,7 +90,7 @@ it('rejects claimed journal reservations and replacement original budgets withou
  const selected=columns.map(column=>column==='journal_dispatch_id'||column==='journal_budget_id'?"'"+randomUUID()+"'::uuid":column);
  await expect(f.db.query('INSERT INTO operations_hosted_learning_admissions('+columns.join(',')+') SELECT '+selected.join(',')+' FROM operations_hosted_learning_admissions')).rejects.toThrow('cannot be replaced');
  expect(await f.ledger.status()).toMatchObject({capMicroUsd:25000000,heldMicroUsd:f.ceiling,chargedMicroUsd:0});
- const a=await f.prepare();await a.release();const generation='gen_'+randomUUID();
+ const a=await f.prepare();await f.consumeHistorical();await a.release();const generation='gen_'+randomUUID();
  await f.db.query("INSERT INTO operations_hosted_learning_provider_identities(reservation_id,identity_kind,provider_key) SELECT reservation_id,'gateway_generation',$1 FROM operations_hosted_learning_consumptions",[generation]);
  process.env.AI_GATEWAY_API_KEY='synthetic-no-provider-credential';const cost=(f.ceiling+1)/1000000;
  provider.response={id:generation,model:'anthropic/claude-sonnet-5.5',totalCost:cost,usage:cost,upstreamInferenceCost:0,isByok:false,createdAt:new Date().toISOString(),streamed:true,finishReason:'stop',promptTokens:10,completionTokens:10,reasoningTokens:0,cachedTokens:0,cacheCreationTokens:0,billableWebSearchCalls:0,latency:1,generationTime:1,providerName:'synthetic-no-provider'};
@@ -97,17 +99,18 @@ it('rejects claimed journal reservations and replacement original budgets withou
  expect((await f.db.query('SELECT count(*)::int AS n FROM learning_budget_settlements')).rows[0].n).toBe(0);
 }),210000);
 
-it('retains both original holds and the genuine Gateway identity after an actual wrapped SDK failure',async()=>fixture(async f=>{
+it('retains domain and historical holds with explicit identity capture after a wrapped SDK failure',async()=>fixture(async f=>{
  await f.admit();const a=await f.prepare(),generation='gen_'+randomUUID();let calls=0;
  const model={specificationVersion:'v4',provider:'synthetic-no-provider',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},doGenerate:async()=>{calls++;throw Object.assign(new Error('Synthetic SDK failure'),{generationId:generation});}} as unknown as Parameters<typeof wrapLanguageModel>[0]['model'];
- const wrapped=wrapStaffingModel(model,a.admitted.mode,{deadlineAt:a.admitted.deadlineAt,beforeProvider:a.release});await expect(wrapped.doGenerate({prompt:[]})).rejects.toThrow('Synthetic SDK failure');await expect(wrapped.doGenerate({prompt:[]})).rejects.toThrow();expect(calls).toBe(1);
+ await f.consumeHistorical();const wrapped=wrapStaffingModel(model,a.admitted.mode,{deadlineAt:a.admitted.deadlineAt,beforeProvider:a.release});await expect(Promise.resolve(wrapped.doGenerate({prompt:[]})).catch(async(error:unknown)=>{if(typeof error!=='object'||error===null||!('generationId' in error))throw error;await f.rememberHistorical('gateway_generation',error.generationId);throw error;})).rejects.toThrow('Synthetic SDK failure');await expect(wrapped.doGenerate({prompt:[]})).rejects.toThrow();expect(calls).toBe(1);
  expect((await f.db.query("SELECT provider_key FROM operations_hosted_learning_provider_identities WHERE identity_kind='gateway_generation'")).rows[0].provider_key).toBe(generation);
  expect((await f.db.query('SELECT state FROM learning_attempts WHERE id=$1',[f.meta.id])).rows[0].state).toBe('unconfirmed');
  await f.ledger.hold(f.dispatch,'provider_error');expect(await f.ledger.status()).toMatchObject({unknown:1,heldMicroUsd:f.ceiling,chargedMicroUsd:0});
 }),210000);
 
-it('rolls back hosted consumption with a failed domain claim and never releases its original reservation',async()=>fixture(async f=>{
+it('rolls back explicit historical consumption and a failed ordinary domain claim without releasing holds',async()=>fixture(async f=>{
  await f.admit();const a=await f.prepare();
+ await expect(f.rollbackHistorical()).rejects.toThrow('Synthetic historical transaction failure');
  await f.db.query("CREATE FUNCTION synthetic_learning_dispatch_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Synthetic claim failure'; END $$; CREATE TRIGGER synthetic_learning_dispatch_failure BEFORE INSERT ON learning_model_dispatches FOR EACH ROW EXECUTE FUNCTION synthetic_learning_dispatch_failure()");
  await expect(a.release()).rejects.toThrow('Synthetic claim failure');expect((await f.db.query('SELECT count(*)::int AS n FROM operations_hosted_learning_consumptions')).rows[0].n).toBe(0);expect((await f.db.query('SELECT count(*)::int AS n FROM learning_model_dispatches')).rows[0].n).toBe(0);
  expect(await f.ledger.status()).toMatchObject({heldMicroUsd:f.ceiling,dispatches:1,chargedMicroUsd:0});
@@ -143,3 +146,18 @@ it('refuses any broader native pre-admission status body state or identity throu
  await f.db.query("UPDATE response_attempts SET native_response_status=202,native_receipt='{\"ok\":true}'::jsonb,dispatch_state='admitted' WHERE id=$1",[responseId]);
  expect((await f.db.query('SELECT native_response_status FROM response_attempts WHERE id=$1',[responseId])).rows[0].native_response_status).toBe(202);
 }),210000);
+
+
+it('keeps primary learning on its domain budget despite missing malformed foreign or expired retired pilot configuration',async()=>{
+ for(const variant of ['missing','malformed','foreign','expired'])await fixture(async f=>{
+  expect((await f.db.query('SELECT classification FROM workspaces WHERE id=$1',[f.actor.workspaceId])).rows[0].classification).toBe('primary');
+  if(variant==='missing')delete process.env.TURAS_PILOT_HOSTED_LEARNING_LEDGER_JSON;
+  else process.env.TURAS_PILOT_HOSTED_LEARNING_LEDGER_JSON=variant==='malformed'?'{malformed':JSON.stringify({...f.binding,...(variant==='foreign'?{workspaceId:randomUUID()}:{expiresAt:new Date(0).toISOString()})});
+  const before=await f.ledger.status(),a=await f.prepare();await a.release();
+  expect((await f.db.query('SELECT count(*)::int AS n FROM learning_model_dispatches')).rows[0].n).toBe(1);
+  expect((await f.db.query('SELECT count(*)::int AS n FROM learning_budget_reservations')).rows[0].n).toBe(1);
+  expect((await f.db.query('SELECT count(*)::int AS n FROM operations_hosted_learning_consumptions')).rows[0].n).toBe(0);
+  expect((await f.db.query('SELECT count(*)::int AS n FROM operations_hosted_learning_provider_identities')).rows[0].n).toBe(0);
+  expect(await f.ledger.status()).toEqual(before);
+ },'primary');
+},300000);

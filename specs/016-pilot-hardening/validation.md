@@ -10046,3 +10046,28 @@ without retries after its CI timeout. This does not establish that timeout's
 cause. The separate product-gaps failure reported a WebKit internal navigation
 error. Fresh complete CI and exact-source Preview checks remain required; none
 of these focused checks establishes a green CI run or a Production release.
+
+## 2026-11-01: separate historical learning contracts from ordinary dispatch
+
+At `a4e4ac8`, all seven parity jobs and 53 main-workflow jobs passed. The catalog
+then failed in `hosted-learning-admission.test.ts`: it still expected ordinary
+learning to invoke private-pilot admission and identity callbacks intentionally
+removed by this PR. Restoring those runtime dependencies would contradict the
+production-only scope.
+
+The tests now invoke retained historical consumption, identity and rollback
+contracts explicitly inside owned transactions. Immutable tickets, original caps,
+unknown holds, provider identities, concurrency and strict native pre-admission
+rejection checks remain. Ordinary domain release is unchanged; historical and
+domain rollback checks are explicitly separate. A ninth case proves primary
+learning reserves and dispatches normally with missing, malformed, foreign or
+expired retired-pilot configuration, without historical consumption or identity
+rows and without changing the original external ledger.
+
+All nine focused cases passed without paid calls. Independent review found no
+blocker; root/feature typechecks and documentation checks passed. An additional
+49-suite local diagnostic reported 235 passed cases, two failures and four cases
+blocked during setup. All six non-passing cases required the absent local report
+renderer; CI prepares that dependency explicitly. This diagnostic is not a full
+catalog pass. Its scoped temporary directory was removed. Complete exact-source
+CI and Preview remain required before merge and Production release.
