@@ -23,7 +23,7 @@ implementation or observed check only, not full disaster-recovery acceptance.
 
 ## Actual production release checkpoint
 
-Production main `11240b6` uses schema081 following PR47/PR48. Exact records and
+Production main `f3518f5` uses schema081 following PR49/PR50. Exact records and
 qualified failures are in the validation record; deployment-specific checks are not
 silently transferred to another deployment.
 
@@ -32,13 +32,13 @@ silently transferred to another deployment.
 - [x] T073 Verify actual production private upload, bounded scan/parse, extraction, exact download hash and normal domain deletion. Physical Blob absence is not independently established by this checkpoint.
 - [x] T083 Record deployed code/schema/grants and observed limitations without turning failed wrappers, historical evidence or cancelled pilot work into passes.
 
-## Remaining production operations and this removal
+## Production operations and programme removal
 
 - [x] T051/T086 Complete and verify a matched recurring database/private-object/workflow recovery set, independent retained encrypted bytes and separate key availability; preserve existing protected archives.
 - [x] T052/T087 Verify current-denial and uncertain-effect reconciliation for the actual recovery target; retain permanent fences, original provider identities and all unknown financial holds.
 - [x] T053/T057/T088/T096 Verify the actual isolated hosted restore of the complete persistent recovery set and restricted service, preserve managed-workflow reconciliation semantics, measure full drill duration/backup age against RTO/RPO objectives, and report quarantined scope. Keep live Production open and distinguish drill results from actual incident/failover evidence; local migration rehearsal alone does not complete this work.
 - [x] T077 Verify the enabled stable 12-hour backup schedule with one real immediate capture/restore and current per-class maintenance freshness. Record two genuinely scheduled captures at least 12 hours apart as a nonblocking operational follow-up under the owner’s 2026-10-24 directive; do not manufacture elapsed cadence or wait 12 hours to release.
 - [x] T059/T067 Maintain actionable recovery, key recovery, source withdrawal, worker failure, budget and rollback runbooks as production configuration changes.
-- [ ] T080 Confirm owned test-resource cleanup and physical deletion where claimed; preserve real user histories, protected backup retention and permanent audit/replay records.
-- [ ] T084 Close the current removal through normal review/CI, exact Preview verification and post-release production checks; clean up its merged feature branch afterward.
-- [ ] T264 Verify this removal: primary-only login and retired provisioning/feedback/readiness entry points, retained production regressions, docs/typecheck and applicable CI. Record actual results and deploy changed login behavior through the normal release path; no pilot participants, synthetic workspace or new infrastructure required.
+- [x] T080 Confirm owned test-resource cleanup and physical deletion where claimed; preserve real user histories, protected backup retention and permanent audit/replay records. Superseded deployments and unused local build/cache artifacts were removed. Only the final record PR's active Preview resources remain needed until its verification/merge; retire them afterward and retain the deletion receipts with that PR.
+- [x] T084 Close the current removal through normal review/CI, exact Preview verification and post-release production checks; clean up its merged feature branch afterward. PR49/PR50 are merged, their feature branches are removed, and the exact Production release passed authenticated HTTP/WebKit and readiness checks.
+- [x] T264 Verify this removal: primary-only login and retired provisioning/feedback/readiness entry points, retained production regressions, docs/typecheck and applicable CI. Record actual results and deploy changed login behavior through the normal release path; no pilot participants, synthetic workspace or new infrastructure required. All54 main/all 7 parity jobs passed on PR50; Production passed 19 role/privacy cases, three browser logins and three retired-selector refusals.
