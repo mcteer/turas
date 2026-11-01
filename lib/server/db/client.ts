@@ -1,3 +1,4 @@
+import {operationalFenceDatabaseUrl} from './operational-fence-url';
 import { Pool, type PoolClient, type QueryResult, type QueryResultRow } from "pg";
 import { getServerConfig } from "../config";
 import { HttpFailure } from "../../contracts/http";
@@ -23,8 +24,9 @@ function observeIdleConnectionFailures(pool: Pool): Pool {
 /** One connection per process holds the collective private-IO capture fence.
  * It must not consume a runtime connection needed by the guarded work. */
 export function getOperationalFencePool(): Pool {
+  const config=getServerConfig();
   return operationalFencePool ??= observeIdleConnectionFailures(new Pool({
-    connectionString: getServerConfig().DATABASE_URL, max: 1,
+    connectionString: operationalFenceDatabaseUrl(config.DATABASE_URL,config.DATABASE_URL_UNPOOLED), max: 1,
     connectionTimeoutMillis: 5_000, idleTimeoutMillis: 30_000,
     statement_timeout: 5_000,
   }));

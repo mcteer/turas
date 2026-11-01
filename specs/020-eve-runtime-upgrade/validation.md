@@ -2,6 +2,45 @@
 
 ## Current Acceptance State
 
+### Direct Runtime Fence Follow-up
+
+The947 Preview passed its real existing-account composer and Production profile
+comparison checks, but its new specialist exercise became unavailable on the
+first assignment. The one specialist model operation settled at$0.002011; the
+embedding ceiling$0.000012 remains held, and native retirement returned202. These
+failed exercises and the earlier successful251 exercise remain separately recorded;
+none is being relabeled as a final-source positive hosted refinement result.
+
+Inspection found the operational fence's dedicated pool used the runtime's Neon
+transaction-pooled URL for session advisory locks across separate queries. Neon
+explicitly documents these locks as unsupported on pooled connections:
+https://neon.com/docs/connect/connection-pooling. A failed unlock in the outer
+finally can discard an otherwise successful embedding return. This is a concrete
+source defect consistent with the recorded core-success/unfinished-specialist
+symptom; logs did not retain the precise underlying exception for that attempt.
+
+The dedicated fence pool now derives only the recognized direct Neon host and
+verifies endpoint, port and database against the unpooled descriptor. It preserves
+runtime credentials/TLS/options, rejects query routing overrides and never uses
+owner credentials to connect. General query pooling is unchanged. Release errors
+remain fail-closed and emit a fixed payload-free diagnostic. README documents the
+required endpoint pairing.
+
+- Resolver, pool cleanup, watchdog and scheduler:19/19 passed
+  (`/tmp/turas-020-fence-tests.txt`); TypeScript passes.
+- Actual isolated Preview runtime credentials:25 same-session advisory lock
+  acquire/read/unlock cycles passed, all releases verified, zero provider calls
+  (`/tmp/turas-020-direct-fence-proof.txt`).
+- The actual application `withOperationalProviderIo` path passed10 nested cycles
+  against Preview with verified releases and closed pools; zero provider calls
+  (`/tmp/turas-020-runtime-io-proof.txt`). Only random task-owned proof lock keys
+  were used in the low-level session check; no historical hold was repaired.
+- Read-only SQL completion probe accepted the exact runtime UPDATE and rolled it
+  back; the failed operation was not changed. Vercel masks Sensitive URL exports,
+  so those exports are not claimed as decrypted configuration proof.
+- Updated-source final CI and positive hosted specialist refinement remain pending.
+
+
 ### Current Hosted Follow-up on c69870d9
 
 The embedding follow-up passes771 ordinary units across175 files with explicit

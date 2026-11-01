@@ -154,3 +154,9 @@ holds once by operation ID, preserving unknown ceilings and cumulative caps.
 Authenticated pre-083 whole-line event denials stay broader than the new fact
 tuple; current snapshots must still declare the actual complete tuple inventory.
 Rehearse 081/084→085 and refresh Preview backup before explicit migration.
+
+The private-I/O capture fence holds a session advisory lock across provider work.
+Its dedicated single-connection pool therefore derives a direct Neon endpoint
+from the runtime URL, verified against the owner descriptor's endpoint/database.
+Runtime credentials/TLS/options are retained; query routing overrides and target
+mismatches fail closed. General application queries keep their existing pool.

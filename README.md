@@ -113,7 +113,9 @@ credentials, customer data, private stores or `.eve` runtime state.
 | `AI_GATEWAY_API_KEY` | Live model access through Vercel AI Gateway. |
 
 Provision the runtime login using the platform quickstart. Run the application
-with that login rather than the database owner.
+with that login rather than the database owner. Keep the pooled and direct Neon
+URLs on the same endpoint and database. The private I/O fence preserves the runtime
+login when it opens the direct session required for its recovery lock.
 
 ### Initialize and Run
 
