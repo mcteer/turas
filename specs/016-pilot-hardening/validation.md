@@ -10003,3 +10003,19 @@ The first local browser runner stopped before test execution because its optiona
 citation-source indexing setup lacked embeddings. A direct development-mode run
 then stopped at browser sign-in; neither attempt establishes browser acceptance.
 Production-mode WebKit verification and fresh exact-source CI remain pending.
+
+## 2026-11-01: ordinary primary SDK fixture
+
+The `c4d2a16` main CI run passed53 jobs and stopped in catalog suite104 after643
+preceding cases. Six of seven `hosted-sdk.test.ts` cases requested ordinary HTTP
+management/profile access with a retained synthetic-workspace session, which the
+production authentication boundary correctly refused. Its positive owned fixture
+now uses a primary workspace with synthetic customer data. All seven focused
+production-mode HTTP/pinned-SDK cases passed, including current-evidence withdrawal,
+damaged-response reconciliation, exact credential cleanup, normal profile lifecycle
+and partner-grant revocation. Runtime authentication restrictions and assertions
+are unchanged. Independent review audited the remaining registered positive-auth
+callers and found no additional mismatch; historical domain-accounting and session
+rejection fixtures intentionally retain their old classification. The focused run
+used a scoped temporary directory that was removed afterward; no paid models ran.
+Fresh exact-source CI remains required; the failed catalog is not a pass.

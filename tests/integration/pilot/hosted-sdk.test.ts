@@ -18,7 +18,7 @@ let owned:Awaited<ReturnType<typeof openOwnedPilotSuite>>,owner:Client,runtime:C
 beforeAll(async()=>{
  owned=await openOwnedPilotSuite({postgresMajor:18,deadlineMs:360000});
  owner=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});runtime=new Client({connectionString:requireOwnedPilotDatabase()});await owner.connect();await runtime.connect();
- const fixture=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'synthetic_pilot');customerId=fixture.customerId;revisionId=fixture.originalRevisionId;
+ const fixture=await pilotPublishedKnowledgeFixture(owner as unknown as PoolClient,'primary');customerId=fixture.customerId;revisionId=fixture.originalRevisionId;
  await materializeCurrentProjection(owner as unknown as PoolClient,'accepted_profile',revisionId,'delivery');
  await mcpAcceptedPlan(fixture.actor,fixture.actor,customerId);await mcpPublishedReport(owner as unknown as PoolClient,fixture.actor,customerId);
  deniedCustomerId=randomUUID();await owner.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Synthetic denied SDK customer',true)",[deniedCustomerId,fixture.actor.workspaceId]);
