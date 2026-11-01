@@ -8,7 +8,7 @@ export default defineHook({
       const attemptId = ctx.session.auth.current?.attributes.turasAttemptId;
       const inputEvent = event.type === "interaction.opened" || event.type === "interaction.settled";
       if (inputEvent) console.info(JSON.stringify({ event: "conversation.native_input_observed",
-        type: event.type, hasAttempt: typeof attemptId === "string" }));
+        type: event.type,...(event.type==='interaction.settled'?{outcome:event.data.outcome}:{}), hasAttempt: typeof attemptId === "string" }));
       if (typeof attemptId !== "string") return;
       try {
         await projectNativeEvent(ctx.session.id, attemptId, projectEveFact(ctx.session.id,event,ctx.position,ctx.now.toISOString(),ctx.view),ctx.position.line);

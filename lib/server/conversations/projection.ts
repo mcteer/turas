@@ -1,3 +1,4 @@
+import {projectionFactIndex} from './projection-position';
 import {admitNativeInputReplay,sanitizeNativeInputParts} from './native-input-replay';
 import {projectNativeInputDisplay} from './native-input-display';
 import {questionReconstructionEventWindow} from './question-reconstruction';
@@ -332,16 +333,16 @@ export async function projectNativeEventInTransaction(
     }
     const inputReplay = feature.kind === 'normal' && event.type === 'message.received'
       ? await admitNativeInputReplay(client, row, nativeSessionId, event, nativeInputDigest) : null;
-    const projectionSchema=Number((await client.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version??0);
+    const factIndex=await projectionFactIndex(client,event);
     const inserted = await client.query(`INSERT INTO event_projections
       (native_event_id, conversation_id, native_session_id, stream_index,
-       event_type, turn_id, step_index, visible_payload, emitted_at${projectionSchema>=83?",stream_fact_index":""})
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9${projectionSchema>=83?",$10":""})
+       event_type, turn_id, step_index, visible_payload, emitted_at${factIndex!==null?",stream_fact_index":""})
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9${factIndex!==null?",$10":""})
       ON CONFLICT (native_event_id) DO NOTHING RETURNING native_event_id`,
     [event.meta.id, row.conversation_id, nativeSessionId, streamIndex ?? null,
       event.type, typeof data.turnId === "string" ? data.turnId : null,
       Number.isInteger(data.stepIndex) ? data.stepIndex : null,
-      JSON.stringify(resumeParent?{sequence:data.sequence,resumeForEventId:resumeParent.native_event_id}:inputReplay?{...visiblePayload(event,attemptId),applicationInputReplay:inputReplay}:visiblePayload(event,attemptId)), event.meta.at,...(projectionSchema>=83?[event.meta.position?.index??0]:[])]);
+      JSON.stringify(resumeParent?{sequence:data.sequence,resumeForEventId:resumeParent.native_event_id}:inputReplay?{...visiblePayload(event,attemptId),applicationInputReplay:inputReplay}:visiblePayload(event,attemptId)), event.meta.at,...(factIndex!==null?[factIndex]:[])]);
     if (!inserted.rowCount) {
       if (streamIndex !== undefined) {
         await client.query(`UPDATE event_projections SET stream_index = COALESCE(stream_index, $2)

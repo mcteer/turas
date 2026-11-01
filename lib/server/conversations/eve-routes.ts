@@ -260,7 +260,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const dispatches = prepared.governed ? 1 : 5;
             for (let retry = 0; retry < dispatches && Date.now() - started < 20_000; retry++) {
               nativeResponse = await native(new Request(request.url, {
-                method: "POST", headers, body: JSON.stringify({ message:forwarded }),
+                method: "POST", headers, body: JSON.stringify({ message:forwarded,...(parsed.data.turnPolicy?{turnPolicy:parsed.data.turnPolicy}:{}) }),
               }), args);
               if (nativeResponse.status !== 409) break;
               let rejection: unknown;

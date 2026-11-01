@@ -79,6 +79,7 @@ export async function implicitOwnedQuestionResponse(actor:CurrentSession,nativeS
  if(Array.isArray(message)&&!nativeFiles&&message.every(part=>part?.type==='text'&&typeof part.text==='string'))message=message.map(part=>part.text).join('\n');
  if(typeof message!=='string'&&!nativeFiles)return null;
  const pending=(await ownedInputResponseBinding(actor,nativeSessionId,null,true)).pending;
+ if(pending.length>1)throw new HttpFailure(422,'question_answer_ambiguous','Answer each pending question separately, or send this as a correction.');
  if(pending.length!==1)return null;const request=pending[0].request;
  if(request.kind!=='question'||!request.action||typeof request.action!=='object'||!('kind' in request.action)||request.action.kind!=='tool-call'||!('toolName' in request.action)||request.action.toolName!=='ask_question')return null;
  if((await withTransaction(db=>conversationFeature(db,pending[0].conversation_id))).kind!=='normal')return null;
