@@ -163,7 +163,8 @@
     "pilot:storage:copy": "node --import tsx scripts/pilot-storage-migrate.ts",
     "pilot:faults": "node --import tsx scripts/pilot-faults.ts",
     "pilot:control": "node --import tsx scripts/pilot-control.ts",
-    "recovery:drill": "node --import tsx scripts/production-recovery-drill.ts"
+    "recovery:drill": "node --import tsx scripts/production-recovery-drill.ts",
+    "preview:credentials:check": "node scripts/check-preview-credentials.mjs"
   },
   "dependencies": {
     "@js-temporal/polyfill": "0.5.1",

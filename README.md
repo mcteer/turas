@@ -134,6 +134,10 @@ reporting have additional prerequisites in the
 
 ### Temporary Accounts
 
+Preview deployments use the same `mcteer` credentials as Production. They inherit
+the existing sensitive credential record; local or test passwords must not
+override it. Verify this with `npm run preview:credentials:check`.
+
 These are temporary application accounts, configured privately by the environment
 operator. This is not a general-purpose SSO system; no passwords are published in
 this repository.

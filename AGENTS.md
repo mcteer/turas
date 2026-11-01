@@ -28,6 +28,9 @@ upgrade. Review installed version and manifest changes in their own PR.
 - Keep `.env.local`, `.eve`, credentials, private artifacts, and customer data out
   of commits and tool output. Use `.env.example` for documented variable names.
 - Preserve `agent/agent.ts` model selection unless explicitly asked to change it.
+- Preview deployments must inherit the existing Production `mcteer` credential
+  record. Never replace it with local/test credentials or rotate the Production
+  password to prepare a Preview. Run `npm run preview:credentials:check`.
 - For feature 002, root `npm run dev` supervises the local Next.js app, eve and
   the Postgres maintenance worker. Preserve both the selected database and
   `.eve/.workflow-data` across restart/recovery checks. The repo is disconnected
