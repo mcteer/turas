@@ -5,6 +5,7 @@ import {spawnSync} from 'node:child_process';
 import {resolve,join} from 'node:path';
 import {Client} from 'pg';
 import {webkit} from 'playwright';
+import {expect} from '@playwright/test';
 import {Client as NativeClient} from 'eve/client';
 import {withPlanEvalEnvironment} from './plan-eval-environment';
 import {DEMO_IDS} from '../lib/server/bootstrap-ids';
@@ -267,8 +268,9 @@ try{await withPlanEvalEnvironment(async environment=>{
    const inputs=(await query("SELECT visible_payload FROM event_projections WHERE conversation_id=$1 AND event_type='message.received'",[id])).rows;
    const aliases=inputs.filter(row=>row.visible_payload.applicationInputReplay);
    if(Number(captured.operations)!==0||current.length!==2||!current.some(row=>row.input_event_id===captured.input_event_id&&row.input_digest===captured.input_digest&&row.native_delivery_id===captured.native_delivery_id&&row.deadline_at.toISOString()===captured.deadline_at)||aliases.length>1||aliases.some(alias=>alias.visible_payload.applicationInputReplay.retryOfInputEventId!==captured.input_event_id||alias.visible_payload.applicationInputReplay.admittedDeliveryId!==captured.native_delivery_id))throw Error('Owned interrupted-step recovery changed canonical input, deadline or delivery');
+   await expect(page.locator('article.chat-message-user')).toHaveCount(2);
    const rendered=await page.locator('article.chat-message-user').allTextContents();
-   if(rendered.length!==2||rendered.filter(text=>text.includes(firstPrompt)).length!==1)throw Error('Interrupted native delivery rendered user sends incorrectly: total='+rendered.length+', original='+rendered.filter(text=>text.includes(firstPrompt)).length+', followup='+rendered.filter(text=>text.includes('Inspect the previously attached file after reload.')).length);
+   if(rendered.length!==2||rendered.filter(text=>text.includes(firstPrompt)).length!==1||rendered.filter(text=>text.includes('Inspect the previously attached file after reload.')).length!==1)throw Error('Interrupted native delivery rendered user sends incorrectly: total='+rendered.length+', original='+rendered.filter(text=>text.includes(firstPrompt)).length+', followup='+rendered.filter(text=>text.includes('Inspect the previously attached file after reload.')).length);
    interruptedStepRecovery=true;
    await writeFile(join(out,'interrupted-step-recovery.json'),JSON.stringify({actualEveRuntime:true,maximumNativeEventBytes,maximumBase64EventBytesEstimate,hostedPlatformLimitBytes:10*1024*1024,forcedInterruptions:1,initialModelOperations:0,canonicalInputPreserved:true,originalDeadlinePreserved:true,admittedAliases:aliases.length,renderedUserSends:2,originalUserSendCopies:1,providerFileBytesPreserved:true,paidProviderCalls:0},null,2),{mode:0o600});
   }

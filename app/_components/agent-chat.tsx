@@ -152,8 +152,8 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const agent = useEveAgent({
     initialSession: { sessionId: nativeSessionId, streamIndex: 0 },
     resume: true,
-    // Canonical delivery IDs let live and retained history join exactly. Eve's
-    // optimistic IDs stay local even after confirmation and cannot make that join.
+    // Suppress immediate local echoes. Confirmed submission IDs may still be
+    // local aliases; ordinary user display uses the canonical projection below.
     optimistic: false,
     headers: () => ({ "x-csrf-token": csrfToken,
       "x-turas-conversation-id": conversationId }),

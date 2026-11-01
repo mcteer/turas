@@ -80,6 +80,38 @@ synthetic completion or dependency patch is permitted.
   updated to v27 public callbacks and CURRENT_SCHEMA_VERSION. The focused owned
   contract gate passed. Final-source CI remains pending.
 
+## Final Compatibility Reruns
+
+- `5179fe6e170a32331439fec0002eb0bcacb7b4d1` deployed Ready as
+  `dpl_5ZYiC6q4JS8nLKzzzp91gG9Z6AWG` at
+  https://turas-nc8t8jyqy-turas-6e414af3.vercel.app. Actual panel WebKit form
+  login returned 303, authenticated session 200, attachment/link dialog opened,
+  and logout returned 200 (`/tmp/turas-020-preview-517-browser.txt`).
+- Full native operations plus knowledge passed
+  (`/tmp/turas-020-native-operations-refusal-facts.txt`), with zero paid calls,
+  deadlocks or statement timeouts. Stale approval submission was denied; the
+  fresh reviewer recorded exactly one immutable decision. Both member responses
+  produced actual native `response.settled` refused events. An accepted submission
+  alone is not a decision. Owner Stop then reached terminal cancellation without
+  another decision. Changed-source approval and cross-owner reads were denied.
+- The canonical-user staged-10 rerun passed
+  (`/tmp/turas-020-staged10-projected-users2.txt`): exactly one original and one
+  follow-up bubble after waiting for application projection, unchanged original
+  input/delivery/deadline, byte-identical download/reuse and no paid calls.
+- Latest broad ordinary unit invocation passed 762/764 initially; two cursor tests
+  lacked server configuration. Both passed with nonconnecting dummy configuration
+  (three tests/two files, `/tmp/turas-020-unit-config-correction.txt`). Earlier
+  broader 1,363-test evidence remains separate. TypeScript and docs passed.
+- Independent review of the current compatibility diff found no blocker. It
+  checked canonical user display including empty history, native controls, exact
+  source attachment routes, single managed production-mode test service, owned
+  `--resume`, v27 contract callbacks and unchanged member/reviewer authority.
+- Test cleanup removed two additional sandbox containers matched to saved owned
+  run/session evidence. Native operations cleanup removed only its exact marked
+  derived image; runtime retirement had already removed its container. Disk
+  availability remained about 708 GiB. Unverified unrelated containers were not
+  removed. Final CI and final-source Preview remain gates.
+
 ## Resumption Baseline
 
 Implementation resumed after planning commit `4a3d12c5` on
