@@ -19,7 +19,7 @@ export function projectEveFact(sessionId:string,event:SessionEvent,position:Fact
  const observed=(type:string,value:Record<string,unknown>):NativeEvent=>({type,data:{...data,...value},meta});
  switch(event.type){
   case 'delivery.consumed':if(!event.data.parts.length)return noop;return {...observed('message.received',{
-   turnId:event.data.turnId,message:event.data.parts.filter(part=>part.kind==='text').map(part=>part.text).join('\n'),
+   turnId:event.data.turnId,message:event.data.parts.map(part=>part.kind==='text'?part.text:`[file: ${part.filename} (${part.mediaType})]`).join('\n'),
    parts:event.data.parts.map(part=>part.kind==='text'?{type:'text',text:part.text}:{type:'file',mediaType:part.mediaType,filename:part.filename,size:part.size}),
   }),meta:{...meta,deliveryIds:[event.data.deliveryId]}};
   case 'content.completed':{

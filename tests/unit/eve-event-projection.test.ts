@@ -61,3 +61,14 @@ it('retains the trusted tool-call discriminator for composer question routing',(
  const requested=projectEveEvents('wrun_synthetic',fixture.events,fixture.snapshot.view).find(item=>item.event.type==='input.requested');
  expect(requested?.event.data?.requests).toMatchObject([{action:{kind:'tool-call',callId:'ask',toolName:'ask_question'}}]);
 });
+
+it('preserves the reserved text/file summary without exposing inline bytes or file URLs',()=>{
+ const fixture=turnFixture();
+ const event={type:'delivery.consumed' as const,scope:{turnId:'turn_0'},data:{deliveryId:'native-file',turnId:'turn_0',parts:[
+  {kind:'text' as const,text:'Remember this preference.'},{kind:'file' as const,filename:'pixel.png',mediaType:'image/png',size:104,ref:'private-file-ref',url:'https://private.invalid/file'},
+  {kind:'text' as const,text:'Inspect it.'}]}};
+ const projected=projectEveFact('wrun_synthetic',event,{line:1,index:0},fixtureAt,fixture.snapshot.view);
+ expect(projected.data?.message).toBe('Remember this preference.\n[file: pixel.png (image/png)]\nInspect it.');
+ expect(projected.data?.parts).toEqual([{type:'text',text:'Remember this preference.'},{type:'file',filename:'pixel.png',mediaType:'image/png',size:104},{type:'text',text:'Inspect it.'}]);
+ expect(JSON.stringify(projected)).not.toContain('private-file-ref');expect(JSON.stringify(projected)).not.toContain('private.invalid');
+});
