@@ -31,14 +31,17 @@ async function copiedSource(row:typeof installers[number],run:(app:string,source
 for(const row of installers)it(`preserves the routed guarded model and explicit context window in the actual ${row.name} installer`,async()=>copiedSource(row,async(app)=>{
  const network=vi.spyOn(globalThis,'fetch').mockImplementation(async()=>{throw Error('Real network forbidden');});
  await row.install({appRoot:app,databaseName:'turas_fixture_native'} as never);expect(row.guard).toHaveBeenCalled();
- const generated=await readFile(join(app,'agent/agent.ts'),'utf8'),prefix='return { ...selectTurasGatewayModel(wrapStaffingModel('+row.creator+'(';
+ const generated=await readFile(join(app,'agent/agent.ts'),'utf8'),prefix='return { ...selectTurasGatewayModel(deferModelAdmission(';
  expect(generated.split(prefix)).toHaveLength(2);const start=generated.indexOf(prefix),metadata=generated.indexOf('modelContextWindowTokens:',start),end=generated.indexOf('};',metadata);expect(metadata).toBeGreaterThan(start);expect(end).toBeGreaterThan(metadata);
  const expression=generated.slice(start+'return '.length,end+1);
- const underlying={syntheticProvider:true},wrapped={guarded:true},principal={principalId:'synthetic'},identity={stepIndex:0};
- const factory=vi.fn(()=>underlying),guard=vi.fn(()=>wrapped),release=vi.fn();
- const selection=Function('selectTurasGatewayModel','wrapStaffingModel',row.creator,'principal','identity','admitted','assertGovernedStaffingProviderRelease','return '+expression+';')(selectTurasGatewayModel,guard,factory,principal,identity,{mode:row.name},release);
- expect(factory).toHaveBeenCalledWith(principal,identity);expect(guard).toHaveBeenCalledWith(underlying,row.name,{deadlineAt:undefined,beforeProvider:expect.any(Function)});
- expect(selection).toEqual({model:wrapped,modelOptions:{providerOptions:{gateway:{only:['anthropic']}}},modelContextWindowTokens:128000});expect(selection.model).toBe(wrapped);expect(network).not.toHaveBeenCalled();
+ const underlying={syntheticProvider:true},wrapped={guarded:true},selected={deferred:true},principal={principalId:'synthetic'},identity={stepIndex:0};
+ const factory=vi.fn(()=>underlying),guard=vi.fn(()=>wrapped),release=vi.fn(),admit=vi.fn(async()=>({mode:row.name}));
+ let prepare!:(()=>Promise<unknown>);
+ const defer=vi.fn((_model:unknown,run:()=>Promise<unknown>)=>{prepare=run;return selected;});
+ const selection=Function('selectTurasGatewayModel','deferModelAdmission','parityBudgetModel','gateway','selectedModel','wrapStaffingModel',row.creator,'principal','identity','admitGovernedStaffingModelStep','assertGovernedStaffingProviderRelease','return '+expression+';')(selectTurasGatewayModel,defer,(model:unknown)=>model,()=>underlying,'anthropic/claude-sonnet-5.5',guard,factory,principal,identity,admit,release);
+ expect(admit).not.toHaveBeenCalled();expect(factory).not.toHaveBeenCalled();
+ expect(selection).toEqual({model:selected,modelOptions:{providerOptions:{gateway:{only:['anthropic']}}},modelContextWindowTokens:128000});
+ expect(await prepare()).toBe(wrapped);expect(admit).toHaveBeenCalledWith(principal,identity);expect(factory).toHaveBeenCalledWith(principal,identity);expect(guard).toHaveBeenCalledWith(underlying,row.name,{deadlineAt:undefined,beforeProvider:expect.any(Function)});expect(network).not.toHaveBeenCalled();
 }));
 it('keeps all five actual installer metadata guards fail closed before fixture writes when the source shape changes',async()=>{
  for(const row of installers)await copiedSource(row,async(app,source)=>{const changed=source.replace('beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),','beforeProvider: () => { throw Error("Changed fixture shape"); },');await writeFile(join(app,'agent/agent.ts'),changed,{mode:0o600});await expect(row.install({appRoot:app,databaseName:'turas_fixture_native'} as never)).rejects.toThrow(/metadata/);expect(await readFile(join(app,'agent/agent.ts'),'utf8')).toBe(changed);});

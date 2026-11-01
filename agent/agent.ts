@@ -72,12 +72,11 @@ export default defineAgent({
         if (!principal?.principalId || typeof responseAttemptId !== "string") {
           throw hiddenRecord();
         }
-        const bound = await boundToolActor(client, principal);
-        if (!bound.planning) throw hiddenRecord();
         return deferModelAdmission(parityBudgetModel(gateway(selectedModel),selectedModel),async()=>{
-          await withTransaction(db=>admitPlanModelStep(db, bound.actor, {
-            nativeSessionId: ctx.session.id, responseAttemptId,turnId,stepIndex,
-          }));
+          await withTransaction(async db=>{
+            const bound=await boundToolActor(db,principal);if(!bound.planning)throw hiddenRecord();
+            await admitPlanModelStep(db,bound.actor,{nativeSessionId:ctx.session.id,responseAttemptId,turnId,stepIndex});
+          });
           return wrapPlanModel(parityBudgetModel(gateway(selectedModel),selectedModel));
         });
       }));

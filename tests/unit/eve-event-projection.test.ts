@@ -51,3 +51,13 @@ it('does not project answer-only deliveries as a second user message',()=>{
  const event={type:'delivery.consumed' as const,scope:{turnId:'turn_0'},data:{deliveryId:'answer_only',turnId:'turn_0',parts:[]}};
  expect(projectEveFact('wrun_synthetic',event,{line:1,index:0},fixtureAt,fixture.snapshot.view).type).toBe('native.observed');
 });
+
+it('retains the trusted tool-call discriminator for composer question routing',()=>{
+ const scope={turnId:'turn_0',runId:'run_0'};
+ const fixture=turnFixture().commit({type:'model.requested',scope,data:{runId:'run_0',owner:{turnId:'turn_0'}}})
+ .commit({type:'call.requested',scope,data:{callId:'ask',owner:{runId:'run_0'},capability:{kind:'tool',name:'ask_question'},input:{question:'Choose a display'}}},
+  {type:'call.started',scope,data:{callId:'ask'}},
+  {type:'interaction.opened',scope,data:{interactionId:'question',subject:{callId:'ask'},request:{kind:'question',prompt:'Choose a display'}}});
+ const requested=projectEveEvents('wrun_synthetic',fixture.events,fixture.snapshot.view).find(item=>item.event.type==='input.requested');
+ expect(requested?.event.data?.requests).toMatchObject([{action:{kind:'tool-call',callId:'ask',toolName:'ask_question'}}]);
+});

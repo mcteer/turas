@@ -9,6 +9,7 @@ export async function installLearningNativeFixture(environment:{appRoot:string})
  if(!root.startsWith(`${owned}/owned-`)||!root.endsWith('/app')||root===await realpath(process.cwd()))throw Error('Owned learning app copy required');
  const path=join(root,'agent/agent.ts'),source=await readFile(path,'utf8'),target='wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode';
  if(source.split(target).length!==2||!source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";')||!source.includes('reasoning: "low"'))throw Error('Learning fixture model shape changed');
+ if(!source.includes('beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),'))throw Error('Fixture model metadata changed');
  const replaced=source.replace(target,'wrapStaffingModel(createLearningNativeFixtureModel(principal, identity), admitted.mode').replace('return selectTurasGatewayModel(deferModelAdmission(','return { ...selectTurasGatewayModel(deferModelAdmission(').replace('        }));','        })), modelContextWindowTokens:128_000};');
  if(!replaced.includes('modelContextWindowTokens:128_000'))throw Error('Owned learning model metadata changed');
  await writeFile(path,'import {createLearningNativeFixtureModel} from "../tests/fixtures/learning/native-model";\n'+replaced,{mode:0o600});

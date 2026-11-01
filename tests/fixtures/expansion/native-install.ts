@@ -15,6 +15,7 @@ export async function installExpansionNativeFixture(environment: { appRoot: stri
   const target = "wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode";
   if (source.split(target).length !== 2 || !source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";') || !source.includes('reasoning: "low"'))
     throw new Error("Fixture model shape changed");
+ if(!source.includes('beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),'))throw Error('Fixture model metadata changed');
   const replacement = source.replace(target, "wrapStaffingModel(createExpansionNativeFixtureModel(principal, identity), admitted.mode")
     .replace("return selectTurasGatewayModel(deferModelAdmission(", "return { ...selectTurasGatewayModel(deferModelAdmission(")
     .replace("        }));", "        })), modelContextWindowTokens: 128_000 };");

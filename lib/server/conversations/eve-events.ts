@@ -39,7 +39,7 @@ export function projectEveFact(sessionId:string,event:SessionEvent,position:Fact
    const kind=item.request.kind;if(!['question','approval','budget'].includes(kind))return noop;
    return observed('input.requested',{turnId:item.turnId,requests:[{
     requestId:item.interactionId,...item.request,
-    ...(item.call?{action:{callId:item.call.callId,toolName:item.call.name,input:item.call.input}}:{}),
+    ...(item.call?{action:{kind:'tool-call',callId:item.call.callId,toolName:item.call.name,input:item.call.input}}:{}),
    }].map(request=>({...request,kind:kind==='approval'?'tool-approval':kind==='budget'?'session-limit':'question'}))});
   }
   case 'interaction.settled':{
