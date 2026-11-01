@@ -20,7 +20,7 @@ export function ComposerAttachmentMenu({onFiles,filesDisabled,onLink,onSources,d
    disabled={disabled} onClick={()=>setOpen(value=>!value)} onKeyDown={event=>{if(event.key==='ArrowDown'){event.preventDefault();setOpen(true);}}}>
    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 5v14M5 12h14"/></svg>
   </button>
-  {open&&<div className="composer-add-popover" role="menu" aria-label="Attach to conversation" onKeyDown={event=>{
+  {open&&<div className="composer-add-popover" role="menu" aria-label="Attach to conversation" onMouseDown={event=>event.preventDefault()} onKeyDown={event=>{
    if(event.key==='Escape'){event.preventDefault();close(true);return;}
    if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
    event.preventDefault();const items=Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)'));

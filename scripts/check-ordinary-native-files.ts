@@ -316,9 +316,8 @@ try{await withPlanEvalEnvironment(async environment=>{
  // Install it before the browser turn, into a fully owned dependency tree;
  // never let an in-turn install replace the shared checkout's dependency link.
  await rm(join(appRoot,'node_modules'));
- const prepared=spawnSync('npm',['install','--save-dev','--ignore-scripts','--no-audit','--no-fund','just-bash@3.1.0'],{cwd:appRoot,env:{...process.env,AI_GATEWAY_API_KEY:'',VERCEL_OIDC_TOKEN:''},encoding:'utf8',timeout:120000,maxBuffer:4*1024*1024});
+ const prepared=spawnSync('npm',['install','--save-dev','--ignore-scripts','--no-audit','--no-fund','just-bash@3.6.0'],{cwd:appRoot,env:{...process.env,AI_GATEWAY_API_KEY:'',VERCEL_OIDC_TOKEN:''},encoding:'utf8',timeout:120000,maxBuffer:4*1024*1024});
  if(prepared.status!==0){await writeFile(join(out,'dependency-preparation-private.log'),String(prepared.stderr??''),{mode:0o600});throw Error('Owned native dependency preparation failed');}
- const compatibility=spawnSync(process.execPath,['scripts/eve-memory-context-compat.mjs'],{cwd:appRoot,encoding:'utf8',timeout:10000});if(compatibility.status!==0)throw Error('Owned native memory compatibility preparation failed');
  // Eve prepares every declared environment on the first native file. Keep all
  // owned fixture environments on its selected Docker provider, rather than
  // auto-installing an unrelated default provider during the browser turn.

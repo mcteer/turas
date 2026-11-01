@@ -294,7 +294,7 @@ test('customer picker searches, supports keyboard selection and clears without l
  await search.press('Enter');await expect(trigger).toHaveText('Cedar (synthetic)');await expect(trigger).toBeFocused();
  await expect(page.getByLabel('Message Turi',{exact:true})).toHaveValue('Preserve my question.');
  await trigger.click();await search.fill('no-matching-synthetic-account');await expect(page.getByText('No customers found.',{exact:true})).toBeVisible();await search.press('Escape');await expect(trigger).toBeFocused();
- await trigger.click();await search.fill('general');await search.press('Enter');await expect(trigger).toHaveText('Customer (optional)');
+ await trigger.click();await search.fill('general');await search.press('Enter');await expect(trigger).toHaveText('Customer');
  await trigger.click();await search.fill('ced');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:`local-artifacts/019/customer-picker-${info.project.name}.png`,fullPage:false});

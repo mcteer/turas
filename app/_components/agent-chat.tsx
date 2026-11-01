@@ -487,7 +487,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         maxLength={16_384} disabled={preparingDocuments || (!canSteer && busy) || (Boolean(pendingKey) && dispatchState !== "prepared" && !(canSteer&&busy)) || stopping || steering} />
         <button className="composer-send" type={stopButton ? "button" : "submit"} aria-label={stopButton ? "Stop response" : "Send message"}
           onClick={stopButton ? () => void cancel() : undefined}
-          disabled={preparingDocuments||steering||(stopButton ? stopping||Boolean(draftSelections.length) : (!draft.trim() && !draftSelections.length&&!documents.length) || Boolean(pendingKey) || stopping)}>
+          disabled={(!historyReady&&!stopButton)||preparingDocuments||steering||(stopButton ? stopping||Boolean(draftSelections.length) : (!draft.trim() && !draftSelections.length&&!documents.length) || Boolean(pendingKey)&&!(canSteer&&(turnOpen||busy)&&(draft.trim()||documents.length)&&!draftSelections.length) || stopping)}>
           {stopButton ? <span aria-hidden="true">■</span> : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>}
         </button>
      </div>

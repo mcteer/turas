@@ -29,7 +29,7 @@ export async function processLearningNativeRetirement(options:{at?:Date;ownerId?
  if(!job)return false;if(job.reviewRequired||!job.native_session_id)return true;
  let success=false;
  try{
-  if(options.attachSession){let timeout:ReturnType<typeof setTimeout>|undefined;try{const result=await Promise.race([options.attachSession(job.native_session_id).end({reason:'Governed learning context retired'}),new Promise<never>((_,reject)=>{timeout=setTimeout(()=>reject(Error('Native retirement timed out')),5000);})]);success=result.sessionId===job.native_session_id;}finally{clearTimeout(timeout);}}else{
+  if(options.attachSession){let timeout:ReturnType<typeof setTimeout>|undefined;try{const result=await Promise.race([options.attachSession(job.native_session_id).end({reason:'Governed learning context retired'}).then(async delivery=>({sessionId:delivery.sessionId,sessionEnded:(await delivery.result({signal:AbortSignal.timeout(5000)})).sessionEnded})),new Promise<never>((_,reject)=>{timeout=setTimeout(()=>reject(Error('Native retirement timed out')),5000);})]);success=result.sessionId===job.native_session_id&&result.sessionEnded;}finally{clearTimeout(timeout);}}else{
   const response=await fetch(`${origin}eve/v1/session/${encodeURIComponent(job.native_session_id)}/reset`,{method:'POST',headers:{'content-type':'application/json',...signLearningRetirement(job.native_session_id,job.owner_id)},body:JSON.stringify({reason:'Governed learning context retired'}),signal:AbortSignal.timeout(5000)});
   if(response.ok){success=true;await response.body?.cancel();}
   else if(response.status===409&&response.body){
