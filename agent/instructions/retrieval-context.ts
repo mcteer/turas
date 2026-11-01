@@ -35,10 +35,8 @@ retrieved, report that gap rather than inventing the missing comparison.
 Other ordinary technical questions may still be answered directly.`,
 });
 
-export default defineDynamic({ events: {
-  async "turn.started"(_event, ctx) {
+export default defineDynamic(async (ctx) => {
     const kind = (await responseFeature(ctx.session.auth.current))?.kind;
     if (kind === "normal") return ordinaryConflictInstructions;
     return ["staffing", "execution", "expansion", "learning"].includes(kind ?? "") ? null : instructions;
-  },
-} });
+  });

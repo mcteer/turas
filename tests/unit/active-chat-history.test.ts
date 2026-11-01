@@ -1,11 +1,10 @@
 import {describe,it,expect} from 'vitest';
 import type {EveMessage} from 'eve/react';
-import {defaultMessageReducer,type MessageStreamEvent} from 'eve/client';
 import {activeChatHistory,retainedActiveParts,finalChatHistory} from '../../lib/conversations/active-chat-history';
 import type {RetainedChatEvent} from '../../lib/conversations/retained-history';
 
 it('keeps authorized tool activity alongside canonical prose and does not drop nontext parts when splitting steps',()=>{
- const tool={type:'dynamic-tool',toolCallId:'lookup',toolName:'get_customer',state:'output-available',input:{name:'Synthetic'},output:{found:true},stepIndex:0} as const;
+ const tool={type:'tool',callId:'lookup',name:'get_customer',label:'Get customer',kind:'tool',state:'completed',input:{name:'Synthetic'},output:{found:true},stepIndex:0} as const;
  const live={id:'turn:assistant',role:'assistant',metadata:{turnId:'turn'},parts:[tool,{type:'text',text:'Short placeholder',stepIndex:0},{type:'text',text:'Later live response',stepIndex:1}]} as EveMessage;
  const saved:RetainedChatEvent={eventId:'canonical-answer',eventType:'message.completed',turnId:'turn',stepIndex:0,payload:{message:'Complete canonical answer'}};
  const before=JSON.stringify(live),display=activeChatHistory([live],[saved]);
@@ -64,31 +63,19 @@ it('leaves exact native objects, IDs and multi-step parts untouched when applica
  expect(display[0].message).toBe(native);expect(display[0].message.parts).toBe(parts);expect(display[0].message.id).toBe('original-assistant');
 });
 
-it('reconciles the actual SDK empty-turn question continuation by exact turn and step without collapsing another identical answer',()=>{
- const reducer=defaultMessageReducer();
- const completed=(id:string,turnId:string,stepIndex:number):MessageStreamEvent=>({type:'message.completed',data:{turnId,sequence:1,stepIndex,message:'Question answered: Desktop.',finishReason:'stop'},meta:{id,at:'2026-10-16T14:56:36.155Z'}});
- let data=reducer.initial();data=reducer.reduce(data,completed('evt_actual','',0));
- // The installed SDK explicitly preserves an empty turn ID rather than omitting it.
- expect(data.messages[0].id).toBe(':assistant');expect(data.messages[0].metadata?.turnId).toBe('');
+it('preserves historical empty-turn answers without merging another identical answer',()=>{
+ const message=(id:string,turnId:string,stepIndex:number):EveMessage=>({id,role:'assistant',metadata:{turnId},parts:[{type:'text',text:'Question answered: Desktop.',stepIndex}]});
  const saved:RetainedChatEvent={eventId:'evt_actual',eventType:'message.completed',turnId:'',stepIndex:0,payload:{message:'Question answered: Desktop.'}};
- expect(activeChatHistory(data.messages,[saved])).toHaveLength(1);
- data=reducer.reduce(data,completed('evt_separate','turn_other',0));
- expect(activeChatHistory(data.messages,[saved])).toHaveLength(2);
- data=reducer.reduce(data,completed('evt_next_step','',1));
- expect(activeChatHistory(data.messages,[saved])).toHaveLength(3);
- for(const absent of [null,undefined])expect(activeChatHistory(data.messages,[{...saved,turnId:absent}])).toHaveLength(4);
+ const native=[message('archived-assistant','',0)];
+ expect(activeChatHistory(native,[saved])).toHaveLength(1);
+ native.push(message('another-assistant','turn_other',0));expect(activeChatHistory(native,[saved])).toHaveLength(2);
+ native.push(message('next-step','',1));expect(activeChatHistory(native,[saved])).toHaveLength(3);
 });
-
-it('preserves distinct canonical completed event IDs when the SDK reuses an empty turn and step',()=>{
- const reducer=defaultMessageReducer(),event=(id:string):MessageStreamEvent=>({type:'message.completed',data:{turnId:'',sequence:1,stepIndex:0,message:'Question answered: Desktop.',finishReason:'stop'},meta:{id,at:'2026-10-16T14:56:36.155Z'}});
- let data=reducer.reduce(reducer.initial(),event('evt_first'));
+it('preserves distinct canonical archived event IDs even when old turn and step were reused',()=>{
+ const native:EveMessage={id:'archived-assistant',role:'assistant',metadata:{turnId:''},parts:[{type:'text',text:'Question answered: Desktop.',stepIndex:0}]};
  const saved=['evt_first','evt_second'].map(eventId=>({eventId,eventType:'message.completed',turnId:'',stepIndex:0,payload:{message:'Question answered: Desktop.'}}));
- for(let i=0;i<2;i++){
-  const display=activeChatHistory(data.messages,saved);
-  expect(display.map(item=>item.message.id)).toEqual(['evt_first','evt_second']);
-  expect(display.every(item=>item.kind==='retained')).toBe(true);
-  data=reducer.reduce(data,event('evt_second'));
- }
+ const display=activeChatHistory([native],saved);
+ expect(display.map(item=>item.message.id)).toEqual(['evt_first','evt_second']);expect(display.every(item=>item.kind==='retained')).toBe(true);
 });
 
 

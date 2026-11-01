@@ -9,9 +9,7 @@ export default defineAgent({
   // Use the existing world retention; zero deletes it before the handoff.
   tool: false,
   limits: {
-    maxInputTokensPerSession: 400000,
-    maxOutputTokensPerSession: 32000,
-    maxTokenCostUsdPerSession: 3,
+    sessionUsage: ({total}) => total.inputTokens >= 400000 || total.outputTokens >= 32000 || (total.costUsd ?? 0) >= 3,
     sessionTimeoutMs: 600000,
   },
 });

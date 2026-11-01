@@ -1,6 +1,5 @@
 import type {WorkflowToolContext} from 'eve/tools';
-import {z} from 'zod';
-import {sleep} from 'workflow';
+import {sleep} from 'eve/workflow';
 import {specialistResults} from './specialist-results';
 import {researchProgress,assertOrdinaryWorkflow,failReservedResearch,reservedSpecialistInvocation} from './workflow-progress';
 type Input={message:string;agentId?:string};
@@ -8,8 +7,11 @@ export async function runCustomerRecon(input:Input,ctx:WorkflowToolContext){
  'use workflow';
  try {
  await assertOrdinaryWorkflow(ctx);
- const result=await ctx.agent('customer-recon-worker',{...await reservedSpecialistInvocation('customer-update',input,ctx),outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['customer-recon']))});
- const output=specialistResults['customer-recon'].parse(result);
+ const invocation=await reservedSpecialistInvocation('customer-update',input,ctx);
+ const response=await ctx.agent('customer-recon-worker').send(invocation.message,{outputSchema:specialistResults['customer-recon']});
+ const result=await response.result();
+ if(result.status!=='completed')throw new Error('Research specialist did not complete');
+ const output=specialistResults['customer-recon'].parse(result.data);
  if(!output.reference)await failReservedResearch('customer-update',ctx);
  return output;
  }catch(error){await failReservedResearch('customer-update',ctx);throw error;}
@@ -18,8 +20,11 @@ export async function runVercelBestPractices(input:Input,ctx:WorkflowToolContext
  'use workflow';
  try {
  await assertOrdinaryWorkflow(ctx);
- const result=await ctx.agent('vercel-best-practices-worker',{...await reservedSpecialistInvocation('best-practices',input,ctx),outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['vercel-best-practices']))});
- const output=specialistResults['vercel-best-practices'].parse(result);
+ const invocation=await reservedSpecialistInvocation('best-practices',input,ctx);
+ const response=await ctx.agent('vercel-best-practices-worker').send(invocation.message,{outputSchema:specialistResults['vercel-best-practices']});
+ const result=await response.result();
+ if(result.status!=='completed')throw new Error('Research specialist did not complete');
+ const output=specialistResults['vercel-best-practices'].parse(result.data);
  if(!output.reference)await failReservedResearch('best-practices',ctx);
  return output;
  }catch(error){await failReservedResearch('best-practices',ctx);throw error;}
@@ -28,8 +33,11 @@ export async function runImplementationResearch(input:Input,ctx:WorkflowToolCont
  'use workflow';
  try {
  await assertOrdinaryWorkflow(ctx);
- const result=await ctx.agent('implementation-research-worker',{...await reservedSpecialistInvocation('solution',input,ctx),outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['implementation-research']))});
- const output=specialistResults['implementation-research'].parse(result);
+ const invocation=await reservedSpecialistInvocation('solution',input,ctx);
+ const response=await ctx.agent('implementation-research-worker').send(invocation.message,{outputSchema:specialistResults['implementation-research']});
+ const result=await response.result();
+ if(result.status!=='completed')throw new Error('Research specialist did not complete');
+ const output=specialistResults['implementation-research'].parse(result.data);
  if(!output.reference)await failReservedResearch('solution',ctx);
  return output;
  }catch(error){await failReservedResearch('solution',ctx);throw error;}

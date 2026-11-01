@@ -31,7 +31,7 @@ import { recordStaffingTelemetry } from "../staffing/telemetry";
 export type NativeEvent = {
   type: string;
   data?: Record<string, unknown>;
-  meta: { id?: string; at?: string; deliveryIds?: readonly string[] };
+  meta: { id?: string; at?: string; deliveryIds?: readonly string[]; protocol?:27;endOfLine?:boolean;next?:number;position?:{line:number;index:number} };
 };
 
 const visibleTypes = new Set([
@@ -287,7 +287,7 @@ export async function projectNativeEventInTransaction(
     // A framework continuation prompt can close its control turn while
     // the owned user-input request remains parked. This is neither an answer
     // nor a model admission; preserve the pending request and its allowance.
-    if(event.type==='turn.completed' && row.response_state==='waiting_input' &&
+    if(event.meta.protocol!==27 && event.type==='turn.completed' && row.response_state==='waiting_input' &&
       (await conversationFeature(client,row.conversation_id)).kind==='normal' && !await questionReconstructionEventWindow(client,attemptId,nativeSessionId,data))return;
     const artifact = await artifactContextSchemaReady(client)
       ? await client.query<{ native_text_digest: string }>(
@@ -409,6 +409,15 @@ export async function projectNativeEventInTransaction(
         await client.query(`UPDATE watchdog_jobs SET state='settled',lease_owner=NULL,lease_expires_at=NULL,updated_at=now() WHERE attempt_id=$1`,[attemptId]);
       }else{
         if(await inputResolutionAttempt(client,nativeSessionId,attemptId,data)!==attemptId)throw new Error('Native input resolution has no owned pending request');
+        if(event.meta.protocol===27){
+          const resolutions=Array.isArray(data.resolutions)?data.resolutions:[];
+          const records=resolutions.filter((item):item is Record<string,unknown>=>typeof item==='object'&&item!==null);
+          if(records.some(item=>item.kind==='session-limit'&&item.nativeOutcome==='declined')){
+            await client.query("UPDATE response_attempts SET response_state='stopping',updated_at=now(),revision=revision+1 WHERE id=$1 AND response_state IN('waiting_input','running')",[attemptId]);
+            return;
+          }
+          if(!records.some(item=>item.nativeOutcome==='accepted'||item.kind==='tool-approval'&&item.nativeOutcome==='declined'))return;
+        }
         const posted=(await client.query(`SELECT min(resume.deadline_at) AS deadline_at FROM native_input_resume_windows resume
           JOIN event_projections request ON request.native_event_id=resume.native_event_id
           CROSS JOIN LATERAL jsonb_array_elements(COALESCE(request.visible_payload->'requests','[]'::jsonb)) item
@@ -443,11 +452,11 @@ export async function projectNativeEventInTransaction(
     };
     if (terminal[event.type]) {
       if(event.type==='turn.completed' && row.native_turn_id===data.turnId && await pendingSteering(client,attemptId))return;
-      if(event.type==='turn.completed' && row.native_turn_id===data.turnId &&
+      if(event.meta.protocol!==27 && event.type==='turn.completed' && row.native_turn_id===data.turnId &&
         await hasNativeInputWindow(client,attemptId,nativeSessionId,'',true))return;
       await client.query(`UPDATE response_attempts SET response_state = $2,
         updated_at = now(), revision = revision + 1 WHERE id = $1
-        AND (response_state IN ('pending','running','stopping') OR response_state='waiting_input' AND $3::boolean)`, [attemptId, terminal[event.type],await questionReconstructionEventWindow(client,attemptId,nativeSessionId,data)]);
+        AND (response_state IN ('pending','running','stopping') OR response_state='waiting_input' AND $3::boolean)`, [attemptId, terminal[event.type],event.meta.protocol===27||await questionReconstructionEventWindow(client,attemptId,nativeSessionId,data)]);
       await client.query(`UPDATE watchdog_jobs SET state = 'settled', lease_owner = NULL,
         lease_expires_at = NULL, updated_at = now() WHERE attempt_id = $1`, [attemptId]);
     }

@@ -1,4 +1,5 @@
 "use client";
+import {activeTurn,openInteractions} from 'eve/events';
 
 import { useEveAgent } from "eve/react";
 import { useEffect, useRef, useState } from "react";
@@ -10,15 +11,16 @@ import {notifyConversationsUpdated} from './conversation-updates';
 import { ChatStatus } from "./chat-status";
 import {ChatViewport} from "./chat-viewport";
 import {ChatAssistantParts,activityRequestIds,assistantHasContent} from "./chat-activity";
-import {ComposerLinks} from "./composer-links";
+import {ComposerLinks,type ComposerLinksControl} from "./composer-links";
+import {ComposerAttachmentMenu} from './composer-attachment-menu';
 import { ShareChatClaim } from "./profiles/share-chat-claim";
 import { ComposerAttachments } from "./attachments/composer-attachments";
 import type { DraftSourceSelection } from "./attachments/source-viewer";
 import { ResearchPanel } from "./research/research-panel";
-import {pendingChatInputs,chatInputAnswer} from "../../lib/chat-inputs";
+import {pendingChatInputsFromView,chatInputAnswer} from "../../lib/chat-inputs";
 import {ChatInputRequestCard} from "./chat-input-request";
 import { ChatMarkdown } from "./chat-markdown";
-import { visibleChatMessages, backgroundChatActivity } from "../../lib/chat-messages";
+import { backgroundChatActivity } from "../../lib/chat-messages";
 import {activeChatHistory,retainedActiveParts,finalChatHistory} from '../../lib/conversations/active-chat-history';
 import {RetainedChat} from './retained-chat';
 import {retainedChatMessages,type RetainedChatEvent} from '../../lib/conversations/retained-history';
@@ -125,6 +127,8 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
 
   const [documents,setDocuments]=useState<OrdinaryAttachment[]>(initialMessage?.autoSend===false?splitOrdinaryMessage(initialMessage.message).documents:[]);
   const [preparingDocuments,setPreparingDocuments]=useState(false);
+  const documentInput=useRef<HTMLInputElement>(null),linkControl=useRef<ComposerLinksControl>(null);
+  const [documentsReady,setDocumentsReady]=useState(false);
   const changingDocuments=useRef(false);
   const pendingMessage=useRef<OrdinarySendMessage|null>(null);
   const [steering,setSteering]=useState(false);
@@ -147,17 +151,17 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
       "x-turas-conversation-id": conversationId }),
     onError(){clientFailures.current++;},
     onEvent(event) {
-      if(event.type==='input.resolved'&&event.data.resolutions.some(resolution=>resolution.requestId===responding.current?.requestId)){
+      if(event.type==='interaction.settled'&&event.data.interactionId===responding.current?.requestId){
         responding.current=null;setAnswering(false);noticeEpoch.current++;setNotice('');
       }
-      if(event.type==='message.received'||event.type==='step.started'){noticeEpoch.current++;setNotice('');}
-      if(event.type==='message.received')notifyConversationsUpdated();
-      if(event.type==='input.requested'){
+      if(event.type==='delivery.consumed'||event.type==='model.started'){noticeEpoch.current++;setNotice('');}
+      if(event.type==='delivery.consumed')notifyConversationsUpdated();
+      if(event.type==='interaction.opened'){
         noticeEpoch.current++;setNotice('');setResponseState('waiting_input');setPendingKey(null);keyRef.current=null;
       }
-      if (["turn.completed", "turn.failed", "turn.cancelled"].includes(event.type)) {
-        setResponseState(event.type === "turn.completed" ? "completed"
-          : event.type === "turn.failed" ? "failed" : "cancelled");
+      if (event.type === "turn.settled") {
+        setResponseState(event.data.outcome === "completed" ? "completed"
+          : event.data.outcome === "failed" ? "failed" : "cancelled");
         noticeEpoch.current++;setNotice("");
         stoppingNow.current=false;setStopping(false);
         reconnectAttempts.current=0;setReconnecting(false);
@@ -170,20 +174,22 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   });
 
   const latestAgent=useRef(agent);latestAgent.current=agent;
-  const inputRequests=pendingChatInputs(agent.events);
+  const inputRequests=pendingChatInputsFromView(agent.view);
   const [answering,setAnswering]=useState(false);
-  const messages = visibleChatMessages(agent.data.messages, agent.events);
+  const messages = agent.messages;
   const historyMessages=activeChatHistory(messages,canSteer?applicationHistory:[]);
-  const background = backgroundChatActivity(agent.events);
+  const background = backgroundChatActivity(agent.view);
   const displayedRequestIds=new Set(historyMessages.flatMap(item=>activityRequestIds(item.kind==='native'?item.message.parts:item.activity??[])));
-  const awaitingAuthorization=messages.some(message=>message.parts.some(part=>part.type==='authorization'&&part.state!=='completed'||part.type==='dynamic-tool'&&part.state==='approval-requested'));
+  const awaitingAuthorization=openInteractions(agent.view).some(item=>item.request.kind==='sign-in'||item.request.kind==='approval');
   const awaitingUser=inputRequests.length>0||awaitingAuthorization;
   const lastMessage=messages.at(-1);
-  const busy=agent.status==='submitted'||agent.status==='streaming';
-  const working=busy||background.thinking||Boolean(pendingKey&&['pending','running','stopping'].includes(responseState??''));
+  const busy=agent.status!=='idle';
+  const turnOpen=Boolean(activeTurn(agent.view));
+  const stopButton=(turnOpen||busy)&&!(canSteer&&(draft.trim()||documents.length));
+  const working=Boolean(activeTurn(agent.view))||busy||background.thinking||Boolean(pendingKey&&['pending','running','stopping'].includes(responseState??''));
   const displayMessages=finalChatHistory(historyMessages,working&&!awaitingUser);
   useEffect(()=>{
-    if(agent.status!=='error'||denied||stale||latestTurnFailure(agent.events)||reconnectAttempts.current>=3)return;
+    if(!agent.error||denied||stale||latestTurnFailure(agent.events)||reconnectAttempts.current>=3)return;
     setReconnecting(true);
     const timer=setTimeout(()=>{reconnectAttempts.current++;void latestAgent.current.resume().catch(()=>{}).finally(()=>setReconnecting(false));},1000*2**reconnectAttempts.current);
     return ()=>clearTimeout(timer);
@@ -210,7 +216,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         setCanAttachNativeFiles(detail.data.canAttachNativeFiles===true);
         applyApplicationHistory(detail.data,historyEpoch);
         if (detail.data.contextStatus !== "current") {
-          setApplicationHistory([]);agent.reset(); setStale(true); return;
+          setApplicationHistory([]);agent.newSession(); setStale(true); return;
         }
         const outstanding = [...detail.data.attempts].reverse().find((attempt) =>
           ["pending", "running", "stopping"].includes(attempt.responseState));
@@ -247,7 +253,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         const response = await fetch(`/api/conversations/${conversationId}`, { cache: "no-store" });
         if(!active||historyEpoch<historyAppliedEpoch.current)return;
         if (response.status === 401 || response.status === 404) {
-          latestAgent.current.reset();
+          latestAgent.current.newSession();
           clearApplicationHistory(historyEpoch);setDenied(true);
         } else if (response.ok) {
           const detail = await response.json() as { data: { contextStatus?: string;featureKind?:string;canAttachDocuments?:boolean;canAttachNativeFiles?:boolean;history?:RetainedChatEvent[];historyTruncated?:boolean;nativeAttachments?:FileReference[] } };
@@ -255,7 +261,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
           setCanSteer(detail.data.featureKind==='normal');setCanAttachDocuments(detail.data.canAttachDocuments===true);setCanAttachNativeFiles(detail.data.canAttachNativeFiles===true);
           applyApplicationHistory(detail.data,historyEpoch);
           if (detail.data.contextStatus !== "current") {
-            setApplicationHistory([]);latestAgent.current.reset(); setStale(true);
+            setApplicationHistory([]);latestAgent.current.newSession(); setStale(true);
           }
         } else {clearApplicationHistory(historyEpoch);}
       } catch {if(active)clearApplicationHistory(historyEpoch); /* Never retain a display fallback after its read fails. */ }
@@ -273,7 +279,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         const response = await fetch(`/api/conversations/${conversationId}/attempts/${pendingKey}`,
           { cache: "no-store" });
         if (response.status === 401) {
-          if (active) { agent.reset(); setDenied(true);setApplicationHistory([]);setNativeAttachments([]); }
+          if (active) { agent.newSession(); setDenied(true);setApplicationHistory([]);setNativeAttachments([]); }
           return;
         }
         if (response.status === 404) {
@@ -284,14 +290,14 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
           const visibility = await fetch(`/api/conversations/${conversationId}`, { cache: "no-store" });
           if (!active||historyEpoch<historyAppliedEpoch.current) return;
           if (visibility.status === 401 || visibility.status === 404) {
-            clearApplicationHistory(historyEpoch);agent.reset(); setDenied(true); return;
+            clearApplicationHistory(historyEpoch);agent.newSession(); setDenied(true); return;
           }
           if (!visibility.ok) {clearApplicationHistory(historyEpoch);throw new Error();}
           const detail = await visibility.json() as { data: { contextStatus?: string;featureKind?:string;canAttachDocuments?:boolean;canAttachNativeFiles?:boolean;history?:RetainedChatEvent[];historyTruncated?:boolean;nativeAttachments?:FileReference[] } };
           if (!active||historyEpoch<historyAppliedEpoch.current) return;
           applyApplicationHistory(detail.data,historyEpoch);
           if (detail.data.contextStatus !== "current") {
-            setApplicationHistory([]);agent.reset(); setStale(true); return;
+            setApplicationHistory([]);agent.newSession(); setStale(true); return;
           }
           // Preserve the send's pending/uncertain notice until a receipt exists.
           return;
@@ -336,7 +342,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   }, [conversationId]);
 
   useEffect(() => {
-    if (!initialDraft || initialSent.current || agent.status !== "ready" || !historyReady) return;
+    if (!initialDraft || initialSent.current || agent.status !== "idle" || !historyReady) return;
     initialSent.current = true;
     initialMessage?.onConsumed?.();
     void send(false, initialDraft);
@@ -346,8 +352,8 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     if(responding.current)return;
     const failuresBefore=clientFailures.current;const operation=++noticeEpoch.current;responding.current={requestId:response.requestId,operation};setAnswering(true);setNotice('Submitting your response…');
     try {
-      if(response.optionId!==undefined)await agent.respond([{requestId:response.requestId,optionId:response.optionId}]);
-      else await agent.respond([{requestId:response.requestId,text:response.text??''}]);
+      if(response.optionId!==undefined)await agent.respond([{interactionId:response.requestId,optionId:response.optionId}]);
+      else await agent.respond([{interactionId:response.requestId,text:response.text??''}]);
       if(operation===noticeEpoch.current){if(clientFailures.current!==failuresBefore){setNotice('Your response could not be confirmed. Reload to check its status.');onRejected?.();}else setNotice('');}
     }catch{if(operation===noticeEpoch.current){setNotice('Your response could not be confirmed. Reload to check its status.');onRejected?.();}}
     finally{if(responding.current?.operation===operation){responding.current=null;setAnswering(false);}}
@@ -363,18 +369,18 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     const text=typeof message==='string'?message:summarizeNativeMessage(message);
     if((selections.length||documents.length)&&chatInputAnswer(inputRequests,prompt)){setNotice(pendingQuestionFileNotice);return;}
     const answer=typeof message==='string'&&!selections.length&&!documents.length?chatInputAnswer(inputRequests,text):null;
-    if(answer && (agent.status==='ready'||agent.status==='error') && !denied && !answering) {
+    if(answer && (agent.status==='idle') && !denied && !answering) {
       const answerDraft=draft;setDraft('');await respondToRequest(answer,()=>setDraft(current=>current||answerDraft));return;
     }
     if(text && canSteer && !denied && !stale && !stopping && !steering && !selections.length &&
-      (agent.status==='submitted'||agent.status==='streaming')){
+      (turnOpen||agent.status==='busy')){
       const preparation=Symbol();preparingSend.current=preparation;const failuresBefore=clientFailures.current;const operation=++noticeEpoch.current;setSteering(true);setNotice('');
       try{message=await uploadNativeFiles(message,conversationId,csrfToken);setDraft('');setDocuments([]);const delivery=agent.send(message,{turnPolicy:'steer',headers:{'x-turas-request-key':crypto.randomUUID()}});setSteering(false);if(preparingSend.current===preparation)preparingSend.current=null;await delivery;if(operation===noticeEpoch.current)setNotice(clientFailures.current!==failuresBefore?'The correction could not be confirmed. It was not sent again.':'');}
       catch{if(operation===noticeEpoch.current)setNotice('The correction could not be confirmed. It was not sent again.');}
       finally{if(preparingSend.current===preparation){preparingSend.current=null;setSteering(false);}}
       return;
     }
-    const canDispatch=agent.status==="ready"||agent.status==="error"&&((retryPrepared&&dispatchState==="prepared")||(!pendingKey&&["completed","cancelled","failed"].includes(responseState??"")));
+    const canDispatch=agent.status==="idle"||Boolean(agent.error)&&((retryPrepared&&dispatchState==="prepared")||(!pendingKey&&["completed","cancelled","failed"].includes(responseState??"")));
     if (!text.trim() || denied || (pendingKey && !(retryPrepared && dispatchState === "prepared")) || !canDispatch) return;
     const preparation=Symbol();preparingSend.current=preparation;setPreparingDocuments(true);
     try { message=await uploadNativeFiles(message,conversationId,csrfToken); }
@@ -390,7 +396,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
     setResponseState("pending");
     const failuresBefore=clientFailures.current;const operation=++noticeEpoch.current;setNotice("");
     setDraft("");
-    // agent.send resolves after streaming. Snapshot and clear only this send’s
+    // agent.send resolves on acceptance. Snapshot and clear only this send’s
     // composer state now, so a correction neither repeats files nor loses a new draft.
     setDraftSelections([]);
     setDocuments([]);
@@ -413,7 +419,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   }
 
   async function sendResearchTurn(turn: { message: string; requestKey: string }) {
-    if (denied || stale || pendingKey || agent.status !== "ready") {
+    if (denied || stale || pendingKey || agent.status !== "idle") {
       throw new Error("The chat is busy. Check its status before starting research.");
     }
     keyRef.current = turn.requestKey;
@@ -445,7 +451,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
         {canAttachDocuments && <button type="button" className="secondary-button" aria-expanded={attachmentsOpen}
           onClick={() => setAttachmentsOpen(value => !value)}>Customer sources</button>}
         <ResearchPanel customerId={customerId} conversationId={conversationId}
-          csrfToken={csrfToken} busy={Boolean(pendingKey) || agent.status !== "ready"} onStart={sendResearchTurn} />
+          csrfToken={csrfToken} busy={Boolean(pendingKey) || agent.status !== "idle"} onStart={sendResearchTurn} />
         <button type="button" className="secondary-button" aria-expanded={shareOpen}
           onClick={() => setShareOpen(value => !value)}>{shareOpen ? "Close claim submission" : "Submit a message claim for review"}</button>
         {shareOpen && <ShareChatClaim conversationId={conversationId} customerId={customerId} csrfToken={csrfToken} />}
@@ -455,37 +461,42 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
       {historyTruncated&&<p role="status">This conversation is long. Only the first 500 saved events and recent partial responses are shown.</p>}
       {displayMessages.length === 0 && !initialDraft&&!working&&<p className="muted">No messages yet.</p>}
       {initialDraft&&displayMessages.every(item=>item.message.role!=='user')&&<article className="chat-message chat-message-user"><p>{typeof initialDraft==='string'?initialDraft:summarizeNativeMessage(initialDraft)}</p></article>}
-      {messages.map(message=>message.role==='assistant'?<ChatAssistantParts key={'inputs:'+message.id} parts={message.parts} activityOnly streaming={busy} requests={inputRequests} disabled={answering||busy||agent.status==='resuming'} onResponse={respondToRequest}/>:null)}
+      {messages.map(message=>message.role==='assistant'?<ChatAssistantParts key={'inputs:'+message.id} parts={message.parts} activityOnly streaming={busy} requests={inputRequests} disabled={answering||busy} onResponse={respondToRequest}/>:null)}
       {displayMessages.map((item)=>{if(item.kind==='native'&&item.message.role==='assistant'&&!assistantHasContent(item.message.parts,inputRequests))return null;if(item.kind==='retained'){const message=item.message;return <article className={`chat-message chat-message-${message.role}`} aria-label={message.role==='assistant'?'Turi':'You'} key={'retained:'+message.id}> {retainedActiveParts(message,nativeAttachments.find(ref=>ref.eventId===message.id)).map((part,index)=>part.type==='file'?<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} size={part.size} url={part.url}/>:message.role==='assistant'?<ChatMarkdown key={index} text={part.text}/>:<UserChatText key={index} text={part.text}/>)}{message.partial&&<small>Partial response</small>}</article>;}const message=item.message;return <article className={`chat-message chat-message-${message.role}`}
         aria-label={message.role === "assistant" ? "Turi" : "You"} key={message.id}>
         {message.role==='user'?nativeUserDisplayParts(message,nativeAttachments.find(item=>item.eventId===message.id.replace(/:user$/,''))).map((part,index)=>part.type==='text'
-          ?<UserChatText key={index} text={part.text}/>:<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} url={part.url} size={part.size}/>):<ChatAssistantParts parts={message.parts.filter(part=>part.type==='text'||part.type==='file')} streaming={busy&&lastMessage?.role==='assistant'&&message.metadata?.turnId===lastMessage.metadata?.turnId} requests={inputRequests} disabled={answering||busy||agent.status==='resuming'} onResponse={respondToRequest}/>}
+          ?<UserChatText key={index} text={part.text}/>:<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} url={part.url} size={part.size}/>):<ChatAssistantParts parts={message.parts.filter(part=>part.type==='text'||part.type==='file')} streaming={busy&&lastMessage?.role==='assistant'&&message.metadata?.turnId===lastMessage.metadata?.turnId} requests={inputRequests} disabled={answering||busy} onResponse={respondToRequest}/>}
       </article>;})}
       {inputRequests.filter(request=>!displayedRequestIds.has(request.requestId)).map(request=><ChatInputRequestCard key={request.requestId} request={request}
-        disabled={answering||busy||agent.status==='resuming'} onResponse={respondToRequest}/>) }
+        disabled={answering||busy} onResponse={respondToRequest}/>) }
       {!awaitingUser&&!latestTurnFailure(agent.events)&&responseState!=='failed'&&responseState!=='cancelled'&&responseState!=='stopping'&&
-        (working||reconnecting||Boolean(initialDraft&&!initialSent.current)||agent.status==='resuming')&&
+        (working||reconnecting||Boolean(initialDraft&&!initialSent.current))&&
         (!agent.error||reconnecting)&&<p className="chat-thinking" role="status">Thinking</p>}
     </ChatViewport>
     <form className="chat-composer" onSubmit={(event) => { event.preventDefault(); void send(); }}>
       {customerId && attachmentsOpen && <ComposerAttachments conversationId={conversationId} customerId={customerId}
         customerName={customerName} csrfToken={csrfToken}
         onDraftSelectionsChange={setDraftSelections} resetSelectionVersion={selectionResetVersion} />}
-      <textarea id="chat-message" aria-label="Message Turi" placeholder="Message Turi…" value={draft} onChange={(event) => setDraft(event.target.value)}
+     <div className="composer-prompt-row composer-thread-row">
+      <ComposerAttachmentMenu disabled={preparingDocuments||stopping||steering}
+       onLink={()=>linkControl.current?.open()} onFiles={canAttachDocuments?()=>documentInput.current?.click():undefined}
+       filesDisabled={!documentsReady||(!canSteer&&(busy||Boolean(pendingKey)))||answering}
+       onSources={customerId?()=>setAttachmentsOpen(value=>!value):undefined}/>
+      <textarea id="chat-message" aria-label="Message Turi" rows={1} placeholder="Message Turi…" value={draft} onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); } }}
-        maxLength={16_384} disabled={preparingDocuments || (!canSteer && busy) || (Boolean(pendingKey) && dispatchState !== "prepared" && !(canSteer&&busy)) || agent.status === "resuming" || stopping || steering} />
-      <div className="chat-actions">
-        <ComposerLinks text={draft} onChange={setDraft} disabled={preparingDocuments||agent.status==='resuming'||stopping||steering}/>
-        {canAttachDocuments&&<OrdinaryDocuments conversationId={conversationId} nativeFilesEnabled={canAttachNativeFiles} documents={documents} onChange={next=>void changeDocuments(next)} onPreparingChange={setPreparingDocuments}
-          disabled={preparingDocuments||(!canSteer&&(busy||Boolean(pendingKey)))||answering||agent.status==='resuming'||stopping||steering}/>}
-        {customerId && !canAttachDocuments && <button className="composer-attach" type="button" aria-label="Show attachments" aria-expanded={attachmentsOpen}
-          onClick={() => setAttachmentsOpen(value => !value)}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9" /></svg></button>}
-        <button className="composer-send" type={busy && !(canSteer&&(draft.trim()||documents.length)) ? "button" : "submit"} aria-label={busy && !(canSteer&&(draft.trim()||documents.length)) ? "Stop response" : "Send message"}
-          onClick={busy && !(canSteer&&(draft.trim()||documents.length)) ? () => void cancel() : undefined}
-          disabled={preparingDocuments||steering||(busy ? stopping||Boolean(draftSelections.length) : (!draft.trim() && !draftSelections.length&&!documents.length) || Boolean(pendingKey) || agent.status === "resuming" || stopping)}>
-          {busy && !(canSteer&&(draft.trim()||documents.length)) ? <span aria-hidden="true">■</span> : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>}
+        maxLength={16_384} disabled={preparingDocuments || (!canSteer && busy) || (Boolean(pendingKey) && dispatchState !== "prepared" && !(canSteer&&busy)) || stopping || steering} />
+        <button className="composer-send" type={stopButton ? "button" : "submit"} aria-label={stopButton ? "Stop response" : "Send message"}
+          onClick={stopButton ? () => void cancel() : undefined}
+          disabled={preparingDocuments||steering||(stopButton ? stopping||Boolean(draftSelections.length) : (!draft.trim() && !draftSelections.length&&!documents.length) || Boolean(pendingKey) || stopping)}>
+          {stopButton ? <span aria-hidden="true">■</span> : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>}
         </button>
-      </div>
+     </div>
+     <div className="composer-extras">
+      <ComposerLinks control={linkControl} hideTrigger text={draft} onChange={setDraft} disabled={preparingDocuments||stopping||steering}/>
+      {canAttachDocuments&&<OrdinaryDocuments inputRef={documentInput} hideTrigger onReadyChange={setDocumentsReady} conversationId={conversationId}
+        nativeFilesEnabled={canAttachNativeFiles} documents={documents} onChange={next=>void changeDocuments(next)} onPreparingChange={setPreparingDocuments}
+        disabled={preparingDocuments||(!canSteer&&(busy||Boolean(pendingKey)))||answering||stopping||steering}/>}
+     </div>
     </form>
     {draft.trim() && !pendingKey && <p className="state-message" role="status">Draft not sent.</p>}
     {notice===pendingQuestionFileNotice&&<p role="alert" className="status-alert">{notice}</p>}
@@ -499,8 +510,8 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
 
 function latestTurnFailure(events:ReturnType<typeof useEveAgent>['events']):string|undefined{
  for(let index=events.length-1;index>=0;index--){const event=events[index];
-  if(event.type==='session.failed')return 'This response stopped before a result could be returned. Your question is saved.';
-  if(event.type==='turn.failed')return event.data.code==='MODEL_CALL_FAILED'?'The model is temporarily unavailable. Please try again.':event.data.message;
-  if(['turn.completed','turn.cancelled','message.received'].includes(event.type))return undefined;
+  if(event.type==='session.ended'&&event.data.outcome==='failed')return 'This response stopped before a result could be returned. Your question is saved.';
+  if(event.type==='turn.settled'&&event.data.outcome==='failed')return event.data.error?.code==='MODEL_CALL_FAILED'?'The model is temporarily unavailable. Please try again.':event.data.error?.message;
+  if(['turn.settled','delivery.consumed'].includes(event.type))return undefined;
  }
 }

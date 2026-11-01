@@ -12,8 +12,8 @@ const authoredTool=defineTool({
   description: "Publish or withdraw an exact generalized solution derivative for reuse within this workspace. Requires separate source-steward approval, a current approved source and explicit redaction/outcome attestation. Inspect the account contribution versions first. Publishing shares only the reviewed derivative, not its source. Never automatically publish customer notes. Reuse requestId only for an identical retry.",
   inputSchema: z.object({ accountId: accountIdSchema, command: patternCommandSchema }).strict(),
   outputSchema: z.object({ status: z.enum(["updated", "denied", "unavailable"]), receipt: z.object({ patternId: z.uuid(), version: z.number().int(), action: z.string() }).nullable(), reason: z.string() }),
-  approval: { request: always(), response: async ({ responder, request }) => {
-    const identity = await researchHumanResponderIdentity(responder).catch(()=>null);
+  approval: { request: always(), response: async ({ response, request }) => {
+    const identity = await researchHumanResponderIdentity(response.principal).catch(()=>null);
     if (!identity || !request.toolInput) return { status: "rejected", reason: "The account steward must approve this exact change." };
     try {
       const canWrite = await canReviewWorkspaceSolution(identity, request.toolInput.accountId);

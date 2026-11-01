@@ -3,7 +3,8 @@ import {responseFeature} from "../lib/server/conversations/feature";
 import {wrapOrdinaryChatModel} from "../lib/server/conversations/model-budget";
 import { gateway } from "ai";
 import {selectTurasGatewayModel} from "../lib/server/models/gateway-routing";
-import { defineAgent, defineDynamic } from "eve";
+import { defineAgent, defineDynamic, type DynamicModelContext } from "eve";
+import {runs} from "eve/events";
 import { withTransaction } from "../lib/server/db/client";
 import { hiddenRecord } from "../lib/contracts/http";
 import { boundToolActor } from "../lib/server/profiles/tool-actor";
@@ -22,18 +23,15 @@ export default defineAgent({
   // Turas owns durable, authorized captures. Retiring a native session must
   // also remove eve's model/tool payloads and replay log.
   experimental: { workflow: { retention: 0 } },
-  model: defineDynamic({ events: {
-    "session.started": () => selectTurasGatewayModel(selectedModel),
-    async "step.started"(event, ctx) {
-      const data = typeof event === "object" && event !== null && "data" in event ?
-        event.data : null;
-      if (typeof data !== "object" || data === null ||
-          !("turnId" in data) || typeof data.turnId !== "string" ||
-          !("stepIndex" in data) || typeof data.stepIndex !== "number") {
-        throw hiddenRecord();
-      }
-      const turnId = data.turnId;
-      const stepIndex = data.stepIndex;
+  model: defineDynamic(async (ctx: DynamicModelContext) => {
+      const turnId = ctx.turn?.id;
+      if (!turnId) throw hiddenRecord();
+      // Eve records the requested run before resolving its model. Its position
+      // within this turn is stable through replay and excludes compaction runs.
+      const requested = runs(ctx.view, {turnId});
+      const stepIndex = requested.length - 1;
+      const run = requested[stepIndex];
+      if (!run || run.status !== 'requested') throw hiddenRecord();
       const principal = ctx.session.auth.current;
       if (await staffingResponseScope(principal)) {
         const responseAttemptId = principal?.attributes?.turasAttemptId;
@@ -45,7 +43,7 @@ export default defineAgent({
         }));
       }
       if((await responseFeature(principal))?.kind==='normal')
-        return selectTurasGatewayModel(wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId,{event}));
+        return selectTurasGatewayModel(wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId));
       return selectTurasGatewayModel(await withTransaction(async (client) => {
         const marker = await client.query<{schema_version:number}>(
           "SELECT schema_version FROM turas_environment LIMIT 1");
@@ -80,7 +78,6 @@ export default defineAgent({
         });
         return wrapPlanModel(parityBudgetModel(gateway(selectedModel),selectedModel));
       }));
-    },
-  } }),
+  }),
   reasoning: "low",
 });

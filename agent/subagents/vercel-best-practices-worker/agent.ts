@@ -8,5 +8,5 @@ export default defineAgent({
   // The workflow caller must be able to read the completed typed result.
   // Use the existing world retention; zero deletes it before the handoff.
   tool: false,
-  limits: { maxInputTokensPerSession: 400000, maxOutputTokensPerSession: 28000, maxTokenCostUsdPerSession: 2, sessionTimeoutMs: 600000 },
+  limits: { sessionUsage: ({total}) => total.inputTokens >= 400000 || total.outputTokens >= 28000 || (total.costUsd ?? 0) >= 2, sessionTimeoutMs: 600000 },
 });

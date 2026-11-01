@@ -116,5 +116,5 @@ function ExecutionOutput({status,csrf,refresh,unavailable}:{status:Status;csrf:s
   const agent=useEveAgent({initialSession:{sessionId:status.nativeSessionId!,streamIndex:0},resume:true,headers:()=>({"x-csrf-token":csrf,"x-turas-conversation-id":status.conversationId}),onError:unavailable,
     onEvent(event){if(["turn.completed","turn.failed","turn.cancelled"].includes(event.type))refresh();}});
   if(agent.error)return <p role="status">Output is unavailable. Check saved status.</p>;
-  return <div className="chat-messages" aria-live="polite">{agent.data.messages.filter(m=>m.role==="assistant").map(m=><article className="chat-message" key={m.id}><h3>Turi</h3>{m.parts.map((p,i)=>p.type==="text"?<p key={i}>{p.text}</p>:null)}</article>)}</div>;
+  return <div className="chat-messages" aria-live="polite">{agent.messages.filter(m=>m.role==="assistant").map(m=><article className="chat-message" key={m.id}><h3>Turi</h3>{m.parts.map((p,i)=>p.type==="text"?<p key={i}>{p.text}</p>:null)}</article>)}</div>;
 }

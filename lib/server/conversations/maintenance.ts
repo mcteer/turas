@@ -1,8 +1,8 @@
+import {readEveHistory} from "./eve-reader";
 import type { AttachSessionFn } from "eve/channels";
 import { query } from "../db/client";
 import { getServerConfig } from "../config";
 import { reconcileFromEvents, type IndexedNativeEvent } from "./reconcile";
-import type { NativeEvent } from "./projection";
 import type { MaintenancePayload } from "./watchdog";
 
 type MaintenanceAttempt = {
@@ -25,6 +25,7 @@ async function loadAttempt(attemptId: string): Promise<MaintenanceAttempt | null
     JOIN principals p ON p.id = c.owner_principal_id
     JOIN watchdog_jobs j ON j.attempt_id = a.id
     WHERE a.id = $1 AND c.environment_id = $2 AND c.binding_state = 'bound'
+      AND COALESCE(to_jsonb(c)->>'native_protocol','27')='27'
       AND a.dispatch_start_index IS NOT NULL AND a.deadline_at IS NOT NULL
     LIMIT 1
   `, [attemptId, getServerConfig().TURAS_ENVIRONMENT_ID]);
@@ -34,29 +35,7 @@ async function loadAttempt(attemptId: string): Promise<MaintenanceAttempt | null
 async function readThroughTail(
   attachSession: AttachSessionFn, nativeId: string, start: number,
 ): Promise<IndexedNativeEvent[]> {
-  const attached = attachSession(nativeId);
-  const tail = await attached.getStreamTailIndex();
-  if (tail < start) return [];
-  if (tail - start > 10_000) throw new Error("Native replay window too large");
-  const stream = await attached.getEventStream({ startIndex: start });
-  const reader = stream.getReader();
-  const events: IndexedNativeEvent[] = [];
-  try {
-    for (let index = start; index <= tail; index++) {
-      let timeout: ReturnType<typeof setTimeout> | undefined;
-      const item = await Promise.race([
-        reader.read(),
-        new Promise<never>((_, reject) => {
-          timeout = setTimeout(() => reject(new Error("Native replay timed out")), 5_000);
-        }),
-      ]).finally(() => { if (timeout) clearTimeout(timeout); });
-      if (item.done) throw new Error("Native replay ended before tail");
-      events.push({ index, event: item.value as NativeEvent });
-    }
-  } finally {
-    await reader.cancel().catch(() => undefined);
-  }
-  return events;
+  return readEveHistory(attachSession,nativeId,start);
 }
 
 export async function performMaintenance(

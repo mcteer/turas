@@ -5,6 +5,6 @@ import { runSupportRead } from "../../lib/server/support/tools";
 export const authoredTool = defineTool({ description: "Read only accepted actions in the prepared support audience and scope.",
   inputSchema: supportActionsToolSchema, availableInSubagents: false,
   execute(input, ctx) { return runSupportRead(ctx.session.auth.current, "support_actions", input, ctx.callId); } });
-export default defineDynamic({ events: { async "turn.started"(_event, ctx) {
+export default defineDynamic(async (ctx) => {
   return (await responseFeature(ctx.session.auth.current))?.kind === "support" ? authoredTool : null;
-} } });
+});

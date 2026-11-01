@@ -141,3 +141,26 @@ html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .customer-picker-option.is-active{background:var(--hover)}
 .customer-picker-option[aria-selected="true"]{font-weight:600}
 .customer-picker-empty{margin:.7rem;color:var(--muted);font-size:13px}
+/* Compact composer: attachment menu, prompt, customer scope, send. */
+.chat-landing{max-width:800px}
+.chat-composer,.chat-landing .chat-composer{border-radius:28px;padding:6px;overflow:visible}
+.composer-prompt-row{display:grid;grid-template-columns:32px minmax(0,1fr) auto 32px;align-items:center;gap:4px;min-height:32px}
+.composer-thread-row{grid-template-columns:32px minmax(0,1fr) 32px}
+.chat-composer .composer-prompt-row textarea{min-height:28px;max-height:192px;padding:4px 6px;line-height:24px;resize:none;min-width:0}
+.composer-prompt-row>.composer-send{margin:0;align-self:end;flex:none}
+.composer-add-menu{position:relative;align-self:end}
+.composer-add-trigger{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:0;border-radius:50%;padding:0;background:transparent;color:var(--muted)}
+.composer-add-trigger:hover,.composer-add-trigger[aria-expanded=true]{background:var(--hover);color:var(--foreground)}
+.composer-add-popover{position:absolute;top:calc(100% + 10px);left:0;z-index:60;width:320px;max-width:calc(100vw - 3rem);padding:5px;border:1px solid var(--border);border-radius:18px;background:var(--surface);box-shadow:0 12px 32px #0003}
+.composer-add-popover button{display:flex;align-items:center;gap:8px;width:100%;border:0;border-radius:12px;padding:9px 10px;background:transparent;color:var(--foreground);text-align:left;font-size:13px}
+.composer-add-popover button:hover,.composer-add-popover button:focus-visible{background:var(--hover)}
+.composer-add-popover small{font-size:12px;color:var(--muted)}
+.chat-thread .composer-add-popover{top:auto;bottom:calc(100% + 10px)}
+.composer-prompt-row .customer-selector-trigger{border:0;background:transparent;padding:4px 7px;min-height:32px;max-width:160px;font-size:13px;white-space:nowrap}
+.composer-prompt-row .customer-selector-trigger>svg:first-child{display:none}
+.composer-prompt-row .customer-selector-trigger span{overflow:hidden;text-overflow:ellipsis}
+.composer-prompt-row .customer-picker-popover{left:auto;right:0}
+.composer-extras:has(.chat-document-list),.composer-extras:has(.chat-link-list){padding:5px 8px 2px}
+.composer-extras .chat-link-list{margin:0 0 4px}
+.composer-extras .ordinary-documents{display:contents}
+@media(max-width:480px){.composer-prompt-row{gap:2px}.composer-prompt-row .customer-selector-trigger{max-width:106px;padding-inline:4px;font-size:12px}.composer-add-popover button{flex-wrap:wrap;gap:3px 8px}.chat-composer .composer-prompt-row textarea{font-size:16px}}

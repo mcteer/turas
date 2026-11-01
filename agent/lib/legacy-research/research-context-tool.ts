@@ -103,5 +103,5 @@ export function researchContextTool(mode: "solution" | "customer-update") {
       }
     },
   });
-  return defineDynamic({ events: { "step.started": () => researchState.get().finalized ? null : tool } });
+  return defineDynamic(() => researchState.get().finalized ? null : tool );
 }

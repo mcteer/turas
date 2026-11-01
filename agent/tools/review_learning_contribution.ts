@@ -30,8 +30,8 @@ const authoredTool=defineTool({
   }),
   approval: {
     request: always(),
-    response: async ({ responder, request }) => {
-      const identity = await researchHumanResponderIdentity(responder).catch(()=>null);
+    response: async ({ response, request }) => {
+      const identity = await researchHumanResponderIdentity(response.principal).catch(()=>null);
       if (!identity || (identity.kind!=="internal"||identity.role!=="admin") || !request.toolInput)
         return {
           status: "rejected",

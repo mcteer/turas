@@ -1,5 +1,5 @@
 {
-  "version": 81,
+  "version": 82,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -324,6 +324,10 @@
     {
       "file": "081-native-pre-admission-rejections.cjs",
       "sha256": "5be9b00ea113cb21d28b0f6d2e554921f9b635d48dbfc50cb9938a78dd435f75"
+    },
+    {
+      "file": "082-eve-native-protocol.cjs",
+      "sha256": "f1ec1fbce446e140b07e241d031b42391f4993acb7c965cb417a3ecd5c4d12af"
     }
   ]
 }

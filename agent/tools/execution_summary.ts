@@ -7,6 +7,4 @@ export const authoredTool = defineTool({
   inputSchema: executionReadSchemas.execution_summary, availableInSubagents: false,
   execute(input, ctx) { return runExecutionRead(ctx.session.auth.current, "execution_summary", input, ctx.callId); },
 });
-export default defineDynamic({ events: {
-  async "turn.started"(_event, ctx) { return (await responseFeature(ctx.session.auth.current))?.kind === "execution" ? authoredTool : null; },
-} });
+export default defineDynamic(async (ctx) => { return (await responseFeature(ctx.session.auth.current))?.kind === "execution" ? authoredTool : null; });

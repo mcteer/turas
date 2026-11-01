@@ -70,7 +70,7 @@ for(const [name,script,creator]of ordinaryInstallers)it(`preserves routing and 1
  expect(start).toBeGreaterThan(0);expect(end).toBeGreaterThan(start);
  const underlying={fixture:true},wrapped={guarded:true},principal={attributes:{turasAttemptId:'synthetic-attempt'}},ctx={session:{id:'synthetic-native'},messages:[]},event={type:'step.started'},factory=vi.fn((..._args:unknown[])=>underlying),guard=vi.fn(()=>wrapped);
  const selection=Function('selectTurasGatewayModel','wrapOrdinaryChatModel',creator,'principal','ctx','turnId','stepIndex','event','return '+generated.slice(start+'return '.length,end)+';')(selectTurasGatewayModel,guard,factory,principal,ctx,'turn_0',0,event);
- expect(factory.mock.calls[0]?.[0]).toBe('synthetic-attempt');expect(guard).toHaveBeenCalledWith(underlying,principal,'synthetic-native','turn_0',{event});
+ expect(factory.mock.calls[0]?.[0]).toBe('synthetic-attempt');expect(guard).toHaveBeenCalledWith(underlying,principal,'synthetic-native','turn_0');
  expect(selection).toEqual({model:wrapped,modelOptions:{providerOptions:{gateway:{only:['anthropic']}}},modelContextWindowTokens:128000});expect(selection.model).toBe(wrapped);expect(network).not.toHaveBeenCalled();
  const changed=source.replace('return selectTurasGatewayModel(wrapOrdinaryChatModel(', 'return changedOrdinaryModel(');
  await expect(runOrdinaryInstallerBlock(script,changed)).rejects.toThrow(/shape changed/i);

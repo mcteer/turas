@@ -38,7 +38,7 @@ export async function preparePilotRecoveryOperator(args=process.argv.slice(2)){
  await cp('infra/pilot/recovery-operator/agent.ts',join(root,'agent/agent.ts'),{errorOnExist:true,force:false});
  await writeFile(join(root,'agent/instructions.md'),'This independent work recovery package exposes only a deterministic protected backup Function. No conversational transport or model invocation is published.\n',{mode:0o600,flag:'wx'});
  await writeFile(join(root,'agent/channels/eve.ts'),'import {eveChannel} from "eve/channels/eve";\nexport default eveChannel({auth:[]});\n',{mode:0o600,flag:'wx'});
- await writeFile(join(root,'package.json'),JSON.stringify({name:'turas-recovery-operator',private:true,type:'module',engines:{node:'24.x'},scripts:{build:'node build.mjs'},dependencies:{eve:'0.67.1'}}),{mode:0o600,flag:'wx'});
+ await writeFile(join(root,'package.json'),JSON.stringify({name:'turas-recovery-operator',private:true,type:'module',engines:{node:'24.x'},scripts:{build:'node build.mjs'},dependencies:{eve:'0.91.0'}}),{mode:0o600,flag:'wx'});
  await writeFile(join(root,'vercel.json'),JSON.stringify({buildCommand:'npm run build',installCommand:'npm install --ignore-scripts'}),{mode:0o600,flag:'wx'});
  if(JSON.stringify(await pilotSource())!==JSON.stringify(source))throw Error('Operator preparation source changed');
  await promisify(execFile)(process.execPath,['build.mjs'],{cwd:root,timeout:30000,maxBuffer:1048576});

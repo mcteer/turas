@@ -22,6 +22,7 @@ export type ConversationReference = {
   version?: number;
   bindingState: "unbound" | "creating" | "reconciling" | "bound" | "failed";
   eveSessionId: string | null;
+  nativeProtocol?:25|27;
   createdAt: string;
   updatedAt: string;
   contextStatus?: "current" | "changed" | "historical";

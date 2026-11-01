@@ -1,3 +1,4 @@
+import {resolveStaticDynamic} from '../fixtures/dynamic';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {context,sources,brief} from '../fixtures/legacy-specialist-contracts';
 import {discoveryQueryAllowed,discoveryProvider} from '../../lib/server/research/specialists/solution-research/discovery';
@@ -26,7 +27,7 @@ const principal={principalType:'user',principalId:'synthetic-unit-owner'};
 const ctx=(callId:string,abortSignal=new AbortController().signal)=>({callId,session:{id:'unit-session',auth:{current:principal}},abortSignal});
 type Context=ReturnType<typeof ctx>;
 type UnitTool={execute:(input:unknown,ctx:Context)=>Promise<Record<string,unknown>>};
-const tool=(definition:unknown)=>(definition as {events:{'step.started':()=>UnitTool}}).events['step.started']();
+const tool=(definition:unknown)=>resolveStaticDynamic<UnitTool>(definition);
 let state:ReturnType<typeof researchState.get>;
 beforeEach(()=>{
  state={context:structuredClone(context),sources:structuredClone(sources),calls:{},startedAt:Date.now(),mode:'customer-update'};

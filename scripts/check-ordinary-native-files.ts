@@ -23,9 +23,9 @@ const fixtureDeadlineAt=Date.now()+ordinaryNativeFileFixtureMaximumMs;
 try{await withPlanEvalEnvironment(async environment=>{
  environment.bootstrapDemo();
  const path=join(environment.appRoot,'agent/agent.ts'),source=await readFile(path,'utf8');
- const target='return selectTurasGatewayModel(wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId,{event}));';
+ const target='return selectTurasGatewayModel(wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId));';
  if(source.split(target).length!==2)throw Error('Authored model shape changed');
- await writeFile(path,'import {createOrdinaryNativeFileFixtureModel} from "../tests/fixtures/ordinary-native-file-model";\n'+source.replace(target,'return {...selectTurasGatewayModel(wrapOrdinaryChatModel(createOrdinaryNativeFileFixtureModel(String(principal?.attributes?.turasAttemptId)),principal,ctx.session.id,turnId,{event})),modelContextWindowTokens:128_000};'),{mode:0o600});
+ await writeFile(path,'import {createOrdinaryNativeFileFixtureModel} from "../tests/fixtures/ordinary-native-file-model";\n'+source.replace(target,'return {...selectTurasGatewayModel(wrapOrdinaryChatModel(createOrdinaryNativeFileFixtureModel(String(principal?.attributes?.turasAttemptId)),principal,ctx.session.id,turnId)),modelContextWindowTokens:128_000};'),{mode:0o600});
  // Exercise the installed framework's real interrupted-step retry only in
  // this owned staged-10 copy. No runtime fault flag exists in the application.
  const interruptedStepMarker=join(environment.appRoot,'.eve','native-file-interruption.json');

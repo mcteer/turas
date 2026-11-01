@@ -48,4 +48,4 @@ const researchTool = defineTool({
     }
   },
 });
-export default defineDynamic({ events: { "step.started": () => researchState.get().finalized ? null : researchTool } });
+export default defineDynamic(() => researchState.get().finalized ? null : researchTool );

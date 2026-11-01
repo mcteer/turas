@@ -1,4 +1,4 @@
-import { defineDynamic } from "eve";
+import { defineDynamic, type DynamicModelContext } from "eve";
 import { withTransaction } from "../../lib/server/db/client";
 import { readResearchRuntimeAuthority } from "../../lib/server/research/specialists/runtime-authority";
 import { loadSessionResearchRequest } from "../../lib/server/research/specialists/research-cache/requests";
@@ -8,9 +8,7 @@ import { getServerConfig } from "../../lib/server/config";
 import { hiddenRecord } from "../../lib/contracts/http";
 
 export function specialistModel(kind:'customer-update'|'best-practices'|'solution') {
-  return defineDynamic({events:{
-    'session.started':()=> 'openai/gpt-5.6-terra',
-    async 'step.started'(_event,ctx) {
+  return defineDynamic(async (ctx: DynamicModelContext) => {
       const principal=ctx.session.auth.current;
       const attemptId=principal?.attributes?.turasAttemptId;
       if(!principal?.principalId || typeof attemptId!=='string')throw hiddenRecord();
@@ -30,10 +28,9 @@ export function specialistModel(kind:'customer-update'|'best-practices'|'solutio
       const current=await loadResearchContext(identity,request.account_id);
       if(researchContextDigest(current)!==request.context_hash)throw hiddenRecord();
       if(!request.completed) {
-        const reserved=await loadSessionResearchRequest(identity,parent,ctx.session.id,request.account_id,kind,ctx.abortSignal??new AbortController().signal);
+        const reserved=await loadSessionResearchRequest(identity,parent,ctx.session.id,request.account_id,kind,new AbortController().signal);
         if(researchContextDigest(current)!==reserved.context_hash)throw hiddenRecord();
       }
       return budgetedResearchModel('openai/gpt-5.6-terra');
-    },
-  }});
+  });
 }

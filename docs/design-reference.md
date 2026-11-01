@@ -54,7 +54,7 @@ Node-24 typecheck, Next.js production build and documentation checks passed.
   chat-title search, product navigation, recent conversations, identity/sign-out below.
 - Collapsible mobile navigation; no horizontal page overflow at narrow widths.
 - Quiet chat landing state with centered “Turi” and a compact rounded composer.
-  Optional customer selection sits below and outside the composer; new chats do
+  Customer selection sits inside the composer before the send button; new chats do
   not reuse the last selected customer. Omit landing banners and explanatory prose.
   During conversation, use a readable centered column and persistent bottom composer.
   Customer research, plans and claim submission live in an expandable context
@@ -115,11 +115,12 @@ passed 24 checks without skips, retries or failures; browser interception in the
 first-draft test establishes one UI delivery attempt, not provider completion.
 Preview worker readiness remains a hosted limitation.
 
-The optional customer selector uses a folder icon and chevron inside an inset
-context bar attached beneath the composer, following the supplied ChatGPT screenshot.
-The bar reserves flexible space for a future project selector without a dummy
-control. Plugins and model selectors are outside this scope. Its default visible text is “Customer (optional)”;
-the accessible label remains available without an extra visible caption.
+The current composer follows the user’s November 2026 reference: centered Turi
+above a rounded input, a + attachment menu at the far left, Customer selection
+inside the input near the right, and the send arrow at the far right. The default
+selector label is “Customer”. File uploads, links and eligible customer sources
+are available through the + menu. There is no microphone or separate paperclip
+or link toolbar button. Active conversations keep their existing customer binding.
 
 Future model selection should use task-based routing through AI Gateway, rather
 than a model selector in the composer. Routing is a future feature; the currently
@@ -142,7 +143,7 @@ stylesheet from the root layout, keeping theme and component rules in one place.
   unavailable, unreviewed, and genuinely empty data. Display only actual counts.
 - Keep numeric capacity values on one line and contain wide tables in keyboard
   focusable horizontal scroll regions.
-- Preserve the approved Turi composer and optional customer context bar.
+- Preserve the approved Turi composer and inline Customer selector.
 
 `npm run workspace:ui:check` uses the selected marked test database as a read-only
 clone source, starts an owned disposable application, and runs CLI Playwright

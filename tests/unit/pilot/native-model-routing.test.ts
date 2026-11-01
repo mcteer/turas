@@ -1,13 +1,19 @@
 import {it,expect,vi} from 'vitest';
 import {createGateway} from 'ai';
+vi.mock('../../../lib/server/staffing/native-context',()=>({staffingResponseScope:async()=>null}));
+vi.mock('../../../lib/server/conversations/feature',()=>({responseFeature:async()=>null}));
+vi.mock('../../../lib/server/db/client',()=>({withTransaction:async(run:(db:unknown)=>unknown)=>run({query:async()=>({rows:[{schema_version:0}]})})}));
 import agent from '../../../agent/agent';
+import {turnFixture} from '../../fixtures/eve-v27';
 import {selectTurasGatewayModel} from '../../../lib/server/models/gateway-routing';
 import {wrapSupportModel} from '../../../lib/server/support/model-budget';
 type Model=Extract<Parameters<typeof wrapSupportModel>[0],{specificationVersion:'v4'}>;
 const fake=(methods:Partial<Model>)=>({specificationVersion:'v4',provider:'synthetic-no-network',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},...methods}) as Model;
 
-it('serializes the actual session selection with the same model and request-local Anthropic-only route',()=>{
- const selection=(agent.model as unknown as {events:{'session.started':()=>unknown}}).events['session.started']();
+it('serializes the actual session selection with the same model and request-local Anthropic-only route',async()=>{
+ const fixture=turnFixture().commit({type:'model.requested',scope:{turnId:'turn_0',runId:'run_0'},data:{runId:'run_0',owner:{turnId:'turn_0'}}});
+ const model=agent.model;if(!model||typeof model!=='object')throw Error('Missing dynamic model');
+ const selection=await Reflect.get(model,Symbol.for('eve.dynamic'))({session:{id:'wrun_synthetic',auth:{current:null}},turn:{id:'turn_0'},view:fixture.snapshot.view});
  expect(JSON.parse(JSON.stringify(selection))).toEqual({model:'anthropic/claude-sonnet-5.5',modelOptions:{providerOptions:{gateway:{only:['anthropic']}}}});
  expect((agent as unknown as {reasoning?:string}).reasoning).toBe('low');
 });

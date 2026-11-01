@@ -17,17 +17,25 @@ export async function nativeInputDeadline(db:PoolClient,attemptId:string,nativeS
   JOIN conversations c ON c.id=a.conversation_id AND c.eve_session_id=event.native_session_id
   WHERE a.id=$1 AND c.eve_session_id=$2 AND event.conversation_id=c.id
    AND ($4::boolean=false OR resume.deadline_at>clock_timestamp())
-   AND ((event.event_type='input.requested' AND $3='')
+   AND ((event.event_type='input.requested' AND ($3='' OR event.turn_id=$3))
     OR (event.event_type IN('input.resolved','turn.started') AND event.turn_id=$3)
     ${(marker?.schema_version??0)>=77?`OR EXISTS(SELECT 1 FROM ordinary_question_continuations continuation WHERE continuation.attempt_id=a.id AND continuation.request_event_id=event.native_event_id AND continuation.native_session_id=$2 AND continuation.native_turn_id=$3 AND continuation.deadline_at=resume.deadline_at AND EXISTS(SELECT 1 FROM login_sessions login JOIN memberships membership ON membership.id=continuation.membership_id AND membership.principal_id=c.owner_principal_id AND membership.workspace_id=c.workspace_id JOIN principals owner ON owner.id=c.owner_principal_id WHERE login.id=continuation.login_session_id AND login.principal_id=c.owner_principal_id AND login.revoked_at IS NULL AND login.expires_at>clock_timestamp() AND membership.active AND owner.active))`:''}) ORDER BY resume.deadline_at DESC LIMIT 1`,[attemptId,nativeSessionId,turnId,current])).rows[0]?.deadline_at??null;
 }
 export async function hasNativeInputWindow(db:PoolClient,attemptId:string,nativeSessionId:string,turnId:string,current=true){
  return !!await nativeInputDeadline(db,attemptId,nativeSessionId,turnId,current);
 }
-export const inputResponsesSchema=z.object({inputResponses:z.array(z.object({
+const legacyInputResponsesSchema=z.object({inputResponses:z.array(z.object({
  requestId:z.string().min(1).max(300),optionId:z.string().min(1).max(300).optional(),
  text:z.string().max(16384).optional(),
 }).strict().refine(value=>value.optionId!==undefined||value.text!==undefined)).min(1).max(20)}).strict();
+export const inputResponsesSchema=z.union([
+ legacyInputResponsesSchema,
+ z.object({answers:z.array(z.object({interactionId:z.string().min(1).max(300),optionId:z.string().min(1).max(300).optional(),text:z.string().max(16384).optional()}).strict().refine(value=>value.optionId!==undefined||value.text!==undefined)).min(1).max(20)}).strict()
+  .transform(value=>({inputResponses:value.answers.map(({interactionId,...answer})=>({requestId:interactionId,...answer}))})),
+]);
+export function nativeInteractionAnswers(value:z.infer<typeof inputResponsesSchema>){
+ return {answers:value.inputResponses.map(({requestId,...answer})=>({interactionId:requestId,...answer}))};
+}
 /** Match the durable native pending request, including an older open question.
  * The runtime still validates its option/text and performs the actual resolution. */
 async function ownedInputResponseBinding(actor:CurrentSession,nativeSessionId:string,raw:unknown,inspect=false){

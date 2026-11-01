@@ -13,7 +13,7 @@ export function activeChatHistory(native:readonly EveMessage[],history:readonly 
   if(message.role!=='assistant')return [message];
   const groups=new Map<number|undefined,typeof message.parts>();
   const firstStep=message.parts.find(part=>part.type==='text')?.stepIndex;
-  for(const part of message.parts){if(part.type==='step-start')continue;const step='stepIndex' in part?part.stepIndex:firstStep;const group=groups.get(step)??[];groups.set(step,[...group,part]);}
+  for(const part of message.parts){const step='stepIndex' in part?part.stepIndex:firstStep;const group=groups.get(step)??[];groups.set(step,[...group,part]);}
   return groups.size>1?[...groups].map(([step,parts])=>({...message,id:message.id+':display-step:'+String(step),parts})):[message];
  });
  const used=new Set<number>(),result:ChatDisplayMessage[]=[];
@@ -34,7 +34,7 @@ export function activeChatHistory(native:readonly EveMessage[],history:readonly 
    // Identity was established above; text containment only prevents replacing
    // retained prose with a shorter or empty resume placeholder.
    const preferLive=saved.role==='user'?nativeVisible:saved.partial&&!!liveText.trim()&&liveText.includes(savedText);
-   const activity=live.parts.filter(part=>part.type!=='text'&&part.type!=='step-start');
+   const activity=live.parts.filter(part=>part.type!=='text');
    result.push(preferLive?{kind:'native',message:live}:{kind:'retained',message:saved,...(activity.length?{activity}:{})});
   }else result.push({kind:'retained',message:saved}); // Distinct persisted events are never consumed by another event's counterpart.
  }
