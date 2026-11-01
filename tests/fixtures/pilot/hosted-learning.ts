@@ -17,10 +17,12 @@ import {admitGovernedStaffingModelStep,assertGovernedStaffingProviderRelease} fr
 import {learningStepCeiling} from '../../../lib/server/learning/pricing';
 import {QualityBudgetLedger} from '../../../scripts/pilot-quality-budget-ledger';
 import {admitHostedLearningDispatch} from '../../../scripts/pilot-hosted-learning-admission';
+import {learningTransaction} from '../../../lib/server/learning/repository';
+import {consumeHostedLearningAdmission,rememberHostedLearningIdentity} from '../../../lib/server/learning/hosted-admission';
 import {hostedLearningBindingSchema,hostedLearningDispatchSchema} from '../../../lib/contracts/pilot-hosted-learning';
 
-async function setup(environment:Parameters<Parameters<typeof withPilotEnvironment>[0]>[0],db:Client){
- const client=db as unknown as PoolClient,f=await pilotPublishedKnowledgeFixture(client,'synthetic_pilot');installLearningSyntheticPrice();
+async function setup(environment:Parameters<Parameters<typeof withPilotEnvironment>[0]>[0],db:Client,classification:'primary'|'synthetic_pilot'){
+ const client=db as unknown as PoolClient,f=await pilotPublishedKnowledgeFixture(client,classification);installLearningSyntheticPrice();
  const source=(await db.query('SELECT content_digest,revision_number FROM profile_revisions WHERE id=$1',[f.originalRevisionId])).rows[0];
  const candidate=await createKnowledgeCandidate(client,f.actor,{idempotencyKey:randomUUID(),customerId:f.customerId,
   payload:{title:'Synthetic hosted ledger boundary',productVersion:'Unknown',problem:'A controlled accounting exercise',prerequisites:'Current independently reviewed originals',solution:'Retain original reservations before native dispatch',reasoning:'Prevent an unbounded provider retry',applicability:'Controlled synthetic tests',limitations:'No actual model or customer quality claim',validation:'Check exact scope and immutable receipts'},
@@ -52,11 +54,17 @@ async function setup(environment:Parameters<Parameters<typeof withPilotEnvironme
   const admitted=await admitGovernedStaffingModelStep(principal,identity);
   return {principal,identity,admitted,release:()=>assertGovernedStaffingProviderRelease(principal,identity)};
  }
- return {actor:f.actor,environment,db,client,ledger,binding,scope,dispatchBinding,dispatch,ceiling,admit,prepare,meta};
+ // Explicit historical contract probes: ordinary runtime admission no longer
+ // calls these retired pilot hooks. Never install them into model callbacks.
+ async function historicalReservation(){const rows=(await db.query('SELECT id FROM learning_budget_reservations WHERE attempt_id=$1',[meta.id])).rows;if(rows.length!==1)throw Error('Exact historical reservation required');return rows[0].id as string;}
+ const consumeHistorical=()=>learningTransaction(async tx=>consumeHostedLearningAdmission(tx,await historicalReservation()));
+ const rollbackHistorical=()=>learningTransaction(async tx=>{await consumeHostedLearningAdmission(tx,await historicalReservation());throw Error('Synthetic historical transaction failure');});
+ const rememberHistorical=(kind:'provider_response'|'gateway_generation',value:unknown)=>learningTransaction(async tx=>rememberHostedLearningIdentity(tx,await historicalReservation(),kind,value));
+ return {actor:f.actor,environment,db,client,ledger,binding,scope,dispatchBinding,dispatch,ceiling,admit,prepare,meta,consumeHistorical,rollbackHistorical,rememberHistorical};
 }
-export async function withHostedLearningFixture(run:(fixture:Awaited<ReturnType<typeof setup>>)=>Promise<void>){
+export async function withHostedLearningFixture(run:(fixture:Awaited<ReturnType<typeof setup>>)=>Promise<void>,classification:'primary'|'synthetic_pilot'='synthetic_pilot'){
  await withPilotEnvironment(async environment=>{
   const db=new Client({connectionString:requireOwnedPilotDatabase(process.env,true)});await db.connect();
-  try{await run(await setup(environment,db));}finally{await db.end();}
+  try{await run(await setup(environment,db,classification));}finally{await db.end();}
  },{postgresMajor:18,deadlineMs:180000});
 }

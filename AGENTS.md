@@ -20,8 +20,9 @@ upgrade. Review installed version and manifest changes in their own PR.
 
 ## Implementation boundaries
 
-- Keep Production's `TURAS_PILOT_LOGIN_ENABLED=0`; do not deploy test-workspace
-  login or evaluation-only Root/Learning bindings there.
+- The private pilot programme is removed. Do not restore its workspace login,
+  provisioning, feedback or approval tasks. Keep evaluation-only Root/Learning
+  bindings out of Production; preserve ordinary accounts and production safeguards.
 - Use Vercel's default firewall configuration. Do not add custom firewall rules
   or deployment-hostname allowlists as part of hardening or deployment.
 - Keep `.env.local`, `.eve`, credentials, private artifacts, and customer data out

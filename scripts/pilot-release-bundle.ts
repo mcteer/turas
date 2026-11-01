@@ -1,3 +1,6 @@
+import {fileURLToPath as retiredFilePath} from 'node:url';
+import {resolve as retiredResolve} from 'node:path';
+// Historical private-pilot fixture module; programme CLI retired.
 import {verifyHostedFeedbackEvidence,isVerifiedHostedFeedbackEvidence,type VerifiedHostedFeedbackEvidence} from './pilot-hosted-feedback-evidence';
 import {verifyPilotCiEvidence,isVerifiedPilotCiEvidence,type VerifiedPilotCiEvidence} from './pilot-ci-import';
 import {verifyHostedCoreEvidence,isVerifiedHostedCoreEvidence,type VerifiedHostedCoreEvidence} from './pilot-hosted-core-evidence';
@@ -91,4 +94,5 @@ export async function pilotReleaseBundle(args=process.argv.slice(2)){
  }
  await verifyTargets();await current();deadline.throwIfAborted();const final=evaluatePilotReleaseBundle(bundle,inputs),result={contract:'pilot-release-bundle-result-v1',bundleId:bundle.id,bundleDigest:evidenceDigest(JSON.stringify(bundle)),sourceCommit:bundle.sourceCommit,sourceDigest:bundle.sourceDigest,catalogDigest:bundle.catalogDigest,technicalEligibility:final.technicalEligibility,releaseApproved:false,observations,gates:final.gates.map(({id,state})=>({id,state}))};await writeEvidence(root,'result.json',result);return result;
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)pilotReleaseBundle().then(result=>{console.info(JSON.stringify(result));process.exitCode=result.technicalEligibility==='eligible'?0:1;}).catch(()=>{console.error('Scoped release bundle incomplete; no eligibility or approval established.');process.exitCode=2;});
+
+if(process.argv[1]&&retiredResolve(process.argv[1])===retiredFilePath(import.meta.url)){console.error('Private pilot command retired; historical fixtures are import-only.');process.exitCode=2;}

@@ -43,14 +43,14 @@ See the [evidence policy](docs/evidence-policy.md) and
 
 Turas is under active development. The current production hardening work covers
 chat reliability, access control, durable private storage, bounded processing,
-and database backup and recovery. Production configuration keeps test-workspace
-login and evaluation-only bindings disabled.
+and database backup and recovery. The private pilot programme has been removed;
+production hardening and ordinary account access remain in scope.
 
 Implementation, local checks, CI, Preview acceptance and Production verification
 are recorded separately. A passing local test does not establish hosted behavior,
 and a feature listed above may require environment preparation or explicit activation.
 
-Use the [pilot validation record](specs/016-pilot-hardening/validation.md) and
+Use the [hardening validation record](specs/016-pilot-hardening/validation.md) and
 [release handoff](specs/016-pilot-hardening/handoff.md) for evidence and remaining
 release work. The [roadmap](ROADMAP.md) describes feature scope and dependencies;
 [feature specifications](specs/) contain the detailed contracts and acceptance
@@ -94,7 +94,7 @@ credentials, customer data, private stores or `.eve` runtime state.
 | `DATABASE_URL_UNPOOLED` | Direct owner connection used only for explicit migrations and grants. |
 | `TURAS_ENVIRONMENT_ID` | Identity shared by the selected database and private stores. |
 | `TURAS_APP_ORIGIN` | Exact application origin, such as `http://localhost:3000`. |
-| Temporary account usernames and passwords | Local synthetic logins described below. |
+| Temporary account usernames and passwords | Configured application accounts described below. |
 | `TURAS_MAINTENANCE_SECRET` | Private maintenance secret of at least 32 characters. |
 | `TURAS_ARTIFACT_STORE_ROOT` | Absolute private-store path outside `public/`. |
 | `AI_GATEWAY_API_KEY` | Live model access through Vercel AI Gateway. |
@@ -129,7 +129,7 @@ reporting have additional prerequisites in the
 
 ### Temporary accounts
 
-These are synthetic pilot accounts, configured privately by the environment
+These are temporary application accounts, configured privately by the environment
 operator. This is not a general-purpose SSO system; no passwords are published in
 this repository.
 
@@ -163,7 +163,7 @@ checks cover their own contracts, integration, recovery and UI behavior; the
 | Delivery plans | `npm run test:plans` / `npm run plans:ui:check` |
 | Staffing | `npm run test:staffing` / `npm run staffing:ui:check` |
 | Partner enablement | `npm run test:partners` / `npm run partners:ui:check` |
-| Pilot hardening | `npm run test:pilot` / `npm run pilot:ui:check` |
+| Production hardening | `npm run test:pilot` / `npm run pilot:ui:check` |
 
 Run UI checks through command-line Playwright and WebKit, including the configured
 desktop and mobile profiles. Install the required browser runtime with:
@@ -208,7 +208,7 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and the
 Turas uses the checked-in Spec Kit workflows and feature artifacts to keep scope,
 design and acceptance aligned.
 
-When resuming pilot hardening, select its feature directory explicitly:
+When resuming production hardening, select its feature directory explicitly:
 
 ```sh
 export SPECIFY_FEATURE_DIRECTORY=specs/016-pilot-hardening
@@ -231,8 +231,8 @@ budgets; uncertain charges remain accounted for until they can be reconciled.
 Email delivery, learning and other governed features require their documented
 activation rather than being enabled by setup alone.
 
-Start with [pilot operations](docs/pilot-operations.md),
-[pilot lifecycle and recovery](docs/pilot-lifecycle.md) and the
+Start with [production operations](docs/pilot-operations.md),
+[data lifecycle and recovery](docs/pilot-lifecycle.md) and the
 [environment handoff](docs/environment-handoff.md). Feature-specific runbooks cover
 [reporting](docs/reporting-operations.md), [support](docs/support-operations.md),
 [partners](docs/partner-operations.md), [learning](docs/learning-operations.md) and

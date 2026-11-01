@@ -10,30 +10,112 @@ or Production record was changed. Requirements checklist is 16/16 passing; no
 extension hooks are installed. Ignore patterns cover Node/Python/Docker generated
 state, private evidence/configuration and credentials.
 
-## Current acceptance
+## Current acceptance and scope
 
-Implementation and release acceptance remain in progress. The dated checkpoints
-below retain their original source and gate states. At `5c8c45f`, all 61 CI jobs
-and the 1,053-case deterministic catalog passed, including separately retained
-unchanged-source reruns. Synthetic Preview provisioning, real provider jobs,
-retained-file reads and partial model evaluations have run; these do not establish
-whole-pilot or Production acceptance.
+The private pilot programme was cancelled by the owner on 2026-10-31. Synthetic
+workspace provisioning, selectable pilot login, participant feedback collection
+and pilot approval ceremonies are removed from active scope. Their dated records
+below are historical evidence, not remaining release prerequisites or passing
+production checks. Production authentication, authorization, private file handling,
+bounded jobs, maintenance, backup and recovery remain required.
 
-The 2026-10-26 hosted core attempt passed exact deployment/schema/grant preflight
-and retained-file checks, then failed with HTTP 409 during native Root creation.
-Its scoped budget snapshot showed zero response attempts, operations, reservations
-and charges. The failed receipt remains failed; an unbound database identity does
-not establish remote native-session absence. Installed eve documentation and
-source distinguish an accepted prewarmed candidate from a later canonical
-operation owner. T193 tracks the bounded binding correction and fresh acceptance.
+Production release `11240b6f11500109ae3a88c1e880f85d061b7783` was merged through
+PR48 and serves schema081. Its exact-tree premerge checks passed: all54 main CI
+jobs, all7 legacy jobs, and the198-suite/1100-case deterministic catalog. One
+unchanged Learning UI job required a successful targeted rerun; the failed first
+attempt is retained. The final production deployment is
+`dpl_5HrzmzzX41iXn4gRXAfEGiHr1GqF` at `https://www.turas.dev`.
 
-The current R04 output used a revision identifier instead of a consumed citation
-and exceeded the original five-step limit. Unpaid real-tool probes found that
-field-label queries could not discover a shared field whose value omitted that
-label. T194 tracks lexical metadata discovery and explicit citation guidance.
-The failed model calls are not relabeled as passes, and their actual query history
-was not retained. Production remains f8d196f/schema077; backup/restore, complete
-model and hosted workflow acceptance, merge and Production release are pending.
+Authenticated production checks verified all three ordinary account logins,
+owner-private conversation reads, real streaming/reload/Stop behavior on the
+same-code preceding deployment, and one private-file upload/scan/parse/download
+with matching digest on the final deployment. Tests used normal application
+paths; no synthetic Production workspace was enabled. Existing legacy context
+history remains protected by the schema080 guard; data was preserved.
+
+Full operational recovery assurance remains incomplete: `/api/health/ready`
+returned503 after release. A verified database safety backup and isolated
+077-to081 migration rehearsal do not prove a matched full-service restore.
+Removing the pilot programme does not waive that production recovery work or
+permit fabricated healthy observations. Detailed private receipts remain outside
+Git. Dated checkpoints below retain their original identities and limitations.
+
+## Private programme removal — 2026-10-31
+
+The removal branch deletes the selectable Synthetic Pilot login, rejects retired
+pilot login requests before authentication/session creation, and retains ordinary
+primary accounts and membership/owner/partner boundaries. Eight standalone programme npm commands and their direct entry points are
+retired; five additional programme-only direct entry points are also retired.
+All refuse direct execution with exit2;
+imported historical fixture functions remain available to regression tests. Normal
+backup, recovery, lifecycle, health, storage and processing commands are retained.
+The active plan and tasks now cover production work only; superseded programme
+instructions remain in Git history rather than an executable task queue.
+
+Actual removal checks: documentation/hygiene and both full and016 TypeScript checks
+passed. Independent review found no login/CLI blocker and reran17 focused unit cases
+successfully. Credential-free direct invocations of all thirteen retired entry points
+verified their explicit exit2 refusal. The final stable owned session/role run
+passed12 cases and its source-preservation/cleanup checks. A separate owned run
+passed11 ordinary-steering and one Learning draft case, including retained unknown
+holds, token limits, real budget/dispatch/settlement and source-withdrawal fences
+with malformed retired configuration present. Twenty model-budget/fixture unit
+cases also passed (37 focused unit cases total).
+
+Twenty CLI WebKit login cases passed across four desktop/mobile and light/dark
+profiles. Those captures preceded the final primary-only session SQL and runtime
+overlay edits; the UI bytes were unchanged. They are qualified local UI evidence,
+not an exact final-commit hosted acceptance claim. The first keyboard assertion
+failure and the source-preservation failure during concurrent editing remain
+retained; the corrected/stable reruns passed without weakening application guards.
+The catalog now inventories193 suites/1086 cases after removing obsolete programme
+orchestration tests; its inventory validation passed. The complete new catalog
+and current PR CI have not yet passed. No new hosted release or completed
+full-service recovery is claimed. No Turas test containers remain.
+
+## Production-only recovery continuation — 2026-10-31
+
+Fresh authenticated production diagnostics found the database open and dispatch
+configured, but retrieval maintenance failed. The replacement runtime lacked
+EXECUTE on the bounded `public.turas_expire_retrieval_receipts()` function; the
+legacy runtime had that grant. The explicit role setup now reapplies it. An owned
+non-owner regression reproduced SQLSTATE42501, applied the original mapped role setup and
+verified bounded execution without owner/control privileges (3 cases passed).
+Root verified the actual Production81 database, OID/system identity and restricted
+runtime, granted only that function, and observed all 15 maintenance classes
+succeed through the regular scheduler. No application deployment was needed for
+this narrow permission repair.
+
+The operational health change separates actual service availability from retained
+execution assurance. Database/schema/runtime restrictions, current dispatch
+configuration (including Blob credentials and fresh scanner signatures), cost
+holds, maintenance, admission and recovery quarantines still gate service readiness.
+Strict namespace/image/cold-backup observations retain their actual status under
+administrator-only assurance; an idle namespace is not fabricated as verified.
+Independent source review passed. Thirteen initial health/image cases passed; the
+one invalid unknown-cost fixture was corrected to use the governed reservation
+transition sequence and its focused rerun passed. Full types and docs passed.
+
+Recovery reads now use ordinary primary roles. The opened-service verifier derives
+files from the authenticated capture and live required-object ledger and compares
+actual pinned-SDK reads with independently paginated governed projections. Genuine
+empty data is accepted only when the baseline agrees; skipped pages, false empties,
+missing required files and altered bytes are rejected. Owned role/read, SDK and
+object regressions passed, with independent source review. Actual cloud recovery
+remains pending until the real archive and isolated target are exercised.
+
+The existing independent operator now has a separately scoped $40 production backup budget lasting 30 days, divided equally between hosting and Blob. Previous
+preview budgets, archives, master and cron secret remain unchanged. Configuration
+was staged for Production81; automatic scheduling remains paused pending deployment
+and immediate verification. This is provisioning evidence, not a captured backup,
+a final invoice or restored-service proof.
+
+Current PR CI exposed obsolete deadline overrides and one remaining removed
+workspace selector in the foreign-upload test. These fixtures were corrected
+without increasing deadlines or relaxing foreign-access/cleanup assertions.
+The unrelated Gap WebKit internal-navigation failure and Partner timeout retain
+their original failures; the unchanged Partner case passed locally within its
+original limit. Exact-source CI and hosted release checks remain pending.
 
 ## Initial implementation checkpoint
 
@@ -9751,3 +9833,241 @@ actually restored and migrated to81 in an owned database with runtime grant,
 append-denial and constraint checks. This is database recovery evidence;
 Production Blob/Sandbox configuration and authenticated deployment checks remain
 separate release requirements.
+
+### Production-only continuation after cleanup — 2026-10-31
+
+The current continuation adds a non-disruptive isolated recovery drill command,
+explicit target-only runtime configuration, real provider branch identity and
+chronology checks, authenticated archive/object proofs, denial/replay reconciliation,
+and deny-only compensation for a lost admission acknowledgement. This command does
+not close live Production or read/change firewall configuration. A clean committed
+source is required before starting its measured interval.
+
+Local validation: hardening TypeScript passed; documentation checks passed for 243
+Markdown files. Four targeted recovery/native-client/backup suites passed all 27
+cases. The historical workspace-isolation suite passed all nine cases through its
+owned PostgreSQL18 runner. An initial direct invocation lacked the owning fixture;
+a first wrapper mistakenly requested an upgrade of an already-current fixture;
+both invocation failures remain in private logs and are not reported as test passes.
+Hosted recovery, final CI, exact Preview and Production release remain pending.
+
+
+### Actual cold restore and real partner scope — 2026-10-31
+
+The matched Production081 capture `515a6032-fca3-4297-b6c6-058977b8e80d`
+was independently read and decrypted using separately retained key custody. Its
+complete persistent object inventory contained zero physical objects in all six
+namespaces; managed Workflow retains interrupted-reconciliation semantics rather
+than native execution resumption. This completes T051/T086's matched-set/cold-custody
+checkpoint, not hosted restricted-service acceptance.
+
+The actual archive restored successfully into owned Neon branch
+`br-frosty-recipe-b8l8d0dy` with both runtime logins closed. Earlier attempts failed
+on local TLS trust, missing non-login roles, a finite command deadline, and two
+provider-owned default ACLs. The successful clean restore retained every application
+ACL/owner and explicitly excluded only the two `cloud_admin` public table/sequence
+default ACL TOC entries. Actual Source/target metadata matched after those exact
+provider exclusions and the intentional runtime016 login fence; 12,471 effective
+runtime and cleanup-role permission checks matched, including denied control UPDATE
+and granted retrieval-cleanup EXECUTE. Provider-default parity is explicitly false.
+Private original failures, TOC, raw digests and comparison receipts remain retained.
+
+The actual primary workspace has 184 customers and zero active partner customer
+grants. The verifier previously assumed positive partner assignments. It now checks
+actual empty customer visibility, unassigned-customer denial and a knowledge-only
+MCP ceiling without inventing assignments. The owned route suite passed all three
+cases, including empty partner scope; hardening typecheck passed. Independent review
+found no blockers. The new SDK branch still requires actual hosted drill execution.
+The prior target is locked, with runtime016 NOLOGIN; it has not been admitted or
+reported as a successful hosted drill. A new clean-commit measured attempt follows.
+
+
+### Hosted inventory-query failure and preserved-clock resumption — 2026-10-31
+
+The exact5ac isolated Preview `dpl_66uSHHkZDTcbZCE48G4xfW7QxiJW` reached
+closed-database integrity, current-denial/replay reconciliation, explicit isolated
+admission and the administrator MCP journey. It then failed the normal file-download
+inventory SQL: report object keys are UUIDs while artifact/workforce object keys
+are text. The failure receipt confirms target refencing and exact probe credential
+cleanup, with zero Source SQL writes. No hosted-drill pass is claimed.
+
+The UNION projections now use explicit text representations for identifiers and
+object keys, preserving canonical eligibility checks. A real owned PostgreSQL18
+empty-ledger query reproduced the type failure and passed after correction; the
+two-case drill suite and typecheck passed. Independent review found no blocker.
+Resumption retains the original Source-clock start receipt and fresh branch,
+restores the genuine archive again, and separately records provisioning's
+`startedSource` and the current exact clean verifier/Preview source. It cannot
+reset elapsed recovery time by recompiling the verifier or reuse a prior pass.
+
+
+### Actual isolated hosted recovery passed — 2026-10-31
+
+On exact verifier/Preview commit `76646cb30cfd4ad23c703179dc185462db12bc4b`,
+Preview `https://turas-dh36dgoq8-turas-6e414af3.vercel.app`
+(`dpl_FZfGyCGTVJwCr2fmnHoodowPfFhW`) passed the actual non-disruptive isolated
+read-service recovery drill. The original provisioning revision remains5ac; the
+original Source clock and all intervening failed attempts are retained. Full elapsed
+time was1,840,816ms (30m41s), with backup age2,369,644ms (39m30s) at that start:
+within the four-hour/24-hour drill objectives, not an observed outage guarantee.
+
+The authenticated archive restored into `br-ancient-dew-b83zjr63` on endpoint
+`ep-empty-cell-b8fnjdnn`. Actual permission comparison passed12,471 effective
+checks with only documented provider-default differences and the closed-login
+posture qualified separately. Current independently retained denial/replay state
+covered114 tables. Nineteen HTTP role cases passed; pinned SDK/canonical-baseline
+journeys passed12 administrator,12 member and5 knowledge-only partner cases. The
+partner's actual zero-customer ceiling was preserved. All three probe sessions and
+MCP credentials were retired, including measured revocation denials. Database,
+required-object and authenticated physical inventories all agreed on zero objects;
+no artificial files or business assignments were created. Production remained open,
+with zero Source SQL writes, firewall operations, model calls, mail or paid jobs.
+Managed Workflow retains interrupted-reconciliation semantics; no native execution
+resumption or live failover is claimed.
+
+A prior retry correctly refused an aged denial snapshot; another stopped before
+admission on a metadata-query timeout. After isolated post-restore ANALYZE, the
+complete digest passed in5,236ms under unchanged10s statement/12s query limits.
+A fresh capture immediately followed by verification produced the successful
+receipt. Original failures, closures, archive, key references and receipts remain
+private and separately identified.
+
+T077's actual current112 Production observation reports healthy database,
+dispatch, open admission, all15 maintenance classes, zero unknown reservations,
+no required quarantines and healthy backup. Its public readiness remained false
+because the older code also gated on unverified store/image assurance; the current
+PR separates availability and retained administrator assurance. The stable backup
+operator remains enabled on its12-hour schedule. Two genuinely scheduled captures
+12hours apart remain a nonblocking operational follow-up; no elapsed cadence has
+been manufactured or awaited for release.
+
+
+### Governed-execution CI fixture correction — 2026-10-31
+
+CI766 reached34 passing jobs before the deterministic catalogue failed in
+`governed-execution.test.ts`: its positive dispatcher-readiness fixture supplied
+controlled Sandbox images and budget but lacked the Blob credential shape and
+matching scanner attestation now required by the retained production check. The
+fixture now supplies explicitly synthetic matching values; provider execution
+remains mocked and the production guard is unchanged. All four owned cases passed,
+including unknown-creation holds, source withdrawal, provider/pricing scope refusal,
+maximum-dispatch exhaustion and undispatched release. Independent review found no
+blocker. This test/doc-only follow-up does not relabel the766 hosted drill as a
+new-source execution; exact final Preview/CI and Production release remain pending.
+
+
+### Real-data Preview acceptance and checker metadata fix — 2026-10-31
+
+Git-backed Preview `dpl_DdC696k5qRTmDaQNgriY6KD4c8fS` on exactc581 passed
+real form login at both deployment and branch URLs, all184 real customer directory
+entries matching Production, unchanged1Password/Notion research, overview placement,
+product/source interaction and evidence search. Retrieval correctly reported
+`lexical_degraded` with the isolated embedding provider disabled; it was not a live
+embedding/model evaluation. Desktop-dark and fresh-context mobile-light WebKit
+captures were visually inspected. The first media-switch mobile captures retained
+stale dark link backgrounds; a fresh light context confirmed intended dark-on-white
+styles without any application CSS change.
+
+Vercel's deployment `alias` field remained empty despite assigned aliases. The
+checker now queries the authoritative deployment-alias collection and individual
+alias record, verifies exact deployment/project and no redirect, then performs the
+real branch-origin login. Git-backed deployment supplies trusted branch-origin
+metadata; a manually aliased CLI-only deployment correctly refused the alias POST.
+No origin policy or firewall setting was weakened. Independent review found no
+blocker; typecheck and actual corrected-checker acceptance passed. The targetc581
+and the checker follow-up remain separately identified.
+
+The local paid-provider-disabled file-correction reproduction also completed its
+real Eve fixture: canonical customer resolution, native file correction, composer
+use and history reload passed, with zero paid calls and successful owned resource
+cleanup. Original CI connection-reset and WebKit-engine failures remain failures;
+GitHub requires the current run to finish before targeted reruns can start.
+
+## 2026-10-31: final removal CI repairs
+
+CI run `41251936576` at `254c204` exposed two test failures; this run is not a
+passing release gate. The hardening catalog stopped at the load fixture after
+417 preceding cases: the fixture still created a retired `synthetic_pilot`
+workspace, and ordinary session issuance correctly refused it. The owned fixture
+now creates a primary workspace, keeps every customer synthetic, and asserts that
+both retired provisioning fields are null. Its focused regression passed with
+25 issued sessions, 250 customers, 10,000 distinct reviewed passages and separate
+internal/delivery projections; no provider calls or quota resets occurred.
+
+The general verification job's research UI failure was a request-interception
+callback from the preceding case: `route.fetch: Test ended`. The case now releases
+its capability latch and awaits `unrouteAll({behavior:'wait'})` before deleting its
+conversation. Assertions and route errors remain enforced. Independent review
+found no blockers in these fixes, and both main and hardening typechecks passed.
+The first local browser runner stopped before test execution because its optional
+citation-source indexing setup lacked embeddings. A direct development-mode run
+then stopped at browser sign-in; neither attempt establishes browser acceptance.
+Production-mode WebKit verification and fresh exact-source CI remain pending.
+
+## 2026-11-01: ordinary primary SDK fixture
+
+The `c4d2a16` main CI run passed 53 jobs and stopped in catalog suite 104 after 643
+preceding cases. Six of seven `hosted-sdk.test.ts` cases requested ordinary HTTP
+management/profile access with a retained synthetic-workspace session, which the
+production authentication boundary correctly refused. Its positive owned fixture
+now uses a primary workspace with synthetic customer data. All seven focused
+production-mode HTTP/pinned-SDK cases passed, including current-evidence withdrawal,
+damaged-response reconciliation, exact credential cleanup, normal profile lifecycle
+and partner-grant revocation. Runtime authentication restrictions and assertions
+are unchanged. Independent review audited the remaining registered positive-auth
+callers and found no additional mismatch; historical domain-accounting and session
+rejection fixtures intentionally retain their old classification. The focused run
+used a scoped temporary directory that was removed afterward; no paid models ran.
+Fresh exact-source CI remains required; the failed catalog is not a pass.
+
+## 2026-11-01: staged-file fixture hydration and bounded diagnostics
+
+The `553cdce` CI attempt timed out waiting for the staged 4 MiB file preview.
+A separate compiled-mode diagnostic exposed a fixture prerequisite mismatch:
+that runner starts Next and Eve without the dev supervisor's maintenance worker,
+and the native boundary correctly returned `maintenance_unavailable`. The
+experimental mode change was removed; no application admission guard changed.
+
+The existing browser fixture now waits for its mounted, enabled file input before
+injecting a draft for the next reload. Server-rendered textarea visibility alone
+can precede the first document's draft-restoration effect. Bounded response status,
+error-code and synthetic-page diagnostics now preserve the failing phase without
+changing requests, assertions or the existing 30-second/420-second limits.
+
+Both focused checks passed in the supported owned environment: the 4 MiB active
+response correction and the 10 MiB interrupted-step recovery. Original byte
+digests, reload/preview availability, upload mutation protection, uncertain draft
+removal and failed-response history checks remained enabled. No paid provider
+calls ran; scoped temporary directories were removed. Independent review found
+no blocker. Root and feature typechecks and authored-document checks passed.
+
+The unchanged partner feedback journey also passed all four WebKit projects
+without retries after its CI timeout. This does not establish that timeout's
+cause. The separate product-gaps failure reported a WebKit internal navigation
+error. Fresh complete CI and exact-source Preview checks remain required; none
+of these focused checks establishes a green CI run or a Production release.
+
+## 2026-11-01: separate historical learning contracts from ordinary dispatch
+
+At `a4e4ac8`, all seven parity jobs and 53 main-workflow jobs passed. The catalog
+then failed in `hosted-learning-admission.test.ts`: it still expected ordinary
+learning to invoke private-pilot admission and identity callbacks intentionally
+removed by this PR. Restoring those runtime dependencies would contradict the
+production-only scope.
+
+The tests now invoke retained historical consumption, identity and rollback
+contracts explicitly inside owned transactions. Immutable tickets, original caps,
+unknown holds, provider identities, concurrency and strict native pre-admission
+rejection checks remain. Ordinary domain release is unchanged; historical and
+domain rollback checks are explicitly separate. A ninth case proves primary
+learning reserves and dispatches normally with missing, malformed, foreign or
+expired retired-pilot configuration, without historical consumption or identity
+rows and without changing the original external ledger.
+
+All nine focused cases passed without paid calls. Independent review found no
+blocker; root/feature typechecks and documentation checks passed. An additional
+49-suite local diagnostic reported 235 passed cases, two failures and four cases
+blocked during setup. All six non-passing cases required the absent local report
+renderer; CI prepares that dependency explicitly. This diagnostic is not a full
+catalog pass. Its scoped temporary directory was removed. Complete exact-source
+CI and Preview remain required before merge and Production release.

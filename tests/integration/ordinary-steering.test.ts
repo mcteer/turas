@@ -108,7 +108,9 @@ it('settles a raced original completion only after an actual pre-admission rejec
 });
 
 it('keeps interrupted provider holds inside the existing 20,000-token conversation allowance',async()=>{
- const f=await fixture();try{
+ const f=await fixture(),previousHosted=process.env.TURAS_PILOT_HOSTED_ROOT_BUDGET_JSON;try{
+  // Retired programme configuration cannot affect ordinary production accounting.
+  process.env.TURAS_PILOT_HOSTED_ROOT_BUDGET_JSON='{"retired":true}';
   let calls=0;type Model=Parameters<typeof wrapOrdinaryChatModel>[0];
   const provider={specificationVersion:'v4',provider:'local-fixture',modelId:'local-fixture',supportedUrls:{},async doGenerate(){calls++;throw Error('Local interruption without usage');},async doStream(){throw Error('Unused');}} as unknown as Model;
   for(let i=0;i<3;i++)await expect(wrapOrdinaryChatModel(provider,f.principal,f.native,f.turn).doGenerate({prompt:[],maxOutputTokens:8192})).rejects.toThrow('Local interruption');
@@ -121,7 +123,7 @@ it('keeps interrupted provider holds inside the existing 20,000-token conversati
   expect((await f.db.query('SELECT actual_tokens FROM ordinary_model_operations WHERE id=$1',[held[0].id])).rows[0].actual_tokens).toBe(10);
   const privilege=(await f.db.query("SELECT has_table_privilege('turas_runtime','ordinary_model_operations','DELETE') AS can_delete,has_column_privilege('turas_runtime','ordinary_model_operations','ceiling_tokens','UPDATE') AS can_reset")).rows[0];
   expect(privilege).toEqual({can_delete:false,can_reset:false});
- }finally{try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
+ }finally{if(previousHosted===undefined)delete process.env.TURAS_PILOT_HOSTED_ROOT_BUDGET_JSON;else process.env.TURAS_PILOT_HOSTED_ROOT_BUDGET_JSON=previousHosted;try{await settleSyntheticConversationAttempts(f.db,[f.conversation.id]);}finally{await f.db.end();}}
 });
 
 it('serializes concurrent provider reservations without overspending the conversation allowance',async()=>{

@@ -41,7 +41,6 @@ export function planWorkBackupCadence(receipts:unknown,scope:{installationId:str
  const prior=rows[0],captured=prior.captured_at.getTime();
  if(prior.installation_id!==scope.installationId||prior.source_project_id!==scope.sourceProjectId||prior.environment_id!==scope.environmentId||prior.archive_environment_id!==scope.environmentId||prior.archive_captured_at.getTime()!==captured||captured>now)throw Error('Authenticated prior backup time differs');
  const notBefore=captured+43200000,waitMilliseconds=Math.max(0,notBefore-now);
- if(waitMilliseconds>60000)throw Error('Scheduled backup cadence exceeds bounded wait');
  return {waitMilliseconds,notBeforeCapturedAt:new Date(notBefore).toISOString()};
 }
 /** One wait within the caller's existing deadline. No retry, SQL transaction,
@@ -109,7 +108,16 @@ async function runWorkBackup(input:Parameters<typeof runScheduledWorkBackup>[0],
    if(rows.length!==1||rows[0].mode!=='open'||rows[0].environment_id!==config.environmentId||rows[0].owner!==true||Number(rows[0].schema_version)!==CURRENT_SCHEMA_VERSION)throw Error('Current open work backup source required');revision=Number(rows[0].revision);
    cadence=planWorkBackupCadence(receipts,config,rows[0].source_now);
   }finally{await primary.end();}
-  stage='cadence';if(cadence.waitMilliseconds){archiveConnected=false;await archive.end();await waitForWorkBackupCadence(cadence.waitMilliseconds,input.signal);archive=new Client(archiveOptions);await archive.connect();archiveConnected=true;}
+  stage='cadence';
+  if(cadence.waitMilliseconds>60000){
+   // This invocation ended conclusively without a capture. Retain both complete
+   // admitted ceilings as estimates; a not-due cron is neither a refund nor an
+   // unknown provider outcome, and it creates no backup/health observation.
+   if(!dispatched){await transitionWorkBackupCost(archive,config.cost,reservations,'dispatched');dispatched=true;}
+   await transitionWorkBackupCost(archive,config.cost,reservations,'settled');
+   return {contract:'pilot-work-backup-not-due-v1' as const,state:'not_due' as const,slot,...source,nextEligibleAt:cadence.notBeforeCapturedAt!,capturePerformed:false as const,completeCostCeilingsRetained:true,actualInvoiceVerified:false};
+  }
+  if(cadence.waitMilliseconds){archiveConnected=false;await archive.end();await waitForWorkBackupCadence(cadence.waitMilliseconds,input.signal);archive=new Client(archiveOptions);await archive.connect();archiveConnected=true;}
   if(!dispatched){await transitionWorkBackupCost(archive,config.cost,reservations,'dispatched');dispatched=true;}
   const id=randomUUID();key=deriveWorkBackupKey(input.key.master,{installationId:config.installationId,environmentId:config.environmentId,archiveId:id});
   const retained={reference:config.keyReference+':'+id,version:config.keyVersion};
@@ -123,7 +131,7 @@ async function runWorkBackup(input:Parameters<typeof runScheduledWorkBackup>[0],
   if(!copy.coldDownloadAuthenticated||!copy.captureProvenanceVerified||!copy.immutableReceiptRecorded)throw Error('Complete cold backup verification required');
   stage='health';const observation=new Client({connectionString:config.sourceConnection,connectionTimeoutMillis:5000,statement_timeout:5000});
   try{await observation.connect();await recordVerifiedBackup(observation,{archiveId:candidate.id,environmentId:config.environmentId,storeId:config.storeId,sourceCommit:source.sourceCommit,capturedAt:candidate.capturedAt,encryptedDigest:copy.encryptedDigest,candidateDigest:recoveryDigest(candidate),reservationIds:reservations});}finally{await observation.end();}
-  return {...(pricing?{pricing}:{}),contract:'pilot-work-backup-run-v1' as const,...(reviewedManualCaptureId?{invocationKind:'reviewed-manual' as const,reviewedManualCaptureId,originalScheduledSlotSucceeded:false}:{}),archiveId:candidate.id,capturedAt:candidate.capturedAt,slot,...source,coldDownloadAuthenticated:copy.coldDownloadAuthenticated,completeCostCeilingsRetained:true,actualInvoiceVerified:false,temporaryBytesRemoved:true,independentPlacementVerified:false,separateKeyRetentionVerified:false,currentAuthorityVerified:false,scheduledInvocationVerified:false,restorationReady:false};
+  return {...(pricing?{pricing}:{}),contract:'pilot-work-backup-run-v1' as const,state:'captured' as const,...(reviewedManualCaptureId?{invocationKind:'reviewed-manual' as const,reviewedManualCaptureId,originalScheduledSlotSucceeded:false}:{}),archiveId:candidate.id,capturedAt:candidate.capturedAt,slot,...source,coldDownloadAuthenticated:copy.coldDownloadAuthenticated,completeCostCeilingsRetained:true,actualInvoiceVerified:false,temporaryBytesRemoved:true,independentPlacementVerified:false,separateKeyRetentionVerified:false,currentAuthorityVerified:false,scheduledInvocationVerified:false,restorationReady:false};
  }catch(error){
   recordWorkBackupFailure(error,stage);
   // A disconnected wait failure retains the issued reservation for explicit review.

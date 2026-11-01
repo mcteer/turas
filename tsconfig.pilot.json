@@ -3,6 +3,7 @@
   "include": [
     "lib/contracts/pilot-readiness.ts",
     "scripts/pilot-*.ts",
+    "scripts/production-recovery-*.ts",
     "scripts/benchmark-pilot.ts",
     "scripts/execution-source-digest.ts",
     "tests/contracts/pilot/**/*.ts",

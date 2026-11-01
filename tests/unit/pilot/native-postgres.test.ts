@@ -1,6 +1,7 @@
 import {it,expect} from 'vitest';
 import {mkdtemp,cp,rm,writeFile,readFile,symlink,chmod} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
+import {recordWorkBackupFailure,workBackupFailureDiagnostic} from '../../../lib/server/operations/work-backup-diagnostics';
 import {verifyNativePostgresClient} from '../../../lib/server/operations/native-postgres';
 
 const assets=resolve('infra/pilot/native-postgres/linux-amd64');
@@ -12,7 +13,7 @@ it('verifies every licensed native client byte against the fixed inventory',asyn
  expect(await verifyNativePostgresClient(assets)).toMatchObject({clientMajor:18,sourceDigest:'555610c24d53e4316da5b7d3fc25c279d96856d5e0e23ee308c328c5fa881d9f'});
 });
 it('rejects modified executable bytes before native execution',async()=>fixture(async root=>{
- await writeFile(join(root,'bin/pg_dump'),'changed');await expect(verifyNativePostgresClient(root)).rejects.toThrow('bytes differ');
+ await writeFile(join(root,'bin/pg_dump'),'changed');const failure=await verifyNativePostgresClient(root).catch(error=>error);expect(failure).toBeInstanceOf(Error);expect(failure.message).toContain('bytes differ');recordWorkBackupFailure(failure,'capture');expect(workBackupFailureDiagnostic(failure)).toEqual({stage:'capture-native-assets',code:'unclassified',reason:'native-assets'});
 }));
 it('rejects unlisted libraries and writable library directories',async()=>fixture(async root=>{
  const path=join(root,'lib/hostile.so');await writeFile(path,'unlisted');await expect(verifyNativePostgresClient(root)).rejects.toThrow('Unlisted');await rm(path);

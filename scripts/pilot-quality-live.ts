@@ -1,3 +1,6 @@
+import {fileURLToPath as retiredFilePath} from 'node:url';
+import {resolve as retiredResolve} from 'node:path';
+// Historical private-pilot fixture module; standalone programme CLI retired.
 import {runPilotQualityCommand} from './pilot-quality-command';
 import {verifyQualityStepAuthorization,qualityOperatorAuthorization} from './pilot-quality-step-authorization';
 import {randomUUID} from 'node:crypto';
@@ -162,4 +165,5 @@ export async function pilotQualityLive(args=process.argv.slice(2)){
   await assertSource();const receipt={contract:'pilot-quality-batch-v1',...source,completed,accounting:await budget.status(),state:'awaiting-independent-review',actualModelQualityVerified:false,independentReviewComplete:false};await writeEvidence(root,'batch.json',receipt);console.info(JSON.stringify({gate:'pilot-quality-capture',state:'awaiting-independent-review',stages:completed.length,actualModelQualityVerified:false}));return receipt;
  }catch(error){await writeEvidence(root,'failure.json',{contract:'pilot-quality-batch-v1',...source,completed,accounting:await budget.status(),state:'fail',actualModelQualityVerified:false,safeFailure:'incomplete_quality_batch'});throw error;}
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)pilotQualityLive().catch(()=>{console.error('Quality batch incomplete; no semantic acceptance or release approved.');process.exitCode=1;});
+
+if(process.argv[1]&&retiredResolve(process.argv[1])===retiredFilePath(import.meta.url)){console.error('Private pilot command retired; historical fixtures are import-only.');process.exitCode=2;}

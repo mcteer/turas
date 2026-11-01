@@ -57,8 +57,8 @@ export async function issueSession(identity: DemoIdentity): Promise<{ token: str
       JOIN workspaces w ON w.id=m.workspace_id LEFT JOIN partner_organizations o ON o.id=m.partner_org_id AND o.workspace_id=m.workspace_id
       WHERE m.id=$1 AND m.principal_id=$2 AND m.workspace_id=$3 AND m.kind=$4 AND m.role=$5
        AND m.active AND p.active AND w.active AND (m.kind='internal' OR o.active)
-       AND (w.classification='primary' OR w.pilot_environment_id=$6) FOR SHARE OF m,p,w`,
-      [identity.membershipId,identity.principalId,identity.workspaceId,identity.kind,identity.role,getServerConfig().TURAS_ENVIRONMENT_ID]);
+       AND w.classification='primary' FOR SHARE OF m,p,w`,
+      [identity.membershipId,identity.principalId,identity.workspaceId,identity.kind,identity.role]);
     if(eligible.rowCount!==1)throw new HttpFailure(401,"authentication_required","Sign in required");
     await client.query(
       `INSERT INTO login_sessions (id, principal_id, token_hash, created_at, expires_at, membership_id, workspace_id)
@@ -97,10 +97,10 @@ export async function getCurrentSession(request: Request, purpose:"ordinary"|"op
     LEFT JOIN partner_organizations o ON o.id = m.partner_org_id AND o.workspace_id = m.workspace_id
     WHERE s.token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > now()
       AND p.active AND m.active AND w.active
-      AND (w.classification='primary' OR w.pilot_environment_id=$2)
+      AND w.classification='primary'
       AND (m.kind = 'internal' OR (m.kind = 'partner' AND o.active))
     LIMIT 1
-  `, [hashSessionToken(token),getServerConfig().TURAS_ENVIRONMENT_ID]);
+  `, [hashSessionToken(token)]);
   const row = result.rows[0];
   const actor:CurrentSession|null=row ? {
     sessionId: row.session_id,

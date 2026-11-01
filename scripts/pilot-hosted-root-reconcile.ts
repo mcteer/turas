@@ -1,3 +1,6 @@
+import {fileURLToPath as retiredFilePath} from 'node:url';
+import {resolve as retiredResolve} from 'node:path';
+// Historical private-pilot fixture module; standalone programme CLI retired.
 import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {createHash} from 'node:crypto';
 import {createGateway} from 'ai';
@@ -139,4 +142,5 @@ export async function pilotHostedRootReconcile(args=process.argv.slice(2)){
   return receipt;
  }finally{await db.end();}
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)pilotHostedRootReconcile().then(()=>console.info('Original hosted model accounting recorded; no model dispatched')).catch(()=>{console.error('Original hosted model accounting remains unresolved; reservation retained');process.exitCode=1;});
+
+if(process.argv[1]&&retiredResolve(process.argv[1])===retiredFilePath(import.meta.url)){console.error('Private pilot command retired; historical fixtures are import-only.');process.exitCode=2;}

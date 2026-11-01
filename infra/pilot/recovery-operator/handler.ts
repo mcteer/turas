@@ -38,6 +38,7 @@ export default async function backup(request:IncomingMessage,response:ServerResp
   if(manualId!==undefined){const rawReview=process.env.TURAS_WORK_BACKUP_MANUAL_REVIEW;if(typeof manualId!=='string'||!rawReview||rawReview.length>8192)throw Error('Explicit protected manual review required');const manualReview=reviewedManualBackupSchema.parse(JSON.parse(rawReview));if(manualId!==manualReview.id)throw Error('Exact reviewed manual capture required');result=await runReviewedWorkBackup({...input,manualReview});}
   else result=await runScheduledWorkBackup(input);
   console.info(JSON.stringify({event:'work-backup.complete',...result}));
+  if(result.state==='not_due'){reply(200,{state:'skipped',reason:'not_due',nextEligibleAt:result.nextEligibleAt,capturePerformed:false,restorationReady:false});return;}
   reply(200,{state:'captured',...(result.invocationKind?{invocationKind:result.invocationKind,reviewedManualCaptureId:result.reviewedManualCaptureId,originalScheduledSlotSucceeded:false}:{}),coldDownloadAuthenticated:result.coldDownloadAuthenticated,restorationReady:false});
  }catch(error){
   console.error(JSON.stringify({event:'work-backup.failed',...workBackupFailureDiagnostic(error),restorationReady:false}));reply(503,{error:'backup_incomplete',restorationReady:false});

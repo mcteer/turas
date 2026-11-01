@@ -1,3 +1,6 @@
+import {fileURLToPath as retiredFilePath} from 'node:url';
+import {resolve as retiredResolve} from 'node:path';
+// Historical private-pilot fixture module; programme CLI retired.
 import {prepareHostedGeneratedFiles} from './pilot-hosted-generated-files';
 import {pilotHostedRequest} from './pilot-hosted-request';
 import {retireHostedMaximumFiles} from './pilot-hosted-file-retirement';
@@ -34,4 +37,5 @@ export async function pilotHostedFilePreparation(args=process.argv.slice(2)){
   catch(error){await writeEvidence(root,'failure.json',{scope,safeFailure:retirement?'file_retirement_incomplete':generated?'generated_files_incomplete':fault?'file_fault_incomplete':'maximum_files_incomplete',originalIntentsRetained:true,automaticPaidRetries:0,fullHostedFileCatalogVerified:false});throw error;}finally{await db.end();}
  });
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)pilotHostedFilePreparation().catch(()=>{console.error('Hosted file preparation incomplete; inspect original intents without repeating uploads or jobs.');process.exitCode=1;});
+
+if(process.argv[1]&&retiredResolve(process.argv[1])===retiredFilePath(import.meta.url)){console.error('Private pilot command retired; historical fixtures are import-only.');process.exitCode=2;}

@@ -6,6 +6,11 @@ REVOKE ALL ON TABLE turas_environment FROM turas_runtime;
 GRANT SELECT ON TABLE turas_environment TO turas_runtime;
 REVOKE ALL ON TABLE turas_migrations FROM turas_runtime;
 DO $$ BEGIN
+  IF to_regprocedure('public.turas_expire_retrieval_receipts()') IS NOT NULL THEN
+    GRANT EXECUTE ON FUNCTION public.turas_expire_retrieval_receipts() TO turas_runtime;
+  END IF;
+END $$;
+DO $$ BEGIN
 
   IF to_regclass('public.public_customer_research_results') IS NOT NULL THEN
     REVOKE UPDATE, DELETE ON TABLE public_customer_research_results FROM turas_runtime;

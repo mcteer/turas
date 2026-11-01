@@ -11,7 +11,7 @@ import { recordOperationalEvent } from "../../../../lib/server/observability";
 const loginInput = z.object({
   username: z.string().min(1).max(100),
   password: z.string().min(1).max(1_024),
-  workspace: z.enum(["primary", "pilot"]).optional(),
+  workspace: z.literal("primary").optional(),
   returnTo: z.string().max(500).optional(),
 }).strict();
 
@@ -25,9 +25,9 @@ function safeReturnPath(value: string | undefined, origin: string): string {
   return parsed.pathname + parsed.search + parsed.hash;
 }
 
-function nativeLoginFailure(error: "invalid" | "unavailable", returnTo: string, workspace: "primary" | "pilot") {
+function nativeLoginFailure(error: "invalid" | "unavailable", returnTo: string) {
   return new Response(null, { status: 303, headers: {
-    location: `/login?error=${error}&returnTo=${encodeURIComponent(returnTo)}${workspace === "pilot" ? "&workspace=pilot" : ""}`,
+    location: `/login?error=${error}&returnTo=${encodeURIComponent(returnTo)}`,
     "Cache-Control": "private, no-store",
   } });
 }
@@ -35,7 +35,6 @@ function nativeLoginFailure(error: "invalid" | "unavailable", returnTo: string, 
 export async function POST(request: Request): Promise<Response> {
   const nativeForm = request.headers.get("content-type")?.split(";",1)[0] === "application/x-www-form-urlencoded";
   let returnTo = "/s";
-  let workspace: "primary" | "pilot" = "primary";
   let phase = "validate";
   try {
     const config = getServerConfig();
@@ -48,12 +47,11 @@ export async function POST(request: Request): Promise<Response> {
     try { parsed = nativeForm ? Object.fromEntries(new URLSearchParams(text)) : JSON.parse(text); } catch { throw new HttpFailure(422, "invalid_input", "Invalid request"); }
     const input = loginInput.safeParse(parsed);
     if (!input.success) throw new HttpFailure(422, "invalid_input", "Invalid request");
-    workspace = input.data.workspace ?? "primary";
     returnTo = safeReturnPath(input.data.returnTo, config.TURAS_APP_ORIGIN);
     const clientAddress = trustedLocalClientAddress();
     await checkLoginThrottle(input.data.username, clientAddress);
     phase = "authenticate";
-    const identity = await authenticateDemoPrincipal(input.data.username, input.data.password, input.data.workspace);
+    const identity = await authenticateDemoPrincipal(input.data.username, input.data.password);
     if (!identity) {
       await recordFailedLogin(input.data.username, clientAddress);
       recordOperationalEvent({ action: "login", outcome: "denied", correlationId: crypto.randomUUID() });
@@ -74,7 +72,7 @@ export async function POST(request: Request): Promise<Response> {
     return response;
   } catch (error) {
     if (nativeForm && error instanceof HttpFailure && error.code === "invalid_credentials") {
-      return nativeLoginFailure("invalid", returnTo, workspace);
+      return nativeLoginFailure("invalid", returnTo);
     }
     const response = failure(error);
     if (response.status >= 500) {
@@ -82,7 +80,7 @@ export async function POST(request: Request): Promise<Response> {
       recordOperationalEvent({ action: "login", outcome: "failed", correlationId: crypto.randomUUID(),
         errorCode: `${phase}_${diagnostic.reason}${diagnostic.sqlState ? "_" + diagnostic.sqlState : ""}` });
     }
-    if (nativeForm && response.status >= 500) return nativeLoginFailure("unavailable", returnTo, workspace);
+    if (nativeForm && response.status >= 500) return nativeLoginFailure("unavailable", returnTo);
     return response;
   }
 }

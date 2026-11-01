@@ -6,7 +6,6 @@ import { learningTransaction,learningHash } from './repository';
 import { boundLearningActor } from './tool-actor';
 import { reserveLearningModelStep,claimLearningProviderDispatch,storeLearningActualCost,markLearningCostUnknown } from './budget';
 import { registerLearningModelCallbacks,type LearningModelAccounting } from './model-budget';
-import {consumeHostedLearningAdmission,rememberHostedLearningIdentity} from './hosted-admission';
 
 function providerAccounting(input:LearningModelAccounting){
  const metadata=input.metadata as {gateway?:{cost?:unknown;totalCost?:unknown;generationId?:unknown}}|undefined,gateway=metadata?.gateway;
@@ -34,7 +33,7 @@ export async function admitLearningDraftModelStep(principal:FeaturePrincipal,ide
   const reservation=await reserveLearningModelStep(db,bound.actor,{attemptId:bound.attemptId,nativeSessionId:identity.nativeSessionId,nativeTurnId:identity.turnId,ordinal:identity.stepIndex+1},async client=>{await injected(client,principal,identity);});
   return {mode:'learning' as const,deadlineAt:bound.deadlineAt,reservationId:reservation.reservationId,attemptId:bound.attemptId,purpose:bound.scope.purpose};
  });
- registerLearningModelCallbacks(admitted.deadlineAt,{purpose:admitted.purpose,rememberIdentity:process.env.TURAS_PILOT_HOSTED_LEARNING_LEDGER_JSON?(kind,value)=>learningTransaction(db=>rememberHostedLearningIdentity(db,admitted.reservationId,kind,value)):undefined,chargeInput:bytes=>learningTransaction(async db=>{
+ registerLearningModelCallbacks(admitted.deadlineAt,{purpose:admitted.purpose,chargeInput:bytes=>learningTransaction(async db=>{
   const bound=await injected(db,principal,identity);
   if(!Number.isSafeInteger(bytes)||bytes<0||bound.counters.contextBytes+bytes>24576)throw new HttpFailure(429,'learning_context_budget','Cumulative learning input exceeds its limit');
   await db.query('UPDATE learning_attempts SET context_bytes=context_bytes+$2,version=version+1 WHERE id=$1',[bound.attemptId,bytes]);
@@ -55,7 +54,6 @@ export async function assertLearningDraftProviderRelease(principal:FeaturePrinci
   if(bound.counters.modelSteps!==identity.stepIndex+1)throw hiddenRecord();
   const reservation=(await db.query(`SELECT id FROM learning_budget_reservations WHERE attempt_id=$1 AND native_session_id=$2 AND native_turn_id=$3 AND ordinal=$4`,[bound.attemptId,identity.nativeSessionId,identity.turnId,identity.stepIndex+1])).rows[0];
   if(!reservation)throw hiddenRecord();
-  await consumeHostedLearningAdmission(db,reservation.id);
   await claimLearningProviderDispatch(db,bound.actor,reservation.id,async client=>{await injected(client,principal,identity);});
   return {reservationId:reservation.id as string,attemptId:bound.attemptId};
  });

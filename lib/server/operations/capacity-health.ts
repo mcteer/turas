@@ -1,5 +1,7 @@
 import type {PoolClient} from 'pg';
 import {hostedCostConfiguration,hostedExecutionCredentials} from '../jobs/governed';
+import {preparedArtifactImages} from '../artifacts/prepared';
+import {privateBlobAuth} from '../storage/blob-auth';
 /** Fixed bounded metadata for canonical administrators. Unknown reservations
  * remain held at their admitted upper bound; they never become zero spend. */
 export async function readCapacityHealth(db:PoolClient,environmentId:string){
@@ -18,7 +20,7 @@ export async function readCapacityHealth(db:PoolClient,environmentId:string){
 export async function readHostedDispatchHealth(db:PoolClient,environmentId:string){
  if(process.env.TURAS_PILOT_HOSTED_JOBS_ENABLED!=='1'||process.env.TURAS_JOB_EXECUTOR!=='sandbox'||process.env.TURAS_PRIVATE_OBJECT_BACKEND!=='blob')return 'unavailable' as const;
  let config:ReturnType<typeof hostedCostConfiguration>;
- try{hostedExecutionCredentials();config=hostedCostConfiguration();}catch{return 'unavailable' as const;}
+ try{hostedExecutionCredentials();privateBlobAuth();preparedArtifactImages();config=hostedCostConfiguration();}catch{return 'unavailable' as const;}
  const required=Math.max(...Object.values(config.bounds));
  const row=(await db.query(`SELECT b.cap_micro_usd-COALESCE(sum(CASE WHEN r.state='released' THEN 0 WHEN r.state='settled' AND r.charge_kind='actual' THEN r.charged_micro_usd WHEN r.state='settled' THEN GREATEST(r.charged_micro_usd,r.upper_bound_micro_usd) ELSE r.upper_bound_micro_usd END),0) AS remaining,
   count(*) FILTER(WHERE r.state='unknown') AS unknown_count,

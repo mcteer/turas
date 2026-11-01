@@ -110,13 +110,33 @@ the same registry. Heavy work has independent durable admission.
 `GET /api/health/ready` returns only minimal ready/unavailable status without private
 configuration, class names or customer data; keep prior safe response compatibility
 where possible. Readiness verifies the exact supported schema ledger and runtime
-grants plus configured critical capability/worker freshness. Failure returns 503.
+grants, open operational admission, no unresolved required quarantine, current
+critical-worker completion/freshness and configured dispatch/cost capability.
+Dispatch validates private Blob configuration, pinned images and fresh matching
+scanner attestation as well as current execution credentials and applicable cost
+authority. Invalid configuration, unknown cost, expired/exhausted authority or stale
+critical workers keeps service unavailable. Failure returns 503. A healthy idle
+service does not need to create files in every namespace, execute every image or
+make a new backup under each Git commit to accept ordinary requests.
 
 `GET /api/operations/status` requires the current canonical mcteer administrator
 session. It returns safe per-class status, backup age, configured storage/image
 readiness and bounded counts; no keys, private URLs, names or payloads. Panel,
 partner, anonymous and MCP credentials cannot retrieve it. Recovery mode remains
 visible to this operator route without allowing normal domain work or unlock.
+
+The administrator response separates service `ready` from `assurance.ready`.
+Assurance retains the existing exact-source, post-recovery and 24-hour observation
+requirements for all active private-store namespaces, the three image executions
+and a verified cold backup. Missing, idle or stale observations remain `unverified`
+and cannot be reported as a healthy assurance result. Public readiness returns
+only `{ready}` and never creates or refreshes these observations. This distinction
+does not settle cost holds or satisfy the separate backup/restore requirements.
+A recovered-service measurement still authenticates its matched archive, actual
+restored private bytes, current denials/replay, complete owner verification,
+quarantine resolution and explicit opening; a service health response alone cannot
+establish any of those properties. It need not fabricate new namespace writes or
+new renderer jobs just to repopulate an assurance matrix after a code release.
 
 ## Failure and rollback
 

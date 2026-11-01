@@ -24,6 +24,7 @@ test("public research preview stays explicit in an owned synthetic chat",async (
   const phases: { phase: string; elapsedMs: number }[] = [];
   const mark = (next: string) => { phase = next; phases.push({ phase: next,elapsedMs: Math.min(30000,Math.max(0,Date.now()-startedAt)) }); };
   let refreshRequests = 0,refreshFulfilled = 0;
+  let releaseCapabilities: (() => void) | undefined;
   await signIn(page,"mcteer");
   mark("fixture-database");
   const db = new Client({ connectionString: requireUiFixtureDatabaseUrl() });
@@ -65,7 +66,6 @@ test("public research preview stays explicit in an owned synthetic chat",async (
     });
     // Keep capability-dependent controls settled before the context can open.
     // Otherwise Customer sources can appear during a research-button click.
-    let releaseCapabilities!: () => void;
     const capabilities = new Promise<void>((resolve) => { releaseCapabilities = resolve; });
     await page.route(`**/api/conversations/${id}`,async (route) => {
       const response = await route.fetch();
@@ -77,7 +77,7 @@ test("public research preview stays explicit in an owned synthetic chat",async (
     try {
       await expect(page.getByRole("button",{ name: "Customer context",exact: true })).toBeDisabled();
     } finally {
-      releaseCapabilities();
+      releaseCapabilities!();
     }
     mark("open-context");
     await page.getByRole("button",{ name: "Customer context",exact: true }).click();
@@ -149,8 +149,15 @@ test("public research preview stays explicit in an owned synthetic chat",async (
     } catch { /* Diagnostics must not replace the original failure. */ }
     throw error;
   } finally {
-    await db.query("DELETE FROM conversations WHERE id=$1",[id]).catch(() => undefined);
-    await db.end();
+    releaseCapabilities?.();
+    try {
+      // Finish this case's intercepted requests before its conversation and
+      // page disappear; late route.fetch failures must not enter the next case.
+      await page.unrouteAll({ behavior: "wait" });
+    } finally {
+      await db.query("DELETE FROM conversations WHERE id=$1",[id]).catch(() => undefined);
+      await db.end();
+    }
   }
 });
 

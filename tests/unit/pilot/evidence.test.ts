@@ -20,5 +20,5 @@ describe("private immutable evidence", () => {
 it("summarizes unsafe input without customer credential or filename prose",async()=>{
  const {spawnSync}=await import("node:child_process");
  const result=spawnSync(process.execPath,["--import","tsx","scripts/pilot-readiness.ts","--run","/SyntheticCustomer/SyntheticCredential-private.json"],{encoding:"utf8"});
- expect(result.status).toBe(2);expect(result.stdout).toBe("");expect(result.stderr).toBe("Pilot evidence invalid or unsafe; no eligibility established.\n");
+ expect(result.status).toBe(2);expect(result.stdout).toBe("");expect(result.stderr).toBe("Private pilot command retired; historical fixtures are import-only.\n");
 });

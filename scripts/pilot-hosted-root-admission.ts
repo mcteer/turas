@@ -1,3 +1,6 @@
+import {fileURLToPath as retiredFilePath} from 'node:url';
+import {resolve as retiredResolve} from 'node:path';
+// Historical private-pilot fixture module; standalone programme CLI retired.
 import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {Client} from 'pg';
 import {resolve,dirname,basename} from 'node:path';
@@ -65,4 +68,5 @@ export async function pilotHostedRootAdmission(args=process.argv.slice(2)){
   await writeEvidence(root,'admission.json',receipt);return receipt;
  }catch(error){await db.query('ROLLBACK').catch(()=>{});throw error;}finally{await db.end();}
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)pilotHostedRootAdmission().then(()=>console.info('Exact hosted root admission recorded; no model dispatched')).catch(()=>{console.error('Hosted root admission failed; private configuration retained');process.exitCode=1;});
+
+if(process.argv[1]&&retiredResolve(process.argv[1])===retiredFilePath(import.meta.url)){console.error('Private pilot command retired; historical fixtures are import-only.');process.exitCode=2;}

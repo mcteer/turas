@@ -1,3 +1,6 @@
+import {fileURLToPath as retiredFilePath} from 'node:url';
+import {resolve as retiredResolve} from 'node:path';
+// Historical private-pilot fixture module; standalone programme CLI retired.
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { parsePilotRun, verifyPilotProof, type PilotRun, pilotGateVerificationSchema,type PilotGateVerification } from "../lib/contracts/pilot-readiness";
@@ -80,6 +83,5 @@ async function main() {
   process.stdout.write(JSON.stringify(result) + "\n");
   process.exitCode = result.technicalEligibility === "eligible" ? 0 : 1;
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch(() => { process.stderr.write("Pilot evidence invalid or unsafe; no eligibility established.\n"); process.exitCode = 2; });
-}
+
+if(process.argv[1]&&retiredResolve(process.argv[1])===retiredFilePath(import.meta.url)){console.error('Private pilot command retired; historical fixtures are import-only.');process.exitCode=2;}

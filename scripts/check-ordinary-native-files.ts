@@ -55,13 +55,21 @@ try{await withPlanEvalEnvironment(async environment=>{
  if(process.argv.includes('--task-state'))process.env.TURAS_ORDINARY_TASK_STATE_FIXTURE='1';
  await environment.start();
  const browser=await webkit.launch({headless:true}),context=await browser.newContext({baseURL:environment.origin});let csrf:string|undefined;
+ const fileResponses:{kind:'file'|'native';method:string;status:number;chunk:number|null;code?:string}[]=[];
+ let inspectFileUi:()=>Promise<unknown>=async()=>null;
+ let captureFailurePage:()=>Promise<unknown>=async()=>null;
+ context.on('response',async response=>{
+  const url=new URL(response.url()),method=response.request().method(),file=url.pathname.includes('/native-uploads/'),native=url.pathname.startsWith('/eve/v1/');if(url.origin!==environment.origin||!file&&!native)return;
+  const chunk=/\/chunks\/(\d+)$/.exec(url.pathname),entry={kind:file?'file' as const:'native' as const,method,status:response.status(),chunk:chunk?Number(chunk[1]):null,code:undefined as string|undefined};fileResponses.push(entry);if(fileResponses.length>64)fileResponses.shift();
+  if(!response.ok())try{const body=await response.json();if(typeof body.code==='string'&&/^[a-zA-Z0-9_]{1,80}$/.test(body.code))entry.code=body.code;}catch{/* A failed transport need not contain JSON. */}
+ });
  try{
   const login=await context.request.post('/api/auth/login',{headers:{origin:environment.origin},data:{username:'panel',password:process.env.PANEL_PASSWORD}});if(!login.ok())throw Error('Fixture login failed');csrf=(await login.json()).data.csrfToken;
   const seed=new Client({connectionString:fixtureOwnerUrl});await seed.connect();try{await seed.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Native file fixture customer',false)",[fixtureCustomerId,DEMO_IDS.workspace]);}finally{await seed.end();}
   const headers={origin:environment.origin,'x-csrf-token':csrf!},operationId=randomUUID();
   let id:string,native:string|undefined;
   const firstPrompt=process.argv.includes('--memory')||process.argv.includes('--memory-files')?'Remember that I prefer concise answers.':'Please inspect this native file.';
-  // Grok requires each dimension >=8 and at least 512 pixels total; use 32x32.
+  // Keep a real decodable 32x32 PNG under the staged byte-size padding.
   const pixel=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAJklEQVR4nO3NMQ0AAAwDoPo33arYsQQMkB6LQCAQCAQCgUAg+BIMi1X0pjxKe0gAAAAASUVORK5CYII=','base64');
   const boundaryMiB=process.argv.includes('--staged-10')?10:process.argv.includes('--staged-4')?4:0;
   if(boundaryMiB&&!process.argv.includes('--composer'))throw Error('Large-file boundary requires the real browser composer');
@@ -69,6 +77,8 @@ try{await withPlanEvalEnvironment(async environment=>{
   // the original byte-size boundary through browser, HTTP, Eve and provider.
   const bytes=boundaryMiB?Buffer.concat([pixel,Buffer.alloc(boundaryMiB*1024*1024-pixel.length,0x5a)]):pixel;
   let page=await context.newPage();
+  inspectFileUi=async()=>({cards:await page.locator('.chat-file-card').evaluateAll(cards=>cards.slice(0,4).map(card=>({downloadPresent:Boolean(card.querySelector('a[download]')),loading:Boolean(card.querySelector('button:disabled')),errorPresent:Boolean(card.querySelector('[role="alert"]'))}))),alerts:(await page.getByRole('alert').allTextContents()).slice(0,4).map(value=>value.slice(0,200)),sendRequestBytes,syntheticPageText:(await page.locator('body').innerText({timeout:1000})).slice(-2000)});
+  captureFailurePage=()=>page.screenshot({path:join(out,'failure-page-private.png'),animations:'disabled',timeout:1000,mask:[page.locator('input[type="password"]')]});
   const uploadRequestBytes:number[]=[],sendRequestBytes:number[]=[];
   const captureRequest=(request:import('@playwright/test').Request)=>{if(!['POST','PUT'].includes(request.method()))return;
     if(request.url().includes('/native-uploads'))uploadRequestBytes.push(request.postDataBuffer()?.byteLength??0);
@@ -77,6 +87,7 @@ try{await withPlanEvalEnvironment(async environment=>{
   let attachmentMutationBlockedDuringUpload=false;
   let readyDraftRemovalReleasedQuota=false,uncertainDraftRemovalPreserved=false;
   const submitWhileUploadPaused=async(filename:string)=>{
+   fixturePhase='staged_upload_pause';
    let resume!:()=>void,started!:()=>void;
    const released=new Promise<void>(resolve=>{resume=resolve;}),paused=new Promise<void>(resolve=>{started=resolve;});
    await page.route('**/native-uploads/*/chunks/0',async route=>{started();await released;await route.continue();},{times:1});
@@ -110,6 +121,9 @@ try{await withPlanEvalEnvironment(async environment=>{
    fixturePhase='native_file_interaction';
    await page.getByLabel('Message Turi').waitFor({timeout:60000});
    if(boundaryMiB){
+    // SSR textarea visibility does not mean the first document's draft effect
+    // has run. Set the reload fixture only after actual composer hydration.
+    await page.waitForFunction(()=>{const input=document.querySelector<HTMLInputElement>('input[type="file"][aria-label="Chat document files"]');return input&&!input.disabled;},null,{timeout:30000});
     const readyBytes=Buffer.alloc(1024*1024,0x62),key=randomUUID(),path='/api/conversations/'+warmupId+'/native-uploads';
     const intent=await context.request.post(path,{headers,data:{requestKey:key,filename:'unused.bin',mediaType:'application/octet-stream',size:readyBytes.length,sha256:createHash('sha256').update(readyBytes).digest('hex')}});
     if(!intent.ok())throw Error('Restored draft upload reservation failed');
@@ -171,6 +185,7 @@ try{await withPlanEvalEnvironment(async environment=>{
   const resolutions=(await query('SELECT customer_id FROM ordinary_native_file_fixture_resolutions')).rows;if(resolutions.length!==1||resolutions[0].customer_id!==fixtureCustomerId)throw Error('Actual native resolver did not return the seeded canonical account');
   if(!process.argv.includes('--composer')){fixturePhase='completed_thread_navigation';await page.goto('/s/'+id,{waitUntil:'domcontentloaded'});}await page.getByText('Native file bytes received.',{exact:true}).waitFor({timeout:30000});await page.reload();await page.getByText('Native file bytes received.',{exact:true}).waitFor({timeout:30000});if(process.argv.includes('--composer')){await page.getByText('pixel.png',{exact:true}).waitFor();if(process.argv.includes('--steer'))await page.getByText('corrected.png',{exact:true}).waitFor();await page.screenshot({path:join(out,'native-file-desktop.png'),fullPage:true});await page.setViewportSize({width:390,height:844});await page.screenshot({path:join(out,'native-file-mobile.png'),fullPage:true});}
   if(boundaryMiB){
+   fixturePhase='staged_file_preview';
    await page.getByRole('button',{name:'View pixel.png',exact:true}).click();
    const preview=page.locator('.chat-file-card a[download="pixel.png"]');await preview.waitFor({timeout:30000});
    const digest=await preview.evaluate(async anchor=>{const bytes=await (await fetch((anchor as HTMLAnchorElement).href)).arrayBuffer();return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),byte=>byte.toString(16).padStart(2,'0')).join('');});
@@ -272,7 +287,7 @@ try{await withPlanEvalEnvironment(async environment=>{
   const retired=await context.request.post('/eve/v1/session/'+native+'/reset',{headers,data:{reason:'Owned native file fixture complete'}});if(!retired.ok())throw Error('Native file retirement unconfirmed');
   if(failedFileHistoryRecovery){await page.reload();await page.getByText('Native file recovery completed.',{exact:true}).waitFor({timeout:30000});const retiredDetail=await context.request.get('/api/conversations/'+id);if(!retiredDetail.ok()||(await retiredDetail.json()).data.nativeRetired!==true)throw Error('Failed-file fixture retirement missing');const users=await page.locator('article.chat-message-user').allTextContents();if(users.filter(text=>text.includes(failedPrompt)).length!==1)throw Error('Retired failed file user lost or duplicated');await page.getByText('pixel.png',{exact:true}).first().waitFor();}
   if(boundaryMiB&&(!uploadRequestBytes.length||Math.max(...uploadRequestBytes)>512*1024||!sendRequestBytes.length||Math.max(...sendRequestBytes)>4096))throw Error('Large native file bypassed bounded staging transport');
-  const receipt={failedFileHistoryRecovery,failedProviderCalls,failedUnknownHoldsPreserved,activeFailedNativeSnapshot,activeFailedNativeEmpty:activeFailedNativeSnapshot?activeFailedNativeSnapshot.events===0:null,retirementEmptyIsActiveFailureProof:false,interruptedStepRecovery,kind:'ordinary-native-file-bytes',actualEveRuntime:true,fixtureProvider:true,paidProviderCalls:0,runtimeDependencyInstallation:false,providerBytesPreserved:!process.argv.includes('--memory'),stagedFileBytes:boundaryMiB?bytes.length:null,maximumUploadRequestBytes:uploadRequestBytes.length?Math.max(...uploadRequestBytes):null,maximumSendRequestBytes:sendRequestBytes.length?Math.max(...sendRequestBytes):null,attachmentMutationBlockedDuringUpload,readyDraftRemovalReleasedQuota,uncertainDraftRemovalPreserved,previousFileAvailableAfterReload,personalPreferenceSaved:process.argv.includes('--memory')||process.argv.includes('--memory-files'),personalPreferenceCrossSession,personalPreferenceIsolated,personalPreferenceRemoved,providerToolSets:calls.map(row=>row.tool_names),actualCanonicalCustomerResolved:true,nativeFileCorrection:process.argv.includes('--steer'),toolNames:calls[0].tool_names,composerUsed:process.argv.includes('--composer'),reloadedHistory:true,nativeRetirementStatus:retired.status()};await writeFile(join(out,'receipt.json'),JSON.stringify(receipt,null,2),{mode:0o600});console.log(JSON.stringify(receipt));for(const name of ['failure-private.json','failure-private.log','send-private.json'])await rm(join(out,name),{force:true});
+  const receipt={failedFileHistoryRecovery,failedProviderCalls,failedUnknownHoldsPreserved,activeFailedNativeSnapshot,activeFailedNativeEmpty:activeFailedNativeSnapshot?activeFailedNativeSnapshot.events===0:null,retirementEmptyIsActiveFailureProof:false,interruptedStepRecovery,kind:'ordinary-native-file-bytes',actualEveRuntime:true,fixtureProvider:true,paidProviderCalls:0,runtimeDependencyInstallation:false,providerBytesPreserved:!process.argv.includes('--memory'),stagedFileBytes:boundaryMiB?bytes.length:null,maximumUploadRequestBytes:uploadRequestBytes.length?Math.max(...uploadRequestBytes):null,maximumSendRequestBytes:sendRequestBytes.length?Math.max(...sendRequestBytes):null,attachmentMutationBlockedDuringUpload,readyDraftRemovalReleasedQuota,uncertainDraftRemovalPreserved,previousFileAvailableAfterReload,personalPreferenceSaved:process.argv.includes('--memory')||process.argv.includes('--memory-files'),personalPreferenceCrossSession,personalPreferenceIsolated,personalPreferenceRemoved,providerToolSets:calls.map(row=>row.tool_names),actualCanonicalCustomerResolved:true,nativeFileCorrection:process.argv.includes('--steer'),toolNames:calls[0].tool_names,composerUsed:process.argv.includes('--composer'),reloadedHistory:true,nativeRetirementStatus:retired.status()};await writeFile(join(out,'receipt.json'),JSON.stringify(receipt,null,2),{mode:0o600});console.log(JSON.stringify(receipt));for(const name of ['failure-private.json','failure-private.log','failure-page-private.png','send-private.json'])await rm(join(out,name),{force:true});
  }catch(error){
   await writeFile(join(out,'runtime-state-private.json'),JSON.stringify({
    attempts:(await query('SELECT id,dispatch_state,response_state,native_turn_id,last_error_code FROM response_attempts')).rows,
@@ -287,7 +302,12 @@ try{await withPlanEvalEnvironment(async environment=>{
    for(const [key,value]of Object.entries(process.env))if(value&&value.length>=8&&/(?:SECRET|PASSWORD|TOKEN|API_KEY)/i.test(key))reason=reason.replaceAll(value,'<redacted>');
    console.error(JSON.stringify({kind:'native_file_fixture_failure',name:'RuntimeDiagnostic',reason:reason.slice(0,240)}));
   }
-  await writeFile(join(out,'failure-private.log'),environment.privateLogTail(),{mode:0o600});await writeFile(join(out,'failure-private.json'),JSON.stringify({name:error instanceof Error?error.name:'Unknown',message:error instanceof Error?error.message:String(error)}),{mode:0o600});throw error;}
+  let ui:unknown=null,timer:ReturnType<typeof setTimeout>|undefined;
+  try{ui=await Promise.race([inspectFileUi(),new Promise(resolve=>{timer=setTimeout(()=>resolve({unavailable:true}),1000);})]);}catch{ui={unavailable:true};}finally{if(timer)clearTimeout(timer);}
+  await captureFailurePage().catch(()=>undefined);
+  const diagnostic={phase:fixturePhase,applicationMode:'development',fileResponses,ui};
+  if(process.env.CI)console.error(JSON.stringify({kind:'native_file_boundary_diagnostic',...diagnostic}));
+  await writeFile(join(out,'failure-private.log'),environment.privateLogTail(),{mode:0o600});await writeFile(join(out,'failure-private.json'),JSON.stringify({name:error instanceof Error?error.name:'Unknown',message:error instanceof Error?error.message:String(error),...diagnostic}),{mode:0o600});throw error;}
  finally{if(csrf)await context.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':csrf}}).catch(()=>{});await context.close();await browser.close();}
 },{feature:'010',empty:true,deadlineAt:fixtureDeadlineAt,prepare:async({appRoot,environmentId})=>{
  marker=fixtureOwner;
