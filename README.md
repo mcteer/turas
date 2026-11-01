@@ -107,7 +107,7 @@ credentials, customer data, private stores or `.eve` runtime state.
 | `DATABASE_URL_UNPOOLED` | Direct owner connection used only for explicit migrations and grants. |
 | `TURAS_ENVIRONMENT_ID` | Identity shared by the selected database and private stores. |
 | `TURAS_APP_ORIGIN` | Exact application origin, such as `http://localhost:3000`. |
-| Temporary account usernames and passwords | Configured application accounts described below. |
+| Application account usernames and passwords | Configured application accounts described below. |
 | `TURAS_MAINTENANCE_SECRET` | Private maintenance secret of at least 32 characters. |
 | `TURAS_ARTIFACT_STORE_ROOT` | Absolute private-store path outside `public/`. |
 | `AI_GATEWAY_API_KEY` | Live model access through Vercel AI Gateway. |
@@ -122,7 +122,7 @@ For a **new, empty development database** with its environment marker configured
 ```sh
 npm run db:init
 npm run db:roles
-npm run db:bootstrap-demo
+npm run db:bootstrap
 npm run dev
 ```
 
@@ -140,15 +140,14 @@ reporting have additional prerequisites in the
 [staffing quickstart](specs/007-skills-staffing/quickstart.md) and
 [reporting operations guide](docs/reporting-operations.md).
 
-### Temporary Accounts
+### Application Accounts
 
 Preview deployments use the same `mcteer` credentials as Production. They inherit
 the existing sensitive credential record; local or test passwords must not
 override it. Verify this with `npm run preview:credentials:check`.
 
-These are temporary application accounts, configured privately by the environment
-operator. This is not a general-purpose SSO system; no passwords are published in
-this repository.
+Application accounts are configured privately by the environment operator.
+Passwords are never published in this repository.
 
 | Account | Intended access |
 | --- | --- |

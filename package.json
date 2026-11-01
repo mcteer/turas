@@ -45,6 +45,7 @@
     "db:inspect-preview": "node --env-file-if-exists=.env.local scripts/inspect-preview-db.mjs",
     "db:migrate": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/db-migrate.ts",
     "db:roles": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/db-roles.ts",
+    "db:bootstrap": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/bootstrap-demo.ts",
     "db:bootstrap-demo": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/bootstrap-demo.ts",
     "db:seed-profile-demo": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/seed-profile-demo.ts",
     "db:seed-profile-walkthrough": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/seed-profile-demo.ts --walkthrough",

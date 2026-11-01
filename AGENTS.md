@@ -46,7 +46,7 @@ capability. Smaller upgrades still follow the normal material-change rules.
   the Postgres maintenance worker. Preserve both the selected database and
   `.eve/.workflow-data` across restart/recovery checks. The repo is disconnected
   from Vercel; do not link, reconnect or deploy during this slice.
-- `mcteer` and `panel` are temporary internal logins that can read every workspace
+- `mcteer` and `panel` are internal application logins that can read every workspace
   customer reference, while `partner` is limited to explicitly assigned customer
   delivery data. Conversations remain private to their owner for every role.
 - Do not install speculative eve integrations. Search the registry when an active

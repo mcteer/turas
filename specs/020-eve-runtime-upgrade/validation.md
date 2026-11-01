@@ -112,6 +112,59 @@ synthetic completion or dependency patch is permitted.
   availability remained about 708 GiB. Unverified unrelated containers were not
   removed. Final CI and final-source Preview remain gates.
 
+## Established Production Accounts And Latest Hosted Acceptance
+
+The existing Production credential was recovered from the protected record saved
+by the earlier account restoration. No credential rotation, Production
+configuration or database change was needed. The locally configured copy had
+been stale; it was not evidence that the deployed credential needed changing.
+
+The mandatory Customer Profiles runner passed on Preview commit
+`251f3e02ac0f0b602e724edb7faa0aed5a3d1886` with actual `mcteer` browser form
+login on the exact Preview, its branch alias, and Production. The real directory
+and 1Password/Notion research matched Production. Navigation, overview placement,
+product/source controls and accepted-evidence search passed. Desktop dark and
+mobile light captures were inspected; session cleanup passed. The receipt is
+`local-artifacts/020/preview-profiles/receipt.json`; no responses were substituted.
+
+The real hosted specialist check also passed on that commit: two assignments on
+the same child/workflow, unchanged expiry, exactly two canonical user bubbles,
+keyboard Close with terminal evidence, preserved draft, no mobile overflow and
+retirement 202. Eleven specialist model operations settled at $0.221903; context
+and embedding operations retain $0.010386 in unknown holds. Root-model usage is
+separate. Receipt: `local-artifacts/020/hosted-specialist-final/receipt-private.json`.
+
+At the user's direction, current README/account guidance now calls these
+application accounts. The access screen says Workspace Accounts; synthetic data
+remains explicitly identified as Synthetic Data/context. The context notice was
+renamed without changing its evidence boundary. A `db:bootstrap` alias provides
+the documented initialization command. Existing deployed credential keys and
+compatibility commands are preserved. TypeScript and all 253 Markdown checks
+passed; final-source CI/Preview must include this wording update.
+
+Seventeen verified-unused physical build/dependency cache directories were
+removed from private historical test copies, freeing approximately 7 GiB. Source
+snapshots, compiled release artifacts, receipts, backups, selected runtime state
+and dependency symlink targets were preserved. Disk availability reached715 GiB.
+
+## Release Handoff
+
+Production remains commit `f3518f58eaf6a122a48b267c8b66fd9dfffcd599`, schema081.
+Preview alone has schema084. Its verified endpoint-free pre-migration recovery
+branch and both migration/grant rehearsals are recorded below. Review the final
+Preview before an authorized Production release. Apply explicit migrations/grants
+to the verified target, coordinate the exact-schema code change, then verify the
+deployed commit, schema, authentication and changed behavior through actual HTTP
+and CLI WebKit. Green CI is not Production release evidence.
+
+Prefer forward repair for rollback. An alias-only rollback to schema081 code
+after schema084 migration is incompatible. Fence new work while recovering,
+retain the current branch and held-usage/audit ledgers, and reconcile any writes
+after the backup before restoring a compatible code/database pair. Do not drop
+new ledgers or treat a restored backup as permission to erase unknown charges.
+Production rollback and post-merge behavior are not claimed to have been tested
+by the Preview rehearsal.
+
 ## Resumption Baseline
 
 Implementation resumed after planning commit `4a3d12c5` on

@@ -7,7 +7,7 @@ import { useEveAgent } from "eve/react";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { DemoDataNotice } from "./demo-data-notice";
+import { CustomerContextNotice } from "./customer-context-notice";
 import { readChatHandoff } from "./chat-handoff";
 import {notifyConversationsUpdated} from './conversation-updates';
 import { ChatStatus } from "./chat-status";
@@ -472,7 +472,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
       onClick={() => setContextOpen(value => !value)}>Customer context</button>
       {contextOpen && <div className="chat-context-details">
         <Link href={`/customers/${customerId}/plans`}>Delivery Plans</Link>
-        <DemoDataNotice synthetic={synthetic} />
+        <CustomerContextNotice synthetic={synthetic} />
         {canAttachDocuments && <button type="button" className="secondary-button" aria-expanded={attachmentsOpen}
           onClick={() => setAttachmentsOpen(value => !value)}>Customer sources</button>}
         <ResearchPanel customerId={customerId} conversationId={conversationId}

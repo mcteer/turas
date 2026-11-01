@@ -87,8 +87,8 @@ migrations/grants and environment-specific release evidence are available.
 - [x] T036 [P] [US5] Verify `.github/dependabot.yml` covers root npm, maintained package/operator manifests and Actions with reviewed update groups; confirm no unreviewed auto-merge and large-upgrade spec/adoption rules in `AGENTS.md`, `CONTRIBUTING.md` and `.specify/memory/constitution.md` (FR-016).
 - [x] T037 [P] [US5] Update `README.md`, `ROADMAP.md` and the spec adoption assessment to match implemented behavior, keep README headings Title Case and document exclusions with reasons (FR-016, FR-018, FR-019).
 - [x] T038 [US5] Rehearse migrations 082–084 and grants from schema 081 plus Preview 083 using `scripts/db-migrate.ts` and `scripts/db-roles.ts`; prove target/backup identity and compatible code/schema recovery, preserving old bindings and usage in `specs/020-eve-runtime-upgrade/validation.md` (FR-003, FR-005, FR-015, SC-008).
-- [ ] T039 [US5] Audit the final diff against scope boundaries in `specs/020-eve-runtime-upgrade/spec.md`: unchanged selected models, no unused integrations, private/synthetic pilot restoration or custom firewall rules; update PR #52's description from `specs/020-eve-runtime-upgrade/validation.md` (FR-018, FR-019).
-- [ ] T040 [US5] Prepare release/rollback and model-switch handoff evidence in `specs/020-eve-runtime-upgrade/validation.md`; distinguish implemented, locally checked, CI, Preview and Production states and any unresolved checks (FR-015, SC-007, SC-008).
+- [x] T039 [US5] Audit the final diff against scope boundaries in `specs/020-eve-runtime-upgrade/spec.md`: unchanged selected models, no unused integrations, private/synthetic pilot restoration or custom firewall rules; update PR #52's description from `specs/020-eve-runtime-upgrade/validation.md` (FR-018, FR-019).
+- [x] T040 [US5] Prepare release/rollback and model-switch handoff evidence in `specs/020-eve-runtime-upgrade/validation.md`; distinguish implemented, locally checked, CI, Preview and Production states and any unresolved checks (FR-015, SC-007, SC-008).
 
 ## Phase 8: Final Verification and Release
 
