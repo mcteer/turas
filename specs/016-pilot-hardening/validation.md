@@ -10006,7 +10006,7 @@ Production-mode WebKit verification and fresh exact-source CI remain pending.
 
 ## 2026-11-01: ordinary primary SDK fixture
 
-The `c4d2a16` main CI run passed53 jobs and stopped in catalog suite104 after643
+The `c4d2a16` main CI run passed 53 jobs and stopped in catalog suite 104 after 643
 preceding cases. Six of seven `hosted-sdk.test.ts` cases requested ordinary HTTP
 management/profile access with a retained synthetic-workspace session, which the
 production authentication boundary correctly refused. Its positive owned fixture
@@ -10019,3 +10019,30 @@ callers and found no additional mismatch; historical domain-accounting and sessi
 rejection fixtures intentionally retain their old classification. The focused run
 used a scoped temporary directory that was removed afterward; no paid models ran.
 Fresh exact-source CI remains required; the failed catalog is not a pass.
+
+## 2026-11-01: staged-file fixture hydration and bounded diagnostics
+
+The `553cdce` CI attempt timed out waiting for the staged 4 MiB file preview.
+A separate compiled-mode diagnostic exposed a fixture prerequisite mismatch:
+that runner starts Next and Eve without the dev supervisor's maintenance worker,
+and the native boundary correctly returned `maintenance_unavailable`. The
+experimental mode change was removed; no application admission guard changed.
+
+The existing browser fixture now waits for its mounted, enabled file input before
+injecting a draft for the next reload. Server-rendered textarea visibility alone
+can precede the first document's draft-restoration effect. Bounded response status,
+error-code and synthetic-page diagnostics now preserve the failing phase without
+changing requests, assertions or the existing 30-second/420-second limits.
+
+Both focused checks passed in the supported owned environment: the 4 MiB active
+response correction and the 10 MiB interrupted-step recovery. Original byte
+digests, reload/preview availability, upload mutation protection, uncertain draft
+removal and failed-response history checks remained enabled. No paid provider
+calls ran; scoped temporary directories were removed. Independent review found
+no blocker. Root and feature typechecks and authored-document checks passed.
+
+The unchanged partner feedback journey also passed all four WebKit projects
+without retries after its CI timeout. This does not establish that timeout's
+cause. The separate product-gaps failure reported a WebKit internal navigation
+error. Fresh complete CI and exact-source Preview checks remain required; none
+of these focused checks establishes a green CI run or a Production release.
