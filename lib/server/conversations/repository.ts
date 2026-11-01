@@ -477,7 +477,7 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
       FROM event_projections event WHERE conversation_id = $1
         AND event_type <> 'message.appended'
         AND NOT (event_type='message.received' AND visible_payload ? 'applicationInputReplay')
-      ORDER BY emitted_at, native_event_id LIMIT 501`, [id]),
+      ORDER BY emitted_at, ${conversation.nativeProtocol===27?"stream_index,stream_fact_index,":""}native_event_id LIMIT 501`, [id]),
     query<{ turn_id: string; step_index: number | null; message: string; emitted_at: Date }>(`
       SELECT e.turn_id, e.step_index, string_agg(e.visible_payload->>'messageDelta', ''
         ORDER BY e.emitted_at, e.native_event_id) AS message, max(e.emitted_at) AS emitted_at

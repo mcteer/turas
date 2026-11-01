@@ -54,7 +54,7 @@ async function ownedInputResponseBinding(actor:CurrentSession,nativeSessionId:st
     ${(marker?.schema_version??0)>=68?`OR EXISTS(SELECT 1 FROM ordinary_steering_deliveries steer WHERE steer.attempt_id=a.id AND steer.native_turn_id=event.turn_id AND steer.native_event_id IS NOT NULL)`:''})
    CROSS JOIN LATERAL jsonb_array_elements(COALESCE(event.visible_payload->'requests','[]'::jsonb)) request
    WHERE c.eve_session_id=$1 AND c.owner_principal_id=$2 AND c.workspace_id=$3 AND c.environment_id=$4 AND c.binding_state='bound'
-    AND event.event_type='input.requested' AND ($6::boolean OR request->>'requestId'=ANY($5::text[]))
+    AND event.event_type='input.requested' AND (event.visible_payload->>'applicationAttemptId' IS NULL OR event.visible_payload->>'applicationAttemptId'=a.id::text) AND ($6::boolean OR request->>'requestId'=ANY($5::text[]))
     AND a.response_state NOT IN('cancelled','stopping','failed')
     ${(marker?.schema_version??0)>=77?`AND NOT EXISTS(SELECT 1 FROM ordinary_question_continuations settled WHERE settled.attempt_id=a.id AND settled.request_event_id=event.native_event_id AND request->>'requestId'=ANY(settled.settled_request_ids)) AND NOT EXISTS(SELECT 1 FROM ordinary_question_reconstructions settled WHERE settled.attempt_id=a.id AND settled.request_event_id=event.native_event_id AND request->>'requestId'=ANY(settled.settled_request_ids))`:''}
     AND NOT EXISTS(SELECT 1 FROM event_projections resolved
