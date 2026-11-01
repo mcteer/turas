@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readFile, stat } from "node:fs/promises";
+import { readFile, stat,writeFile,mkdir } from "node:fs/promises";
 import { readOwnedStaffingPair } from "../fixtures/staffing/pair";
 import { join } from "node:path";
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
@@ -26,7 +26,14 @@ function headers(auth: Auth, extra: Record<string, string> = {}) {
   return { cookie: auth.cookie, origin: environment.origin, "content-type": "application/json", "x-csrf-token": auth.csrf, ...extra };
 }
 async function post(auth: Auth, path: string, body: unknown, extra: Record<string, string> = {}) {
-  return fetch(`${environment.origin}${path}`, { method: "POST", headers: headers(auth, extra), body: JSON.stringify(body), signal: timeout() });
+  const response=await fetch(`${environment.origin}${path}`, { method: "POST", headers: headers(auth, extra), body: JSON.stringify(body), signal: timeout() });
+  if(response.status>=500){try{
+    const root=join(process.cwd(),'local-artifacts/007');await mkdir(root,{recursive:true,mode:0o700});
+    const runtimeLog=environment.privateLogTail();
+    await writeFile(join(root,'native-request-failure-private.json'),JSON.stringify({status:response.status,body:await response.clone().json().catch(()=>null),runtimeLog},null,2),{mode:0o600});
+    console.error(JSON.stringify({kind:'owned_staffing_native_error',status:response.status,dormantGeneration:runtimeLog.includes('DevelopmentRunUnavailableError')}));
+  }catch{/* Diagnostics must not replace the original response/assertion. */}}
+  return response;
 }
 async function login(name: "panel" | "mcteer"): Promise<Auth> {
   const config = getServerConfig();

@@ -1,3 +1,4 @@
+import {installOwnedEveResume} from '../owned-eve-resume';
 import {prepareExecutionLive} from "../../../scripts/execution-live-runtime";
 import {buildExecutionLiveCase,type ExecutionLiveCaseId} from "./advisory";
 import {installExecutionLiveObservation} from "./live";
@@ -47,19 +48,7 @@ export async function withExecutionNativeCase<T>(scenario: Scenario, run: (fixtu
   return withExecutionEvalEnvironment(async environment => {
     await environment.prepareRuntime(); await installExecutionNativeFixture(environment);
     if(observe)await installExecutionLiveObservation(environment);
-    if(scenario==='unknown'){
- const path=join(environment.appRoot,'scripts/dev.mjs');let source=await readFile(path,'utf8');
- // The documented --resume CLI owns this disposable app's retained local world.
- // withEve reuses that already-running local server. Do not enable automatic
- // recovery for the user's selected development database or workflow state.
- const launcher=`const ownedEve=spawn(resolve(cwd,'node_modules/.bin/eve'),['dev','--resume','--no-ui','--port','0'],{cwd,env:process.env,stdio:['ignore','pipe','pipe']});
-let ownedOrigin='';
-await new Promise((done,reject)=>{let text='';const timer=setTimeout(()=>reject(Error('Owned resume server timeout')),90000);const listen=chunk=>{const value=chunk.toString();process.stdout.write(value);text=(text+value).slice(-200000);const match=text.match(/server listening at (http:\\/\\/127\\.0\\.0\\.1:\\d+)\\//);if(match){ownedOrigin=match[1];clearTimeout(timer);done();}};ownedEve.stdout.on('data',listen);ownedEve.stderr.on('data',listen);ownedEve.once('exit',()=>{clearTimeout(timer);reject(Error('Owned resume server exited'));});});
-`;
- source=source.replace('const next = spawn(',launcher+'const next = spawn(').replace('["dev"]','["dev","--webpack"]').replace('  next.kill("SIGTERM");','  next.kill("SIGTERM");\n  ownedEve.kill("SIGTERM");');
- source+='\nconsume("server listening at "+ownedOrigin+"/");\n';
- await writeFile(path,source,{mode:0o600});
-    }
+    if(scenario==='unknown')await installOwnedEveResume(environment.appRoot,'008');
     const disabledBefore = process.env.TURAS_008_DISABLED;
     const prior = process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY; process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY = "1";
     const start = async (restart = false) => {

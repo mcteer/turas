@@ -1,3 +1,4 @@
+import {installOwnedEveResume} from '../owned-eve-resume';
 import { readFile, writeFile, realpath } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import type { StaffingEvalEnvironment } from "../../../scripts/staffing-eval-environment";
@@ -6,6 +7,7 @@ import { query } from "../../../lib/server/db/client";
 
 export async function installStaffingNativeFixture(environment: StaffingEvalEnvironment) {
   requireOwnedStaffingClone();
+  await installOwnedEveResume(environment.appRoot,'007');
   const root = await realpath(environment.appRoot), owned = await realpath(resolve("local-artifacts/007"));
   if (!root.startsWith(`${owned}/eval-`) || !root.endsWith("/app") || root === await realpath(process.cwd()) ||
     new URL(process.env.DATABASE_URL!).pathname !== `/${environment.databaseName}`) throw new Error("Owned app fixture required");

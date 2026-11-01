@@ -116,7 +116,7 @@ synthetic completion or dependency patch is permitted.
 
 The existing Production credential was recovered from the protected record saved
 by the earlier account restoration. No credential rotation, Production
-configuration or database change was needed. The locally configured copy had
+configuration or database schema change was needed. The locally configured copy had
 been stale; it was not evidence that the deployed credential needed changing.
 
 The mandatory Customer Profiles runner passed on Preview commit
@@ -184,6 +184,59 @@ direct SDK cancellation although implementation and data-model/contract used the
 proven durable Stop hook. T045 records that correction; plan/research now match
 the tested implementation. No additional application-code gap was identified.
 Final-source CI/Preview and the separate reviewed release gate remain explicit.
+
+## Final Preview And Governed Fixture Compatibility
+
+Commit `d47cc043c63491e70bff60d1c4d55493f8f3eae7` deployed Ready at
+https://turas-hxoxo53te-turas-6e414af3.vercel.app
+(`dpl_9MFdir1kZ7BfGmMhpRaq7RNmRZJ3`). Actual mcteer form login, all four
+composer layouts, keyboard attachment/link interaction, draft preservation and
+Workspace Accounts wording passed. All four composer captures were inspected.
+A real bounded root reply remained visible through one browser transport abort
+before native admission of a later send. Its model-operation count stayed1→1,
+with no automatic resend. Native retirement returned202 and logout200. Receipt:
+`local-artifacts/020/final-preview-ui/receipt-private.json`.
+
+The mandatory real Production/Preview Customer Profiles comparison also passed
+on that source with the existing mcteer credential. The exact Preview and branch
+alias authenticated; directory/research, source controls and evidence search
+matched Production. Its four captures were inspected; receipt:
+`local-artifacts/020/preview-profiles-final/receipt.json`.
+
+CI then identified remaining governed fixture compatibility work:
+
+- The paired Staffing restart check reproduced a real500 with
+  `DevelopmentRunUnavailableError`: the old local generation was dormant. The
+  disposable fixture now starts documented `eve dev --resume` before Next. A
+  shared guarded helper is used by Staffing and Execution's unknown-usage case;
+  it cannot modify the selected app or enable paid fixtures. Original assertions
+  are unchanged. The full Staffing native file passed5/5, including source
+  withdrawal, native usage/replay and paired database/store/receipt preservation.
+  Evidence: `local-artifacts/020/staffing-native-complete-private.log`. Earlier CI
+  also reported503 admissions; this local pass does not independently establish
+  the cause of every503. Safe failure diagnostics retain actual future bodies
+  privately and expose only status/dormant-generation metadata.
+- The shared Execution recovery rerun passed2/2, with zero pending/skipped cases
+  and no paid provider calls (`/tmp/turas-020-execution-shared-resume.txt`). Its
+  native unknown-usage case preserves the original operation and held usage.
+  The helper recorded two owned dev-generation custody records for exact cleanup.
+- Production-mode browser fixtures still targeted Customer (optional) and a
+  standalone Customer sources button. They now follow Customer and the + menu.
+  The unchanged upload/authorization assertions passed all40 cases across four
+  projects with zero skips/failures (`/tmp/turas-020-pilot-ui-selectors-fixed.txt`).
+  This proves owned local workspace/upload transport, not hosted scanner behavior.
+- The additional document/layout/chat-state regression group passed43 cases,
+  retaining nine pre-existing single-desktop fixture skips. It checks prepared
+  document content, source navigation without draft dispatch, requested selector
+  placement and retained failure states. Evidence:
+  `local-artifacts/020/ordinary-ui-regressions-private.log`.
+- Product Gaps CI navigation failed with WebKit internal error before receiving
+  HTTP; its unchanged six-journey/four-project local rerun passed100 cases, zero
+  failures/skips (`/tmp/turas-020-gaps-webkit-local.txt`). A fresh CI pass is still
+  required; a local pass is not relabelled as a CI retry.
+
+These follow-up changes are fixture/documentation compatibility; application code
+is unchanged from the authenticated Preview above. Final-source CI remains open.
 
 ## Resumption Baseline
 

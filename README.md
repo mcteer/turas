@@ -165,6 +165,12 @@ runtime remain readable as saved history; start a new conversation to use the
 current runtime with fresh authorization. Apply the checked-in migrations before
 running an upgraded deployment.
 
+To explicitly recover retained local runs, start
+`npm run dev:eve -- --resume --no-ui` before `npm run dev` in a second terminal.
+Eve loads `.env.local`; keep the selected database and `.eve/.workflow-data`
+together. A normal new development generation leaves older runs dormant. This
+local recovery mode is separate from hosted recovery verification.
+
 Dependabot checks the three npm projects and GitHub Actions weekly on Monday at
 09:00 America/Denver. Eve and its AI SDK peer updates are grouped for compatibility
 review. Dependency PRs follow the normal review and CI process.

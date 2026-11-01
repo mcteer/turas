@@ -7,13 +7,14 @@ import { signIn } from "../fixtures/ui";
 test("legacy landing and customer cards retain accessible scoped workflows", async ({ page }, info) => {
   await signIn(page, "panel");
   await expect(page.getByRole("heading", { name: "Turi", exact: true })).toBeVisible();
-  await expect(page.getByLabel("Customer (optional)", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Customer", { exact: true })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Message Turi" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Send message" })).toBeDisabled();
   await page.getByRole("textbox", { name: "Message Turi" }).fill("Explain technical best practices.");
   await expect(page.getByRole("button", { name: "Send message" })).toBeEnabled();
-  await expect(page.getByLabel("Customer (optional)")).toHaveText("Customer (optional)");
-  expect((await page.getByLabel("Customer (optional)").boundingBox())!.y).toBeGreaterThan((await page.locator(".chat-composer").boundingBox())!.y + (await page.locator(".chat-composer").boundingBox())!.height);
+  await expect(page.getByLabel("Customer")).toHaveText("Customer");
+  await expect(page.locator(".chat-composer").getByLabel("Customer",{exact:true})).toBeVisible();
+  expect((await page.getByLabel("Customer",{exact:true}).boundingBox())!.x).toBeGreaterThan((await page.getByRole("textbox",{name:"Message Turi",exact:true}).boundingBox())!.x);
   await expect(page.locator(".chat-landing .chat-notice")).toHaveCount(0);
   await page.getByRole("textbox", { name: "Message Turi" }).fill("");
   expect(await page.locator(".chat-title").evaluate(node => getComputedStyle(node).fontSize)).toBe("48px");
