@@ -231,10 +231,10 @@ try {
   // fixture's explicit test-database selector.
   const contractUrl=new URL(url);contractUrl.searchParams.set('options','-c role=turas_runtime');
   if(!acceptanceOnly&&!process.argv.includes("--native-only")&&!process.argv.includes("--native-files-only"))run(["node_modules/vitest/vitest.mjs","run","tests/contracts/general-chat.test.ts"],{...environment,DATABASE_URL:contractUrl.toString(),DATABASE_URL_UNPOOLED:contractUrl.toString()});
-  if(process.argv.includes('--execution-check'))run(['--import','tsx','scripts/test-execution.ts'],integrationEnvironment);
+  if(process.argv.includes('--execution-check'))run(['--import','tsx','scripts/test-execution.ts',...(process.argv.includes('--execution-recovery-only')?['--recovery']:[])],integrationEnvironment);
   if(process.argv.includes('--support-native'))run(['--import','tsx','scripts/check-support-native.ts'],integrationEnvironment);
   if(process.argv.includes('--native-specialists'))run(['--import','tsx','scripts/check-specialist-continuity.ts',...(process.argv.includes('--specialists-control-only')?['--control-only']:[])],integrationEnvironment);
-  if(process.argv.includes('--specialist-domain'))run(['node_modules/vitest/vitest.mjs','run','tests/integration/specialist-discussions.test.ts','tests/contracts/specialist-discussions.test.ts','tests/integration/watchdog.test.ts'],integrationEnvironment);
+  if(process.argv.includes('--specialist-domain'))run(['node_modules/vitest/vitest.mjs','run','tests/integration/specialist-discussions.test.ts','tests/contracts/specialist-discussions.test.ts','tests/integration/watchdog.test.ts','tests/contracts/eve-session.test.ts','tests/contracts/profile-hook.test.ts','tests/contracts/profile-agent-context.test.ts'],integrationEnvironment);
   if(process.argv.includes('--chat-interaction'))run(['--import','tsx','scripts/check-chat-interaction-ui.ts',...(process.argv.includes('--preparation-race')?['--preparation-race']:[])],integrationEnvironment);
   if(process.argv.includes('--webkit'))run(['--import','tsx','scripts/check-legacy-parity-disposable.mjs','--webkit-child'],integrationEnvironment);
   if(process.argv.includes('--native-operations')){

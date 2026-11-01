@@ -185,7 +185,10 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const inputRequests=pendingChatInputsFromView(agent.view);
   const [answering,setAnswering]=useState(false);
   const messages = agent.messages;
-  const historyMessages=activeChatHistory(messages,canSteer?applicationHistory:[]);
+  // Ordinary user deliveries render from the authorized application projection.
+  // Eve can retain local submission IDs after confirmation, so mixing its user
+  // bubbles with that projection cannot establish an exact delivery identity.
+  const historyMessages=activeChatHistory(messages,canSteer?applicationHistory:[],canSteer);
   const background = backgroundChatActivity(agent.view);
   const displayedRequestIds=new Set(historyMessages.flatMap(item=>activityRequestIds(item.kind==='native'?item.message.parts:item.activity??[])));
   const awaitingAuthorization=openInteractions(agent.view).some(item=>item.request.kind==='sign-in'||item.request.kind==='approval');

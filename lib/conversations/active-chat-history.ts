@@ -5,7 +5,8 @@ import type {NativeAttachmentReference,NativeUserDisplayPart} from './native-mes
 export type ChatDisplayMessage={kind:'native';message:EveMessage}|{kind:'retained';message:RetainedChatMessage;activity?:EveMessage['parts']};
 /** Presentation only. Application history never enters the native session,
  * event reducer, input controls, delivery admission or provider context. */
-export function activeChatHistory(native:readonly EveMessage[],history:readonly RetainedChatEvent[]):ChatDisplayMessage[]{
+export function activeChatHistory(native:readonly EveMessage[],history:readonly RetainedChatEvent[],canonicalUsers=false):ChatDisplayMessage[]{
+ if(canonicalUsers)native=native.filter(message=>message.role!=='user');
  if(!history.length)return native.map(message=>({kind:'native' as const,message}));
  // Split only the display of multi-step assistant messages, preserving live
  // unprojected steps when one completed step already has canonical prose.

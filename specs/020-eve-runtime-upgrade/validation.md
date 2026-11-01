@@ -4,9 +4,9 @@
 
 The specialist implementation is present and has passed the real local Eve
 continuity/control harness and the four-project WebKit UI suite. It is not yet
-released. Ordinary attachment restart recovery, remaining governed checks,
-final-source CI, isolated Preview acceptance and Production verification remain
-release gates. The sections below retain earlier diagnostic history; their
+released. Ordinary attachment restart recovery and a bounded real hosted
+specialist exercise have passed. Remaining governed checks, final-source CI,
+final-source Preview acceptance and Production verification remain release gates. The sections below retain earlier diagnostic history; their
 pending statements are superseded only by the explicit results here.
 
 - Native baseline (`/tmp/turas-020-native-specialists19.txt`): all three
@@ -40,6 +40,45 @@ Eve 0.91's generated local world explicitly disables active-run recovery. This i
 not a hosted recovery pass or a hosted failure. The unchanged fault/assertions are
 being tested through documented `eve dev --resume`; no resend, expiry renewal,
 synthetic completion or dependency patch is permitted.
+
+
+## Current Compatibility And Hosted Evidence
+
+- Preview commit `d23b6a5f57db9ce21f39f4081da88ed41532b954`, deployment
+  `dpl_3PAsCUtT9DHsaserjh9rKwPrhKB7`, was Ready. Authenticated panel WebKit
+  exercised login, attachment/link dialogs and logout. This precedes the latest
+  compatibility fixes and is not final-source acceptance. The unchanged shared
+  mcteer credential record targets both Preview and Production; that metadata
+  does not prove an actual mcteer login. No password was rotated.
+- A real hosted best-practices specialist completed its initial request and a
+  refinement on the same child/workflow with unchanged expiry. Keyboard Close
+  reached terminal evidence, preserved the draft, and retirement returned 202;
+  the mobile page had no horizontal overflow. Eleven specialist Gateway model
+  operations settled at $0.128146. Context/standard-web and embedding operations
+  retained $0.030584 in unknown holds. These amounts exclude root-model usage.
+  Private receipt: `local-artifacts/020/hosted-specialist/receipt-private.json`.
+- The native specialist CI job on that commit passed, including canonical-source
+  publication and subsequent retained-context validation. T015 is implemented.
+- The owned Execution unknown-usage restart check passed using documented
+  `eve dev --resume`; provider dispatch remained single and unknown usage stayed
+  reserved. It does not establish every Execution suite has passed.
+- The production-mode owned startup probe now passes. Eve 0.91's Next hosting
+  starts the built agent service; a second manually started child competed for
+  the same port. The fixture now uses the managed service. Production resources
+  were not changed. Full production-mode workflow assertions still require CI.
+- Explicit new chat input replaces a pending approval only after the original
+  owned turn has actually settled. The stale approval cannot authorize a write;
+  a fresh explicit proposal and fresh exact human review are required. Member
+  approval/rejection still require existing reviewer rights; Stop creates no
+  decision.
+- Ordinary user bubbles now come only from authorized application projections.
+  Eve may retain a local submission ID after confirmation even with optimistic
+  display disabled. No text/turn deduplication is used; repeated canonical sends
+  remain distinct. Native assistants, interactions and control state are unchanged.
+  The focused 15-case history suite and TypeScript passed.
+- Existing CI failures in protocol mocks and health-schema restoration were
+  updated to v27 public callbacks and CURRENT_SCHEMA_VERSION. The focused owned
+  contract gate passed. Final-source CI remains pending.
 
 ## Resumption Baseline
 
@@ -260,3 +299,12 @@ statement timeouts or paid calls. The fixture signs the final result against the
 post-publication context, matching the authored finalizer. A final explicit
 canonical-source assertion has been added for CI; the prior run exercised the
 writer and continuation but did not separately count canonical source rows.
+
+The inline file/memory check first reproduced a digest mismatch because the v27
+adapter omitted file summary lines. The adapter now preserves the exact reserved
+text/file summary while excluding native file references/URLs/bytes. Fourteen
+projection cases and TypeScript passed. The actual native memory/file rerun passed
+(`/tmp/turas-020-native-memory-fixed.txt`): preference save, fresh-session recall,
+other-user isolation, removal and native retirement, with zero paid calls. The
+latest shared native-file receipt covers this memory run; earlier named logs
+retain the distinct staged-file results.

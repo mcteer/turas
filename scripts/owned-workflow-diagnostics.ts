@@ -33,3 +33,13 @@ export async function captureOwnedWorkflowMetadata(appRoot:string,runIds:readonl
  }
  await writeFile(destination,JSON.stringify({records},null,2),{mode:0o600});
 }
+
+/** Synthetic owned copies only: expose render identities for exact replay joins. */
+export async function installOwnedChatIdentityDiagnostics(appRoot:string){
+ const root=await realpath(appRoot),base=await realpath(resolve('local-artifacts'));
+ if(!['008','010'].some(feature=>root.startsWith(base+'/'+feature+'/eval-'))||!root.endsWith('/app'))throw Error('Owned chat diagnostics required');
+ const path=join(root,'app/_components/agent-chat.tsx');let source=await readFile(path,'utf8');
+ source=source.replace("key={'retained:'+message.id}",`data-owned-kind="retained" data-owned-id={message.id} key={'retained:'+message.id}`)
+  .replaceAll('key={message.id}>',`data-owned-kind="native" data-owned-id={message.id} key={message.id}>`);
+ await writeFile(path,source,{mode:0o600});
+}

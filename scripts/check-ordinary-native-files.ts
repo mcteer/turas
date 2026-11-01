@@ -1,4 +1,4 @@
-import {captureOwnedWorkflowMetadata} from './owned-workflow-diagnostics';
+import {captureOwnedWorkflowMetadata,installOwnedChatIdentityDiagnostics} from './owned-workflow-diagnostics';
 import {readFile,writeFile,mkdir,rm} from 'node:fs/promises';
 import {createHash,randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
@@ -22,7 +22,7 @@ let marker:string|undefined;
 let fixturePhase='owned_environment_preparation';
 const fixtureDeadlineAt=Date.now()+ordinaryNativeFileFixtureMaximumMs;
 try{await withPlanEvalEnvironment(async environment=>{
- environment.bootstrapDemo();
+ environment.bootstrapDemo();await installOwnedChatIdentityDiagnostics(environment.appRoot);
  const path=join(environment.appRoot,'agent/agent.ts'),source=await readFile(path,'utf8');
  const target='return selectTurasGatewayModel(wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId));';
  if(source.split(target).length!==2)throw Error('Authored model shape changed');
@@ -78,7 +78,7 @@ try{await withPlanEvalEnvironment(async environment=>{
   // the original byte-size boundary through browser, HTTP, Eve and provider.
   const bytes=boundaryMiB?Buffer.concat([pixel,Buffer.alloc(boundaryMiB*1024*1024-pixel.length,0x5a)]):pixel;
   let page=await context.newPage();
-  inspectFileUi=async()=>({cards:await page.locator('.chat-file-card').evaluateAll(cards=>cards.slice(0,4).map(card=>({downloadPresent:Boolean(card.querySelector('a[download]')),loading:Boolean(card.querySelector('button:disabled')),errorPresent:Boolean(card.querySelector('[role="alert"]'))}))),alerts:(await page.getByRole('alert').allTextContents()).slice(0,4).map(value=>value.slice(0,200)),sendRequestBytes,syntheticPageText:(await page.locator('body').innerText({timeout:1000})).slice(-2000)});
+  inspectFileUi=async()=>({renderedUsers:await page.locator('article.chat-message-user').evaluateAll(items=>items.map(item=>({kind:item.getAttribute('data-owned-kind'),id:item.getAttribute('data-owned-id')}))),cards:await page.locator('.chat-file-card').evaluateAll(cards=>cards.slice(0,4).map(card=>({downloadPresent:Boolean(card.querySelector('a[download]')),loading:Boolean(card.querySelector('button:disabled')),errorPresent:Boolean(card.querySelector('[role="alert"]'))}))),alerts:(await page.getByRole('alert').allTextContents()).slice(0,4).map(value=>value.slice(0,200)),sendRequestBytes,syntheticPageText:(await page.locator('body').innerText({timeout:1000})).slice(-2000)});
   captureFailurePage=()=>page.screenshot({path:join(out,'failure-page-private.png'),animations:'disabled',timeout:1000,mask:[page.locator('input[type="password"]')]});
   const uploadRequestBytes:number[]=[],sendRequestBytes:number[]=[];
   const captureRequest=(request:import('@playwright/test').Request)=>{if(!['POST','PUT'].includes(request.method()))return;
@@ -268,7 +268,7 @@ try{await withPlanEvalEnvironment(async environment=>{
    const aliases=inputs.filter(row=>row.visible_payload.applicationInputReplay);
    if(Number(captured.operations)!==0||current.length!==2||!current.some(row=>row.input_event_id===captured.input_event_id&&row.input_digest===captured.input_digest&&row.native_delivery_id===captured.native_delivery_id&&row.deadline_at.toISOString()===captured.deadline_at)||aliases.length>1||aliases.some(alias=>alias.visible_payload.applicationInputReplay.retryOfInputEventId!==captured.input_event_id||alias.visible_payload.applicationInputReplay.admittedDeliveryId!==captured.native_delivery_id))throw Error('Owned interrupted-step recovery changed canonical input, deadline or delivery');
    const rendered=await page.locator('article.chat-message-user').allTextContents();
-   if(rendered.length!==2||rendered.filter(text=>text.includes(firstPrompt)).length!==1)throw Error('Interrupted native delivery duplicated rendered user sends');
+   if(rendered.length!==2||rendered.filter(text=>text.includes(firstPrompt)).length!==1)throw Error('Interrupted native delivery rendered user sends incorrectly: total='+rendered.length+', original='+rendered.filter(text=>text.includes(firstPrompt)).length+', followup='+rendered.filter(text=>text.includes('Inspect the previously attached file after reload.')).length);
    interruptedStepRecovery=true;
    await writeFile(join(out,'interrupted-step-recovery.json'),JSON.stringify({actualEveRuntime:true,maximumNativeEventBytes,maximumBase64EventBytesEstimate,hostedPlatformLimitBytes:10*1024*1024,forcedInterruptions:1,initialModelOperations:0,canonicalInputPreserved:true,originalDeadlinePreserved:true,admittedAliases:aliases.length,renderedUserSends:2,originalUserSendCopies:1,providerFileBytesPreserved:true,paidProviderCalls:0},null,2),{mode:0o600});
   }

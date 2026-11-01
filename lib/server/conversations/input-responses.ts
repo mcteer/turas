@@ -133,11 +133,11 @@ export async function authorizeOwnedInputResponse(actor:CurrentSession,nativeSes
  return attemptId;
 }
 
-/** Only owned, unresolved ordinary questions may be replaced by an explicit
+/** Only owned, unresolved ordinary input branches may be replaced by an explicit
  * correction. Keep the original attempt/turn identity for terminal proof. */
 export async function pendingOwnedQuestionTurn(actor:CurrentSession,nativeSessionId:string){
  const {pending}=await ownedInputResponseBinding(actor,nativeSessionId,null,true);
- if(!pending.length||pending.some(item=>item.request.kind!=='question'))return null;
+ if(!pending.length||pending.some(item=>!['question','tool-approval','session-limit'].includes(String(item.request.kind))))return null;
  if(new Set(pending.map(item=>item.attempt_id)).size!==1)throw new HttpFailure(409,'question_turn_ambiguous','Stop the pending response before starting a new message.');
  return withTransaction(async db=>{
   if((await conversationFeature(db,pending[0].conversation_id)).kind!=='normal')return null;

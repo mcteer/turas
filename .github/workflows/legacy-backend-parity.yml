@@ -61,3 +61,21 @@ jobs:
       - name: Actual unpaid native operations, staged files, checklist and questions
         if: startsWith(matrix.gate, 'native-')
         run: node scripts/check-legacy-parity-disposable.mjs --${{ matrix.gate }}
+
+      - name: Retain owned runtime failure diagnostics
+        if: failure() && startsWith(matrix.gate, 'native-')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: owned-runtime-${{ matrix.gate }}-${{ github.run_id }}
+          path: |
+            local-artifacts/legacy-parity-native-files/failure-private.json
+            local-artifacts/legacy-parity-native-files/failure-page-private.png
+            local-artifacts/legacy-parity-native-files/runtime-state-private.json
+            local-artifacts/legacy-parity-native-files/workflow-*-private.json
+            local-artifacts/ordinary-operations-native/failure-private.json
+            local-artifacts/ordinary-operations-native/failure-*-messages.json
+            local-artifacts/ordinary-operations-native/database-failure-private.json
+            local-artifacts/ordinary-operations-native/failure-*.png
+            local-artifacts/ordinary-operations-native/failure-*.txt
+          if-no-files-found: warn
+          retention-days: 1

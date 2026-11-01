@@ -103,3 +103,12 @@ it('matches v27 delivery identity without collapsing identical later inputs',()=
  expect(activeChatHistory([first,second],[saved]).map(item=>item.message.id)).toEqual(['delivery_first:user','delivery_second:user']);
  expect(activeChatHistory([first],[{...saved,payload:{...saved.payload,nativeProtocol:25}}])).toHaveLength(2);
 });
+
+it('ordinary canonical user display ignores SDK submission aliases even before projection, preserving distinct repeated sends',()=>{
+ const native=user('optimistic:local-submission','turn0');
+ expect(activeChatHistory([native],[],true)).toEqual([]);
+ const saved:RetainedChatEvent={eventId:'canonical-first',eventType:'message.received',turnId:'turn0',payload:{message:'Original input'}};
+ const second={...saved,eventId:'canonical-second'};
+ expect(activeChatHistory([native],[saved],true).map(item=>item.message.id)).toEqual(['canonical-first']);
+ expect(activeChatHistory([native],[saved,second],true).map(item=>item.message.id)).toEqual(['canonical-first','canonical-second']);
+});

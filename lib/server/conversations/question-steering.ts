@@ -8,8 +8,8 @@ import {requestCancellation} from './cancel';
 import {projectEveFact} from './eve-events';
 import {projectNativeEvent} from './projection';
 
-/** Native free-text questions consume messages even under steer. An explicit
- * correction first stops that owned question turn; only a real terminal commit
+/** Native steering withdraws open questions and approvals. An explicit
+ * replacement first stops that owned input turn; only a real terminal commit
  * permits a new attempt. No cancelled allowance is reopened or renewed. */
 export async function stopOwnedQuestionsForSteering(actor:CurrentSession,id:string,attach:AttachSessionFn){
  const pending=await pendingOwnedQuestionTurn(actor,id);if(!pending)return;
