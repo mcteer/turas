@@ -1,3 +1,5 @@
+import {reconcileSpecialistRecoveryAccounting} from './recovery-specialist-accounting';
+import {legacyLineReplayKey} from './recovery-legacy-line-key';
 import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {reconcileRestoredNamedContentSafety} from './recovery-named-content';
 import {requireRecoveryJobReplayColumns,requireRecoveryJobSemanticRows} from './recovery-job-replay-keys';
@@ -177,6 +179,7 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
    for(const entry of snapshot.tables){
     if(!['ordinary_model_operations','parity_evaluation_operations','operations_recovery_model_holds'].includes(entry.name))continue;
     for(const row of entry.rows){
+     if(row.identity.operation_kind==='specialist')continue;
      const actualValue=entry.name==='ordinary_model_operations'||row.identity.operation_kind==='ordinary_tokens'?row.status.actual_tokens:row.status.actual_micro_usd;
      const actual=actualValue==null?null:z.coerce.number().int().nonnegative().safe().parse(actualValue),settledAt=row.status.settled_at==null?null:z.iso.datetime({offset:true}).parse(row.status.settled_at);
      if(entry.name==='operations_recovery_model_holds'){
@@ -222,6 +225,7 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
    }
    const observations=holds.map(hold=>({kind:hold.kind,id:hold.id,ceiling:hold.ceiling,actual:hold.actual,settledAt:hold.settledAt,evidenceKind:hold.evidenceKind,observedDigest:hold.observedDigest,observedAt:hold.observedAt,observedDigestKind:hold.observedDigestKind}));
    for(const row of snapshot.tables.find(entry=>entry.name==='operations_recovery_model_observations')?.rows??[]){
+    if(row.identity.operation_kind==='specialist')continue;
     const kind=z.enum(['ordinary_tokens','parity_dollars']).parse(row.identity.operation_kind),ordinary=kind==='ordinary_tokens';
     observations.push({kind,id:uuid.parse(row.identity.operation_id),ceiling:z.coerce.number().int().nonnegative().safe().parse(ordinary?row.status.ceiling_tokens:row.status.ceiling_micro_usd),
      actual:(ordinary?row.status.actual_tokens:row.status.actual_micro_usd)==null?null:z.coerce.number().int().nonnegative().safe().parse(ordinary?row.status.actual_tokens:row.status.actual_micro_usd),
@@ -237,12 +241,13 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
   // Restore authenticated immutable allowance metadata before fencing its old
   // insertion identity, within this same locked transaction. This does not
   // recreate any dispatched operation or weaken an existing replay guard.
+  typedModelHoldsAdded+=await reconcileSpecialistRecoveryAccounting(db,snapshot,scope);
   let permanentReplayFencesAdded=0;
   if(['pilot-denial-replay-snapshot-v4','pilot-denial-replay-snapshot-v5','pilot-denial-replay-snapshot-v6','pilot-denial-replay-snapshot-v7'].includes(snapshot.contract)){
    // Older source schemas did not declare079's authored semantic identities.
    // Their authenticated index keys remain enforceable after forward migration;
    // this deny-only legacy path still keeps every required workflow quarantined.
-   if([79,80,CURRENT_SCHEMA_VERSION].includes(snapshot.schemaVersion))for(const entry of snapshot.tables)await requireRecoveryJobSemanticRows(db,entry,scope.environmentId);
+   if(snapshot.schemaVersion>=79)for(const entry of snapshot.tables)await requireRecoveryJobSemanticRows(db,entry,scope.environmentId);
    const replayEntries=snapshot.tables.map(entry=>({name:entry.name,replayKeyColumns:entry.replayKeyColumns??[],keys:entry.rows.flatMap(row=>row.replayKeys??[])}));
    const inheritedFence=z.strictObject({environment_id:z.string(),table_name:z.string().regex(/^[a-z_][a-z0-9_]*$/),key_columns:z.array(z.string().regex(/^[a-z_][a-z0-9_]*$/)).min(1).max(16),key_digest:z.string().regex(/^[a-f0-9]{64}$/)});
    for(const row of snapshot.tables.find(entry=>entry.name==='operations_replay_fences')?.rows??[]){
@@ -253,14 +258,14 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
    for(const entry of replayEntries){const prior=grouped.get(entry.name);if(prior){prior.replayKeyColumns.push(...entry.replayKeyColumns);prior.keys.push(...entry.keys);}else grouped.set(entry.name,{name:entry.name,replayKeyColumns:[...entry.replayKeyColumns],keys:[...entry.keys]});}
    for(const entry of grouped.values()){
     if(!entry.replayKeyColumns.length)continue;
-    const protectedTable=(await db.query("SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=$1 AND t.tgname='recovered_request_replay' AND t.tgenabled='O' AND t.tgfoid='turas_recovery_replay_guard'::regproc",[entry.name])).rowCount===1;
+    const protectedTable=(await db.query("SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=$1 AND t.tgname='recovered_request_replay' AND t.tgenabled='O' AND t.tgtype=23 AND t.tgqual IS NULL AND t.tgfoid='turas_recovery_replay_guard'::regproc",[entry.name])).rowCount===1;
     if(!protectedTable)throw Error('Actual permanent replay guard unavailable');
     const targetKeys=(await db.query(`SELECT array_agg(a.attname::text ORDER BY a.attname) AS columns FROM pg_index i
      JOIN pg_class c ON c.oid=i.indrelid JOIN pg_namespace n ON n.oid=c.relnamespace
      CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY k(attnum,ordinal) JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum=k.attnum
-     WHERE n.nspname='public' AND c.relname=$1 AND i.indisunique AND i.indpred IS NULL AND i.indexprs IS NULL AND k.ordinal<=i.indnkeyatts GROUP BY i.indexrelid`,[entry.name])).rows.map(row=>JSON.stringify(row.columns));
+     WHERE n.nspname='public' AND c.relname=$1 AND i.indisunique AND i.indisvalid AND i.indisready AND i.indpred IS NULL AND i.indexprs IS NULL AND k.ordinal<=i.indnkeyatts GROUP BY i.indexrelid`,[entry.name])).rows.map(row=>JSON.stringify(row.columns));
     targetKeys.push(...(await requireRecoveryJobReplayColumns(db,entry.name)).map(columns=>JSON.stringify(columns)));
-    if(entry.replayKeyColumns.some(columns=>!targetKeys.includes(JSON.stringify(columns))))throw Error('Actual permanent replay index differs');
+    if(entry.replayKeyColumns.some(columns=>!targetKeys.includes(JSON.stringify(columns))&&!legacyLineReplayKey(entry.name,columns,targetKeys)))throw Error('Actual permanent replay index differs');
     for(const chunk of recoveryRowChunks(entry.keys.map(key=>({key_columns:key.columns,key_digest:key.digest})))){
      permanentReplayFencesAdded+=(await db.query(`INSERT INTO operations_replay_fences(environment_id,table_name,key_columns,key_digest,snapshot_digest,source_captured_at,recovery_id,control_revision)
       SELECT $1,$2,k.key_columns,k.key_digest,$4,$5,$6,$7 FROM jsonb_to_recordset($3::jsonb) AS k(key_columns text[],key_digest text)
@@ -268,7 +273,7 @@ async function reconcileCredentialDenialsInTransaction(db:Client|PoolClient,snap
     }
    }
   }
-  const namedContentCoverage=[80,CURRENT_SCHEMA_VERSION].includes(snapshot.schemaVersion)?await reconcileRestoredNamedContentSafety(db,snapshot,scope.environmentId):{historicalSnapshot:true,currentNamedContentAuthorityVerified:false,authorityGranted:false};
+  const namedContentCoverage=snapshot.schemaVersion>=80?await reconcileRestoredNamedContentSafety(db,snapshot,scope.environmentId):{historicalSnapshot:true,currentNamedContentAuthorityVerified:false,authorityGranted:false};
   const currentStateDigest=await currentRecoveryStateDigest(db);
   return {currentStateDigest,namedContentCoverage,contract:'pilot-owned-credential-denials-v5' as const,...scope,mode:'locked' as const,revokedWorkspaces,revokedPartnerOrganizations,revokedPrincipals,revokedMemberships,revokedSessions,revokedMcpConnections,revokedGrants,clearedAcceptedHeads,withdrawnArtifacts,withdrawnResearch,retiredProjections,suspendedPublications,permanentReplayFencesAdded,typedModelHoldsAdded,sourcePublicationDenialsApplied:snapshot.contract!=='pilot-denial-replay-snapshot-v2',scope:'credentials-grants-and-source-denials' as const,authorityGranted:false,quarantineCleared:false,currentAuthorityVerified:false,replayReconciled:false,restorationReady:false};
 }

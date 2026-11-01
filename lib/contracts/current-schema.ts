@@ -1,3 +1,3 @@
 /** Exact physical schema supported by this release. Historical archive readers
  * enumerate their own source versions; this is never a >= floor. */
-export const CURRENT_SCHEMA_VERSION = 84 as const;
+export const CURRENT_SCHEMA_VERSION = 85 as const;

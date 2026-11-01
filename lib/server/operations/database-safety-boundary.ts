@@ -23,7 +23,7 @@ export async function readDatabaseSafetyBoundary(db:Client|PoolClient,environmen
  if(!(capturedAt instanceof Date)||!Number.isFinite(capturedAt.getTime()))throw Error('Exact database safety observation time required');
  signal.throwIfAborted();
  const marker=(await db.query("SELECT environment_id,schema_version,current_user=pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='turas_environment'::regclass)) AS owner FROM turas_environment")).rows;
- if(marker.length!==1||marker[0].environment_id!==environmentId||![77,79,80,CURRENT_SCHEMA_VERSION].includes(Number(marker[0].schema_version))||marker[0].owner!==true)throw Error('Exact current safety boundary owner required');
+ if(marker.length!==1||marker[0].environment_id!==environmentId||![77,79,80,81,82,83,84,CURRENT_SCHEMA_VERSION].includes(Number(marker[0].schema_version))||marker[0].owner!==true)throw Error('Exact current safety boundary owner required');
  signal.throwIfAborted();
  const objects=await requiredRecoveryObjects(db,environmentId,capturedAt);
  signal.throwIfAborted();

@@ -1,5 +1,5 @@
 {
-  "version": 84,
+  "version": 85,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -336,6 +336,10 @@
     {
       "file": "084-specialist-discussions.cjs",
       "sha256": "4f02a742a59a0b376b238b613822723ceba67512e9e0337c52a8f3404135868b"
+    },
+    {
+      "file": "085-specialist-recovery-accounting.cjs",
+      "sha256": "da700ee6a21052ee52c2bf4f2b7431fa55a90963fe6e2878329baa9a2e68efdc"
     }
   ]
 }

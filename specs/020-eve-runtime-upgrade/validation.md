@@ -2,6 +2,67 @@
 
 ## Current Acceptance State
 
+### Recovery Acceptance Follow-up
+
+Final focused recovery results supersede the earlier pending bullet below:
+21 existing owner/snapshot/replay cases passed; the new real-dump specialist case
+passed after including the supported restore's explicit runtime-grant refresh.
+It proves known actuals and an unknown full ceiling survive, repeated application
+adds no duplicate hold, inherited observations keep the same remaining cap, old
+native-step replay is denied, and runtime cannot delete the ledger. Evidence:
+`/tmp/turas-020-recovery-specialist-final.txt`. The combined22-case attempt had
+21passes and failed before the grant-refresh correction; it is not a22-case pass.
+
+Pilot units/contracts: 585passed initially, with two stale unpaid-fixture setup
+failures and an untracked-source copy failure. Their corrected metadata-selection
+10cases and staged-source-copy7cases pass. Native metadata guards now run before
+changing the copied resume launcher; unpaid/owned guards remain enforced.
+The built production browser launcher no longer starts a duplicate service:
+`next start` owns Eve, as documented. Its real owned build and two CLI WebKit
+shell/accessibility journeys pass with no skips/flakes or paid calls
+(`/tmp/turas-020-start-ui-final.txt`). The CI69 baseline failure was the exact
+4274 port collision, before any browser test ran; these fixes do not remove tests.
+Independent final source review found no additional recovery blocker.
+
+
+CI on `d47cc043` exposed an actual legacy replay-index compatibility failure
+in the recovery catalog after 494 passing cases. Acceptance investigation also
+found that the new specialist ledger was absent from minimized recovery capture.
+These are release blockers, not completed hosted recovery evidence.
+
+Migration085 extends the existing typed recovery holds/observations, installs
+permanent replay guards on specialist records and retains unknown ceilings.
+Current snapshots include schema-bound specialist metadata without control tokens,
+prompts or results. Restored discussions/assignments are retired. Admission folds
+live rows, inherited holds and retained observations by operation ID, so cleanup
+cannot refund uncertainty or repeat the old native provider identity.
+Authenticated old whole-line event fences remain broader than fact tuples;
+current declared index inventories still require the actual complete tuple.
+
+- Final focused TypeScript passes (`/tmp/turas-020-recovery-types.txt`).
+- Existing legacy safety restoration and typed model-hold tests: 8/8 passed
+  (`/tmp/turas-020-recovery-integration.txt`; the first new-test attempt failed a
+  metadata assertion and was corrected, so that combined attempt is not a pass).
+- Expanded whole-line/inherited-fence and Production recovery-boundary checks:
+  3/3 passed (`/tmp/turas-020-recovery-boundaries.txt`). Includes nonzero-fact replay
+  denial, rejection of a disabled guard and rejection of a falsely declared
+  current index inventory.
+- Stable native learning-agent check: 25/25, zero paid calls
+  (`/tmp/turas-020-learning-native-stable.txt`). The earlier concurrent-edit run
+  was invalidated by its source-consistency check and is not a pass.
+- Fresh Neon rehearsals: Production081→085 and Preview084→085 passed with binding
+  and ordinary operation counts preserved and explicit runtime grants verified;
+  both rehearsal branches/endpoints were removed. Evidence:
+  `/tmp/turas-020-neon-085-rehearsal.txt` and its private receipt. These copies do
+  not constitute changing Production. A fresh endpoint-free Preview recovery
+  branch was created before the pending explicit085 migration.
+- New real-dump specialist restore regression, broader owner recovery assertions,
+  final-source CI and schema085 Preview behavior remain pending at this entry.
+  Source69 CI passed legacy parity; two current failures are in a nested learning
+  native predecessor. Local25 checks pass; bounded diagnostics are forwarded for
+  the next CI run. No final green-CI or release claim is made.
+
+
 The specialist implementation is present and has passed the real local Eve
 continuity/control harness and the four-project WebKit UI suite. It is not yet
 released. Ordinary attachment restart recovery and a bounded real hosted

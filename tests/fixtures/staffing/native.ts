@@ -7,7 +7,6 @@ import { query } from "../../../lib/server/db/client";
 
 export async function installStaffingNativeFixture(environment: StaffingEvalEnvironment) {
   requireOwnedStaffingClone();
-  await installOwnedEveResume(environment.appRoot,'007');
   const root = await realpath(environment.appRoot), owned = await realpath(resolve("local-artifacts/007"));
   if (!root.startsWith(`${owned}/eval-`) || !root.endsWith("/app") || root === await realpath(process.cwd()) ||
     new URL(process.env.DATABASE_URL!).pathname !== `/${environment.databaseName}`) throw new Error("Owned app fixture required");
@@ -15,6 +14,7 @@ export async function installStaffingNativeFixture(environment: StaffingEvalEnvi
   const target = "wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode";
   if (source.split(target).length !== 2 || !source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";') || !source.includes('reasoning: "low"')) throw new Error("Native fixture model shape changed");
  if(!source.includes('beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),'))throw Error('Fixture model metadata changed');
+  await installOwnedEveResume(environment.appRoot,'007');
   const fixture = source.replace(target, "wrapStaffingModel(createStaffingNativeFixtureModel(principal, identity), admitted.mode")
     .replace("return selectTurasGatewayModel(deferModelAdmission(", "return { ...selectTurasGatewayModel(deferModelAdmission(")
     .replace("        }));", "        })), modelContextWindowTokens: 128_000 };");

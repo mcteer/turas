@@ -2263,6 +2263,20 @@
         "binds an isolated drill to actual provider readback and refuses Production or pre-start targets",
         "requires actual closed restricted runtimes and rejects serialized drill approval without changing control"
       ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-specialist-accounting.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "restores a real older dump without replenishing specialist caps or replaying a native step"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-legacy-line.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "keeps old whole-line denials across fact-index migration and audits inherited fences"
+      ]
     }
   ],
   "ui": {

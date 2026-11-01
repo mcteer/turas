@@ -38,16 +38,40 @@ export function assertSpecialistReservation(limit:SpecialistAllowance,operations
  return remaining;
 }
 
-type OperationRow={id:string;discussion_id:string;ceiling_input_tokens:string;ceiling_output_tokens:string;ceiling_micro_usd:string;
+type OperationRow={id:string;discussion_id:string;assignment_id:string;native_step_key:string;ceiling_input_tokens:string;ceiling_output_tokens:string;ceiling_micro_usd:string;
  actual_input_tokens:string|null;actual_output_tokens:string|null;actual_micro_usd:string|null;settled_at:Date|null;completed_at:Date|null};
 const operation=(row:OperationRow):SpecialistOperation=>({id:row.id,ceiling:{inputTokens:Number(row.ceiling_input_tokens),outputTokens:Number(row.ceiling_output_tokens),microUsd:Number(row.ceiling_micro_usd)},
  actual:row.settled_at?{inputTokens:Number(row.actual_input_tokens),outputTokens:Number(row.actual_output_tokens),microUsd:Number(row.actual_micro_usd)}:null});
 
+/** Count a live row and its immutable recovery hold once. Any retained unknown
+ * receipt keeps its ceiling; cleanup or a later partial observation is no refund. */
+async function conversationOperations(db:PoolClient,conversationId:string):Promise<OperationRow[]>{
+ const live=(await db.query<OperationRow>(`SELECT o.* FROM specialist_operations o JOIN specialist_discussions d ON d.id=o.discussion_id
+  WHERE d.conversation_id=$1 ORDER BY o.created_at,o.id LIMIT 513`,[conversationId])).rows;
+ const held=(await db.query<OperationRow>(`SELECT h.*,h.operation_id AS id FROM operations_recovery_model_holds h JOIN conversations c ON c.id=h.scope_id AND c.environment_id=h.environment_id
+  WHERE h.scope_id=$1 AND h.operation_kind='specialist' ORDER BY h.operation_id LIMIT 513`,[conversationId])).rows;
+ const observations=(await db.query<OperationRow>(`SELECT o.*,o.operation_id AS id FROM operations_recovery_model_observations o
+  JOIN operations_recovery_model_holds h USING(environment_id,operation_kind,operation_id)
+  JOIN conversations c ON c.id=h.scope_id AND c.environment_id=h.environment_id
+  WHERE h.scope_id=$1 AND h.operation_kind='specialist' ORDER BY o.operation_id,o.observed_evidence_digest LIMIT 513`,[conversationId])).rows;
+ if(live.length>=512||held.length>=512||observations.length>=512)throw unavailable();
+ const merged=new Map<string,OperationRow>();
+ for(const row of [...live,...held,...observations]){
+  const prior=merged.get(row.id);
+  if(prior){
+   if(prior.discussion_id!==row.discussion_id||['assignment_id','native_step_key','ceiling_input_tokens','ceiling_output_tokens','ceiling_micro_usd'].some(key=>String(prior[key as keyof OperationRow])!==String(row[key as keyof OperationRow])))throw unavailable();
+   if(!prior.settled_at||!row.settled_at){merged.set(row.id,{...prior,settled_at:null});continue;}
+   if(['actual_input_tokens','actual_output_tokens','actual_micro_usd'].some(key=>String(prior[key as keyof OperationRow])!==String(row[key as keyof OperationRow])))throw unavailable();
+  }else merged.set(row.id,row);
+ }
+ if(merged.size>=512)throw unavailable();
+ return [...merged.values()];
+}
+
 export async function remainingLockedSpecialistAllowance(db:PoolClient,discussionId:string,conversationId:string){
  const bound=(await db.query('SELECT input_ceiling,output_ceiling,cost_ceiling_micro_usd FROM specialist_discussions WHERE id=$1 AND conversation_id=$2',[discussionId,conversationId])).rows[0];
  if(!bound)throw unavailable();
- const rows=(await db.query<OperationRow>(`SELECT o.* FROM specialist_operations o JOIN specialist_discussions d ON d.id=o.discussion_id
-  WHERE d.conversation_id=$1 ORDER BY o.created_at,o.id LIMIT 513`,[conversationId])).rows;
+ const rows=await conversationOperations(db,conversationId);
  if(rows.length>=512)throw unavailable();
  if(rows.some(row=>row.discussion_id===discussionId&&!row.settled_at&&!row.completed_at))throw new HttpFailure(429,'specialist_usage_unconfirmed','Prior specialist usage must be reconciled before another provider call.');
  const discussion=remainingSpecialistAllowance({inputTokens:Number(bound.input_ceiling),outputTokens:Number(bound.output_ceiling),microUsd:Number(bound.cost_ceiling_micro_usd)},rows.filter(row=>row.discussion_id===discussionId).map(operation));
@@ -65,10 +89,9 @@ export async function reserveLockedSpecialistOperation(db:PoolClient,binding:{di
    AND d.state='open' AND d.expires_at>clock_timestamp() AND a.authority_expires_at>clock_timestamp()
    AND a.state IN('admitted','working','waiting_input')`,[binding.discussionId,binding.assignmentId,binding.conversationId])).rows[0];
  if(!bound)throw unavailable();
- if((await db.query('SELECT 1 FROM specialist_operations WHERE native_step_key=$1',[input.nativeStepKey])).rowCount)
+ if((await db.query(`SELECT 1 FROM specialist_operations WHERE native_step_key=$1 UNION ALL SELECT 1 FROM operations_recovery_model_holds WHERE operation_kind='specialist' AND native_step_key=$1`,[input.nativeStepKey])).rowCount)
   throw new HttpFailure(409,'specialist_dispatch_uncertain','The prior provider operation must be reconciled; it cannot be sent again.');
- const rows=(await db.query<OperationRow>(`SELECT o.* FROM specialist_operations o JOIN specialist_discussions d ON d.id=o.discussion_id
-  WHERE d.conversation_id=$1 ORDER BY o.created_at,o.id LIMIT 513`,[binding.conversationId])).rows;
+ const rows=await conversationOperations(db,binding.conversationId);
  if(rows.length>=512)throw unavailable();
  if(rows.some(row=>row.discussion_id===binding.discussionId&&!row.settled_at&&!row.completed_at))
   throw new HttpFailure(429,'specialist_usage_unconfirmed','Prior specialist usage must be reconciled before another provider call.');

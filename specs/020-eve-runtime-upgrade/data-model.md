@@ -125,3 +125,12 @@ This replaces the initially proposed direct `getRun.cancel()` control: actual
 local native tests accepted that SDK cancellation without producing a native
 parent task-end event. The public hook lets the authored workflow exit normally
 and leaves final confirmation to actual native facts.
+
+## Recovery Accounting
+
+Migration085 adds specialist variants to the existing recovery model holds and
+observations. Their scope is the original conversation; discussion/assignment IDs,
+opaque native step identity, input/output/cost ceilings and actuals remain
+immutable. Missing actuals retain the full ceiling. A live row and its inherited
+hold charge once. Recovery snapshots retain minimized accounting only and install
+permanent request denials; restored child/control authority is never recreated.

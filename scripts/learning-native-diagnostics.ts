@@ -18,6 +18,8 @@ const checks = [
 ] as const;
 export function learningNativeAssertion(message: string) {
   // Return only checked-in assertion identities, never exception text or captures.
+  const dispatch=/^Native learning dispatch denied \((\d{3}); ([a-z_]{1,80})\)$/.exec(message);
+  if(dispatch&&Number(dispatch[1])>=400&&Number(dispatch[1])<=599)return {kind:'learning-native-assertion' as const,check:'native-dispatch-denied',status:Number(dispatch[1]),code:dispatch[2]};
   const check = checks.find(value => value === message)
     ?? (/^Native (normal|malformed|unknown|overrun|forbidden|all_reads) terminal state mismatch \(/.test(message) ? 'native-terminal-state'
       : /^Native paired arm (?:[1-9]|1[0-6]) incomplete \(/.test(message) ? 'native-paired-arm'
@@ -26,6 +28,7 @@ export function learningNativeAssertion(message: string) {
 }
 export function readLearningNativeAssertion(value: unknown) {
   if (!value || typeof value !== 'object' || !('kind' in value) || value.kind !== 'learning-native-assertion' || !('check' in value) || typeof value.check !== 'string') return null;
+  if(value.check==='native-dispatch-denied'&&'status' in value&&typeof value.status==='number'&&Number.isInteger(value.status)&&value.status>=400&&value.status<=599&&'code' in value&&typeof value.code==='string'&&/^[a-z_]{1,80}$/.test(value.code))return {kind:'learning-native-assertion' as const,check:value.check,status:value.status,code:value.code};
   const allowed = [...checks, 'native-terminal-state', 'native-paired-arm', 'native-payload-retention', 'unknown'];
   return allowed.includes(value.check) ? {kind:'learning-native-assertion' as const,check:value.check} : null;
 }

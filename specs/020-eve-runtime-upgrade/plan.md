@@ -141,3 +141,16 @@ can leave a discussion open. Existing research cache rows replace lease/worker
 bindings and cannot provide immutable discussion history. Existing operation
 ledgers remain authoritative; discussion aggregates are admission boundaries,
 not a second billing system. No additional infrastructure is introduced.
+
+### Recovery Compatibility Found During Acceptance
+
+Migration085 extends the existing immutable recovery model holds and observations
+with specialist token/cost dimensions and opaque operation identities. It installs
+the existing permanent replay guard on all three specialist tables. Snapshot
+inventories are schema-bound: 081–083 retain operational/named-content protections;
+084+ include specialist metadata without control tokens, prompts or result bodies.
+Restored discussions are retired. Admission folds live operations and inherited
+holds once by operation ID, preserving unknown ceilings and cumulative caps.
+Authenticated pre-083 whole-line event denials stay broader than the new fact
+tuple; current snapshots must still declare the actual complete tuple inventory.
+Rehearse 081/084→085 and refresh Preview backup before explicit migration.
