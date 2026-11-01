@@ -165,6 +165,26 @@ new ledgers or treat a restored backup as permission to erase unknown charges.
 Production rollback and post-merge behavior are not claimed to have been tested
 by the Preview rehearsal.
 
+## Final History Regression And Convergence
+
+The full four-project ordinary WebKit gate first exposed a display regression:
+after a new send returned503, restoring authorized history could hide the previous
+completed answer because pending dispatch alone was treated as a running answer.
+`finalChatHistory` now withholds only an answer matching the actual current native
+turn. A missing/different current turn preserves historical answers; failed
+authorized reads still clear them. Sixteen history tests and TypeScript passed.
+The unchanged full seven-file WebKit gate then passed100 cases across all four
+projects with zero skipped, unexpected or flaky outcomes
+(`/tmp/turas-020-final-legacy-webkit.txt`). Independent review found no blocker.
+
+Convergence assessed19 functional requirements,8 success criteria,26 acceptance
+scenarios,6 plan stages,8 constitution principles and all44 original tasks. It
+found one medium documentation contradiction: the plan/research still named
+direct SDK cancellation although implementation and data-model/contract used the
+proven durable Stop hook. T045 records that correction; plan/research now match
+the tested implementation. No additional application-code gap was identified.
+Final-source CI/Preview and the separate reviewed release gate remain explicit.
+
 ## Resumption Baseline
 
 Implementation resumed after planning commit `4a3d12c5` on

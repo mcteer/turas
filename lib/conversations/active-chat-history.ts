@@ -59,7 +59,7 @@ export function retainedActiveParts(message:RetainedChatMessage,reference?:Nativ
 
 /** Display only the settled answer for each user delivery. Intermediate model
  * steps stay in the authorized history; this never changes execution or storage. */
-export function finalChatHistory(messages:readonly ChatDisplayMessage[],working:boolean):ChatDisplayMessage[]{
+export function finalChatHistory(messages:readonly ChatDisplayMessage[],working:boolean,activeTurnId?:string|null):ChatDisplayMessage[]{
  const result:ChatDisplayMessage[]=[];
  let answer:ChatDisplayMessage|undefined;
  const flush=()=>{if(answer)result.push(answer);answer=undefined;};
@@ -74,6 +74,9 @@ export function finalChatHistory(messages:readonly ChatDisplayMessage[],working:
    answer={...item,message:{...item.message,parts:item.message.parts.filter(part=>part.type==='file'||part.type==='text'&&(last===undefined||part.stepIndex===last))}};
   }else answer=item;
  }
- if(!working)flush();
+ // A pending dispatch without a current native turn must not hide a settled
+ // historical answer. Withhold only the answer belonging to the running turn.
+ const answerTurn=answer?.kind==='native'?answer.message.metadata?.turnId:answer?.message.turnId;
+ if(!working||activeTurnId!==undefined&&(activeTurnId===null||answerTurn!==activeTurnId))flush();
  return result;
 }

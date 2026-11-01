@@ -52,15 +52,20 @@ worker `agent.ts` files and `docs/evidence-policy.md`.
 ## Targeted Cancellation and Progress
 
 **Decision**: Persist `getWorkflowMetadata().workflowRunId`; use public
-`getRun(runId).cancel()` behind domain ownership checks. Correlate task IDs through
+a server-only durable Stop hook signalled through public `resumeHook` behind
+domain ownership checks, after fencing new admission. Correlate task IDs through
 `task.started.startedBy.callId` and `call.started`. Project complete native facts
 into concise status without private child content.
 
 **Rationale**: Public `Session.cancel` is turn-wide. Custom-channel `invokeTool`
 cannot call framework/workflow tools such as the built-in task cancel. Cancelling
-an owned workflow avoids extra model calls and private imports. Child sessions
-end with their workflow. Integration must prove parent-task settlement and that
-unrelated work continues; cancellation acknowledgement is not terminal evidence.
+the owned workflow through its authored Stop hook avoids extra model calls and
+private imports. Actual native tests accepted direct `getRun.cancel()` without
+producing a parent task-end event, so that initially proposed approach was
+replaced. The hook makes the workflow exit and close its child. Actual native
+task/session end confirms termination; an acknowledgement alone never does.
+Native checks prove unrelated work continues; the separate hosted check proves
+terminal Close. Results are recorded in validation.
 
 **Alternatives**: Model-mediated Stop adds latency/cost; raw child streams expose
 private content; invented percentages lack evidence. Do not catch cancellation

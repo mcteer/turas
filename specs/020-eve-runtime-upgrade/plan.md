@@ -11,10 +11,9 @@ through native `serve` workflows, checking current authority for each call,
 showing truthful assignment progress and allowing an owner to stop one discussion.
 Keep the requested composer, Dependabot and README work in this PR.
 
-Compatibility changes already exist on this branch. This plan does not certify
-them: tasks require reconciliation and remaining acceptance checks. New specialist
-implementation starts after the planning handoff and the user's model switch.
-No runtime changes or deployments are part of that handoff.
+Implementation and acceptance results are recorded in [validation.md](validation.md).
+The planning handoff is complete; final-source checks and the reviewed release
+decision remain separate gates. Planned behavior alone does not certify a release.
 
 ## Technical Context
 
@@ -88,8 +87,8 @@ implementation destinations, not claims that those modules already exist.
 
 1. **Compatibility (US1)**: Reconcile v27 fact positions, read-only protocol-25
    history, deferred pre-provider admission, question replacement, shutdown and
-   upload recovery. The staged 10 MiB restart check is currently failing; diagnose
-   and prove real recovery before release.
+   upload recovery. The staged 10 MiB restart check now passes in its owned local
+   recovery configuration; keep hosted evidence separate as recorded in validation.
 2. **Owned discussions (US2)**: Add migration 084 and grants. Bind one workflow
    and child to an opaque discussion ID. Append immutable assignment identities
    and links to existing research/usage receipts. Lock conversation → discussion
@@ -102,9 +101,12 @@ implementation destinations, not claims that those modules already exist.
    `receive()` promise until read. Do not silently create a replacement child.
 4. **Progress and control (US3)**: Project complete native task/call/interaction
    facts into owned status. Add authenticated status/cancel routes and compact UI.
-   Cancellation first fences new admission, then calls
-   `getRun(ownedWorkflowRunId).cancel()` from `eve/workflow/api`. Prove child and
-   parent-task settlement while another task continues before shipping. Global
+   Cancellation first fences new admission, then signals the server-only durable
+   Stop hook using public `resumeHook` from `eve/workflow/api`. The authored
+   workflow exits and closes its child; only actual native task/session end
+   confirms termination. Direct `getRun.cancel()` was rejected after native
+   tests accepted the request without producing parent-task settlement. Prove
+   child and parent-task settlement while unrelated work continues. Global
    Stop/retirement closes all owned discussions, including idle ones.
 5. **Product changes (US4)**: Preserve the implemented composer; verify task
    controls within it. Preview inherits the production sensitive `mcteer`
@@ -124,8 +126,8 @@ cross-customer/purpose, revoked-source, expired-authority and exhausted-budget
 requests. Exercise two-task cancellation, duplicate delivery, pending questions
 and global Stop. Preserve unknown usage as held.
 
-Verify target identity and recovery backup before migrations. Preview currently
-has schema 083; Production has not received this upgrade. Rehearse
+Verify target identity and recovery backup before migrations. Preview started at
+schema083 and now has schema084; Production remains schema081. Rehearse
 081 → 082 → 083 → 084 and grants on disposable copies. Exact schema checks can
 make old binaries incompatible with the new marker: rehearse coordinated
 code/schema rollback or forward repair, not only a deployment alias change.

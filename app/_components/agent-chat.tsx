@@ -198,7 +198,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const turnOpen=Boolean(activeTurn(agent.view));
   const stopButton=(turnOpen||busy)&&!(canSteer&&(draft.trim()||documents.length));
   const working=Boolean(activeTurn(agent.view))||busy||background.thinking||Boolean(pendingKey&&['pending','running','stopping'].includes(responseState??''));
-  const displayMessages=finalChatHistory(historyMessages,working&&!awaitingUser);
+  const displayMessages=finalChatHistory(historyMessages,working&&!awaitingUser,activeTurn(agent.view)?.turnId??null);
   useEffect(()=>{
     if(!agent.error||denied||stale||latestTurnFailure(agent.events)||reconnectAttempts.current>=3){setReconnecting(false);return;}
     setReconnecting(true);

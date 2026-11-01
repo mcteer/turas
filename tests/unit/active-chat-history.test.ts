@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import type {EveMessage} from 'eve/react';
-import {activeChatHistory,retainedActiveParts,finalChatHistory} from '../../lib/conversations/active-chat-history';
+import {activeChatHistory,retainedActiveParts,finalChatHistory,type ChatDisplayMessage} from '../../lib/conversations/active-chat-history';
 import type {RetainedChatEvent} from '../../lib/conversations/retained-history';
 
 it('keeps authorized tool activity alongside canonical prose and does not drop nontext parts when splitting steps',()=>{
@@ -111,4 +111,13 @@ it('ordinary canonical user display ignores SDK submission aliases even before p
  const second={...saved,eventId:'canonical-second'};
  expect(activeChatHistory([native],[saved],true).map(item=>item.message.id)).toEqual(['canonical-first']);
  expect(activeChatHistory([native],[saved,second],true).map(item=>item.message.id)).toEqual(['canonical-first','canonical-second']);
+});
+
+it('keeps settled historical answers during uncertain new dispatch and withholds only the current native turn',()=>{
+ const saved:ChatDisplayMessage={kind:'retained',message:{id:'settled',role:'assistant',parts:[{type:'text',text:'Saved complete answer'}],partial:false,turnId:'older',stepIndex:0}};
+ expect(finalChatHistory([saved],true,null)).toEqual([saved]);
+ expect(finalChatHistory([saved],true,'new-turn')).toEqual([saved]);
+ expect(finalChatHistory([saved],true,'older')).toEqual([]);
+ const live:ChatDisplayMessage={kind:'native',message:{id:'current',role:'assistant',metadata:{turnId:'new-turn'},parts:[{type:'text',text:'Current partial',stepIndex:0}]}};
+ expect(finalChatHistory([live],true,'new-turn')).toEqual([]);
 });
