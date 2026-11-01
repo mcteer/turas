@@ -8,14 +8,16 @@ meaningful tests; verify actual changed production behavior through normal relea
 
 # Turas delivery roadmap
 
-Current release: main `11240b6` is deployed in Production on schema081 after
-[PR47](https://github.com/mcteer/turas/pull/47) and
-[PR48](https://github.com/mcteer/turas/pull/48). Actual authenticated role/privacy,
-normal chat streaming/reload/Stop, and upload/processing/download checks are recorded
-in the [016 validation record](specs/016-pilot-hardening/validation.md), with exact
-deployment qualifications. Fresh encrypted077 backup and owned forward restore to081
-were verified. Full hosted disaster recovery and recurring backup cadence retain their
-separate observed limits; neither is cancelled by removing the pilot programme.
+Current runtime release: main `f3518f5` is deployed in Production on schema081 after
+[PR49](https://github.com/mcteer/turas/pull/49) and
+[PR50](https://github.com/mcteer/turas/pull/50). Production verified all three ordinary
+logins, role/privacy boundaries, primary chat completion/reload, public readiness
+and all 15 maintenance classes. The private pilot programme is removed. A matched
+encrypted081 recovery set passed an isolated hosted restore within the measured
+RTO/RPO objectives; this is not live incident failover or Native Workflow resumption.
+The enabled 12-hour backup schedule's two actual scheduled captures remain nonblocking
+operational follow-up. Exact release identities, earlier upload/stream/Stop checks
+and assurance limits remain in the [016 validation record](specs/016-pilot-hardening/validation.md).
 
 
 The user-requested [019 chat interaction parity](specs/019-chat-interaction-parity/spec.md)

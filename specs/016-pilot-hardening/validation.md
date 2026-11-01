@@ -19,26 +19,84 @@ below are historical evidence, not remaining release prerequisites or passing
 production checks. Production authentication, authorization, private file handling,
 bounded jobs, maintenance, backup and recovery remain required.
 
-Production release `11240b6f11500109ae3a88c1e880f85d061b7783` was merged through
-PR48 and serves schema081. Its exact-tree premerge checks passed: all54 main CI
-jobs, all7 legacy jobs, and the198-suite/1100-case deterministic catalog. One
-unchanged Learning UI job required a successful targeted rerun; the failed first
-attempt is retained. The final production deployment is
-`dpl_5HrzmzzX41iXn4gRXAfEGiHr1GqF` at `https://www.turas.dev`.
+Current runtime release `f3518f58eaf6a122a48b267c8b66fd9dfffcd599` serves
+schema081 at `https://www.turas.dev`, deployment
+`dpl_HDDYqYgMo7Ka6BPncMfTyni9wDKg`. PR49 removed the private programme and retained
+production safeguards; PR50 corrected empty provider-SHA fallback after the first
+release failed verification and was rolled back. That failure remains recorded.
 
-Authenticated production checks verified all three ordinary account logins,
-owner-private conversation reads, real streaming/reload/Stop behavior on the
-same-code preceding deployment, and one private-file upload/scan/parse/download
-with matching digest on the final deployment. Tests used normal application
-paths; no synthetic Production workspace was enabled. Existing legacy context
-history remains protected by the schema080 guard; data was preserved.
+The exact PR50 tree passed all 54 main CI jobs, all 7 legacy-parity jobs and the
+195-suite/1093-case registered catalog. Current Production passed 19 HTTP role/privacy
+cases, three browser logins and three retired-selector refusals. One ordinary
+primary chat returned its expected response, survived reload and reached server
+state `completed` with exactly one attempt. Owned verification sessions were revoked
+and the chat was archived. The public readiness endpoint returned200/`ready:true`;
+authenticated status showed all 15 maintenance classes healthy, open admission,
+ready dispatch and no required quarantines.
 
-Full operational recovery assurance remains incomplete: `/api/health/ready`
-returned503 after release. A verified database safety backup and isolated
-077-to081 migration rehearsal do not prove a matched full-service restore.
-Removing the pilot programme does not waive that production recovery work or
-permit fabricated healthy observations. Detailed private receipts remain outside
-Git. Dated checkpoints below retain their original identities and limitations.
+A matched encrypted Production081 recovery set passed an actual isolated hosted
+restore and current-denial/replay verification within measured RTO/RPO objectives.
+This does not prove live incident failover or Native Workflow resumption. Current
+administrator-only store/image/backup assurance observations remain unverified.
+The enabled 12-hour operator was refreshed from the released source without changing
+its environment rows, budget, expiry or keys. Two actual scheduled captures remain
+nonblocking follow-up; no 12-hour wait was used to close implementation. Earlier
+streaming/Stop, private-file and migration results retain their exact source and
+deployment limits. Private receipts remain outside Git; dated failures below keep
+their original results.
+
+## Verified production release — 2026-11-01
+
+- [PR49](https://github.com/mcteer/turas/pull/49) merged as `d4564bf` after 54 main and 7
+  parity CI jobs passed. Its first CLI Production release lacked the runtime
+  release header; strict verification stopped before positive login probes and the
+  verified `11240b6` deployment was restored. No schema or data restoration occurred.
+- [PR50](https://github.com/mcteer/turas/pull/50) merged as `f3518f5` after independent
+  review, five focused resolver cases, actual CLI and Git-backed Preview checks,
+  all 54 main/all 7 parity CI jobs and 1093 catalog cases passed. Its tested head was
+  `a939ce4`; the merge tree was identical. The empty-value fallback fix keeps valid
+  provider metadata authoritative and rejects nonempty malformed values.
+- An isolated Eve deployment built the exact merged commit. Following the prior
+  rollback, the new READY deployment initially did not serve the canonical domain;
+  its immutable URL first proved the exact runtime stamp, then explicit promotion
+  completed. The project target, actual domain mapping and canonical401 API stamp
+  matched the released commit. The root selected environment remained unchanged.
+- The first browser verifier incorrectly expected a release header on native303
+  login redirects. The route returns a raw redirect, so that checker failed even
+  though the API role checks had run. The corrected checker preserves that failure,
+  requires the exact redirect destination, and binds the subsequent authenticated
+  session200 response to the release SHA. Independent review confirmed the correction;
+  no application code or login credentials changed. All three corrected browser
+  logins and logout401 checks passed. A blank first `panel` capture was retained;
+  the settled directory recapture was inspected and correct.
+- The actual partner has no assigned customers; its empty directory agrees with
+  the real grant baseline. No customer assignments were manufactured. All19 actual
+  HTTP role/privacy cases and three rejected pilot-selector requests passed.
+- A single ordinary primary `panel` send produced the requested short response.
+  Reload preserved it; read-only database verification found exactly one completed
+  response attempt. Its owned conversation was archived and login session revoked.
+  This is a real configured-model request, not an unpaid CI simulation or a new
+  streaming/Stop acceptance claim.
+- Current public readiness returned200/`ready:true`. Authenticated health observed
+  all 15 classes healthy, exact released code, healthy database, open admission,
+  dispatch ready and zero required quarantines. Its `assurance.ready:false` and
+  unverified store/image/backup observations remain visible and are not relabelled.
+- The separate backup operator deployment `dpl_FtpB8xPLiZ9XkARZF13HmjBsvAoZ` was
+  refreshed from `f3518f5`. Provider content IDs matched all 21 uploaded source files,
+  with no private files uploaded. All37 environment rows remained unchanged and
+  its enabled `0 */12 * * *` cron referenced the new deployment. No manual capture,
+  automatic retry, budget reset, key rotation or paid model invocation was used
+  for this operator refresh. Its existing archive and separate key custody remain.
+- Seven superseded owned deployments were deleted during this continuation,
+  including the failed PR49 release. Canonical mappings were checked before and
+  after deletion. The verified rollback deployment remains retained. PR49/PR50
+  feature branches are absent locally/remotely and README was checked on main.
+  Only the final record PR's currently needed review target/store/Preview remain
+  until its verification/merge, after which actual deletion receipts belong on it.
+
+The [handoff](handoff.md) records the isolated drill's measured scope, the
+nonblocking scheduled-cadence observation and dependency maintenance follow-up.
+Record-only documentation commits do not change the deployed runtime identity.
 
 ## Private programme removal — 2026-10-31
 

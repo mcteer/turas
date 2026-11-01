@@ -41,18 +41,20 @@ See the [evidence policy](docs/evidence-policy.md) and
 
 ## Project status
 
-Turas is under active development. The current production hardening work covers
-chat reliability, access control, durable private storage, bounded processing,
-and database backup and recovery. The private pilot programme has been removed;
-production hardening and ordinary account access remain in scope.
+Turas is under active development. Production hardening is deployed: ordinary
+account access, chat reliability, private storage, bounded processing, maintenance
+and backup/recovery protections are in place. The private pilot programme and its
+selectable workspace have been removed. Production login, privacy and a normal
+chat request passed verification; service readiness and all 15 maintenance classes
+were healthy at the release check.
 
 Implementation, local checks, CI, Preview acceptance and Production verification
 are recorded separately. A passing local test does not establish hosted behavior,
 and a feature listed above may require environment preparation or explicit activation.
 
 Use the [hardening validation record](specs/016-pilot-hardening/validation.md) and
-[release handoff](specs/016-pilot-hardening/handoff.md) for evidence and remaining
-release work. The [roadmap](ROADMAP.md) describes feature scope and dependencies;
+[release handoff](specs/016-pilot-hardening/handoff.md) for exact release evidence,
+recovery-assurance limits and operational follow-up. The [roadmap](ROADMAP.md) describes feature scope and dependencies;
 [feature specifications](specs/) contain the detailed contracts and acceptance
 records. Historical deployment and incident details belong in those records.
 

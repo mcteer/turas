@@ -1,6 +1,6 @@
 # Production hardening handoff
 
-Updated 2026-10-31 after Production cutover. The user cancelled the private pilot
+Updated 2026-11-01 after the verified Production hardening release. The user cancelled the private pilot
 programme and its associated tasks. Synthetic workspace provisioning, participant
 feedback, G01–G22 approval bundles and aggregate model-evaluation programmes are
 retired. They are not outstanding launch work or prerequisites for normal use.
@@ -11,11 +11,13 @@ original source and scope; cancellation does not certify them or erase accountin
 ## Actual deployed checkpoint
 
 - Canonical application: `https://www.turas.dev`.
-- Deployed main commit: `11240b6f11500109ae3a88c1e880f85d061b7783`.
-- Application tree: `e5c922039923a41776c04155c349105babc4ac76`, matching the tested
-  `8f6f5c6716bb03127de0d8b9f57d2feef1f38571` hardening implementation.
-- Current serving deployment: `dpl_5HrzmzzX41iXn4gRXAfEGiHr1GqF`, including the
-  required Production scanner-signature attestation.
+- Deployed runtime commit: `f3518f58eaf6a122a48b267c8b66fd9dfffcd599`.
+- Application tree: `68b5ac856c97a5cbcc53f6dc930416504ad51880`, identical to the
+  tested PR50 commit `a939ce4dac0643ad2d0306cb2978c2e82ad7e34d`.
+- Current serving deployment: `dpl_HDDYqYgMo7Ka6BPncMfTyni9wDKg`.
+  The provider project/commit, canonical domain mapping and actual API release
+  header were independently checked after explicit promotion. The earlier failed
+  PR49 deployment was rolled back, then retired; its failure remains recorded.
 - Primary database: schema 081, with explicit current runtime grants and verified
   TLS access by restricted `turas_runtime_016`. The initial forward operation
   failed; the qualified explicit resume completed. Do not relabel the failed
@@ -26,12 +28,17 @@ original source and scope; cancellation does not certify them or erase accountin
 
 ## Verified behavior and its limits
 
-Actual Production role and privacy checks passed, including ordinary authenticated
-access and owner-private conversation boundaries. Actual chat streaming, reload,
-Stop acknowledgement and eventual idle state passed. These results do not authorize
-access to another owner's conversation or bypass partner grants.
+On the current deployment, all 19 HTTP role/privacy cases, all three ordinary
+browser logins and three retired-selector refusals passed. The apex redirects308
+to the canonical site. One ordinary primary `panel` chat request returned its
+expected response, survived reload and reached server state `completed`; exactly
+one attempt was recorded. Its conversation was archived and verification sessions
+were revoked. The three role captures and settled chat capture were inspected.
+The partner currently has no customer assignments; its observed empty directory
+is correct, not permission to create grants. Earlier streaming/Stop and file
+processing evidence below retains its original deployment scope.
 
-One harmless 76-byte text file passed normal signed private Blob upload, the
+On the earlier `11240b6` deployment, one harmless 76-byte text file passed normal signed private Blob upload, the
 existing scheduler's scan/parse path, two actual Sandbox provider receipts,
 extracted-text checks and exact original download SHA-256. Normal cleanup reached
 domain state `deleted`; the owned conversation was archived and its login session
@@ -49,24 +56,56 @@ validator. It was a bounded owned-environment check, not all eight scenarios or 
 hosted Production Support claim. The old unretained HTTP-400 reason cannot be
 identified exclusively from the documented schema incompatibility.
 
-## Open Production recovery gap
+## Service health and recovery assurance
 
-The deployed main112 checkpoint returned `/api/health/ready`503 under the former
-availability-plus-assurance composite. The current code separates service `ready`
-from administrator-only `assurance.ready`; deployment and actual post-release
-verification of this correction must be recorded separately. Service readiness
-still requires the exact database/runtime capability, open admission, no required
-quarantine, current critical workers and valid dispatch/cost/scanner configuration.
-The strict current-source namespace/image/backup observations remain visible and
-unverified when absent. Do not fabricate those observations or equate either a
-working application route or service readiness with complete recovery.
+The current deployment returned `/api/health/ready`200 with `ready:true`. Authenticated
+status showed the exact released version, healthy database, open admission, ready
+dispatch, all 15 healthy maintenance classes and zero required quarantines. Service
+readiness still checks current runtime capability, cost holds and dispatch/scanner
+configuration. The earlier main112 composite returned503; that historical result
+has not been relabelled as a pass.
 
-Full matched service restoration, current-denial/replay reconciliation and observed
-scheduled backup cadence have not been established as complete Production
-recovery. The 24-hour RPO/four-hour RTO remain targets. This is normal operational
-follow-up; it does not revive participant feedback or a private pilot approval
-programme. Use the [Production operations runbook](../../docs/pilot-operations.md)
-for explicit safety-copy, storage, incident fencing and recovery procedures.
+A retained matched encrypted Production081 capture passed actual isolated hosted
+restore and current-denial/replay checks: original-clock duration 30m 41s and backup
+age 39m 30s, within the four-hour/24-hour objectives. All 12,471 effective-permission
+checks and 114-table denial/replay checks passed. Two provider-owned default-ACL
+restore entries were excluded; provider-default parity was not claimed. The
+capture required no private object bytes, and no active Native Workflows existed
+to resume. This proves that bounded isolated drill, not live incident failover or
+provider workflow resumption on the new release.
+
+Administrator-only assurance remains `ready:false`, with current-source store,
+image and backup observations `unverified`. Preserve those honest states; service
+readiness does not certify complete recovery assurance. The separate backup
+operator was refreshed from the released commit, its 21 uploaded source files were
+matched, all 37 environment rows were unchanged, and its enabled `0 */12 * * *`
+cron was verified. No extra capture, budget reset, key rotation or twelve-hour wait
+was used for closure. Two genuinely scheduled captures at least 12 hours apart
+remain nonblocking operational follow-up. Use the
+[Production operations runbook](../../docs/pilot-operations.md) for explicit
+safety-copy, storage, incident fencing and recovery procedures.
+
+## Resource cleanup and maintenance follow-up
+
+Seven superseded owned deployments were deleted during this release continuation,
+including the failed PR49 deployment; canonical mappings were checked afterward.
+The verified rollback deployment and protected backups, key custody, audit/replay
+records and financial holds remain retained. PR49/PR50 feature branches are absent
+locally and remotely. Unused local SSR/build caches were removed separately.
+The final documentation PR temporarily uses the owned isolated review database,
+empty Blob store and one protected Preview. Remove those review resources and their
+Preview/Development-only managed credential after its verification and merge;
+record actual deletion results on that PR. Never delete the archive project or
+normal operator merely because their historical names contain “pilot”.
+
+Dependency audit follow-up remains separate maintenance work. The installed
+Next16.3.8 is reported by upstream advisories; the checked-in Sharp0.35.5 meets the
+[image advisory workaround](https://github.com/advisories/GHSA-2464-fhr4-w9xw),
+and the [Cache Components advisory](https://github.com/advisories/GHSA-673q-mjm6-r5xr)
+requires an option/directive absent from the inspected application. This does not
+clear every audit finding. Schedule the normal Next patch upgrade and review the
+remaining production dependency findings; no dependency upgrade was mixed into
+the release-stamp fix.
 
 ## Protections to retain
 
