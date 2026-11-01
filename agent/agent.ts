@@ -26,12 +26,11 @@ export default defineAgent({
   model: defineDynamic(async (ctx: DynamicModelContext) => {
       const turnId = ctx.turn?.id;
       if (!turnId) throw hiddenRecord();
-      // Eve records the requested run before resolving its model. Its position
-      // within this turn is stable through replay and excludes compaction runs.
+      // Dynamic values are evaluated before model.requested is committed.
+      // Count completed runs for the upcoming step; reuse an outstanding run
+      // when resolving a restored request, without counting context compaction.
       const requested = runs(ctx.view, {turnId});
-      const stepIndex = requested.length - 1;
-      const run = requested[stepIndex];
-      if (!run || run.status !== 'requested') throw hiddenRecord();
+      const stepIndex = requested.length - (requested.at(-1)?.status==='requested'?1:0);
       const principal = ctx.session.auth.current;
       if (await staffingResponseScope(principal)) {
         const responseAttemptId = principal?.attributes?.turasAttemptId;

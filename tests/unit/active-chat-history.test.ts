@@ -96,3 +96,10 @@ describe('quiet final-answer presentation',()=>{
   expect(finalChatHistory([{kind:'native',message}],false)[0].message.parts).toEqual([{type:'text',text:'Final',stepIndex:3},{type:'file',mediaType:'text/plain',filename:'result.txt'}]);
  });
 });
+
+it('matches v27 delivery identity without collapsing identical later inputs',()=>{
+ const saved:RetainedChatEvent={eventId:'evt_hash',eventType:'message.received',payload:{message:'Original input',nativeProtocol:27,deliveryId:'delivery_first'}};
+ const first=user('delivery_first','turn'),second=user('delivery_second','turn');
+ expect(activeChatHistory([first,second],[saved]).map(item=>item.message.id)).toEqual(['delivery_first:user','delivery_second:user']);
+ expect(activeChatHistory([first],[{...saved,payload:{...saved.payload,nativeProtocol:25}}])).toHaveLength(2);
+});

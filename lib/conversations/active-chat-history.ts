@@ -21,6 +21,7 @@ export function activeChatHistory(native:readonly EveMessage[],history:readonly 
   const counterpart=slots.findIndex(message=>{
    if(message.role!==saved.role)return false;
    const id=message.id.replace(/:(?:user|assistant)$/,'');
+   if(saved.role==='user'&&saved.deliveryId===id)return true;
    if(saved.id===id||saved.role==='user'&&saved.inputAliasEventIds?.includes(id))return true;
    if(saved.role==='user'||saved.turnId===undefined||saved.turnId===null||message.metadata?.turnId!==saved.turnId)return false;
    return saved.stepIndex!==undefined&&saved.stepIndex!==null&&message.parts.some(part=>part.type==='text'&&part.stepIndex===saved.stepIndex);

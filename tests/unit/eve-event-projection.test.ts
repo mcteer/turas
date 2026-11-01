@@ -45,3 +45,9 @@ it('skips withheld content and leaves the committed source cursor unchanged unti
  const pending=foldEvents(view,[{...event,meta:{at:fixtureAt,position:{line:1,index:0},endOfLine:false}}]);
  expect(position(pending)).toBe(position(view));
 });
+
+it('does not project answer-only deliveries as a second user message',()=>{
+ const fixture=turnFixture();
+ const event={type:'delivery.consumed' as const,scope:{turnId:'turn_0'},data:{deliveryId:'answer_only',turnId:'turn_0',parts:[]}};
+ expect(projectEveFact('wrun_synthetic',event,{line:1,index:0},fixtureAt,fixture.snapshot.view).type).toBe('native.observed');
+});

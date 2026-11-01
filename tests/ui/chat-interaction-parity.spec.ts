@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {Client} from 'pg';
 import {test,expect,type Page} from '@playwright/test';
-import {chatWireBody,type ChatWireEvent as MessageStreamEvent} from '../fixtures/chat-wire';
+import {chatWireResponse,type ChatWireEvent as MessageStreamEvent} from '../fixtures/chat-wire';
 import {signIn,requireUiFixtureDatabaseUrl} from '../fixtures/ui';
 
 // Controlled fetch/fulfill handlers can outlive the last UI assertion. Settle
@@ -32,7 +32,7 @@ async function ownedChat(page:Page,events:(native:string)=>MessageStreamEvent[],
  // control without enabling native uploads in the shared disposable runtime.
  if(options.nativeFiles)await page.route(`**/api/conversations/${id}`,async route=>{const response=await route.fetch();const body=await response.json();body.data.canAttachNativeFiles=true;await route.fulfill({response,json:body});});
  let current=events(native),reads=0;
- await page.route(`**/eve/v1/session/${native}/stream**`,route=>{reads++;return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'27','x-eve-stream-tail-index':String(current.length-1)},body:chatWireBody(current)});});
+ await page.route(`**/eve/v1/session/${native}/stream**`,route=>{reads++;return route.fulfill(chatWireResponse(current,route.request().url()));});
  await page.goto(`/s/${id}`);await expect(page.getByLabel('Message Turi',{exact:true})).toBeEditable();
  return {id,native,setEvents:(events:MessageStreamEvent[])=>{current=events;},reads:()=>reads};
 }
@@ -230,7 +230,7 @@ test('first send hides the landing immediately and starts in place with one Thin
   wire('actions.requested',{turnId:'in-place',sequence:0,stepIndex:0,actions:[{kind:'tool-call',callId:'lookup',toolName:'get_customer',input:{}}]})];
  const received=running.findIndex(e=>e.type==='message.received');running[received]={...running[received],meta:{...running[received].meta,deliveryIds:['in-place-delivery']}};
  let current=initial;
- await page.route(`**/eve/v1/session/${native}/stream**`,route=>{const start=Number(new URL(route.request().url()).searchParams.get('startIndex')??0);return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'27','x-eve-stream-tail-index':String(current.length-1)},body:current.slice(start).map(e=>JSON.stringify(e)).join('\n')+'\n'});});
+ await page.route(`**/eve/v1/session/${native}/stream**`,route=>{return route.fulfill(chatWireResponse(current,route.request().url()));});
  await page.route(`**/eve/v1/session/${native}`,async route=>{if(route.request().method()!=='POST')return route.continue();sends++;current=running;await route.fulfill({status:202,json:{sessionId:native,deliveryId:'in-place-delivery'}});});
  try{
   const original=await page.locator('.chat-composer').boundingBox();await page.getByLabel('Message Turi',{exact:true}).fill('Synthetic in-place question');await page.getByRole('button',{name:'Send message',exact:true}).click();
@@ -260,7 +260,7 @@ test('first send hides the landing immediately and starts in place with one Thin
   const other=await page.request.post('/api/conversations',{headers:{origin:process.env.TURAS_UI_BASE_URL!,'x-csrf-token':csrf},data:{requestKey:randomUUID(),title:'Synthetic other saved conversation'}});
   expect(other.status()).toBe(201);const otherId=(await other.json()).data.id,otherNative='wrun_other_'+randomUUID().replaceAll('-','');
   const db=new Client({connectionString:requireUiFixtureDatabaseUrl()});await db.connect();try{await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2,native_protocol=27 WHERE id=$1",[otherId,otherNative]);}finally{await db.end();}
-  const saved=transcript(otherNative,'A different saved answer.');await page.route(`**/eve/v1/session/${otherNative}/stream**`,route=>route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'27','x-eve-stream-tail-index':String(saved.length-1)},body:saved.map(e=>JSON.stringify(e)).join('\n')+'\n'}));
+  const saved=transcript(otherNative,'A different saved answer.');await page.route(`**/eve/v1/session/${otherNative}/stream**`,route=>route.fulfill(chatWireResponse(saved,route.request().url())));
   await page.goto('/s/'+otherId);
   await expect(page.getByText('A different saved answer.',{exact:true})).toBeVisible({timeout:15000});await expect(page.getByRole('heading',{name:'Turi',exact:true})).toHaveCount(0);expect(sends).toBe(1);
   await page.goBack();await expect(page.getByText('Final in-place answer.',{exact:true})).toBeVisible({timeout:15000});expect(sends).toBe(1);
@@ -277,7 +277,7 @@ test('a broken stream reconnects by read only and displays only the final answer
  await page.route(`**/eve/v1/session/${chat.native}`,route=>{if(route.request().method()==='POST')sends++;return route.fulfill({status:500,json:{code:'unexpected_send'}});});
  await page.route(`**/eve/v1/session/${chat.native}/stream**`,route=>{
   if(++streamReads<=2)return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'27','x-eve-stream-tail-index':'0'},body:'broken transport frame\n'});
-  return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'27','x-eve-stream-tail-index':String(completed.length-1)},body:completed.map(e=>JSON.stringify(e)).join('\n')+'\n'});
+  return route.fulfill(chatWireResponse(completed,route.request().url()));
  });
  await page.reload();await expect(page.getByText('Final answer after reconnect.',{exact:true})).toBeVisible({timeout:15000});
  await expect(page.getByText('Intermediate model narration.',{exact:true})).toHaveCount(0);await expect(page.locator('.chat-thinking')).toHaveCount(0);

@@ -48,8 +48,9 @@ function visiblePayload(event: NativeEvent): Record<string, unknown> {
       // Retain the framework's public file metadata, never sandbox paths or
       // another persisted copy of inline bytes, for historical attachment cards.
       const parts=sanitizeNativeInputParts(data.parts);
+      const identity=event.meta.protocol===27&&event.meta.deliveryIds?.length===1?{nativeProtocol:27,deliveryId:event.meta.deliveryIds[0]}:{};
       const sequence=Number.isSafeInteger(data.sequence)&&Number(data.sequence)>=0?{sequence:data.sequence}:{};
-      return parts.some(part=>part.type==='file')?{message:data.message,parts,...sequence}:{message:data.message,...sequence};
+      return parts.some(part=>part.type==='file')?{message:data.message,parts,...sequence,...identity}:{message:data.message,...sequence,...identity};
     }
     case "message.appended": return { messageDelta: data.messageDelta };
     case "message.completed": return { message: data.message, finishReason: data.finishReason };

@@ -1,6 +1,8 @@
 import {it,expect,vi} from 'vitest';
 import {createGateway} from 'ai';
-vi.mock('../../../lib/server/staffing/native-context',()=>({staffingResponseScope:async()=>null}));
+const staffing=vi.hoisted(()=>({enabled:false,admit:vi.fn(async()=>({mode:'operational',deadlineAt:new Date(Date.now()+60000)}))}));
+vi.mock('../../../lib/server/staffing/native-context',()=>({staffingResponseScope:async()=>staffing.enabled?{}:null}));
+vi.mock('../../../lib/server/staffing/native-admission',()=>({admitGovernedStaffingModelStep:staffing.admit,assertGovernedStaffingProviderRelease:async()=>{}}));
 vi.mock('../../../lib/server/conversations/feature',()=>({responseFeature:async()=>null}));
 vi.mock('../../../lib/server/db/client',()=>({withTransaction:async(run:(db:unknown)=>unknown)=>run({query:async()=>({rows:[{schema_version:0}]})})}));
 import agent from '../../../agent/agent';
@@ -11,7 +13,7 @@ type Model=Extract<Parameters<typeof wrapSupportModel>[0],{specificationVersion:
 const fake=(methods:Partial<Model>)=>({specificationVersion:'v4',provider:'synthetic-no-network',modelId:'anthropic/claude-sonnet-5.5',supportedUrls:{},...methods}) as Model;
 
 it('serializes the actual session selection with the same model and request-local Anthropic-only route',async()=>{
- const fixture=turnFixture().commit({type:'model.requested',scope:{turnId:'turn_0',runId:'run_0'},data:{runId:'run_0',owner:{turnId:'turn_0'}}});
+ const fixture=turnFixture();
  const model=agent.model;if(!model||typeof model!=='object')throw Error('Missing dynamic model');
  const selection=await Reflect.get(model,Symbol.for('eve.dynamic'))({session:{id:'wrun_synthetic',auth:{current:null}},turn:{id:'turn_0'},view:fixture.snapshot.view});
  expect(JSON.parse(JSON.stringify(selection))).toEqual({model:'anthropic/claude-sonnet-5.5',modelOptions:{providerOptions:{gateway:{only:['anthropic']}}}});
@@ -55,4 +57,18 @@ it('serializes the selection through the installed Gateway SDK for generate and 
   }
   expect(realNetwork).not.toHaveBeenCalled();
  }finally{realNetwork.mockRestore();}
+});
+
+it('passes upcoming zero-based model ordinals into governed admission before request facts exist',async()=>{
+ staffing.enabled=true;staffing.admit.mockClear();
+ try{
+  const fixture=turnFixture();const resolve=Reflect.get(agent.model!,Symbol.for('eve.dynamic'));
+  const ctx=()=>({session:{id:'wrun_synthetic',auth:{current:{principalId:'owned',attributes:{turasAttemptId:'attempt'}}}},turn:{id:'turn_0'},view:fixture.snapshot.view});
+  await resolve(ctx());
+  fixture.commit({type:'model.requested',scope:{turnId:'turn_0',runId:'run_0'},data:{runId:'run_0',owner:{turnId:'turn_0'}}},
+   {type:'model.started',scope:{turnId:'turn_0',runId:'run_0'},data:{runId:'run_0',modelId:'synthetic',attempt:0}},
+   {type:'model.settled',scope:{turnId:'turn_0',runId:'run_0'},data:{runId:'run_0',outcome:'completed'}});
+  await resolve(ctx());
+  expect(staffing.admit.mock.calls.map(call=>(call as unknown as [unknown,{stepIndex:number}])[1].stepIndex)).toEqual([0,1]);
+ }finally{staffing.enabled=false;}
 });

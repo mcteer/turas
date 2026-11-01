@@ -189,11 +189,11 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
   const working=Boolean(activeTurn(agent.view))||busy||background.thinking||Boolean(pendingKey&&['pending','running','stopping'].includes(responseState??''));
   const displayMessages=finalChatHistory(historyMessages,working&&!awaitingUser);
   useEffect(()=>{
-    if(!agent.error||denied||stale||latestTurnFailure(agent.events)||reconnectAttempts.current>=3)return;
+    if(!agent.error||denied||stale||latestTurnFailure(agent.events)||reconnectAttempts.current>=3){setReconnecting(false);return;}
     setReconnecting(true);
-    const timer=setTimeout(()=>{reconnectAttempts.current++;void latestAgent.current.resume().catch(()=>{}).finally(()=>setReconnecting(false));},1000*2**reconnectAttempts.current);
+    const timer=setTimeout(()=>{reconnectAttempts.current++;void latestAgent.current.resume().catch(()=>{});},1000*2**reconnectAttempts.current);
     return ()=>clearTimeout(timer);
-  },[agent.status,denied,stale,reconnecting]);
+  },[agent.error,denied,stale]);
 
 
   useEffect(() => {
@@ -464,7 +464,7 @@ function BoundChat({ conversationId, nativeSessionId, customerName, synthetic, c
       {messages.map(message=>message.role==='assistant'?<ChatAssistantParts key={'inputs:'+message.id} parts={message.parts} activityOnly streaming={busy} requests={inputRequests} disabled={answering||busy} onResponse={respondToRequest}/>:null)}
       {displayMessages.map((item)=>{if(item.kind==='native'&&item.message.role==='assistant'&&!assistantHasContent(item.message.parts,inputRequests))return null;if(item.kind==='retained'){const message=item.message;return <article className={`chat-message chat-message-${message.role}`} aria-label={message.role==='assistant'?'Turi':'You'} key={'retained:'+message.id}> {retainedActiveParts(message,nativeAttachments.find(ref=>ref.eventId===message.id)).map((part,index)=>part.type==='file'?<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} size={part.size} url={part.url}/>:message.role==='assistant'?<ChatMarkdown key={index} text={part.text}/>:<UserChatText key={index} text={part.text}/>)}{message.partial&&<small>Partial response</small>}</article>;}const message=item.message;return <article className={`chat-message chat-message-${message.role}`}
         aria-label={message.role === "assistant" ? "Turi" : "You"} key={message.id}>
-        {message.role==='user'?nativeUserDisplayParts(message,nativeAttachments.find(item=>item.eventId===message.id.replace(/:user$/,''))).map((part,index)=>part.type==='text'
+        {message.role==='user'?nativeUserDisplayParts(message,nativeAttachments.find(item=>item.eventId===message.id.replace(/:user$/,'')||applicationHistory.some(event=>event.eventId===item.eventId&&event.payload.nativeProtocol===27&&event.payload.deliveryId===message.id.replace(/:user$/,'')))).map((part,index)=>part.type==='text'
           ?<UserChatText key={index} text={part.text}/>:<NativeChatAttachment key={index} filename={part.filename} mediaType={part.mediaType} url={part.url} size={part.size}/>):<ChatAssistantParts parts={message.parts.filter(part=>part.type==='text'||part.type==='file')} streaming={busy&&lastMessage?.role==='assistant'&&message.metadata?.turnId===lastMessage.metadata?.turnId} requests={inputRequests} disabled={answering||busy} onResponse={respondToRequest}/>}
       </article>;})}
       {inputRequests.filter(request=>!displayedRequestIds.has(request.requestId)).map(request=><ChatInputRequestCard key={request.requestId} request={request}
