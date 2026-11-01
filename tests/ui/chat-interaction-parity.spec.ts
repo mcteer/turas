@@ -276,7 +276,9 @@ test('a broken stream reconnects by read only and displays only the final answer
  const final=completed.find(e=>e.type==='message.completed'&&e.data.message==='Final answer after reconnect.');if(final?.type==='message.completed')final.data.stepIndex=1;
  await page.route(`**/eve/v1/session/${chat.native}`,route=>{if(route.request().method()==='POST')sends++;return route.fulfill({status:500,json:{code:'unexpected_send'}});});
  await page.route(`**/eve/v1/session/${chat.native}/stream**`,route=>{
-  if(++streamReads<=2)return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'27','x-eve-stream-tail-index':'0'},body:'broken transport frame\n'});
+  // v27 ignores unknown lines while advancing their source cursor. A failed
+  // HTTP read exercises transport recovery without fabricating consumed lines.
+  if(++streamReads<=2)return route.fulfill({status:503,json:{code:'synthetic_stream_unavailable'}});
   return route.fulfill(chatWireResponse(completed,route.request().url()));
  });
  await page.reload();await expect(page.getByText('Final answer after reconnect.',{exact:true})).toBeVisible({timeout:15000});

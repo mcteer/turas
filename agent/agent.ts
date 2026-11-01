@@ -4,6 +4,7 @@ import {wrapOrdinaryChatModel} from "../lib/server/conversations/model-budget";
 import { gateway } from "ai";
 import {selectTurasGatewayModel} from "../lib/server/models/gateway-routing";
 import { defineAgent, defineDynamic, type DynamicModelContext } from "eve";
+import {deferModelAdmission} from "../lib/server/models/deferred";
 import {runs} from "eve/events";
 import { withTransaction } from "../lib/server/db/client";
 import { hiddenRecord } from "../lib/contracts/http";
@@ -36,9 +37,11 @@ export default defineAgent({
         const responseAttemptId = principal?.attributes?.turasAttemptId;
         if (!principal?.principalId || typeof responseAttemptId !== "string") throw hiddenRecord();
         const identity = { nativeSessionId: ctx.session.id, responseAttemptId, turnId, stepIndex };
-        const admitted = await admitGovernedStaffingModelStep(principal, identity);
-        return selectTurasGatewayModel(wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode, {
-          deadlineAt: admitted.deadlineAt, beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),
+        return selectTurasGatewayModel(deferModelAdmission(parityBudgetModel(gateway(selectedModel),selectedModel),async()=>{
+          const admitted = await admitGovernedStaffingModelStep(principal, identity);
+          return wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode, {
+            deadlineAt: admitted.deadlineAt, beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),
+          });
         }));
       }
       if((await responseFeature(principal))?.kind==='normal')
@@ -71,11 +74,12 @@ export default defineAgent({
         }
         const bound = await boundToolActor(client, principal);
         if (!bound.planning) throw hiddenRecord();
-        await admitPlanModelStep(client, bound.actor, {
-          nativeSessionId: ctx.session.id, responseAttemptId,
-          turnId, stepIndex,
+        return deferModelAdmission(parityBudgetModel(gateway(selectedModel),selectedModel),async()=>{
+          await withTransaction(db=>admitPlanModelStep(db, bound.actor, {
+            nativeSessionId: ctx.session.id, responseAttemptId,turnId,stepIndex,
+          }));
+          return wrapPlanModel(parityBudgetModel(gateway(selectedModel),selectedModel));
         });
-        return wrapPlanModel(parityBudgetModel(gateway(selectedModel),selectedModel));
       }));
   }),
   reasoning: "low",

@@ -60,15 +60,17 @@ it('serializes the selection through the installed Gateway SDK for generate and 
 });
 
 it('passes upcoming zero-based model ordinals into governed admission before request facts exist',async()=>{
- staffing.enabled=true;staffing.admit.mockClear();
+ staffing.enabled=true;staffing.admit.mockClear();staffing.admit.mockRejectedValueOnce(Error('Synthetic admission boundary')).mockRejectedValueOnce(Error('Synthetic admission boundary'));
  try{
   const fixture=turnFixture();const resolve=Reflect.get(agent.model!,Symbol.for('eve.dynamic'));
   const ctx=()=>({session:{id:'wrun_synthetic',auth:{current:{principalId:'owned',attributes:{turasAttemptId:'attempt'}}}},turn:{id:'turn_0'},view:fixture.snapshot.view});
-  await resolve(ctx());
+  const first=await resolve(ctx());expect(staffing.admit).not.toHaveBeenCalled();
+  await expect(first.model.doGenerate({prompt:[]})).rejects.toThrow('Synthetic admission boundary');
   fixture.commit({type:'model.requested',scope:{turnId:'turn_0',runId:'run_0'},data:{runId:'run_0',owner:{turnId:'turn_0'}}},
    {type:'model.started',scope:{turnId:'turn_0',runId:'run_0'},data:{runId:'run_0',modelId:'synthetic',attempt:0}},
    {type:'model.settled',scope:{turnId:'turn_0',runId:'run_0'},data:{runId:'run_0',outcome:'completed'}});
-  await resolve(ctx());
+  const second=await resolve(ctx());expect(staffing.admit).toHaveBeenCalledTimes(1);
+  await expect(second.model.doGenerate({prompt:[]})).rejects.toThrow('Synthetic admission boundary');
   expect(staffing.admit.mock.calls.map(call=>(call as unknown as [unknown,{stepIndex:number}])[1].stepIndex)).toEqual([0,1]);
  }finally{staffing.enabled=false;}
 });
