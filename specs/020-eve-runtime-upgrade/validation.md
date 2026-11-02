@@ -21,7 +21,7 @@ These checks do not claim that every specialist was exercised with a paid provid
 all three specialists have separate native fixture coverage.
 
 The existing dedicated backup operator was updated to the same `0148c517` source,
-schema 85 and native protocol 10. Its Production deployment and 21 uploaded source
+schema 85 and verified PostgreSQL 18.6 native-client assets (10 files). Its Production deployment and 21 uploaded source
 files were verified. All 37 existing environment rows, keys, budgets, expiry and
 12-hour schedule remained unchanged. No manual backup, new capture or model call
 was issued to close this release; the earlier recovery evidence retains its
