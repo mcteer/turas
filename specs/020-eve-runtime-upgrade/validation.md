@@ -2,6 +2,64 @@
 
 ## Current Acceptance State
 
+### Stored Result Retrieval Follow-up
+
+Inspection of the real rendered663 conversation exposed a distinction hidden by
+state-only acceptance: both specialist assignments completed and retained their
+results, but Turi selected the customer-recon reader for a best-practices brief.
+The continuity/Close pass above remains valid; it did **not** prove a useful
+parent answer or successful loading of the stored practices.
+
+The follow-up adds a narrow governed exact-reference best-practices reader,
+shared bounded writer/reader schema, and explicit reader guidance. Runtime-role
+integration verifies real JSONB/hash round trip, partial coverage/citations,
+closed-discussion read, cross-parent/owner/workspace/environment denial, tampered
+brief and stale-source denial (`/tmp/turas-020-practice-reader-domain-final.txt`).
+No provider calls occur in the reader. Independent review found no security
+blocker. The expanded unpaid native fixture requires the parent to call the actual
+reader and validate all three result deliveries. It passes all three specialist
+kinds, restart/continuation and targeted/global/race controls with zero paid calls
+and database deadlocks (`/tmp/turas-020-practice-reader-native.txt`). The local
+reader also loaded both actual663 stored briefs under a fresh authenticated
+owner session: each contains four practices, two source URLs and two explicit
+gaps, all preserved. That is real Preview data read through local code, not proof
+that the new tool is deployed. Actual hosted useful-answer acceptance is pending;
+T052 tracks the remaining check.
+
+
+### Confirmed Hosted Specialist Acceptance
+
+Exact commit `6636d1bbb4404339b4c226497561fd78a18ff8e0` is ready at
+https://turas-6pba6e2ji-turas-6e414af3.vercel.app. Actual existing `mcteer`
+sign-in, all four composer layouts and the mandatory actual Production/Preview
+Customer Profiles comparison pass; all desktop/mobile captures were inspected.
+
+The real Gateway specialist exercise passes: two completed assignments reuse
+exactly one child and workflow, preserve the original expiry, show exactly two
+canonical user messages, retain the unsent draft, and confirm targeted Close.
+Native conversation retirement returns202. Specialist model operations settle
+at$0.225745; two completed embedding operations retain their unknown-cost ceilings
+of$0.000022. Root usage is separate. No holds were refunded or failed earlier
+exercises relabeled. Private evidence:
+`local-artifacts/020/preview-663-specialist-second/receipt-private.json`.
+
+The earlier stopping task also closes through its exact previously confirmed
+parent retirement, verifying the recovery path on actual hosted data. The first
+new request is admitted without the prior503. T051 implementation and hosted
+acceptance are complete; final-source CI/release remain separate open gates.
+
+The new CI diagnostics identify the remaining native-operations failure at the
+fixture's extra `readExecutionOverview`: its `FOR UPDATE OF p` waits for a plan
+read transaction. No database wait cycle is established. The fixture now retains
+the actual execution-head version returned by its successful `record.create`
+command rather than issuing that redundant exclusive read during the held
+approval. Actual `record.revise`, stale-source invalidation/approval-denial
+assertions and all timeouts remain unchanged. The exact unpaid native-operations controller
+passes with zero slow/blocked query observations
+(`/tmp/turas-020-native-operations-version-receipt.txt`). This is a fixture correction,
+not a claim that a Production deadlock was found or repaired.
+
+
 ### Current Preview and Remaining Blockers
 
 Exact Preview `b2afaac7` accepts the established Production `mcteer`

@@ -1,4 +1,4 @@
-import {randomUUID} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {Client} from 'pg';
 import {beforeAll,expect,it} from 'vitest';
 import {requireTestDatabaseUrl} from '../fixtures/database';
@@ -252,5 +252,41 @@ it.each(['future-confirmation','existing-confirmed-recovery'] as const)('reconci
   expect((await db.query('SELECT state,close_reason,closed_at,version,projection_line,projection_fact_index FROM specialist_discussions WHERE id=$1',[discussion])).rows[0]).toEqual(closed);
   expect((await db.query('SELECT * FROM specialist_assignments WHERE id=$1',[done])).rows).toEqual(completed);
   expect((await db.query('SELECT * FROM specialist_operations WHERE discussion_id=$1',[discussion])).rows).toEqual(finances);
+ }finally{await db.end();}
+});
+it('loads only an owned current best-practices result with its partial coverage and checked sources',async()=>{
+ const {readOwnedPracticeResult}=await import('../../lib/server/research/specialists/practice-result');
+ const {recordVercelPracticeRun}=await import('../../lib/server/research/specialists/research-cache/practice-library');
+ const db=new Client({connectionString:url});await db.connect();
+ try{
+  const actor=await isolatedChatActor(db,'internal','admin'),customer=randomUUID(),key=randomUUID();
+  await db.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Owned practice result account',false)",[customer,actor.workspaceId]);
+  const {conversation}=await createOwnedConversation(actor,{requestKey:key,customerId:customer});
+  const binding=await claimBinding(actor,conversation.id,key);if(binding.state!=='claimed')throw Error('Binding unavailable');
+  const native='wrun_'+randomUUID();await bindNativeSession(actor,conversation.id,binding.claimToken,native);
+  await db.query('INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,$2,now())',[process.env.TURAS_ENVIRONMENT_ID,'practice-result-'+key]);
+  const {attemptId}=await prepareAttempt(actor,conversation.id,native,randomUUID(),'Owned practice result check.');await claimDispatch(actor,conversation.id,attemptId,0);
+  await db.query('SET ROLE turas_runtime');
+  const identity={...actor,userId:actor.principalId,environmentId:process.env.TURAS_ENVIRONMENT_ID!},signal=new AbortController().signal,discussion=randomUUID();
+  const checkedAt=new Date(),refreshAfter=new Date(Date.now()+60000),snapshotId=createHash('sha256').update(randomUUID()).digest('hex'),sourceUrl='https://vercel.com/docs/deployments';
+  const source={id:'checked-doc',url:sourceUrl,title:'Checked deployment documentation',retrievedAt:checkedAt.toISOString(),excerpt:'Preserve the documented rollback requirements.'};
+  await db.query(`INSERT INTO turas_evidence_snapshots(environment_id,workspace_id,id,fetch_key,url,content_hash,source,truncated,checked_at,refresh_after,index_state)
+   VALUES($1,$2,$3,$3,$4,'fixture',$5,false,$6,$7,'ready')`,[identity.environmentId,actor.workspaceId,snapshotId,sourceUrl,source,checkedAt,refreshAfter]);
+  const brief={summary:'Bounded stored guidance with explicit incomplete coverage.',practices:[{practice:'Preserve a previously verified deployment.',rationale:'Keep an independently checked rollback target available.',sourceIds:[source.id],caveat:'The documented platform and plan prerequisites still apply.'}],gaps:['Plan-specific rollback availability remains unverified.']};
+  const reference=await recordVercelPracticeRun(identity,'Next.js','Deployment safety',brief,[sourceUrl],signal);
+  await db.query(`INSERT INTO specialist_discussions(id,conversation_id,environment_id,workspace_id,owner_principal_id,customer_id,kind,workload,parent_session_id,first_call_id,workflow_run_id,original_attempt_id,original_lease_id,context_digest,authority_digest,input_ceiling,output_ceiling,cost_ceiling_micro_usd,expires_at,dependencies)
+   VALUES($1,$2,$3,$4,$5,$6,'best-practices','platform',$7,$8,$9,$10,$11,$12,$12,400000,28000,2000000,clock_timestamp()+interval '5 minutes',$13)`,[discussion,conversation.id,identity.environmentId,actor.workspaceId,actor.principalId,customer,native,randomUUID(),randomUUID(),attemptId,randomUUID(),'a'.repeat(64),JSON.stringify([{kind:'snapshot',snapshotId,checkedAt:checkedAt.toISOString(),refreshAfter:refreshAfter.toISOString()}])]);
+  await db.query(`INSERT INTO specialist_assignments(id,discussion_id,parent_session_id,ordinal,attempt_id,request_key,input_digest,call_id,research_key,lease_id,authority_expires_at,state,result_reference)
+   SELECT $1,id,parent_session_id,1,$2,$3,$4,$5,'fixture',$6,expires_at,'completed',$7 FROM specialist_discussions WHERE id=$8`,[randomUUID(),attemptId,randomUUID(),'b'.repeat(64),randomUUID(),randomUUID(),{kind:'best-practices',status:'incomplete',reference,reason:'Preserve checked gaps.'},discussion]);
+  const read=()=>readOwnedPracticeResult(identity,native,reference,signal);
+  const result=await read();expect(result.status).toBe('incomplete');expect(result.brief).toEqual(brief);expect(result.sources).toEqual([{id:source.id,url:sourceUrl,title:source.title,publishedAt:null,checkedAt:checkedAt.toISOString(),refreshAfter:refreshAfter.toISOString()}]);
+  await expect(readOwnedPracticeResult(identity,'wrun_foreign',reference,signal)).rejects.toMatchObject({status:404});
+  await expect(readOwnedPracticeResult({...identity,principalId:randomUUID()},native,reference,signal)).rejects.toMatchObject({status:404});
+  await expect(readOwnedPracticeResult({...identity,workspaceId:randomUUID()},native,reference,signal)).rejects.toMatchObject({status:404});
+  await expect(readOwnedPracticeResult({...identity,environmentId:'test-foreign'},native,reference,signal)).rejects.toMatchObject({status:404});
+  await db.query("UPDATE specialist_discussions SET state='closed',closed_at=clock_timestamp() WHERE id=$1",[discussion]);expect((await read()).brief).toEqual(brief);
+  await db.query("UPDATE turas_vercel_practice_runs SET brief=jsonb_set(brief,'{summary}','\"Tampered stored practice summary.\"') WHERE id=$1",[reference]);await expect(read()).rejects.toMatchObject({status:404});
+  await db.query('UPDATE turas_vercel_practice_runs SET brief=$2 WHERE id=$1',[reference,brief]);
+  await db.query("UPDATE turas_evidence_snapshots SET refresh_after=clock_timestamp()-interval '1 second' WHERE id=$1",[snapshotId]);await expect(read()).rejects.toMatchObject({status:404});
  }finally{await db.end();}
 });

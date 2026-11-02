@@ -135,3 +135,10 @@ export function setupFailureMetadata(value:unknown){
  const signatures=['Owned local setup failed','Disposable clone','Marked disposable test source required','Disposable production build failed','Disposable app failed readiness','Report UI discovery failed','Prior-feature integration failed','Report suite failed','Regression source changed','Report source changed','Report UI source changed','Migration digest mismatch','Migration manifest does not match','Turas configuration invalid','Rendered binding changed'];
  return {stage:typeof row.stage==='string'&&stages.includes(row.stage)?row.stage:'unknown',operations,setupSignatures:signatures.filter(s=>message.includes(s)),...processFailureMetadata({message,code:row.code,signal:row.signal})};
 }
+
+/** Fixed native response codes and boundary positions only; never response prose. */
+export function staffingNativeFailureMetadata(value:unknown){
+ const row=value&&typeof value==='object'?value as Record<string,unknown>:{};
+ const boundary=ordinaryOperationsDiagnostic({kind:'native_operations_fixture_failure',boundaryStages:row.boundaryStages,boundaryErrors:row.boundaryErrors,send:{nativeCode:row.code}})!;
+ return {kind:'owned_staffing_native_error' as const,status:typeof row.status==='number'&&Number.isInteger(row.status)&&row.status>=400&&row.status<=599?row.status:null,code:boundary.nativeCode,boundaryStages:boundary.boundaryStages??[],boundaryErrors:boundary.boundaryErrors,dormantGeneration:row.dormantGeneration===true};
+}

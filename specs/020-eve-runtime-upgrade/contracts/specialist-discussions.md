@@ -92,3 +92,20 @@ layouts. Keep composer drafts intact across updates/reload. Distinguish closing
 an idle discussion from stopping active work in the control label. The existing
 conversation Stop remains available. Protocol-25 history stays read-only and
 exposes no new continuation/cancellation authority.
+
+## Stored Best-Practices Result Read
+
+`get_vercel_practice_brief({reference})` is available only in ordinary chat. The
+hash identifies a stored result; it grants no authority. The domain reader binds
+it to a completed best-practices assignment owned by the current parent session,
+environment, workspace and principal. It rechecks current customer access and the
+discussion's exact source snapshots before returning a bounded typed brief with
+practices, rationales, caveats, gaps and dated public source URLs. The authored
+brief schema also supplies canonical field order when checking the stored hash
+after a JSONB round trip.
+
+A stored `incomplete` result stays partial and can still contain useful guidance.
+No latest-result fallback, fresh research lease, provider call or customer write
+occurs. Missing, stale, withdrawn, tampered or foreign results return unavailable;
+private child messages and native identifiers are never returned. An eligible
+completed result remains readable after closing its specialist discussion.

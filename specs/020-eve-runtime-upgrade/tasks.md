@@ -133,4 +133,6 @@ production change occurs as part of the planning/model-switch handoff.
 
 - [x] T050 Align ordinary research instructions and all three workflow-tool descriptions with explicit specialist refinements: prepare a fresh authorized same-scope assignment, reuse the actual taskId, preserve expiry/allowances and keep ordinary factual follow-ups on cached evidence; verify metadata/governance checks. Final real hosted routing acceptance remains in T041.
 
-- [ ] T051 Reconcile specialist termination from the exact validated parent native-retirement receipt when a workflow has failed without a delivered task-end fact; preserve completed results, financial holds and native positions, verify atomic confirmation and recovery of existing confirmed receipts, and repeat hosted acceptance (FR-005, FR-011, FR-012).
+- [x] T051 Reconcile specialist termination from the exact validated parent native-retirement receipt when a workflow has failed without a delivered task-end fact; preserve completed results, financial holds and native positions, verify atomic confirmation and recovery of existing confirmed receipts, and repeat hosted acceptance (FR-005, FR-011, FR-012).
+
+- [ ] T052 Complete governed parent retrieval of exact stored best-practices results, preserving partial coverage, citations, source eligibility and owner boundaries; verify native tool delivery and actual hosted answer usefulness rather than treating a completed assignment as sufficient (FR-003, FR-007, FR-009, SC-007).

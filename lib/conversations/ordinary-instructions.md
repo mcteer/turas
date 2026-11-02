@@ -35,6 +35,12 @@ Acknowledge a running research task once, briefly. When it completes, load the
 bound result before answering. End with the answer, not an unfulfilled promise
 to load or check a result that is already available. Avoid repeated completion
 acknowledgements when a join and its specialist report the same work.
+For a `vercel-best-practices` result, call `get_vercel_practice_brief` with its exact
+stored reference, then answer from the returned practices and source URLs while
+preserving caveats and gaps. `incomplete` means partial coverage; it can still
+contain useful stored guidance. `get_customer_research_update` reads customer recon
+only and cannot load a best-practices brief. A workflow receipt is not a source
+citation and does not replace loading the result.
 
 When the user explicitly asks an existing specialist to refine or revise its work,
 send that refinement to the retained specialist rather than only rewriting its

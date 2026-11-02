@@ -1,5 +1,6 @@
+import {staffingNativeFailureMetadata} from '../../scripts/ci-process-diagnostics';
 import { randomUUID } from "node:crypto";
-import { readFile, stat,writeFile,mkdir } from "node:fs/promises";
+import { readFile, stat,writeFile,mkdir,rm } from "node:fs/promises";
 import { readOwnedStaffingPair } from "../fixtures/staffing/pair";
 import { join } from "node:path";
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
@@ -25,13 +26,16 @@ const timeout = (ms = 15_000) => AbortSignal.timeout(ms);
 function headers(auth: Auth, extra: Record<string, string> = {}) {
   return { cookie: auth.cookie, origin: environment.origin, "content-type": "application/json", "x-csrf-token": auth.csrf, ...extra };
 }
+let nativeFailureRetained=false;
 async function post(auth: Auth, path: string, body: unknown, extra: Record<string, string> = {}) {
   const response=await fetch(`${environment.origin}${path}`, { method: "POST", headers: headers(auth, extra), body: JSON.stringify(body), signal: timeout() });
-  if(response.status>=500){try{
+  if(response.status>=500&&!nativeFailureRetained){try{
     const root=join(process.cwd(),'local-artifacts/007');await mkdir(root,{recursive:true,mode:0o700});
-    const runtimeLog=environment.privateLogTail();
-    await writeFile(join(root,'native-request-failure-private.json'),JSON.stringify({status:response.status,body:await response.clone().json().catch(()=>null),runtimeLog},null,2),{mode:0o600});
-    console.error(JSON.stringify({kind:'owned_staffing_native_error',status:response.status,dormantGeneration:runtimeLog.includes('DevelopmentRunUnavailableError')}));
+    const runtimeLog=environment.privateLogTail(),body=await response.clone().json().catch(()=>null);
+    const errors=runtimeLog.split('\n').flatMap(line=>{try{const value=JSON.parse(line.slice(line.indexOf('{')));return value.kind==='turas_native_boundary_error'?[value]:[];}catch{return [];}});
+    const diagnostic=staffingNativeFailureMetadata({status:response.status,code:body?.code??body?.error?.code,boundaryStages:errors,boundaryErrors:errors.map(value=>value.code),dormantGeneration:runtimeLog.includes('DevelopmentRunUnavailableError')});
+    await writeFile(join(root,'native-request-diagnostic-private.json'),JSON.stringify(diagnostic),{mode:0o600});nativeFailureRetained=true;
+    console.error(JSON.stringify(diagnostic));
   }catch{/* Diagnostics must not replace the original response/assertion. */}}
   return response;
 }
@@ -119,6 +123,7 @@ async function retireRequiredSkill(f: Fixture) {
 describe("owned eve native staffing transport with a bounded fixture provider", () => {
   beforeAll(async () => {
     assertDeterministicTestMode(); await closeRuntimePool();
+    await rm(join(process.cwd(),'local-artifacts/007/native-request-diagnostic-private.json'),{force:true});nativeFailureRetained=false;
     let ready: () => void, failed: (error: unknown) => void;
     const readiness = new Promise<void>((resolve, reject) => { ready = resolve; failed = reject; });
     const lifetime = new Promise<void>(resolve => { finish = resolve; });

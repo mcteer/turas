@@ -40,7 +40,18 @@ export function specialistContinuityRoot(principal:CurrentPrincipal|null,parentS
   if(!match)throw Error('Synthetic specialist command required');
   const kind=match[1] as SpecialistKind,tool={'customer-update':'customer-recon',solution:'implementation-research','best-practices':'vercel-best-practices'}[kind];
   const callId='specialist-'+attempt;
-  if((await query('SELECT 1 FROM specialist_assignments a JOIN specialist_discussions d ON d.id=a.discussion_id WHERE a.attempt_id=$1 AND d.kind=$2 LIMIT 1',[attempt,kind])).rowCount)return {text:'Specialist assignment delivered.',usage};
+  const delivered=(await query('SELECT a.id,a.state,a.result_reference FROM specialist_assignments a JOIN specialist_discussions d ON d.id=a.discussion_id WHERE a.attempt_id=$1 AND d.kind=$2 LIMIT 1',[attempt,kind])).rows[0];
+  if(delivered){
+   if(kind==='best-practices'&&delivered.state==='completed'){
+    const readId='practice-brief-'+attempt,loaded=toolResults.find(result=>result.id===readId);
+    if(!loaded)return {toolCalls:[{id:readId,name:'get_vercel_practice_brief',input:{reference:delivered.result_reference.reference}}],usage};
+    const output=typeof loaded.output==='string'?JSON.parse(loaded.output):loaded.output;
+    if(loaded.isError||output?.status!=='available'||output.result?.status!=='incomplete'||!output.result.brief.practices.length||!output.result.sources.length)throw Error('Native stored practice brief was not loaded with gaps and sources');
+    await query('INSERT INTO specialist_continuity_read_results(assignment_id) VALUES($1) ON CONFLICT DO NOTHING',[delivered.id]);
+    return {text:'Checked practice: '+output.result.brief.practices[0].practice+' '+output.result.sources[0].url+' Remaining gap: '+output.result.brief.gaps[0],usage};
+   }
+   return {text:'Specialist assignment delivered.',usage};
+  }
   if(toolResults.some(result=>result.id===callId))return {text:'Specialist assignment delivered.',usage};
   const context=await loadResearchContext(identity,row.customer_id,new AbortController().signal);
   let reconReference;
@@ -83,7 +94,7 @@ export function specialistContinuityWorker(principal:CurrentPrincipal|null,paren
   await registerSpecialistSources(identity,tracked.map(source=>source.cache));
   let reference;
   if(kind==='best-practices'){
-   reference=await recordVercelPracticeRun(identity,'Synthetic product','Synthetic continuity exercise',{summary:'Synthetic data for native continuity verification.',practices:[],gaps:['Synthetic fixture; no live research.']},tracked.map(source=>source.url),signal);
+   reference=await recordVercelPracticeRun(identity,'Synthetic product','Synthetic continuity exercise',{summary:'Synthetic data for native continuity verification.',practices:[{practice:'Verify the isolated fixture deployment before continuing.',rationale:'The retained checked source supports this bounded exercise.',sourceIds:[tracked[0].id],caveat:'Synthetic fixture guidance is not a Production recommendation.'}],gaps:['Synthetic fixture; no live research.']},tracked.map(source=>source.url),signal);
    await finishPracticeResearch(identity,request.ticket,1,signal,reference);
   }else{
    const base={userId:identity.userId,environmentId:identity.environmentId,workspaceId:identity.workspaceId,issuedAt:new Date().toISOString(),context};

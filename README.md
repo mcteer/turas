@@ -46,8 +46,7 @@ See the [evidence policy](docs/evidence-policy.md) and
 
 Turas is under active development. Production hardening is deployed: ordinary
 account access, chat reliability, private storage, bounded processing, maintenance
-and backup/recovery protections are in place. The private pilot programme and its
-selectable workspace have been removed. Production login, privacy and a normal
+and backup/recovery protections are in place. Production login, privacy and a normal
 chat request passed verification; service readiness and all 15 maintenance classes
 were healthy at the release check.
 

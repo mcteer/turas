@@ -4,13 +4,12 @@ import { researchIdentity } from "../../../../lib/server/research/specialists/id
 import { recordVercelPracticeRun } from "../../../../lib/server/research/specialists/research-cache/practice-library";
 import { finishPracticeResearch } from "../../../../lib/server/research/specialists/research-cache/requests";
 import { researchState } from "../../../lib/legacy-research/research-state";
+import {practiceBriefSchema} from "../../../../lib/contracts/vercel-practice-result";
 const tool = defineTool({
   description: "Store a concise, source-bound Vercel best-practices brief in the shared practice library. This is the final call; it does not write customer memory or propose an engagement.",
   inputSchema: z.object({
     product: z.string().trim().min(2).max(160), topic: z.string().trim().min(5).max(500),
-    summary: z.string().trim().min(20).max(2500),
-    practices: z.array(z.object({ practice: z.string().trim().min(10).max(700), rationale: z.string().trim().min(10).max(700), sourceIds: z.array(z.string().min(1)).max(8), caveat: z.string().trim().min(10).max(500) }).strict()).min(1).max(12),
-    gaps: z.array(z.string().trim().min(10).max(500)).max(10),
+    ...practiceBriefSchema.shape,
   }).strict(),
   outputSchema: z.object({ kind: z.literal("best-practices"), status: z.enum(["ready", "incomplete", "unavailable"]), reference: z.string().nullable(), reason: z.string() }),
   async execute(input, ctx) {
