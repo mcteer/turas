@@ -2,6 +2,62 @@
 
 ## Current Acceptance State
 
+### Production Release and CI Follow-Up — 2026-11-02
+
+PR #52 merged as `0148c517be68c9176a4ae900cce181747bc53e10` and was
+explicitly deployed through Eve to Production (`dpl_H5vaihB7QnsRXSKD82r2RvVHoeQL`).
+Explicit migrations 82–85 and mapped runtime grants followed a verified schema-81
+recovery fork and rehearsed compatibility order. Original-column data digests
+remained unchanged. The runtime role was restored only after the new deployment
+and all existing aliases were verified; passwords were preserved.
+
+Authenticated Production checks passed for mcteer, panel and partner, with logout
+revocation. The deployed code/schema/runtime binding and all 15 maintenance classes
+were healthy. Real-provider ordinary chat and specialist refinement passed with
+two assignments retaining the same child, workflow and fixed expiry, two exact
+stored-brief reads and cited answers. Keyboard Close, preserved draft, actual
+terminal receipt, owned conversation archival and logout revocation were checked.
+These checks do not claim that every specialist was exercised with a paid provider;
+all three specialists have separate native fixture coverage.
+
+The existing dedicated backup operator was updated to the same `0148c517` source,
+schema 85 and verified PostgreSQL 18.6 native-client assets (10 files). Its Production deployment and 21 uploaded source
+files were verified. All 37 existing environment rows, keys, budgets, expiry and
+12-hour schedule remained unchanged. No manual backup, new capture or model call
+was issued to close this release; the earlier recovery evidence retains its
+recorded limitations.
+
+The post-merge CI runs 41483565485 and 41483565555 unexpectedly selected broad
+coverage because GitHub cleared historical workflow PR-reference fields after
+merge. Both redundant runs were cancelled, not counted as passes. PR #60 fixes
+that case using the actual checkout commands in both completed jobs, immutable
+commit trees/parents and exact-SHA verification after a verified PR-ref fallback.
+All 25 policy tests and documentation checks pass; independent review found no
+blocker. A real-API probe for the actual merged `0148c517` correctly selects the
+original complete CFC baseline without redundant runtime execution. Actual PR scope jobs passed in main workflow
+[41489883282](https://github.com/mcteer/turas/actions/runs/41489883282)
+and legacy workflow
+[41489883292](https://github.com/mcteer/turas/actions/runs/41489883292).
+Both select `mode: none`, explicitly retain the original CFC execution provenance
+and skip redundant runtime families. The final merge/check outcomes are recorded
+in [PR #60](https://github.com/mcteer/turas/pull/60), including its post-merge
+confirmation; these scope results alone do not claim a completed merge.
+
+Final cleanup removed only the independently verified unused 1560 operator
+preparation package (36 files, 22,958,953 logical bytes) and the disposable debug
+fork. API absence was verified after deletion. The verified v2 recovery fork,
+current Production/Preview endpoints, current operator package and operational
+key custody were preserved. Physical disk reclamation was not measured. Earlier
+scoped container/image cleanup and accounting-preservation evidence remain valid;
+unverified historical workflow state was retained. The merged PR #52 feature
+branch is absent both locally and remotely. T043/T044 release and cleanup actions
+are complete; this follow-up corrects README on main and verifies the final CI path.
+
+Application inputs are unchanged in this CI/documentation follow-up. Production
+remains on the verified `0148c517`; another application deployment or paid-provider
+exercise would not establish additional coverage for these changes.
+
+
 ### Current-Protocol Research Fixtures
 
 The59fa broader CI exposed two005 research browser scenarios that inserted bound

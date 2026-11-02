@@ -1,8 +1,8 @@
 # Feature Specification: Eve Runtime Upgrade and Specialist Continuity
 
-**Feature Branch**: `chore/eve-dependabot-composer` (existing PR #52, retained at the user's request)
+**Feature Branch**: `chore/eve-dependabot-composer` (historical branch for merged PR #52; follow-up PR #60 records CI and release closure)
 **Created**: 2026-11-01
-**Status**: Draft
+**Status**: Implemented and released; CI follow-up and cleanup closure recorded in validation.md
 **Input**: Upgrade Eve from 0.67.1 to 0.91.0, configure Dependabot, refresh the chat composer and capitalize README section headings. The user subsequently requested a dedicated upgrade spec that includes useful new framework capabilities wired into Turas. These changes remain in the same branch/PR.
 
 ## User Scenarios & Testing
