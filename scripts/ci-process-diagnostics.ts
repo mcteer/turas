@@ -113,7 +113,7 @@ function artifactStartupDiagnostic(value:unknown){
  * payloads, credentials or arbitrary errors can enter the CI summary. */
 export function ordinaryOperationsDiagnostic(value:unknown){
  if(!value||typeof value!=='object')return undefined;const row=value as Record<string,unknown>;if(row.kind!=='native_operations_fixture_failure')return undefined;
- const phases=['scenario','first_pending','intervening_fill','intervening_send','intervening_completion','fresh_approval','member_refusal','changed_source','knowledge'];
+ const phases=['scenario','first_pending','intervening_fill','intervening_send','intervening_completion','fresh_approval','member_refusal','changed_source','changed_source_overview','changed_source_revise','knowledge'];
  const number=(value:unknown,max=1000000)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=0&&value<=max?value:undefined;
  const send=row.send&&typeof row.send==='object'?row.send as Record<string,unknown>:{};
  const attempts=Array.isArray(row.attempts)?row.attempts.slice(0,8).flatMap(value=>{if(!value||typeof value!=='object')return [];const attempt=value as Record<string,unknown>;return [{responseState:typeof attempt.responseState==='string'&&['pending','running','stopping','waiting_input','completed','cancelled','failed'].includes(attempt.responseState)?attempt.responseState:'unknown',dispatchState:typeof attempt.dispatchState==='string'&&['prepared','dispatching','admitted','uncertain','retryable','rejected'].includes(attempt.dispatchState)?attempt.dispatchState:'unknown',...Object.fromEntries(['intervening','nativeTurnBound','receiptPresent'].filter(key=>typeof attempt[key]==='boolean').map(key=>[key,attempt[key]]))}];}):[];

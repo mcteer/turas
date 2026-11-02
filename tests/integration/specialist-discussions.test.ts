@@ -206,3 +206,51 @@ it('authenticates only exact specialist cancellation paths while recovery is ope
   }
  }finally{await db.query("UPDATE operations_control SET mode='open' WHERE environment_id=$1",[process.env.TURAS_ENVIRONMENT_ID]);await db.end();}
 });
+it.each(['future-confirmation','existing-confirmed-recovery'] as const)('reconciles specialists only from exact confirmed parent retirement without refunding usage: %s',async mode=>{
+ const {reconcileRetiredSpecialists}=await import('../../lib/server/research/specialists/discussion-retirement');
+ const {requestOrdinaryNativeRetirement,confirmOrdinaryNativeRetirement}=await import('../../lib/server/conversations/native-retirement-recovery');
+ const db=new Client({connectionString:url});await db.connect();
+ try{
+  const actor=await isolatedChatActor(db,'internal','admin'),customer=randomUUID(),key=randomUUID();
+  await db.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Owned parent retirement account',false)",[customer,actor.workspaceId]);
+  const {conversation}=await createOwnedConversation(actor,{requestKey:key,customerId:customer});
+  const binding=await claimBinding(actor,conversation.id,key);if(binding.state!=='claimed')throw Error('Binding unavailable');
+  const native='wrun_'+randomUUID();await bindNativeSession(actor,conversation.id,binding.claimToken,native);
+  await db.query('INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,$2,now())',[process.env.TURAS_ENVIRONMENT_ID,'retirement-'+key]);
+  const {attemptId}=await prepareAttempt(actor,conversation.id,native,randomUUID(),'Owned retirement check.');await claimDispatch(actor,conversation.id,attemptId,0);
+  await db.query('SET ROLE turas_runtime');
+  const discussion=randomUUID(),done=randomUUID(),active=randomUUID();
+  await db.query(`INSERT INTO specialist_discussions(id,conversation_id,environment_id,workspace_id,owner_principal_id,customer_id,kind,workload,parent_session_id,first_call_id,workflow_run_id,original_attempt_id,original_lease_id,context_digest,authority_digest,input_ceiling,output_ceiling,cost_ceiling_micro_usd,expires_at)
+   VALUES($1,$2,$3,$4,$5,$6,'solution','platform',$7,$8,$9,$10,$11,$12,$12,400000,32000,3000000,clock_timestamp()+interval '5 minutes')`,[discussion,conversation.id,process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,customer,native,randomUUID(),randomUUID(),attemptId,randomUUID(),'a'.repeat(64)]);
+  for(const [id,ordinal,state]of [[done,1,'completed'],[active,2,'stopping']]as const)await db.query(`INSERT INTO specialist_assignments(id,discussion_id,parent_session_id,ordinal,attempt_id,request_key,input_digest,call_id,research_key,lease_id,authority_expires_at,state,result_reference)
+   SELECT $1,id,parent_session_id,$2,$3,$4,$5,$6,'fixture',$7,expires_at,$8,$9 FROM specialist_discussions WHERE id=$10`,[id,ordinal,attemptId,randomUUID(),'b'.repeat(64),randomUUID(),randomUUID(),state,state==='completed'?JSON.stringify({status:'completed',reference:'preserved'}):null,discussion]);
+  await db.query(`INSERT INTO specialist_operations(id,discussion_id,assignment_id,native_step_key,model,ceiling_input_tokens,ceiling_output_tokens,ceiling_micro_usd,pricing)
+   VALUES($1,$2,$3,$4,'fixture/no-provider',100,100,500,'{}')`,[randomUUID(),discussion,active,randomUUID()]);
+  const finances=(await db.query('SELECT * FROM specialist_operations WHERE discussion_id=$1',[discussion])).rows;
+  const completed=(await db.query('SELECT * FROM specialist_assignments WHERE id=$1',[done])).rows;
+  expect(await withTransaction(client=>reconcileRetiredSpecialists(client,native,discussion))).toBe(false);
+  await requestOrdinaryNativeRetirement(actor,native);
+  await fenceSpecialistCancellation(actor,conversation.id,discussion);
+  expect(await withTransaction(client=>reconcileRetiredSpecialists(client,native,discussion))).toBe(false);
+  // A failing surrounding transaction must not leave either closure committed.
+  await expect(withTransaction(async client=>{await client.query("UPDATE ordinary_native_retirements SET state='confirmed',confirmed_at=clock_timestamp() WHERE conversation_id=$1",[conversation.id]);expect(await reconcileRetiredSpecialists(client,native,discussion)).toBe(true);throw Error('Owned rollback');})).rejects.toThrow('Owned rollback');
+  expect((await db.query('SELECT closed_at FROM specialist_discussions WHERE id=$1',[discussion])).rows[0].closed_at).toBeNull();
+  if(mode==='future-confirmation')expect(await confirmOrdinaryNativeRetirement(native)).toBe(true);
+  else{
+   await db.query("UPDATE ordinary_native_retirements SET state='confirmed',confirmed_at=clock_timestamp() WHERE conversation_id=$1",[conversation.id]);
+   const {reconcileSpecialistControl}=await import('../../lib/server/research/specialists/discussion-maintenance');
+   const attach:Parameters<typeof reconcileSpecialistControl>[0]=()=>{throw Error('Confirmed parent must not redispatch native work');};
+   expect(await reconcileSpecialistControl(attach,discussion,randomUUID())).toBe('retry');
+   expect(await reconcileSpecialistControl(attach,discussion,attemptId)).toBe('settled');
+  }
+  expect(await withTransaction(client=>reconcileRetiredSpecialists(client,'wrun_foreign',discussion))).toBe(false);
+  expect(await withTransaction(client=>reconcileRetiredSpecialists(client,native,randomUUID()))).toBe(false);
+  const closed=(await db.query('SELECT state,close_reason,closed_at,version,projection_line,projection_fact_index FROM specialist_discussions WHERE id=$1',[discussion])).rows[0];
+  expect(closed).toMatchObject({state:'closed',close_reason:'parent_retired',projection_line:'-1',projection_fact_index:-1});expect(closed.closed_at).toBeInstanceOf(Date);
+  expect((await db.query('SELECT state,terminal_line,terminal_index FROM specialist_assignments WHERE id=$1',[active])).rows[0]).toEqual({state:'cancelled',terminal_line:null,terminal_index:null});
+  expect(await withTransaction(client=>reconcileRetiredSpecialists(client,native,discussion))).toBe(true);
+  expect((await db.query('SELECT state,close_reason,closed_at,version,projection_line,projection_fact_index FROM specialist_discussions WHERE id=$1',[discussion])).rows[0]).toEqual(closed);
+  expect((await db.query('SELECT * FROM specialist_assignments WHERE id=$1',[done])).rows).toEqual(completed);
+  expect((await db.query('SELECT * FROM specialist_operations WHERE discussion_id=$1',[discussion])).rows).toEqual(finances);
+ }finally{await db.end();}
+});

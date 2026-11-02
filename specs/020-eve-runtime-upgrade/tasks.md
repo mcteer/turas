@@ -132,3 +132,5 @@ production change occurs as part of the planning/model-switch handoff.
 - [x] T049 Use a verified direct runtime connection for Neon's session-level private-I/O fence; preserve runtime credentials/options, reject routing mismatches/query overrides and verify live session lock release without provider calls (FR-005, FR-015).
 
 - [x] T050 Align ordinary research instructions and all three workflow-tool descriptions with explicit specialist refinements: prepare a fresh authorized same-scope assignment, reuse the actual taskId, preserve expiry/allowances and keep ordinary factual follow-ups on cached evidence; verify metadata/governance checks. Final real hosted routing acceptance remains in T041.
+
+- [ ] T051 Reconcile specialist termination from the exact validated parent native-retirement receipt when a workflow has failed without a delivered task-end fact; preserve completed results, financial holds and native positions, verify atomic confirmation and recovery of existing confirmed receipts, and repeat hosted acceptance (FR-005, FR-011, FR-012).

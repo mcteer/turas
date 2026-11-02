@@ -281,13 +281,15 @@ try {
   const failure=output.indexOf("Failed Tests");
   if(failure>=0) console.error(output.slice(failure,failure+5000));
   for(const line of output.split("\n"))if(line.startsWith('{"kind":"native_file_fixture_failure"')||line.startsWith('{"kind":"legacy_webkit_failure"')||line.startsWith('{"kind":"owned_app_readiness_failure"')||line.startsWith('{"kind":"native_question_fixture_failure"'))console.error(line);
+  const nativeOperations=processFailureMetadata({stderrTail:output}).nativeOperations;
+  if(nativeOperations)console.error(JSON.stringify({kind:'native_operations_fixture_failure',...nativeOperations}));
   process.exitCode=1;
 } finally {
   if(nativeObserver){
     if(!nativeObserverClosed&&nativeObserver.pid){nativeObserver.kill('SIGTERM');await waitNativeObserver(2500);}
     if(!nativeObserverClosed&&nativeObserver.pid){nativeObserver.kill('SIGKILL');await waitNativeObserver(2500);}
     if(!nativeObserverClosed&&nativeObserver.pid)process.exitCode=1;
-    try{if(nativeObserverFailed||!nativeObserverClosed)throw Error('Observer unavailable');console.log(JSON.stringify({kind:'owned_native_query_observation',...nativeQueryObservationSchema.parse(JSON.parse(readFileSync(nativeObservationFile,'utf8')))}));}
+    try{if(nativeObserverFailed||!nativeObserverClosed)throw Error('Observer unavailable');const observation=nativeQueryObservationSchema.parse(JSON.parse(readFileSync(nativeObservationFile,'utf8')));writeFileSync(nativeObservationFile.replace('-query-observation-private.json','-query-observation-validated-private.json'),JSON.stringify(observation),{mode:0o600});console.log(JSON.stringify({kind:'owned_native_query_observation',...observation}));}
     catch{console.log(JSON.stringify({kind:'owned_native_query_observation',instrumented:true,state:'unavailable'}));}
   }
   try { captureOwnedPostgres(); } catch { console.error("Owned database diagnostic capture failed");process.exitCode=1; }

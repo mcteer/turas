@@ -2,7 +2,7 @@
 
 Humans and coding agents use the same review and validation process. Start with
 the [constitution](.specify/memory/constitution.md), [roadmap](ROADMAP.md), and
-active specification. The demo is a reference, never an implicit source of truth.
+active specification. Historical implementations are references, never an implicit source of truth.
 
 ## Set up
 

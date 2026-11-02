@@ -72,6 +72,7 @@ jobs:
             local-artifacts/legacy-parity-native-files/failure-page-private.png
             local-artifacts/legacy-parity-native-files/runtime-state-private.json
             local-artifacts/legacy-parity-native-files/workflow-*-private.json
+            local-artifacts/018/ci-disposable/*-query-observation-validated-private.json
             local-artifacts/ordinary-operations-native/failure-private.json
             local-artifacts/ordinary-operations-native/failure-*-messages.json
             local-artifacts/ordinary-operations-native/database-failure-private.json

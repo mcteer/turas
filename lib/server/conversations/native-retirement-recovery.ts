@@ -6,6 +6,7 @@ import type {CurrentSession} from '../auth/sessions';
 import {lockOwnedOrdinaryCleanup} from './binding';
 import {markNativeUploadsRetired} from './native-uploads';
 import {conversationFeature} from './feature';
+import {reconcileRetiredSpecialists} from '../research/specialists/discussion-retirement';
 const prefix='ordinary-native-retirement-v1';
 function signature(id:string,native:string,timestamp:number){return createHmac('sha256',getServerConfig().TURAS_MAINTENANCE_SECRET).update(`${prefix}\n${id}\n${native}\n${timestamp}`).digest('hex');}
 export function signOrdinaryNativeRetirement(id:string,native:string){const timestamp=Date.now();return {'x-turas-ordinary-retirement-id':id,'x-turas-ordinary-retirement-at':String(timestamp),'x-turas-ordinary-retirement-signature':signature(id,native,timestamp)};}
@@ -34,6 +35,7 @@ export async function confirmOrdinaryNativeRetirement(native:string,id?:string){
  await db.query(`UPDATE response_attempts SET response_state='cancelled',updated_at=now(),revision=revision+1 WHERE conversation_id=$1 AND response_state IN('pending','running','waiting_input','stopping')`,[row.conversation_id]);
  await db.query(`UPDATE watchdog_jobs SET state='settled',lease_owner=NULL,lease_expires_at=NULL,updated_at=now() WHERE attempt_id IN(SELECT id FROM response_attempts WHERE conversation_id=$1 AND response_state='cancelled')`,[row.conversation_id]);
  await db.query("UPDATE ordinary_native_retirements SET state='confirmed',confirmed_at=COALESCE(confirmed_at,clock_timestamp()),safe_error_code=NULL WHERE id=$1",[row.id]);
+  await reconcileRetiredSpecialists(db,native);
  await markNativeUploadsRetired(db,row.conversation_id);return true;
 });}
 /** Retry one recorded reset using the same narrowly signed native service authority as source retirement. */

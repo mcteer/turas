@@ -2,6 +2,53 @@
 
 ## Current Acceptance State
 
+### Current Preview and Remaining Blockers
+
+Exact Preview `b2afaac7` accepts the established Production `mcteer`
+credentials. Authenticated CLI WebKit checks pass all four composer layouts and
+preserve the unsent draft. The required actual Production/Preview Customer
+Profiles comparison also passes. Desktop/mobile captures were inspected.
+Private receipts: `local-artifacts/020/preview-b2-ui/` and
+`local-artifacts/020/preview-b2-profiles/`.
+
+Two bounded specialist exercises on that source were rejected with HTTP503
+before a response attempt or paid provider dispatch. The cancellation worker
+encountered an earlier stopping specialist whose workflow failed. Subsequent
+inspection found its exact parent already had a **confirmed validated native
+retirement receipt**; only specialist metadata had failed to reconcile it.
+
+The follow-up reuses that existing proof with exact conversation, environment,
+workspace, owner and native-parent binding. It closes the bound specialists and
+cancels only active assignments, without inventing native line/index positions,
+changing completed results or refunding financial holds. The same helper runs
+atomically during future retirement confirmation and recovers older confirmed
+receipts before attempting hook delivery. Unconfirmed receipt/provider failure/
+accepted Stop alone still cannot close a discussion.
+
+Both parameterized real runtime-role database cases pass in the owned
+specialist-domain controller: atomic new confirmation and existing-receipt
+recovery, including rollback, foreign session/discussion/wrong attempt denial,
+idempotency and byte-equivalent completed results and financial records.
+`/tmp/turas-020-retirement-domain-final.txt`; no paid calls. Independent review
+found no substantive blocker; missing/malformed schema markers also fail closed.
+Final positive updated-source hosted refinement acceptance is still pending.
+
+The same-source CI native-operations test reports a lock timeout during the
+changed-source scenario. Its fixed query observer records a blocked query and
+an idle-in-transaction blocker; their operation classes were both `other`, so
+this does not identify a proven lock-order defect. An exact clean-environment
+Node24 local controller run passes native operations and knowledge checks,
+including actual changed-source denial, with zero observed slow/blocking queries.
+Private log: `local-artifacts/020/release-review-native-operations-private.log`.
+The follow-up diagnostics split overview/revise phases, forward only whitelisted
+failure metadata and upload only schema-validated observer metadata. Assertions,
+timeouts and domain behavior remain unchanged. Final CI is not yet green.
+
+Turas is treated as a production platform. Product and README wording uses
+account/workspace terminology. Historical credential variable names remain
+compatible; no password or Production configuration was changed.
+
+
 ### Explicit Refinement Routing Follow-up
 
 On exact d7d93df2 Preview, existing mcteer login and all four composer layouts pass

@@ -31,6 +31,10 @@ capability. Smaller upgrades still follow the normal material-change rules.
 
 ## Implementation boundaries
 
+- Turas is a production platform. Use production/account terminology in product
+  copy, documentation and operational updates. Preserve existing credential
+  variable names and working passwords for compatibility; a historical variable
+  name is not a reason to rotate credentials or ask for a replacement password.
 - The private pilot programme is removed. Do not restore its workspace login,
   provisioning, feedback or approval tasks. Keep evaluation-only Root/Learning
   bindings out of Production; preserve ordinary accounts and production safeguards.

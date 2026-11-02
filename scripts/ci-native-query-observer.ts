@@ -4,7 +4,7 @@ import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {z} from 'zod';
 
-const operations=['input-binding','advisory-lock','membership','principal','login-session','workspace','operations-control','conversation-lock','continuation-authority','input-window','attempt-update','watchdog-update','commit','other'] as const;
+const operations=['input-binding','advisory-lock','membership','principal','login-session','workspace','operations-control','conversation-lock','continuation-authority','input-window','attempt-update','watchdog-update','profile-state','customer-grant','plan','plan-payload','execution-baseline','execution-head','execution-record','execution-source','execution-engagement','execution-rate','operations-read-dependency','commit','other'] as const;
 const waits=['none','Lock','LWLock','IO','BufferPin','Client','IPC','Timeout','Activity','Extension','other'] as const;
 export function nativeQueryOperation(value:unknown):typeof operations[number]{
  const sql=typeof value==='string'?value.slice(0,4096).replace(/\s+/g,' ').trim():'';
@@ -20,6 +20,10 @@ export function nativeQueryOperation(value:unknown):typeof operations[number]{
  if(sql.startsWith('INSERT INTO native_input_resume_windows'))return 'input-window';
  if(sql.startsWith('UPDATE response_attempts'))return 'attempt-update';
  if(sql.startsWith('UPDATE watchdog_jobs'))return 'watchdog-update';
+ // Fixed table classes only. Never retain the matching SQL or its values.
+ const table=/^(?:SELECT\b[\s\S]*?\bFROM|UPDATE|INSERT INTO) (?:public\.)?([a-z_]+)\b/.exec(sql)?.[1];
+ const tables={customer_profile_state:'profile-state',customer_grants:'customer-grant',delivery_plans:'plan',plan_revision_payloads:'plan-payload',milestone_baselines:'execution-baseline',execution_workspaces:'execution-head',execution_records:'execution-record',execution_record_revisions:'execution-record',execution_record_payloads:'execution-record',execution_record_sources:'execution-source',engagements:'execution-engagement',execution_rate_windows:'execution-rate',ordinary_operations_read_dependencies:'operations-read-dependency'} as const;
+ if(table&&Object.hasOwn(tables,table))return tables[table as keyof typeof tables];
  return sql==='COMMIT'?'commit':'other';
 }
 const states=['active','idle','idle in transaction','idle in transaction (aborted)','other'] as const;

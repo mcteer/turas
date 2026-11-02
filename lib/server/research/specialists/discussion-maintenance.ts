@@ -3,6 +3,7 @@ import {resumeHook} from 'eve/workflow/api';
 import {withTransaction,query} from '../../db/client';
 import {getServerConfig} from '../../config';
 import {readEveHistory} from '../../conversations/eve-reader';
+import {reconcileRetiredSpecialists} from './discussion-retirement';
 
 /** Cleanup-only capability: recorded Stop or immutable expiry, never a fresh
  * research lease. Lock order remains conversation then discussion/assignment. */
@@ -29,6 +30,7 @@ export async function reconcileSpecialistControl(attach:AttachSessionFn,discussi
    AND c.owner_principal_id=d.owner_principal_id AND c.workspace_id=d.workspace_id AND c.eve_session_id=d.parent_session_id
    AND (d.state='stopping' OR d.closed_at IS NOT NULL)`,[discussionId,attemptId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
  if(!row)return 'retry';if(row.closed_at)return 'settled';
+ if(await withTransaction(db=>reconcileRetiredSpecialists(db,row.parent_session_id,discussionId)))return 'settled';
  let accepted=false;
  try{await resumeHook(row.control_hook_token,{stop:true});accepted=true;}catch{/* A lost acknowledgement never proves completion. Replay actual native facts. */}
  await readEveHistory(attach,row.parent_session_id,0);
