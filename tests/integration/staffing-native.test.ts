@@ -142,9 +142,10 @@ describe("owned eve native staffing transport with a bounded fixture provider", 
     const lifetime = new Promise<void>(resolve => { finish = resolve; });
     lifecycle = withStaffingEvalEnvironment(async env => {
       environment = env;
-      try { await installStaffingNativeFixture(env); await env.start(); await waitForFreshMaintenance(readinessDeadline); panel = await login("panel"); manager = await login("mcteer"); ready(); await lifetime; }
+      try { env.bootstrapDemo(); await installStaffingNativeFixture(env); await env.start(); await waitForFreshMaintenance(readinessDeadline); panel = await login("panel"); manager = await login("mcteer"); ready(); await lifetime; }
       finally { await env.stop(); }
-    }, { sourceDatabaseUrl: process.env.TURAS_TEST_SOURCE_DATABASE_URL }).then(() => undefined);
+    // A fresh Eve world cannot resume workflow IDs copied from another test DB.
+    }, { empty: true, sourceDatabaseUrl: process.env.TURAS_TEST_SOURCE_DATABASE_URL }).then(() => undefined);
     void lifecycle.catch(error => failed(error));
     await readiness;
   }, 180_000);

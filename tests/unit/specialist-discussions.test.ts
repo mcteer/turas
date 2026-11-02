@@ -53,3 +53,16 @@ it('rejects an uncited practice before the shared finalizer contract can store i
  expect(practiceBriefSchema.safeParse(brief).success).toBe(true);
  expect(practiceBriefSchema.safeParse({...brief,practices:[{...brief.practices[0],sourceIds:[]}]}).success).toBe(false);
 });
+it('retains only fixed specialist failure codes and never exception payloads',async()=>{
+ const {specialistFailureMetadata}=await import('../../lib/server/research/specialists/discussion-diagnostics');
+ const secret='PRIVATE_PROMPT_TOKEN_customer_text';
+ expect(specialistFailureMetadata('best-practices','model-admission',{code:'specialist_budget_unavailable',message:'Specialist allowance is exhausted. '+secret,stack:secret})).toEqual({kind:'specialist_failure',specialistKind:'best-practices',stage:'model-admission',code:'specialist_budget_unavailable',failureClass:'allowance'});
+ const unknown=specialistFailureMetadata('solution','child-result',{code:secret,message:secret,cause:{credential:secret}});
+ expect(unknown).toMatchObject({code:'unknown',failureClass:'unknown'});expect(JSON.stringify(unknown)).not.toContain(secret);
+ expect(specialistFailureMetadata('customer-update','publish',{code:'55P03',message:secret})).toMatchObject({code:'55P03',failureClass:'unknown'});
+});
+it('does not replace a primary failure when exception metadata is unreadable',async()=>{
+ const {specialistFailureMetadata}=await import('../../lib/server/research/specialists/discussion-diagnostics');
+ const unreadable=new Proxy({},{get(){throw Error('PRIVATE_ERROR_GETTER');}});
+ expect(specialistFailureMetadata('best-practices','workflow',unreadable)).toMatchObject({code:'unknown',failureClass:'unknown'});
+});

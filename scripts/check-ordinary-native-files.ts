@@ -58,6 +58,11 @@ try{await withPlanEvalEnvironment(async environment=>{
  await environment.start();
  const browser=await webkit.launch({headless:true}),context=await browser.newContext({baseURL:environment.origin});let csrf:string|undefined;
  const fileResponses:{kind:'file'|'native';method:string;status:number;chunk:number|null;code?:string}[]=[];
+ const documentDiagnostics:{kind:string;status?:number;failure?:string}[]=[];
+ const retainDocumentDiagnostic=(entry:{kind:string;status?:number;failure?:string})=>{documentDiagnostics.push(entry);if(documentDiagnostics.length>32)documentDiagnostics.shift();};
+ context.on('response',response=>{const request=response.request();if(request.isNavigationRequest()&&request.resourceType()==='document'&&new URL(response.url()).origin===environment.origin)retainDocumentDiagnostic({kind:'document-response',status:response.status()});});
+ context.on('requestfailed',request=>{if(request.isNavigationRequest()&&request.resourceType()==='document'&&new URL(request.url()).origin===environment.origin){const reason=request.failure()?.errorText??'';retainDocumentDiagnostic({kind:'document-request-failed',failure:/timeout/i.test(reason)?'timeout':/cancel|abort/i.test(reason)?'aborted':/connection|network/i.test(reason)?'network':'other'});}});
+ context.on('page',page=>page.on('pageerror',()=>retainDocumentDiagnostic({kind:'page-error',failure:'uncaught-error'})));
  let inspectFileUi:()=>Promise<unknown>=async()=>null;
  let captureFailurePage:()=>Promise<unknown>=async()=>null;
  context.on('response',async response=>{
@@ -161,6 +166,12 @@ try{await withPlanEvalEnvironment(async environment=>{
     await captureOwnedWorkflowMetadata(environment.appRoot,[native],join(out,'workflow-before-restart-private.json'));
     await environment.restart();
     await captureOwnedWorkflowMetadata(environment.appRoot,[native],join(out,'workflow-after-start-private.json'));
+    fixturePhase='restart_authenticated_thread_warmup';
+    const remaining=fixtureDeadlineAt-Date.now();if(remaining<=0)throw Error('Native file fixture deadline reached before restarted route warmup');
+    const restartedThread=await context.request.get('/s/'+id,{timeout:Math.min(90000,remaining),maxRedirects:0});
+    retainDocumentDiagnostic({kind:'restart-authenticated-thread-warmup',status:restartedThread.status()});
+    if(restartedThread.status()!==200)throw Error('Restarted owned authenticated thread warmup failed');
+    fixturePhase='restart_after_native_receipt';
     await page.reload({waitUntil:'domcontentloaded'});
    }
   }else{
@@ -317,7 +328,7 @@ try{await withPlanEvalEnvironment(async environment=>{
   let ui:unknown=null,timer:ReturnType<typeof setTimeout>|undefined;
   try{ui=await Promise.race([inspectFileUi(),new Promise(resolve=>{timer=setTimeout(()=>resolve({unavailable:true}),1000);})]);}catch{ui={unavailable:true};}finally{if(timer)clearTimeout(timer);}
   await captureFailurePage().catch(()=>undefined);
-  const diagnostic={phase:fixturePhase,applicationMode:'development',fileResponses,ui};
+  const diagnostic={phase:fixturePhase,applicationMode:'development',fileResponses,documentDiagnostics,ui};
   if(process.env.CI)console.error(JSON.stringify({kind:'native_file_boundary_diagnostic',...diagnostic}));
   await writeFile(join(out,'failure-private.log'),environment.privateLogTail(),{mode:0o600});await writeFile(join(out,'failure-private.json'),JSON.stringify({name:error instanceof Error?error.name:'Unknown',message:error instanceof Error?error.message:String(error),...diagnostic}),{mode:0o600});throw error;}
  finally{if(csrf)await context.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':csrf}}).catch(()=>{});await context.close();await browser.close();}

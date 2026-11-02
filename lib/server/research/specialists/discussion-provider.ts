@@ -4,6 +4,7 @@ import {HttpFailure} from '../../../contracts/http';
 import {authorizeSpecialistWorker,type SpecialistWorkerIdentity} from './discussions';
 import {reserveLockedSpecialistOperation,settleSpecialistOperation,remainingLockedSpecialistAllowance,markSpecialistOperationCompleted} from './discussion-budget';
 import {specialistPolicies} from './discussion-policy';
+import {logSpecialistFailure} from './discussion-diagnostics';
 
 type Model=Parameters<typeof wrapLanguageModel>[0]['model'];
 type Pricing={input:number;output:number;observedAt:string};
@@ -25,6 +26,7 @@ export function guardSpecialistProvider(model:Model,identity:SpecialistWorkerIde
  let called=false,operationId:string|undefined,externalFeeMicroUsd=0;
  return wrapLanguageModel({model,middleware:{
   async transformParams({params}){
+   try{
    if(called)throw new HttpFailure(409,'specialist_dispatch_uncertain','This provider operation cannot be sent again.');
    called=true;params.abortSignal?.throwIfAborted();
    const price=await pricing();params.abortSignal?.throwIfAborted();
@@ -48,6 +50,7 @@ export function guardSpecialistProvider(model:Model,identity:SpecialistWorkerIde
    operationId=admitted.operation.id;
    const deadline=AbortSignal.timeout(Math.max(1,admitted.expiresAt-Date.now()));
    return {...params,maxOutputTokens:admitted.output,abortSignal:params.abortSignal?AbortSignal.any([params.abortSignal,deadline]):deadline};
+   }catch(error){logSpecialistFailure(identity.kind,'model-admission',error);throw error;}
   },
   async wrapGenerate({doGenerate}){
    const result=await doGenerate();

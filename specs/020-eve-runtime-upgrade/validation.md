@@ -2,6 +2,43 @@
 
 ## Current Acceptance State
 
+### Native Fixture Isolation, Restarted Route Readiness and Safe Failure Codes
+
+The416 hosted refinement now has its own completed cache receipt, so the
+per-assignment finalization correction is verified. Its handoff still failed
+before recording an assignment result. Its usage does not establish allowance
+exhaustion; the cause remains unresolved. The follow-up records only fixed
+failure stages/codes/categories at provider admission, child result and publish/
+workflow handling. It emits no prompt, source prose, raw exception, native ID or
+credential, and logging cannot replace the original error. Workflow replay may
+repeat observations; logs are not accounting or unique dispatch evidence.
+Privacy/error-getter regression tests pass9cases, TypeScript passes, and the
+actual all-three-specialist native fixture passes with zero paid calls
+(`/tmp/turas-020-specialist-diagnostic-native.txt`). Updated hosted diagnosis is
+pending; T052 remains open.
+
+The later416 staffing failures were reproduced with an owned contaminated
+source. A TEMPLATE copy into a fresh Eve world preserved20 unrelated native
+watchdogs whose sessions did not exist in that world: seven actual maintenance
+transport failures produced zero fresh heartbeats. The native fixture now uses
+an empty, explicitly migrated/granted database and bootstrap, while preserving
+that selected database and workflow store across its restart. All five original
+native cases pass against the **same contaminated original source**, whose
+watchdog digest remains byte-equivalent. No inherited job was deleted or marked
+settled; production maintenance/admission policies are unchanged. Evidence:
+`local-artifacts/020/contaminated-staffing-isolation-result-private.json`.
+
+The ten-file416 CI failure occurred at browser reload after native recovery had
+already completed. The check now requires authenticated readiness of that exact
+thread after restart before its unchanged30-second reload; warmup stays inside
+the original overall deadline. Bounded main-document status/request-failure/page-
+error metadata is retained without URLs or bodies. The exact staged10 local
+rerun passes all original assertions: interrupted-step recovery, full10MiB
+provider-byte preservation, reloaded history and prior-file availability. This
+local pass does not prove the earlier CI navigation cause. The416 MCP regression
+job is green. Final-source CI and hosted useful-answer acceptance remain pending.
+
+
 ### Current-Assignment Finalization and CI Readiness Follow-up
 
 Commit31's compatibility CI is **8/8 green**. Its broader CI confirms a staffing

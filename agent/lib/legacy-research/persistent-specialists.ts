@@ -3,6 +3,7 @@ import {getWorkflowMetadata,sleep,createHook,type WorkflowHook} from 'eve/workfl
 import type {SpecialistOutcome} from '../../../lib/server/research/specialists/discussion-results';
 import type {SpecialistKind} from '../../../lib/contracts/specialist-discussions';
 import {specialistResults} from './specialist-results';
+import {logSpecialistFailure} from '../../../lib/server/research/specialists/discussion-diagnostics';
 
 type Input={message:string};
 type Context=WorkflowServeContext<SpecialistOutcome>;
@@ -28,13 +29,14 @@ async function prepare(kind:SpecialistKind,input:Input,callId:string,workflowRun
  const contextTool=kind==='best-practices'?'get_practice_context':'get_research_context',finalizerTool=kind==='best-practices'?'finalize_vercel_practices':kind==='customer-update'?'finalize_customer_update':'finalize_research';
  return {...admitted,message:`Server-bound research reservation: ${JSON.stringify(admitted.scope)}\nCall ${contextTool} first using this exact accountId. The reservation supplies the current question and workload. This is a new admitted assignment, even when this child already completed earlier work. Reuse eligible prior evidence, but successfully finalize the current assignment once using ${finalizerTool} with its current context/reservation, including a refinement that only reorganizes stored guidance. Follow its pre-execution validation-correction rules. Return that finalizer's current receipt unchanged. An earlier assignment's stored reference does not complete this reservation. Do not restart discovery unless this assignment requires it.\n\nParent research instructions:\n${input.message}`};
 }
-async function publish(conversationId:string,discussionId:string,assignmentId:string,output:{status:string;reference:unknown},ctx:Context){
+async function publish(kind:SpecialistKind,conversationId:string,discussionId:string,assignmentId:string,output:{status:string;reference:unknown},ctx:Context){
  'use step';
  const {researchIdentity}=await import('../../../lib/server/research/specialists/identity');
  const {publishSpecialistResult}=await import('../../../lib/server/research/specialists/discussion-results');
  const step=ctx as unknown as WorkflowStepToolContext;
- const identity=await researchIdentity(step.session.auth.current);
- return publishSpecialistResult(identity,conversationId,discussionId,assignmentId,output,step.abortSignal);
+ try{const identity=await researchIdentity(step.session.auth.current);
+ return await publishSpecialistResult(identity,conversationId,discussionId,assignmentId,output,step.abortSignal);
+ }catch(error){logSpecialistFailure(kind,'publish',error);throw error;}
 }
 async function close(workflowRunId:string,parentSessionId:string,owner:string,reason:'expired'|'failed'|'cancelled'){
  'use step';
@@ -83,13 +85,14 @@ export async function serveSpecialist(kind:SpecialistKind,receive:WorkflowServeR
     const outcome=await Promise.race([work,deadline,stopped!]);
     if('stopped' in outcome){await close(workflowRunId,parentSessionId,owner,'cancelled');ctx.reply({...unavailable(kind),reason:'This specialist was stopped at its owner’s request. Do not automatically restart it.'});return;}
     if('expired' in outcome){await close(workflowRunId,parentSessionId,owner,'expired');ctx.reply(unavailable(kind));return;}
-    if(outcome.status!=='completed'){await close(workflowRunId,parentSessionId,owner,'failed');ctx.reply(unavailable(kind));return;}
+    if(outcome.status!=='completed'){logSpecialistFailure(kind,'child-result',outcome.error);await close(workflowRunId,parentSessionId,owner,'failed');ctx.reply(unavailable(kind));return;}
     const output=configuration.schema.parse(outcome.data);
-    const result=await publish(await parentConversation(ctx),admitted.discussionId,admitted.assignmentId,output,ctx);
+    const result=await publish(kind,await parentConversation(ctx),admitted.discussionId,admitted.assignmentId,output,ctx);
     ctx.reply(result);
     if(result.status==='unavailable')return;
    }
   }catch(error){
+   if(!current.abortSignal.aborted)logSpecialistFailure(kind,'workflow',error);
    if(current.abortSignal.aborted){await close(workflowRunId,parentSessionId,owner,'cancelled');throw error;}
    ctx.reply(unavailable(kind));
    if(accepted||!deadline){await close(workflowRunId,parentSessionId,owner,'failed');return;}
