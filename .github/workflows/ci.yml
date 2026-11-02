@@ -265,6 +265,14 @@ jobs:
       - name: Representative expansion performance corpus
         if: matrix.gate == 'benchmark'
         run: npm run benchmark:expansion
+      - name: Retain owned expansion benchmark measurements
+        if: failure() && matrix.gate == 'benchmark'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: expansion-benchmark-${{ github.run_id }}-${{ github.run_attempt }}
+          path: local-artifacts/011/benchmark-*/*.json
+          if-no-files-found: warn
+          retention-days: 1
       - name: Live-capture runner guard fixture without configured-provider calls
         if: matrix.gate == 'evaluation-fixture'
         run: npm run eval:expansion -- --fixture
@@ -1135,7 +1143,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: owned-production-readiness-${{ github.run_id }}
-          path: local-artifacts/016/startup-*.log
+          path: |
+            local-artifacts/016/startup-*.log
+            local-artifacts/016/ui-*/*.json
           if-no-files-found: warn
           retention-days: 1
       - name: Bounded redacted failed-test diagnostics

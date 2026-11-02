@@ -12,7 +12,7 @@ test("legacy landing and customer cards retain accessible scoped workflows", asy
   await expect(page.getByRole("button", { name: "Send message" })).toBeDisabled();
   await page.getByRole("textbox", { name: "Message Turi" }).fill("Explain technical best practices.");
   await expect(page.getByRole("button", { name: "Send message" })).toBeEnabled();
-  await expect(page.getByLabel("Customer")).toHaveText("Customer");
+  await expect(page.getByRole("button",{name:"Customer",exact:true})).toHaveText("Customer");
   await expect(page.locator(".chat-composer").getByLabel("Customer",{exact:true})).toBeVisible();
   expect((await page.getByLabel("Customer",{exact:true}).boundingBox())!.x).toBeGreaterThan((await page.getByRole("textbox",{name:"Message Turi",exact:true}).boundingBox())!.x);
   await expect(page.locator(".chat-landing .chat-notice")).toHaveCount(0);

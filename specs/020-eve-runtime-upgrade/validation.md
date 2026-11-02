@@ -4,6 +4,49 @@
 
 ### Child Terminal Status Follow-up
 
+Commit0cea's compatibility CI is **8/8 green**. Its exact authenticated Preview
+passes existing mcteer credentials, all four composer layouts, workspace-account
+terminology and the real Production/Preview Customer Profiles comparison. The
+desktop/mobile composer and profile captures were inspected. Broader CI is not
+green: upload WebKit and expansion benchmark failed without retained failure
+reports; their original owned local reproductions pass, which does not replace
+CI. Expansion desktop-dark separately failed before its dismissal scenario:
+an initial overview returned409 while setup assigned an owner after navigation.
+
+The first0cea hosted run completed its specialist but its parent reached the
+unchanged120-second deadline; refinement could not obtain original authority.
+The stored-guidance-only run returned a completed child with an unavailable
+publication, so it is not a handoff-failure reproduction. The explicit one-source
+run completed the initial parent, then reproduced the refinement failure:
+child status `failed`, `sessionEnded:false`, `signalAborted:false`, and all three
+native usage-limit predicates false. This is an actual execution failure, not
+evidence of cancellation or exhausted native limits. Its underlying error remains
+unresolved; T052 and release gates remain open. Failed-run receipts and unknown
+financial holds are retained. Production remains unchanged.
+
+The follow-up recognizes the framework's fixed native failure codes and retains
+only known error names, valid HTTP error statuses and fixed diagnostic categories.
+It excludes arbitrary exception names/codes, prose, request/response bodies and
+identifiers. Eleven focused tests and TypeScript pass. Ended private worker data
+was confirmed purged by the existing trace-derived retention policy; that explains
+missing post-retirement error data, not the failure of a still-open child. Worker
+comments now describe that policy accurately; retention is unchanged.
+
+The expansion dismissal fixture now completes owner setup before its first
+navigation. The original affected desktop-dark scenario passes with its unchanged
+assertions and30-second timeout; this is targeted evidence, not full CI. Existing
+structured benchmark and upload-browser reports will be retained for one day on
+future CI failures so an absent report does not hide the failing boundary.
+
+The later0cea verify failure reached the baseline browser suite: five scenarios
+in each of four projects used removed standalone Customer sources controls or a
+broad Customer selector that also matched sidebar actions. They now open the
+actual Add attachments menu and select Customer sources, or target the exact
+Customer button. Attachment/context, upload/lifecycle, saved-conversation and
+layout assertions remain. TypeScript passes; targeted browser execution and
+new-source CI remain pending. The live-upload selector is aligned but that edit
+alone is not live-provider evidence.
+
 The a064 Preview passes the existing mcteer credential, four composer layouts,
 account terminology and authenticated Production/Preview profile comparison.
 Compatibility CI is green. Its strict specialist refinement still fails at the

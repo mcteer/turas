@@ -77,3 +77,11 @@ it('distinguishes cancellation from failure without exposing child output',async
   expect(JSON.parse(log.mock.calls[1][0])).toMatchObject({status:'failed',sessionEnded:true,signalAborted:true});
  }finally{log.mockRestore();}
 });
+it('retains known native failure metadata without upstream response bodies',async()=>{
+ const {specialistFailureMetadata}=await import('../../lib/server/research/specialists/discussion-diagnostics');
+ const result=specialistFailureMetadata('best-practices','child-result',{code:'MODEL_CALL_FAILED',message:'Invalid tool result in model messages: PRIVATE_CONTENT',details:{name:'AI Gateway model request rejected',statusCode:400,responseBody:'PRIVATE_RESPONSE',requestBody:'PRIVATE_REQUEST'}});
+ expect(result).toMatchObject({code:'MODEL_CALL_FAILED',errorName:'AI Gateway model request rejected',httpStatus:400,hints:['tool','validation','model','history']});
+ expect(JSON.stringify(result)).not.toMatch(/PRIVATE_/);
+ const unknown=specialistFailureMetadata('solution','child-result',{name:'PRIVATE_NAME',message:'PRIVATE_TEXT',details:{statusCode:999}});
+ expect(unknown).toMatchObject({errorName:'unknown',httpStatus:null,hints:[]});
+});

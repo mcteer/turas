@@ -7,7 +7,7 @@ export default defineAgent({
   reasoning: "high",
   defaultTools: false,
   // The workflow caller must be able to read the completed typed result.
-  // Use the existing world retention; zero deletes it before the handoff.
+  // Retain live turns; ended private sessions follow the trace-derived deletion policy.
   tool: false,
   limits: specialistSessionLimits("customer-update"),
 });
