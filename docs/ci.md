@@ -27,7 +27,11 @@ wrappers are normalized. Changes to the underlying execution contract require
 fresh broad checks.
 
 PR reuse derives the historical base/head from actual checkout logs and immutable
-Git commit trees/parents; workflow PR-reference fields can change after a push.
+Git commit trees/parents; workflow PR-reference fields can change after a push and become empty after merge.
+The PR identity comes from the actual checkout command in both original job logs.
+If a deleted source branch makes a direct SHA fetch unavailable, the selector may
+fetch that verified PR ref, but still requires the exact original tested commit;
+it never substitutes the current PR head.
 It verifies that head and merge checkout
 contexts have identical trees. A later main update invalidates an older merge
 context. A completed merge may reuse a genuinely tested equivalent tree; it does

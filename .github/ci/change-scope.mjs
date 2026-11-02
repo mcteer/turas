@@ -84,6 +84,10 @@ export function checkoutFromLog(log){
  }
  const unique=[...new Set(commits)];if(unique.length!==1)throw Error('Unambiguous checkout execution required');return unique[0];
 }
+export function pullRequestFromLog(log){
+ const numbers=[...log.matchAll(/\[command\][^\n]*\bgit checkout[^\n]*\brefs\/(?:remotes\/)?pull\/([1-9][0-9]*)\/merge\b/g)].map(m=>Number(m[1]));
+ const unique=[...new Set(numbers)];if(unique.length>1||unique.some(n=>!Number.isSafeInteger(n)))throw Error('Ambiguous tested PR checkout');return unique[0]??null;
+}
 export function supportedCheckouts(source){
  const original=executionContract(source),jobs=JSON.parse(original).jobs;
  return jobs.every(job=>{
@@ -97,6 +101,15 @@ export function supportedCheckouts(source){
 }
 const gitRaw=(...args)=>execFileSync('git',args,{encoding:'utf8',stdio:['ignore','pipe','pipe']});
 const git=(...args)=>gitRaw(...args).trim();
+export function materializeCommit(commit,pullRequest=null,run=git){
+ if(!sha.test(commit))throw Error('Exact tested commit required');
+ try{run('cat-file','-e',`${commit}^{commit}`);return true;}catch{}
+ if(pullRequest!==null&&(!Number.isSafeInteger(pullRequest)||pullRequest<1))throw Error('Exact tested PR required');
+ try{
+  run('fetch','--no-tags','origin',pullRequest===null?commit:`refs/pull/${pullRequest}/head`);
+  run('cat-file','-e',`${commit}^{commit}`);return true;
+ }catch{return false;}
+}
 const changes=(base,head)=>git('diff','--name-only','--no-renames',base,head).split('\n').filter(Boolean);
 function ordinaryFiles(paths,base,head){
  for(const revision of [base,head])for(const path of paths){
@@ -128,19 +141,29 @@ export async function select({event,token,api=fetch}){
   for(const candidate of main.workflow_runs??[]){
    const prior=candidate.head_sha;if(!sha.test(prior??'')||prior===head)continue;
    const companion=(legacy.workflow_runs??[]).find(r=>r.head_sha===prior&&r.conclusion==='success');if(!companion)continue;
-   try{git('cat-file','-e',`${prior}^{commit}`);}catch{git('fetch','--no-tags','origin',prior);}
+   let evidence;
+   const executionEvidence=async()=>{
+    if(evidence!==undefined)return evidence;
+    const [a,b]=await Promise.all([candidate,companion].map(r=>request(`actions/runs/${r.id}/jobs?filter=latest&per_page=100`)));
+    if(!successfulExecution(candidate,a.jobs??[],{repo,minimum:54})||!successfulExecution(companion,b.jobs??[],{repo,minimum:8}))return evidence=null;
+    const representatives=[a.jobs.find(j=>j.name==='verify'),b.jobs.find(j=>j.name==='acceptance (domains)')];if(representatives.some(j=>!Number.isSafeInteger(j?.id)))return evidence=null;
+    const logs=await Promise.all(representatives.map(j=>request(`actions/jobs/${j.id}/logs`,true)));
+    const checkouts=logs.map(checkoutFromLog),numbers=logs.map(pullRequestFromLog);
+    if(numbers[0]!==numbers[1]||candidate.event==='pull_request'&&numbers[0]===null)return evidence=null;
+    return evidence={checkouts,pullRequest:numbers[0]};
+   };
+   if(!materializeCommit(prior)){
+    const proof=await executionEvidence();if(!proof?.pullRequest||!materializeCommit(prior,proof.pullRequest))continue;
+   }
    const delta=changes(prior,head),deltaKind=classify(delta);if(!['documentation','ci-only','ui-candidate','ui-ci-candidate'].includes(deltaKind)||!ordinaryFiles(delta,prior,head))continue;
    const clientDelta=['ui-candidate','ui-ci-candidate'].includes(deltaKind);if(clientDelta&&!clientFiles(delta,prior,head))continue;
    if(!workflows.every(name=>{
     const old=gitRaw('show',`${prior}:.github/workflows/${name}`),current=gitRaw('show',`${head}:.github/workflows/${name}`);
     return supportedCheckouts(old)&&supportedCheckouts(current)&&executionContract(old)===executionContract(current);
    }))continue;
-   const [a,b]=await Promise.all([candidate,companion].map(r=>request(`actions/runs/${r.id}/jobs?filter=latest&per_page=100`)));
-   if(!successfulExecution(candidate,a.jobs??[],{repo,minimum:54})||!successfulExecution(companion,b.jobs??[],{repo,minimum:8}))continue;
-   const representatives=[a.jobs.find(j=>j.name==='verify'),b.jobs.find(j=>j.name==='acceptance (domains)')];if(representatives.some(j=>!Number.isSafeInteger(j?.id)))continue;
    // Run.pull_requests contains mutable *current* PR refs. The checkout logs
    // and immutable Git commit objects establish what this execution tested.
-   const checkouts=await Promise.all(representatives.map(async j=>checkoutFromLog(await request(`actions/jobs/${j.id}/logs`,true))));
+   const proof=await executionEvidence();if(!proof)continue;const {checkouts}=proof;
    const commits=await Promise.all(checkouts.map(id=>request(`git/commits/${id}`)));
    const tree=git('rev-parse',`${prior}^{tree}`);if(commits.some(c=>c.tree?.sha!==tree))continue;
    const directMain=candidate.event==='push'&&candidate.head_branch===(event.repository.default_branch??'main')&&checkouts.every(id=>id===prior);
@@ -150,9 +173,8 @@ export async function select({event,token,api=fetch}){
    // merge. An unrelated green branch cannot supply the baseline.
    let related=false;
    if(directMain){try{git('merge-base','--is-ancestor',prior,base);related=true;}catch{}}
-   for(const reference of candidate.pull_requests??[]){
+   for(const reference of proof.pullRequest?[{number:proof.pullRequest}]:[]){
     if(related)break;
-    if(!(companion.pull_requests??[]).some(r=>r.number===reference.number))continue;
     const pr=await request(`pulls/${reference.number}`);
     if(pr.number===event.pull_request?.number&&pr.base?.sha===base&&historicalBase===base){
      try{

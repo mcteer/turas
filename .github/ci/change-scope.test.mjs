@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {classify,executionContract,successfulExecution,select,gatePlan,gates,coreJobs,browserFlows,checkoutFromLog,supportedCheckouts} from './change-scope.mjs';
+import {classify,executionContract,successfulExecution,select,gatePlan,gates,coreJobs,browserFlows,checkoutFromLog,supportedCheckouts,pullRequestFromLog,materializeCommit} from './change-scope.mjs';
 import {mkdtempSync,mkdirSync,writeFileSync,rmSync,readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -50,14 +50,14 @@ async function repository(run){
   const event=()=>({repository:{full_name:'mcteer/turas'},pull_request:{number:1,base:{sha:base},head:{sha:head}}});
   const api=({job='success',available=true,merged=false,currentBase=base,finalPrHead,mutableReferences=false,ambiguousCheckout=false}={})=>async url=>{
    if(!available)throw Error('Metadata unavailable');
-   const main={id:11,status:'completed',conclusion:'success',repository:{full_name:'mcteer/turas'},head_sha:prior,event:'pull_request',pull_requests:[{number:1,head:{sha:mutableReferences?head:prior},base:{sha:mutableReferences?currentBase:base}}],html_url:'https://github.com/mcteer/turas/actions/runs/11'};
+   const main={id:11,status:'completed',conclusion:'success',repository:{full_name:'mcteer/turas'},head_sha:prior,event:'pull_request',pull_requests:merged?[]:[{number:1,head:{sha:mutableReferences?head:prior},base:{sha:mutableReferences?currentBase:base}}],html_url:'https://github.com/mcteer/turas/actions/runs/11'};
    let value;
    if(url.includes('/workflows/ci.yml/'))value={workflow_runs:[main]};
    else if(url.includes('/workflows/legacy-backend-parity.yml/'))value={workflow_runs:[{...main,id:22}]};
    else if(url.endsWith('/pulls/1'))value={number:1,head:{sha:finalPrHead??(merged?prior:head)},base:{sha:currentBase},merged,merge_commit_sha:merged?head:null};
    else if(url.includes('/runs/11/jobs'))value={jobs:Array.from({length:54},(_,i)=>({id:1100+i,name:i===0?'verify':'job-'+i,status:'completed',conclusion:i===0?job:'success'}))};
    else if(url.includes('/runs/22/jobs'))value={jobs:Array.from({length:8},(_,i)=>({id:2200+i,name:i===0?'acceptance (domains)':'legacy-'+i,status:'completed',conclusion:'success'}))};
-   else if(/actions\/jobs\/(?:1100|2200)\/logs/.test(url))value=`2026-11-02T12:00:00Z [command]/usr/bin/git log -1 --format=%H\n2026-11-02T12:00:00Z ${testedMerge}\n`+(ambiguousCheckout?`[command]/usr/bin/git log -1 --format=%H\n${base}\n`:'');
+   else if(/actions\/jobs\/(?:1100|2200)\/logs/.test(url))value=`2026-11-02T12:00:00Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/1/merge\n2026-11-02T12:00:00Z [command]/usr/bin/git log -1 --format=%H\n2026-11-02T12:00:00Z ${testedMerge}\n`+(ambiguousCheckout?`[command]/usr/bin/git log -1 --format=%H\n${base}\n`:'');
    else if(url.endsWith('/git/commits/'+testedMerge))value={tree:{sha:testedTree},parents:[{sha:base},{sha:prior}]};
    else throw Error('Unexpected metadata request');
    return {ok:true,json:async()=>value,text:async()=>value};
@@ -93,6 +93,15 @@ test('mutable PR reference fields do not replace immutable checkout execution ev
 test('checkout logs must contain one unambiguous actual Git checkout',()=>{
  assert.equal(checkoutFromLog('[command]/usr/bin/git log -1 --format=%H\n'+'a'.repeat(40)+'\n'),'a'.repeat(40));
  assert.throws(()=>checkoutFromLog('No checkout evidence'));
+});
+test('closed PR association comes from actual checkout commands, not a mutable API relation',()=>{
+ assert.equal(pullRequestFromLog('[command]/usr/bin/git checkout --progress --force refs/remotes/pull/52/merge'),52);
+ assert.equal(pullRequestFromLog('[command]/usr/bin/git fetch refs/pull/52/merge'),null);
+ assert.throws(()=>pullRequestFromLog('[command]/usr/bin/git checkout refs/remotes/pull/52/merge\n[command]/usr/bin/git checkout refs/remotes/pull/53/merge'));
+});
+test('deleted source branches can materialize the exact tested commit through its verified closed PR ref',()=>{
+ let available=false;const calls=[];const run=(...args)=>{calls.push(args);if(args[0]==='cat-file'){if(!available)throw Error('Not yet present');return '';}if(args[0]==='fetch'&&args.at(-1)==='refs/pull/52/head'){available=true;return '';}throw Error('Direct unadvertised commit fetch unavailable');};
+ const commit='a'.repeat(40);assert.equal(materializeCommit(commit,null,run),false);assert.equal(materializeCommit(commit,52,run),true);assert.ok(calls.some(args=>args.at(-1)==='refs/pull/52/head'));assert.throws(()=>materializeCommit(commit,'52;unsafe',()=>{throw Error();}));
 });
 test('actual squash merge can reuse tested equivalent inputs without requiring false ancestry',()=>repository(async f=>{
  const tree=f.g('rev-parse','HEAD^{tree}');const merged=execFileSync('git',['commit-tree',tree,'-p',f.base],{cwd:f.root,encoding:'utf8',input:'Merge fixture\n'}).trim();f.g('reset','--hard',merged);f.setHead(merged);
