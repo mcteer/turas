@@ -54,7 +54,9 @@ export function guardSpecialistProvider(model:Model,identity:SpecialistWorkerIde
   },
   async wrapGenerate({doGenerate}){
    const result=await doGenerate();
-   if(operationId&&result.finishReason.unified!=='error'){
+   // An interrupted finish preserves partial output, not proof that the paid
+   // operation completed. Keep its uncertain reservation for reconciliation.
+   if(operationId&&result.finishReason.unified!=='error'&&result.finishReason.unified!=='interrupted'){
     if(externalFeeMicroUsd)await markSpecialistOperationCompleted(operationId);
     else await settleSpecialistOperation(operationId,result.usage,result.providerMetadata);
    }
@@ -64,7 +66,7 @@ export function guardSpecialistProvider(model:Model,identity:SpecialistWorkerIde
    const result=await doStream();
    return {...result,stream:result.stream.pipeThrough(new TransformStream({
     async transform(part,controller){
-     if(part.type==='finish'&&part.finishReason.unified!=='error'&&operationId){
+     if(part.type==='finish'&&part.finishReason.unified!=='error'&&part.finishReason.unified!=='interrupted'&&operationId){
       if(externalFeeMicroUsd)await markSpecialistOperationCompleted(operationId);
       else await settleSpecialistOperation(operationId,part.usage,part.providerMetadata);
      }

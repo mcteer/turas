@@ -44,6 +44,12 @@ See the [evidence policy](docs/evidence-policy.md) and
 
 ## Project Status
 
+The [dependency maintenance release](specs/021-dependency-maintenance/spec.md)
+is in progress. It consolidates the assessed dependency updates, patches the
+application framework and preserves interrupted-response accounting. Local
+validation and hosted acceptance are recorded separately in its
+[validation record](specs/021-dependency-maintenance/validation.md).
+
 Turas is under active development. Production hardening is deployed: ordinary
 account access, chat reliability, private storage, bounded processing, maintenance
 and backup/recovery protections are in place. Production login, privacy and a normal
