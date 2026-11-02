@@ -1,3 +1,4 @@
+import type {PoolClient} from 'pg';
 import {workspaceSolutionLibraryVersion} from "../../../knowledge/workspace-patterns/repository";
 import type { AppIdentity } from "../identity";
 import { requireResearchAccount } from "../account";
@@ -20,11 +21,11 @@ export function researchContextDigest(context:CustomerResearchContext) {
 
 /** Legacy context assembly over the current authorized canonical stores. No
  * demo snapshot, legacy login or parallel accepted-claims store is introduced. */
-export async function loadResearchContext(identity:AppIdentity,accountId:string,signal?:AbortSignal) {
+export async function loadResearchContext(identity:AppIdentity,accountId:string,signal?:AbortSignal,existingClient?:PoolClient,researchFence?:'authority') {
   signal?.throwIfAborted();
-  const account=await requireResearchAccount(identity,accountId);
-  return withTransaction(async db=>{
-    const profile=await readProfile(identity,accountId,db,undefined,undefined,false,true) as {
+  const account=await requireResearchAccount(identity,accountId,existingClient);
+  const assemble=async(db:PoolClient)=>{
+    const profile=await readProfile(identity,accountId,db,undefined,undefined,false,true,false,researchFence) as {
       acceptedFacts:Array<Record<string,unknown>>;attributedResearch:Array<Record<string,unknown>>;
     };
     const manualVersion=digest(JSON.stringify(profile.acceptedFacts.map(fact=>({
@@ -38,9 +39,9 @@ export async function loadResearchContext(identity:AppIdentity,accountId:string,
     // A worker's private reads are not facts delivered to its parent model.
     // Keep the parent's consumed-source fence until its next actual model
     // refresh supplies the replacement facts to that model.
-    const read=(identity.responseAttemptId && !identity.workerSessionId ? await readCustomerAccountEvidence(db,
+    const read=(identity.responseAttemptId && !identity.workerSessionId && !researchFence ? await readCustomerAccountEvidence(db,
       {principalId:identity.principalId,attributes:{turasAttemptId:identity.responseAttemptId}},accountId):
-      await readEligibleContext(identity,accountId,{limit:20,shareActorRows:true},db)) as {
+      await readEligibleContext(identity,accountId,{limit:20,shareActorRows:true,researchFence},db)) as {
       contextVersion:string;truncated:boolean;entries:Record<string,unknown>[];
     };
     const headers=await currentKnowledgeHeaders(db,identity);
@@ -64,7 +65,8 @@ export async function loadResearchContext(identity:AppIdentity,accountId:string,
       solutionKnowledgeVersion:digest(JSON.stringify({published:headers,workspacePatterns:(await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version>=62?await workspaceSolutionLibraryVersion(db,identity):null})),researchPolicyVersion:'account-attribution-control-limitations-v4',
       journalStatus:profile.acceptedFacts.length?'available':'empty',moreAvailable:read.truncated || headers.length>100,
       evidence});
-  });
+  };
+  return existingClient?assemble(existingClient):withTransaction(assemble);
 }
 
 /** A specialist may add its own checked public knowledge, but may not silently

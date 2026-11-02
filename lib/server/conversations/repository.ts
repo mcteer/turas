@@ -29,6 +29,7 @@ type ConversationRow = {
   revision?: string | number;
   binding_state: ConversationReference["bindingState"];
   eve_session_id: string | null;
+  native_protocol?:25|27;
   created_at: Date;
   updated_at: Date;
   context_audience?: string | null;
@@ -131,6 +132,7 @@ function toReference(row: ConversationRow, session: CurrentSession): Conversatio
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
     contextStatus: status,
+    nativeProtocol:row.native_protocol,
   };
 }
 
@@ -287,7 +289,7 @@ export async function getOwnedConversationPage(session: CurrentSession, id: stri
   const conversation = await getOwnedConversation(session, id);
   const version = Number((await query('SELECT schema_version FROM turas_environment WHERE environment_id=$1',
     [getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0]?.schema_version ?? 0);
-  const nativeRetired = await nativeRetirementConfirmed(id, conversation.eveSessionId, version);
+  const nativeRetired = conversation.nativeProtocol===25 || await nativeRetirementConfirmed(id, conversation.eveSessionId, version);
   if (nativeRetired) {
     const detail = await getOwnedConversationDetail(session, id);
     return {conversation: detail, nativeRetired: true, retainedHistory: detail.history, historyTruncated: detail.historyTruncated};
@@ -379,7 +381,9 @@ export async function getOwnedConversationByNativeSession(
       AND owner_principal_id = $2 AND environment_id = $3 LIMIT 1
   `, [nativeSessionId, session.principalId, getServerConfig().TURAS_ENVIRONMENT_ID]);
   if (!result.rows[0]) throw hiddenRecord();
-  return getOwnedConversation(session, result.rows[0].id);
+  const conversation=await getOwnedConversation(session,result.rows[0].id);
+  if(conversation.nativeProtocol===25)throw new HttpFailure(409,"native_protocol_retired","Start a new conversation. Your saved history remains available.");
+  return conversation;
 }
 
 export async function getOwnedAttemptStatus(
@@ -473,7 +477,7 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
       FROM event_projections event WHERE conversation_id = $1
         AND event_type <> 'message.appended'
         AND NOT (event_type='message.received' AND visible_payload ? 'applicationInputReplay')
-      ORDER BY emitted_at, native_event_id LIMIT 501`, [id]),
+      ORDER BY emitted_at, ${conversation.nativeProtocol===27?"stream_index,stream_fact_index,":""}native_event_id LIMIT 501`, [id]),
     query<{ turn_id: string; step_index: number | null; message: string; emitted_at: Date }>(`
       SELECT e.turn_id, e.step_index, string_agg(e.visible_payload->>'messageDelta', ''
         ORDER BY e.emitted_at, e.native_event_id) AS message, max(e.emitted_at) AS emitted_at
@@ -517,7 +521,7 @@ export async function getOwnedConversationDetail(session: CurrentSession, id: st
   const visibleEvents = hideGenerated ? (ownerEvents?.rows ?? events.rows.filter((row) => row.event_type === "message.received")) : events.rows;
   return {
     ...conversation, featureKind:feature.kind,
-    nativeRetired: await nativeRetirementConfirmed(id, conversation.eveSessionId, documentSchemaVersion),
+    nativeRetired: conversation.nativeProtocol===25 || await nativeRetirementConfirmed(id, conversation.eveSessionId, documentSchemaVersion),
     canAttachDocuments:feature.kind==='normal' && process.env.TURAS_ORDINARY_ATTACHMENTS_DISABLED!=='1' &&
       documentSchemaVersion>=71,
     canAttachNativeFiles:feature.kind==='normal'&&ordinaryNativeFilesEnabled(id)&&documentSchemaVersion>=72,

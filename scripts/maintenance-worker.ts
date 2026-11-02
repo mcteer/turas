@@ -22,7 +22,14 @@ async function send(attemptId:string):Promise<'settled'|'cancel_requested'|'retr
  if(!response.ok)throw Error('Maintenance transport unavailable');const parsed=await response.json() as {data?:{status?:string}};
  if(!['settled','cancel_requested','retry'].includes(parsed.data?.status??''))throw Error('Invalid maintenance response');return parsed.data!.status as 'settled'|'cancel_requested'|'retry';
 }
-const scheduler=startMaintenanceScheduler(getServerConfig().TURAS_ENVIRONMENT_ID,operationalCodeVersion(),createMaintenanceBindings({cancelDue:send}));
+async function sendSpecialist(discussionId:string,attemptId:string):Promise<'settled'|'cancel_requested'|'retry'>{
+ const body=JSON.stringify({action:'cancel_specialist',discussionId,attemptId,environmentId:getServerConfig().TURAS_ENVIRONMENT_ID}),timestamp=String(Date.now()),nonce=randomUUID();
+ const response=await fetch(new URL(path,origin),{method:'POST',headers:{'content-type':'application/json','x-turas-timestamp':timestamp,'x-turas-nonce':nonce,'x-turas-signature':signMaintenanceRequest('POST',path,timestamp,nonce,body)},body,signal:AbortSignal.timeout(20000)});
+ if(!response.ok)throw Error('Specialist control transport unavailable');
+ const status=(await response.json()).data?.status;
+ if(!['settled','cancel_requested','retry'].includes(status))throw Error('Invalid specialist control response');return status;
+}
+const scheduler=startMaintenanceScheduler(getServerConfig().TURAS_ENVIRONMENT_ID,operationalCodeVersion(),createMaintenanceBindings({cancelDue:send,cancelSpecialist:sendSpecialist}));
 // Already admitted embedding/import work keeps its separate heavy lane. It cannot
 // block registry cleanup, cancellation or availability heartbeats.
 const pending=new Map<string,Promise<unknown>>(),timers:ReturnType<typeof setInterval>[]=[];

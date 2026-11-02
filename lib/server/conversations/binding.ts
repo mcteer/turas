@@ -15,6 +15,7 @@ type BindingRow = {
   creation_operation_id: string;
   binding_state: ConversationReference["bindingState"];
   eve_session_id: string | null;
+  native_protocol?:25|27;
   binding_attempts: number;
   binding_started_at: Date | null;
   binding_claim_token: string | null;
@@ -96,6 +97,7 @@ export async function claimBinding(
     const row = await lockOwnedBinding(client, session, id);
     if (row.creation_operation_id !== operationId) throw new HttpFailure(409, "operation_conflict", "Operation mismatch");
     if (row.binding_state === "bound" && row.eve_session_id) {
+      if(row.native_protocol===25)throw new HttpFailure(409,"native_protocol_retired","Start a new conversation. Your saved history remains available.");
       return { state: "bound" as const, eveSessionId: row.eve_session_id };
     }
     if (row.binding_state === "failed") throw new HttpFailure(409, "binding_failed", "Start a new conversation");
@@ -149,7 +151,8 @@ export async function bindNativeSession(
     if (row.binding_state !== "creating" || row.binding_claim_token !== claimToken) {
       throw new HttpFailure(409, "binding_conflict", "Binding changed");
     }
-    await client.query(`UPDATE conversations SET eve_session_id = $2,
+    const schema=Number((await client.query("SELECT schema_version FROM turas_environment LIMIT 1")).rows[0]?.schema_version??0);
+    await client.query(`UPDATE conversations SET eve_session_id = $2,${schema>=82?"native_protocol=27,":""}
       binding_state = 'bound', binding_claim_token = NULL,
       binding_claim_expires_at = NULL, updated_at = now(), revision = revision + 1
       WHERE id = $1`, [id, nativeSessionId]);

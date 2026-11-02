@@ -9,7 +9,7 @@ export function CustomerPicker({ customers, selected, onSelect, disabled, option
 }) {
   const id=useId(),root=useRef<HTMLDivElement>(null),trigger=useRef<HTMLButtonElement>(null),input=useRef<HTMLInputElement>(null);
   const [open,setOpen]=useState(false),[query,setQuery]=useState(''),[active,setActive]=useState(0);
-  const label=optional?'Customer (optional)':'Customer';
+  const label='Customer';
   const value=customers.find(customer=>customer.id===selected)?.displayName;
   const choices=[{id:'',displayName:optional?'General question':'Choose a customer'},...customers]
     .filter(customer=>customer.displayName.toLocaleLowerCase('en-US').includes(query.trim().toLocaleLowerCase('en-US')));
@@ -30,7 +30,7 @@ export function CustomerPicker({ customers, selected, onSelect, disabled, option
       disabled={disabled} onClick={()=>{if(open)close();else{setQuery('');setActive(Math.max(0,[{id:''},...customers].findIndex(customer=>customer.id===selected)));setOpen(true);}}}
       onKeyDown={event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();setQuery('');setActive(0);setOpen(true);}}}>
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /></svg>
-      <span id={`${id}-value`}>{value??(optional?'Customer (optional)':'Choose a customer')}</span>
+      <span id={`${id}-value`}>{value??'Customer'}</span>
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
     </button>
     {open&&<div className="customer-picker-popover">

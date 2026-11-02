@@ -86,7 +86,7 @@ export async function processNativeRetirement(): Promise<boolean> {
     return true;
   }
   try {
-    const response = await fetch(`${origin}eve/v1/session/${encodeURIComponent(job.eve_session_id)}/reset`, {
+    const response = await fetch(`${origin}eve/v1/session/${encodeURIComponent(job.eve_session_id)}/end`, {
       method: "POST",headers: { "content-type": "application/json",
         ...signNativeRetirement(job.eve_session_id,job.version_id,Number(job.lifecycle_generation)) },
       body: JSON.stringify({ reason: "Artifact source retired" }),signal: AbortSignal.timeout(5_000),

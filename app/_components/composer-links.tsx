@@ -1,10 +1,13 @@
 "use client";
-import {useRef,useState} from 'react';
+import {useImperativeHandle,useRef,useState,type Ref} from 'react';
 import {getWebUrl,getMessageLinks,removeMessageLink} from '../../lib/chat-attachments';
 
-export function ComposerLinks({text,onChange,disabled}:{text:string;onChange:(text:string)=>void;disabled:boolean}){
+export type ComposerLinksControl={open:()=>void};
+export function ComposerLinks({text,onChange,disabled,control,hideTrigger=false}:{text:string;onChange:(text:string)=>void;disabled:boolean;control?:Ref<ComposerLinksControl>;hideTrigger?:boolean}){
  const dialog=useRef<HTMLDialogElement>(null),[url,setUrl]=useState(''),[error,setError]=useState('');
  const links=getMessageLinks(text);
+ function open(){if(disabled)return;setError('');dialog.current?.showModal();}
+ useImperativeHandle(control,()=>({open}),[disabled]);
  function add(){
   if(disabled)return;
   const value=url.trim();if(!getWebUrl(value)){setError('Enter a complete link beginning with https:// or http://.');return;}
@@ -13,9 +16,9 @@ export function ComposerLinks({text,onChange,disabled}:{text:string;onChange:(te
   onChange(next);dialog.current?.close();setUrl('');setError('');
  }
  return <div className="composer-links">
-  <button type="button" className="composer-attach" aria-label="Add a link" disabled={disabled} onClick={()=>{setError('');dialog.current?.showModal();}}>
+  {!hideTrigger&&<button type="button" className="composer-attach" aria-label="Add a link" disabled={disabled} onClick={open}>
    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m10 13 4-4M8 16l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 1 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0"/></svg>
-  </button>
+  </button>}
   {links.length>0&&<ul className="chat-link-list" aria-label="Message links">{links.map(link=><li key={link}>
    <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
    <button type="button" disabled={disabled} aria-label={`Remove link ${link}`} onClick={()=>onChange(removeMessageLink(text,link))}>×</button>

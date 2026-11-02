@@ -1,3 +1,4 @@
+import {replyFixture} from '../fixtures/eve-v27';
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { eveChannel } from "eve/channels/eve";
@@ -13,7 +14,7 @@ import { projectNativeEvent } from "../../lib/server/conversations/projection";
 import { getCurrentSession } from "../../lib/server/auth/sessions";
 import { claimBinding, markBindingUncertain } from "../../lib/server/conversations/binding";
 
-const origin = "http://127.0.0.1:3000";
+const origin = process.env.TURAS_APP_ORIGIN ?? "http://127.0.0.1:3000";
 const createdIds: string[] = [];
 const guardedPaths = [
   "POST /eve/v1/session",
@@ -287,7 +288,7 @@ describe("eve session boundary", () => {
       body: JSON.stringify(message),
     });
     const nativeArgs = { params: { sessionId: nativeId },
-      attachSession: () => ({ getStreamTailIndex: async () => { tailCaptures += 1; return 4; } }),
+      attachSession: () => ({ stream: async function* () { tailCaptures += 1; yield* replyFixture().events; } }),
     } as unknown as typeof args;
     const crossOwnerSend = await route(guarded, "POST", "/eve/v1/session/:sessionId")
       .handler(new Request(`${origin}/eve/v1/session/${nativeId}`, {

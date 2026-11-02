@@ -1,3 +1,4 @@
+import {completeReplayWindow,nextNativeIndex} from "../conversations/replay-window";
 import { withTransaction } from "../db/client";
 import { getServerConfig } from "../config";
 import { hiddenRecord } from "../../contracts/http";
@@ -33,7 +34,7 @@ export async function reconcileStaffingNativeEvents(nativeSessionId: string, att
     if (!Number.isSafeInteger(start) || start < 0) throw hiddenRecord();
     const events = inputEvents.filter(item => item.index >= start).sort((a, b) => a.index - b.index);
     if (!events.length) return unsettled(false);
-    for (let i = 0; i < events.length; i++) if (!Number.isSafeInteger(events[i].index) || events[i].index !== start + i) return unsettled(true);
+    if(!completeReplayWindow(events,start))return unsettled(true);
     const first = events.find(item => item.event.type === "message.received" && item.event.data?.kind !== "execution.background_task");
     if (!first) return unsettled(false);
     if (typeof first.event.data?.message !== "string" || typeof first.event.data.turnId !== "string" ||
@@ -43,7 +44,7 @@ export async function reconcileStaffingNativeEvents(nativeSessionId: string, att
     let nextIndex = first.index, sawInput = false;
     for (const item of events.filter(item => item.index >= first.index)) {
       const event = item.event;
-      if (event.data?.kind === "execution.background_task") { nextIndex = item.index + 1; continue; }
+      if (event.data?.kind === "execution.background_task") { nextIndex = nextNativeIndex(item); continue; }
       if (event.type === "message.received") {
         if (sawInput) break;
         sawInput = true;
@@ -53,7 +54,7 @@ export async function reconcileStaffingNativeEvents(nativeSessionId: string, att
         const recorded = await projectStaffingNativeEventInTransaction(db, nativeSessionId, attemptId, event, item.index, null, true);
         if (recorded && recorded.usage) usage.push(recorded.usage);
       }
-      nextIndex = item.index + 1;
+      nextIndex = nextNativeIndex(item);
       if (["turn.completed", "turn.failed", "turn.cancelled"].includes(event.type)) break;
     }
     await db.query("UPDATE conversations SET projection_next_index=GREATEST(projection_next_index,$2),updated_at=clock_timestamp() WHERE id=$1",

@@ -1,3 +1,4 @@
+import {projectionFactIndex} from '../conversations/projection-position';
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
@@ -75,18 +76,19 @@ export async function projectExecutionNativeEventInTransaction(db: PoolClient, n
   const step = ["step.completed", "step.failed"].includes(event.type);
   const inputTokens = executionReportedTokens(data.usage, "inputTokens"), outputTokens = executionReportedTokens(data.usage, "outputTokens");
   if (step) payload = { ...payload, usage: { inputTokens, outputTokens } };
+  const factIndex=await projectionFactIndex(db,event);
   const inserted = await db.query(`INSERT INTO event_projections(native_event_id,conversation_id,native_session_id,stream_index,
-    event_type,turn_id,step_index,visible_payload,emitted_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    event_type,turn_id,step_index,visible_payload,emitted_at${factIndex!==null?",stream_fact_index":""}) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9${factIndex!==null?",$10":""})
     ON CONFLICT(native_event_id) DO NOTHING RETURNING native_event_id`,
     [event.meta.id, association.id, nativeSessionId, streamIndex ?? null, event.type, data.turnId,
-      Number.isSafeInteger(data.stepIndex) ? data.stepIndex : null, JSON.stringify(payload), event.meta.at]);
+      Number.isSafeInteger(data.stepIndex) ? data.stepIndex : null, JSON.stringify(payload), event.meta.at,...(factIndex!==null?[factIndex]:[])]);
   if (!inserted.rowCount) {
-    const prior = (await db.query(`SELECT conversation_id,native_session_id,event_type,turn_id,step_index,visible_payload,emitted_at
+    const prior = (await db.query(`SELECT conversation_id,native_session_id,event_type,turn_id,step_index,visible_payload,emitted_at${factIndex!==null?",stream_fact_index":""}
       FROM event_projections WHERE native_event_id=$1`, [event.meta.id])).rows[0];
     // Reconciliation may observe an input originally stored with its message.
     // It never upgrades a metadata-only input into a content projection.
     const samePayload = Boolean(prior) && (metadataOnlyInput && event.type === "message.received" || executionDigest(prior.visible_payload) === executionDigest(payload));
-    if (!prior || prior.conversation_id !== association.id || prior.native_session_id !== nativeSessionId || prior.event_type !== event.type ||
+    if (!prior || factIndex!==null&&Number(prior.stream_fact_index)!==factIndex || prior.conversation_id !== association.id || prior.native_session_id !== nativeSessionId || prior.event_type !== event.type ||
       prior.turn_id !== data.turnId || prior.step_index !== (Number.isSafeInteger(data.stepIndex) ? data.stepIndex : null) ||
       prior.emitted_at.getTime() !== Date.parse(event.meta.at) || !samePayload) throw hiddenRecord();
     if (streamIndex !== undefined) await db.query(`UPDATE event_projections SET stream_index=COALESCE(stream_index,$2)

@@ -42,7 +42,9 @@
     "playwright.config.ts",
     "report-renderer/render.ts",
     "report-renderer/layout.ts",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "scripts/check-specialist-continuity.ts",
+    "scripts/owned-workflow-diagnostics.ts"
   ],
   "exclude": [
     "node_modules"

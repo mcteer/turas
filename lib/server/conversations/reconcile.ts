@@ -1,3 +1,4 @@
+import {completeReplayWindow,nextNativeIndex} from "./replay-window";
 import {savedNativeInputReplay} from './native-input-replay';
 import { conversationFeature } from "./feature";
 import { reconcileLearningNativeEvents } from '../learning/native-reconcile';
@@ -71,11 +72,7 @@ export async function reconcileFromEvents(
       return { state: "ambiguous", nextIndex: Number(row.projection_next_index) };
     };
     if (!events.length) return uncertain();
-    let expectedIndex = start;
-    for (const item of events) {
-      if (!Number.isSafeInteger(item.index) || item.index !== expectedIndex) return ambiguous();
-      expectedIndex += 1;
-    }
+    if(!completeReplayWindow(events,start))return ambiguous();
     const firstInput = events.find(({ event }) =>
       event.type === "message.received" && event.data?.kind !== "execution.background_task");
     if (!firstInput) return uncertain();
@@ -94,7 +91,7 @@ export async function reconcileFromEvents(
     for (const item of events) {
       const event = item.event;
       if (item.index < firstInput.index) {
-        nextIndex = item.index + 1;
+        nextIndex = nextNativeIndex(item);
         continue;
       }
       if (event.type === "message.received" && event.data?.kind !== "execution.background_task") {
@@ -104,7 +101,7 @@ export async function reconcileFromEvents(
       }
       if (typeof event.data?.turnId === "string" && event.data.turnId !== turnId) break;
       await projectNativeEventInTransaction(client, nativeSessionId, attemptId, event, item.index);
-      nextIndex = item.index + 1;
+      nextIndex = nextNativeIndex(item);
       if (["turn.completed", "turn.failed", "turn.cancelled"].includes(event.type)) break;
     }
     await client.query(`UPDATE conversations SET projection_next_index =

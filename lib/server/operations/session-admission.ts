@@ -6,7 +6,7 @@ import {HttpFailure} from '../../contracts/http';
 // Ordinary session authentication must not load recovery readers, MCP or the
 // domain graph. Keep its fence and cancellation capability shared with admission.
 const cancellationActors=new WeakSet<object>();
-const cancelledPaths=/^(?:\/api\/artifacts\/intents\/[a-f0-9-]{36}\/cancel|\/eve\/v1\/session\/wrun_[A-Za-z0-9_-]+\/cancel)$/;
+const cancelledPaths=/^(?:\/api\/artifacts\/intents\/[a-f0-9-]{36}\/cancel|\/eve\/v1\/session\/wrun_[A-Za-z0-9_-]+\/cancel|\/api\/conversations\/[a-f0-9-]{36}\/specialists\/[a-f0-9-]{36}\/cancel|\/eve\/v1\/turas\/specialists\/[a-f0-9-]{36}\/cancel)$/;
 export function protectedCancellationRequest(request:Request){return request.method==='POST'&&cancelledPaths.test(new URL(request.url).pathname);}
 export function registerProtectedCancellation(request:Request,actor:object){if(!protectedCancellationRequest(request))throw Error('Invalid protected operation');cancellationActors.add(actor);}
 export function hasProtectedCancellation(actor:object){return cancellationActors.has(actor);}

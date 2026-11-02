@@ -14,7 +14,7 @@ export function createOrdinaryQuestionsNativeModel(attemptId:string){
   if(original==='Request parallel basic questions.'){
    const ids=[1,2].map(index=>'parallel-'+attemptId+'-'+index),results=ids.map(id=>toolResults.find(result=>result.id===id&&result.name==='ask_question'));
    if(results.some(result=>!result))return {toolCalls:ids.map((id,index)=>({id,name:'ask_question',input:{question:index===0?'Which first parallel display?':'Which second parallel display?',options:[{label:'Desktop',description:'Use a wide display.'},{label:'Mobile',description:'Use a narrow display.'}]}})),usage:{inputTokens:11,outputTokens:7}};
-   for(const result of results){let value:unknown=result!.output;for(let index=0;index<5;index++){if(typeof value==='string'){try{value=JSON.parse(value);continue;}catch{break;}}if(value&&typeof value==='object'&&'value' in value){value=value.value;continue;}break;}if(result!.isError||!value||typeof value!=='object'||!('status' in value)||value.status!=='dismissed')throw Error('Actual parallel question dismissal missing');}
+   for(const result of results){let value:unknown=result!.output;for(let index=0;index<5;index++){if(typeof value==='string'){try{value=JSON.parse(value);continue;}catch{break;}}if(value&&typeof value==='object'&&'value' in value){value=value.value;continue;}break;}if(result!.isError||!value||typeof value!=='object'||!('interrupted' in value)||value.interrupted!==true)throw Error('Actual parallel question dismissal missing');}
    return {text:'Parallel questions dismissed.',usage:{inputTokens:11,outputTokens:7}};
   }
   const name='ask_question',id='question-'+attemptId;

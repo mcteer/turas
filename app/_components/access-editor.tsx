@@ -69,7 +69,7 @@ export function AccessEditor({ csrfToken }: { csrfToken: string }) {
     <main className="profile-page access-page">
       <header className="profile-header"><div><p className="profile-eyebrow">Administration</p>
         <h1>Access</h1><p>Manage account membership and partner customer assignments.</p></div>
-        <span className="profile-badge">Demo accounts</span></header>
+        <span className="profile-badge">Workspace Accounts</span></header>
       {loading && <p role="status">Loading access…</p>}
       {error && <p role="alert">{error} <button type="button" onClick={() => void load()}>Reload</button></p>}
       <div className="access-grid">{accounts.map((account) => (

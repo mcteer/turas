@@ -20,7 +20,7 @@ export async function assertRestoredNamedContentSafety(db:Client|PoolClient,snap
  if(rows.length>10000||rows.some(r=>!['complete','legacy_gap'].includes(r.coverage)))throw Error('Bounded restored named-content coverage required');
  const complete=rows.filter(r=>r.coverage==='complete').map(r=>String(r.conversation_id));
  if(!complete.length)return {completeConversations:0,legacyGapConversations:rows.length,activeNamedContentVerified:true,authorityGranted:false};
- if(![80,CURRENT_SCHEMA_VERSION].includes(snapshot.schemaVersion))throw Error('Historical snapshot cannot establish complete named-content coverage');
+ if(!(snapshot.schemaVersion>=80&&snapshot.schemaVersion<=CURRENT_SCHEMA_VERSION))throw Error('Historical snapshot cannot establish complete named-content coverage');
  const coverage=snapshot.tables.find(t=>t.name==='ordinary_named_content_coverage'),dependencies=snapshot.tables.find(t=>t.name==='ordinary_named_content_dependencies');
  if(!coverage||!dependencies)throw Error('Complete named-content source inventory required');
  const sourceCoverage=new Map(coverage.rows.map(r=>[String(r.identity.conversation_id),r.status]));
@@ -50,7 +50,7 @@ export async function reconcileRestoredNamedContentSafety(db:Client|PoolClient,s
  if(coverage.length>10000)throw Error('Bounded restored named-content coverage required');
  const complete=coverage.filter(r=>r.coverage==='complete').map(r=>String(r.conversation_id));let appended=0;
  if(complete.length){
-  if(![80,CURRENT_SCHEMA_VERSION].includes(snapshot.schemaVersion))throw Error('Historical snapshot cannot establish complete named-content coverage');
+  if(!(snapshot.schemaVersion>=80&&snapshot.schemaVersion<=CURRENT_SCHEMA_VERSION))throw Error('Historical snapshot cannot establish complete named-content coverage');
   const sourceCoverage=snapshot.tables.find(t=>t.name==='ordinary_named_content_coverage'),dependencies=snapshot.tables.find(t=>t.name==='ordinary_named_content_dependencies');
   if(!sourceCoverage||!dependencies)throw Error('Complete named-content source inventory required');
   const source=new Map(sourceCoverage.rows.map(r=>[String(r.identity.conversation_id),r.status]));

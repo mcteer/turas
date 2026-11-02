@@ -41,26 +41,13 @@ function start(args, extraEnv = {}, piped = false) {
   return child;
 }
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => stop());
-// Own both services explicitly; do not leave a native process behind when
-// Playwright stops this server or when a worker fails.
+// withEve owns the built service when next start runs. Starting another native
+// server here would race the integration for the exact same production port.
 const nativePort = Number(process.env.EVE_NEXT_PRODUCTION_PORT ?? '4274');
 if (!Number.isInteger(nativePort) || nativePort < 1024 || nativePort > 65535 || nativePort === Number(origin.port || '80')) throw Error('Distinct prepared native UI port required');
-const nativeOrigin = 'http://127.0.0.1:' + nativePort;
-env.TURAS_EVE_INTERNAL_ORIGIN = nativeOrigin + '/';
-let nativeLog = '';
-const native = start([resolve('.output/server/index.mjs')], { HOST: '127.0.0.1', NITRO_HOST: '127.0.0.1', PORT: String(nativePort), NITRO_PORT: String(nativePort) }, true);
-for (const [stream, output] of [[native.stdout, process.stdout], [native.stderr, process.stderr]]) stream.on('data', bytes => { output.write(bytes);nativeLog = (nativeLog + bytes.toString()).slice(-16384); });
-async function application() {
-  const deadline = Date.now() + 60000;
-  while (!stopping && Date.now() < deadline) {
-    if (nativeLog.includes(nativeOrigin)) {
-      start([resolve('node_modules/next/dist/bin/next'), 'start', '--port', origin.port || '80']);
-      await workers();return;
-    }
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  if (!stopping) stop(1);
-}
+env.EVE_NEXT_PRODUCTION_PORT=String(nativePort);
+env.TURAS_EVE_INTERNAL_ORIGIN='http://127.0.0.1:'+nativePort+'/';
+start([resolve('node_modules/next/dist/bin/next'), 'start', '--port', origin.port || '80']);
 async function workers() {
   const deadline = Date.now() + 60000;
   while (!stopping && Date.now() < deadline) {
@@ -76,4 +63,4 @@ async function workers() {
   }
   if (!stopping) stop(1);
 }
-void application().catch(() => stop(1));
+void workers().catch(() => stop(1));

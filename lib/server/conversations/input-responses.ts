@@ -17,17 +17,25 @@ export async function nativeInputDeadline(db:PoolClient,attemptId:string,nativeS
   JOIN conversations c ON c.id=a.conversation_id AND c.eve_session_id=event.native_session_id
   WHERE a.id=$1 AND c.eve_session_id=$2 AND event.conversation_id=c.id
    AND ($4::boolean=false OR resume.deadline_at>clock_timestamp())
-   AND ((event.event_type='input.requested' AND $3='')
+   AND ((event.event_type='input.requested' AND ($3='' OR event.turn_id=$3))
     OR (event.event_type IN('input.resolved','turn.started') AND event.turn_id=$3)
     ${(marker?.schema_version??0)>=77?`OR EXISTS(SELECT 1 FROM ordinary_question_continuations continuation WHERE continuation.attempt_id=a.id AND continuation.request_event_id=event.native_event_id AND continuation.native_session_id=$2 AND continuation.native_turn_id=$3 AND continuation.deadline_at=resume.deadline_at AND EXISTS(SELECT 1 FROM login_sessions login JOIN memberships membership ON membership.id=continuation.membership_id AND membership.principal_id=c.owner_principal_id AND membership.workspace_id=c.workspace_id JOIN principals owner ON owner.id=c.owner_principal_id WHERE login.id=continuation.login_session_id AND login.principal_id=c.owner_principal_id AND login.revoked_at IS NULL AND login.expires_at>clock_timestamp() AND membership.active AND owner.active))`:''}) ORDER BY resume.deadline_at DESC LIMIT 1`,[attemptId,nativeSessionId,turnId,current])).rows[0]?.deadline_at??null;
 }
 export async function hasNativeInputWindow(db:PoolClient,attemptId:string,nativeSessionId:string,turnId:string,current=true){
  return !!await nativeInputDeadline(db,attemptId,nativeSessionId,turnId,current);
 }
-export const inputResponsesSchema=z.object({inputResponses:z.array(z.object({
+const legacyInputResponsesSchema=z.object({inputResponses:z.array(z.object({
  requestId:z.string().min(1).max(300),optionId:z.string().min(1).max(300).optional(),
  text:z.string().max(16384).optional(),
 }).strict().refine(value=>value.optionId!==undefined||value.text!==undefined)).min(1).max(20)}).strict();
+export const inputResponsesSchema=z.union([
+ legacyInputResponsesSchema,
+ z.object({answers:z.array(z.object({interactionId:z.string().min(1).max(300),optionId:z.string().min(1).max(300).optional(),text:z.string().max(16384).optional()}).strict().refine(value=>value.optionId!==undefined||value.text!==undefined)).min(1).max(20)}).strict()
+  .transform(value=>({inputResponses:value.answers.map(({interactionId,...answer})=>({requestId:interactionId,...answer}))})),
+]);
+export function nativeInteractionAnswers(value:z.infer<typeof inputResponsesSchema>){
+ return {answers:value.inputResponses.map(({requestId,...answer})=>({interactionId:requestId,...answer}))};
+}
 /** Match the durable native pending request, including an older open question.
  * The runtime still validates its option/text and performs the actual resolution. */
 async function ownedInputResponseBinding(actor:CurrentSession,nativeSessionId:string,raw:unknown,inspect=false){
@@ -46,7 +54,7 @@ async function ownedInputResponseBinding(actor:CurrentSession,nativeSessionId:st
     ${(marker?.schema_version??0)>=68?`OR EXISTS(SELECT 1 FROM ordinary_steering_deliveries steer WHERE steer.attempt_id=a.id AND steer.native_turn_id=event.turn_id AND steer.native_event_id IS NOT NULL)`:''})
    CROSS JOIN LATERAL jsonb_array_elements(COALESCE(event.visible_payload->'requests','[]'::jsonb)) request
    WHERE c.eve_session_id=$1 AND c.owner_principal_id=$2 AND c.workspace_id=$3 AND c.environment_id=$4 AND c.binding_state='bound'
-    AND event.event_type='input.requested' AND ($6::boolean OR request->>'requestId'=ANY($5::text[]))
+    AND event.event_type='input.requested' AND (event.visible_payload->>'applicationAttemptId' IS NULL OR event.visible_payload->>'applicationAttemptId'=a.id::text) AND ($6::boolean OR request->>'requestId'=ANY($5::text[]))
     AND a.response_state NOT IN('cancelled','stopping','failed')
     ${(marker?.schema_version??0)>=77?`AND NOT EXISTS(SELECT 1 FROM ordinary_question_continuations settled WHERE settled.attempt_id=a.id AND settled.request_event_id=event.native_event_id AND request->>'requestId'=ANY(settled.settled_request_ids)) AND NOT EXISTS(SELECT 1 FROM ordinary_question_reconstructions settled WHERE settled.attempt_id=a.id AND settled.request_event_id=event.native_event_id AND request->>'requestId'=ANY(settled.settled_request_ids))`:''}
     AND NOT EXISTS(SELECT 1 FROM event_projections resolved
@@ -71,6 +79,7 @@ export async function implicitOwnedQuestionResponse(actor:CurrentSession,nativeS
  if(Array.isArray(message)&&!nativeFiles&&message.every(part=>part?.type==='text'&&typeof part.text==='string'))message=message.map(part=>part.text).join('\n');
  if(typeof message!=='string'&&!nativeFiles)return null;
  const pending=(await ownedInputResponseBinding(actor,nativeSessionId,null,true)).pending;
+ if(pending.length>1)throw new HttpFailure(422,'question_answer_ambiguous','Answer each pending question separately, or send this as a correction.');
  if(pending.length!==1)return null;const request=pending[0].request;
  if(request.kind!=='question'||!request.action||typeof request.action!=='object'||!('kind' in request.action)||request.action.kind!=='tool-call'||!('toolName' in request.action)||request.action.toolName!=='ask_question')return null;
  if((await withTransaction(db=>conversationFeature(db,pending[0].conversation_id))).kind!=='normal')return null;
@@ -122,4 +131,17 @@ export async function authorizeOwnedInputResponse(actor:CurrentSession,nativeSes
     lease_owner=NULL,lease_expires_at=NULL,failure_count=0,last_error_code=NULL,updated_at=now() WHERE attempt_id=$1`,[attemptId,window.deadline_at]);
  });
  return attemptId;
+}
+
+/** Only owned, unresolved ordinary input branches may be replaced by an explicit
+ * correction. Keep the original attempt/turn identity for terminal proof. */
+export async function pendingOwnedQuestionTurn(actor:CurrentSession,nativeSessionId:string){
+ const {pending}=await ownedInputResponseBinding(actor,nativeSessionId,null,true);
+ if(!pending.length||pending.some(item=>!['question','tool-approval','session-limit'].includes(String(item.request.kind))))return null;
+ if(new Set(pending.map(item=>item.attempt_id)).size!==1)throw new HttpFailure(409,'question_turn_ambiguous','Stop the pending response before starting a new message.');
+ return withTransaction(async db=>{
+  if((await conversationFeature(db,pending[0].conversation_id)).kind!=='normal')return null;
+  const row=(await db.query<{native_turn_id:string|null;response_state:string}>('SELECT native_turn_id,response_state FROM response_attempts WHERE id=$1',[pending[0].attempt_id])).rows[0];
+  return row?.native_turn_id&&row.response_state==='waiting_input'?{attemptId:pending[0].attempt_id,turnId:row.native_turn_id}:null;
+ });
 }

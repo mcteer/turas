@@ -1,3 +1,4 @@
+import type {SpecialistResearchGuard} from '../discussion-research-guard';
 import {reserveParityContextRequest} from "../evaluation-budget";
 import { z } from "zod";
 import { setTimeout as delay } from "node:timers/promises";
@@ -32,6 +33,7 @@ async function request(
   signal: AbortSignal,
   body?: unknown,
   query?: URLSearchParams,
+  guard?:SpecialistResearchGuard,
 ): Promise<{value:unknown;bodyDigest:string}> {
   const token = contextApiKey();
   if (!token) throw new ResearchProviderError("not_configured");
@@ -39,6 +41,7 @@ async function request(
   if (query) url.search = query.toString();
   signal.throwIfAborted();
   await reserveParityContextRequest();
+  const operation=await guard?.beforeRequest(JSON.stringify({url:url.href,body}));
   signal.throwIfAborted();
   const response = await fetch(url, {
     method: body === undefined ? "GET" : "POST",
@@ -52,6 +55,7 @@ async function request(
   });
   if (!response.ok || !response.body) {
     await response.body?.cancel();
+    await operation?.complete();
     throw new ResearchProviderError(
       response.status === 401 || response.status === 403
         ? "unauthorized"
@@ -80,6 +84,7 @@ async function request(
   } finally {
     reader.releaseLock();
   }
+  await operation?.complete();
   try {
     return {value:JSON.parse(text),bodyDigest:digest.digest('hex')};
   } catch {
@@ -87,9 +92,9 @@ async function request(
   }
 }
 
-async function requestPage(signal: AbortSignal, query: URLSearchParams) {
+async function requestPage(signal: AbortSignal, query: URLSearchParams,guard?:SpecialistResearchGuard) {
   try {
-    return await request("/v1/web/scrape/markdown", signal, undefined, query);
+    return await request("/v1/web/scrape/markdown", signal, undefined, query,guard);
   } catch (error) {
     signal.throwIfAborted();
     const transient = error instanceof ResearchProviderError
@@ -104,7 +109,7 @@ async function requestPage(signal: AbortSignal, query: URLSearchParams) {
     }));
     await delay(500, undefined, { signal });
     signal.throwIfAborted();
-    return request("/v1/web/scrape/markdown", signal, undefined, query);
+    return request("/v1/web/scrape/markdown", signal, undefined, query,guard);
   }
 }
 
@@ -125,9 +130,9 @@ const searchResponse = z.object({
     .max(100),
   partial: z.boolean().optional(),
 });
-export async function searchPublicSources(query: string, signal: AbortSignal) {
+export async function searchPublicSources(query: string, signal: AbortSignal,guard?:SpecialistResearchGuard) {
   const parsed = searchResponse.safeParse(
-    (await request("/v1/web/search", signal, { query, numResults: 10 })).value,
+    (await request("/v1/web/search", signal, { query, numResults: 10 },undefined,guard)).value,
   );
   if (!parsed.success || parsed.data.partial)
     throw new ResearchProviderError("invalid_response");
@@ -156,7 +161,7 @@ const pageResponse = z.object({
     })
     .optional(),
 });
-export async function readPublicSource(url: string, signal: AbortSignal) {
+export async function readPublicSource(url: string, signal: AbortSignal,guard?:SpecialistResearchGuard) {
   if (!publicResearchUrl(url))
     throw new ResearchProviderError("invalid_response");
   const query = new URLSearchParams({
@@ -166,7 +171,7 @@ export async function readPublicSource(url: string, signal: AbortSignal) {
     includeImages: "false",
     maxAgeMs: "0",
   });
-  const wire=await requestPage(signal,query);
+  const wire=await requestPage(signal,query,guard);
   const parsed = pageResponse.safeParse(wire.value);
   if (
     !parsed.success ||

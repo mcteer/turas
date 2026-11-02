@@ -64,8 +64,8 @@ it('builds the actual operator transport and rejects unauthorized disabled and n
   expect(ignored.stdout.trim().split('\n')).toEqual(denied);
   // Exercise the installed CLI's real project detector without linking a cloud
   // project. A build alone accepted a package that eve link could not discover.
-  const {isEveProjectRoot}=await import(pathToFileURL(resolve('node_modules/eve/dist/src/internal/eve-project-root.js')).href);
-  expect(await isEveProjectRoot(root)).toBe(true);
+  const {findEveProjectRoot}=await import(pathToFileURL(resolve('node_modules/eve/dist/src/internal/eve-project-root.js')).href);
+  expect(await findEveProjectRoot(root)).toBe(root);
   const deploymentConfig=JSON.parse(await readFile(join(root,'vercel.json'),'utf8'));
   const outputConfig=JSON.parse(await readFile(join(root,'.vercel/output/config.json'),'utf8'));
   expect([...(deploymentConfig.crons??[]),...(outputConfig.crons??[])]).toEqual([{path:'/api/backup',schedule:'0 */12 * * *'}]);

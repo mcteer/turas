@@ -496,3 +496,10 @@ DO $$ BEGIN
   GRANT EXECUTE ON FUNCTION turas_record_customer_practice_support(uuid,uuid,uuid,uuid,text[]) TO turas_runtime;
  END IF;
 END $$;
+
+DO $$ BEGIN
+ IF to_regclass('public.specialist_discussions') IS NOT NULL THEN
+  REVOKE ALL ON specialist_discussions,specialist_assignments,specialist_operations FROM turas_runtime;
+  GRANT SELECT,INSERT,UPDATE ON specialist_discussions,specialist_assignments,specialist_operations TO turas_runtime;
+ END IF;
+END $$;

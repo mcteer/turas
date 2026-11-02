@@ -26,5 +26,8 @@
   "response_attempts",
   "retrieval_embedding_operations",
   "session_evidence_dependencies",
+  "specialist_assignments",
+  "specialist_discussions",
+  "specialist_operations",
   "watchdog_jobs"
 ]

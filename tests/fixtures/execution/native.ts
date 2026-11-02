@@ -1,3 +1,4 @@
+import {installOwnedEveResume} from '../owned-eve-resume';
 import {prepareExecutionLive} from "../../../scripts/execution-live-runtime";
 import {buildExecutionLiveCase,type ExecutionLiveCaseId} from "./advisory";
 import {installExecutionLiveObservation} from "./live";
@@ -24,9 +25,10 @@ export async function installExecutionNativeFixture(environment: ExecutionEvalEn
   if (!root.startsWith(`${owned}/eval-`) || !root.endsWith("/app") || root === await realpath(process.cwd())) throw new Error("Owned native app copy required");
   const path = join(root, "agent/agent.ts"), source = await readFile(path, "utf8"), target = "wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode";
   if (source.split(target).length !== 2 || !source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";') || !source.includes('reasoning: "low"')) throw new Error("Fixture model shape changed");
+ if(!source.includes('beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),'))throw Error('Fixture model metadata changed');
   const replacement = source.replace(target, "wrapStaffingModel(createExecutionNativeFixtureModel(principal, identity), admitted.mode")
-    .replace("return selectTurasGatewayModel(wrapStaffingModel(createExecutionNativeFixtureModel(principal, identity), admitted.mode, {", "return { ...selectTurasGatewayModel(wrapStaffingModel(createExecutionNativeFixtureModel(principal, identity), admitted.mode, {")
-    .replace("beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),\n        }));", "beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),\n        })), modelContextWindowTokens: 128_000 };");
+    .replace("return selectTurasGatewayModel(deferModelAdmission(", "return { ...selectTurasGatewayModel(deferModelAdmission(")
+    .replace("        }));", "        })), modelContextWindowTokens: 128_000 };");
   if (!replacement.includes("modelContextWindowTokens: 128_000")) throw new Error("Fixture model metadata changed");
   await writeFile(path, 'import { createExecutionNativeFixtureModel } from "../tests/fixtures/execution/native-model";\n' + replacement, { mode: 0o600 });
   await query(`CREATE TABLE execution_native_fixture_calls(id uuid PRIMARY KEY,response_attempt_id uuid NOT NULL REFERENCES response_attempts(id),step_index integer NOT NULL,
@@ -46,6 +48,7 @@ export async function withExecutionNativeCase<T>(scenario: Scenario, run: (fixtu
   return withExecutionEvalEnvironment(async environment => {
     await environment.prepareRuntime(); await installExecutionNativeFixture(environment);
     if(observe)await installExecutionLiveObservation(environment);
+    if(scenario==='unknown')await installOwnedEveResume(environment.appRoot,'008');
     const disabledBefore = process.env.TURAS_008_DISABLED;
     const prior = process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY; process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY = "1";
     const start = async (restart = false) => {

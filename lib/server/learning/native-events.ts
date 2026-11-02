@@ -1,3 +1,4 @@
+import {projectionFactIndex} from '../conversations/projection-position';
 import {advanceLearningEvaluation} from './evaluation';
 import {z} from 'zod';
 import type { PoolClient } from 'pg';
@@ -33,11 +34,12 @@ export async function projectLearningNativeEventInTransaction(db:PoolClient,nati
   SELECT $1,id,environment_id,workspace_id,$3 FROM learning_attempts WHERE id=$2 ON CONFLICT(native_event_id) DO NOTHING`,[event.meta.id,attempt.id,eventDigest]);
  const eventReceipt=(await db.query('SELECT attempt_id,content_digest FROM learning_native_event_receipts WHERE native_event_id=$1',[event.meta.id])).rows[0];
  if(eventReceipt?.attempt_id!==attempt.id||eventReceipt.content_digest!==eventDigest)throw hiddenRecord();
- const inserted=await db.query(`INSERT INTO event_projections(native_event_id,conversation_id,native_session_id,stream_index,event_type,turn_id,step_index,visible_payload,emitted_at)
-  VALUES($1,$2,$3,$4,$5,$6,$7,'{}',$8) ON CONFLICT(native_event_id) DO NOTHING RETURNING native_event_id`,[event.meta.id,row.id,nativeSessionId,streamIndex??null,event.type,data.turnId,Number.isSafeInteger(data.stepIndex)?data.stepIndex:null,event.meta.at]);
+ const factIndex=await projectionFactIndex(db,event);
+ const inserted=await db.query(`INSERT INTO event_projections(native_event_id,conversation_id,native_session_id,stream_index,event_type,turn_id,step_index,visible_payload,emitted_at${factIndex!==null?",stream_fact_index":""})
+  VALUES($1,$2,$3,$4,$5,$6,$7,'{}',$8${factIndex!==null?",$9":""}) ON CONFLICT(native_event_id) DO NOTHING RETURNING native_event_id`,[event.meta.id,row.id,nativeSessionId,streamIndex??null,event.type,data.turnId,Number.isSafeInteger(data.stepIndex)?data.stepIndex:null,event.meta.at,...(factIndex!==null?[factIndex]:[])]);
  if(!inserted.rowCount){
   const prior=(await db.query('SELECT * FROM event_projections WHERE native_event_id=$1',[event.meta.id])).rows[0];
-  if(!prior||prior.conversation_id!==row.id||prior.native_session_id!==nativeSessionId||prior.event_type!==event.type||prior.turn_id!==data.turnId||prior.emitted_at.getTime()!==Date.parse(event.meta.at!)||prior.stream_index!==null&&Number(prior.stream_index)!==streamIndex||prior.stream_index===null&&streamIndex!==undefined||prior.step_index!==null&&Number(prior.step_index)!==data.stepIndex||prior.step_index===null&&Number.isSafeInteger(data.stepIndex))throw hiddenRecord();
+  if(!prior||factIndex!==null&&Number(prior.stream_fact_index)!==factIndex||prior.conversation_id!==row.id||prior.native_session_id!==nativeSessionId||prior.event_type!==event.type||prior.turn_id!==data.turnId||prior.emitted_at.getTime()!==Date.parse(event.meta.at!)||prior.stream_index!==null&&Number(prior.stream_index)!==streamIndex||prior.stream_index===null&&streamIndex!==undefined||prior.step_index!==null&&Number(prior.step_index)!==data.stepIndex||prior.step_index===null&&Number.isSafeInteger(data.stepIndex))throw hiddenRecord();
   return {learning:true as const};
  }
  if(event.type==='message.received'){

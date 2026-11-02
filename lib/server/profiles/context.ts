@@ -30,7 +30,7 @@ type ProfileProjection = {
 export async function readEligibleContext(actor: ProfileActor, customerId: string,
   options: { limit?: number; query?: string; workloadId?: string; kind?: RecordKind;
     page?: number;audience?:"internal"|"delivery";customerWideOnly?:boolean;shareActorRows?:boolean;
-    staffingFence?: boolean; journeyOnly?:boolean; offset?:number; citationIds?:readonly string[];includeProductIndex?:boolean } = {},
+    staffingFence?: boolean; researchFence?:'authority'; journeyOnly?:boolean; offset?:number; citationIds?:readonly string[];includeProductIndex?:boolean } = {},
   existingClient?: PoolClient): Promise<unknown> {
   const limit = options.limit ?? 20;
   const page = options.page ?? 1;
@@ -41,7 +41,7 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
       (options.query?.length ?? 0) > 200) throw new HttpFailure(422, "invalid_query", "Invalid context query");
   const run = async (client: PoolClient) => {
     const profile = await readProfile(actor, customerId, client,options.workloadId,
-      options.audience,options.customerWideOnly ?? false,options.shareActorRows ?? false,options.staffingFence ?? false) as ProfileProjection;
+      options.audience,options.customerWideOnly ?? false,options.shareActorRows ?? false,options.staffingFence ?? false,options.researchFence) as ProfileProjection;
     if (options.workloadId && !profile.workloads.some((workload) => workload.id === options.workloadId)) {
       throw hiddenRecord();
     }

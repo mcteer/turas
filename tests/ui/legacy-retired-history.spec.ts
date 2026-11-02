@@ -5,7 +5,7 @@ import {signIn,requireUiFixtureDatabaseUrl} from '../fixtures/ui';
 import {prepareAttempt} from '../../lib/server/conversations/dispatch';
 import {getCurrentSession} from '../../lib/server/auth/sessions';
 
-const test=base.extend<{retiredConversation:string}>({retiredConversation:[async({page},use)=>{
+const test=base.extend<{retiredConversation:string;nativeProtocol:25|27}>({nativeProtocol:[25,{option:true}],retiredConversation:[async({page,nativeProtocol},use)=>{
  const databaseUrl=requireUiFixtureDatabaseUrl();
  await signIn(page,'mcteer');
  const cookie=(await page.context().cookies()).find(c=>c.name==='turas_session'||c.name==='__Host-turas_session');
@@ -20,7 +20,7 @@ const test=base.extend<{retiredConversation:string}>({retiredConversation:[async
  const db=new Client({connectionString:databaseUrl});await db.connect();
  try{
   await db.query('BEGIN');
-  await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",[id,nativeId]);
+  await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2,native_protocol=$3 WHERE id=$1",[id,nativeId,nativeProtocol]);
   await db.query("INSERT INTO ordinary_native_retirements(id,environment_id,workspace_id,owner_principal_id,conversation_id,native_session_id,state,confirmed_at) VALUES($1,$2,$3,$4,$5,$6,'confirmed',clock_timestamp())",[randomUUID(),process.env.TURAS_ENVIRONMENT_ID,actor.workspaceId,actor.principalId,id,nativeId]);
   const events=[['message.received',{message:'Synthetic question',parts:[{type:'text',text:'Synthetic question'},{type:'file',filename:'retired.png',mediaType:'image/png',size:42}]}],['message.completed',{message:'**Retained synthetic answer** with [source](https://example.com/source).'}],['message.received',{message:'Synthetic follow-up'}],['message.completed',{message:'Second retained synthetic answer.'}]] as const;
   for(const [index,[type,payload]] of events.entries())await db.query("INSERT INTO event_projections(native_event_id,conversation_id,native_session_id,stream_index,event_type,turn_id,visible_payload,emitted_at) VALUES($1,$2,$3,$4,$5,$6,$7,'2026-10-01T00:00:00Z'::timestamptz + $4::bigint * interval '1 second')",[randomUUID(),id,nativeId,index,type,'turn_'+Math.floor(index/2),JSON.stringify(payload)]);
@@ -84,7 +84,9 @@ test('a later interrupted step survives an earlier completed step and long histo
 // UI integration only: seed authoritative failed projections and let the real
 // SDK resume an explicitly empty transport. The native staged-file gate covers
 // the separate real provider-failure lifecycle.
-test('active failed history survives empty SDK resume, reload, a later send attempt and current-read fences',async({page,retiredConversation,browser})=>{
+test.describe('current native runtime',()=>{
+ test.use({nativeProtocol:27});
+ test('active failed history survives empty SDK resume, reload, a later send attempt and current-read fences',async({page,retiredConversation,browser})=>{
  const db=new Client({connectionString:requireUiFixtureDatabaseUrl()});await db.connect();let nativeId:string;
  try{
   nativeId=(await db.query('SELECT eve_session_id FROM conversations WHERE id=$1',[retiredConversation])).rows[0].eve_session_id;
@@ -92,7 +94,7 @@ test('active failed history survives empty SDK resume, reload, a later send atte
   const cookie=(await page.context().cookies()).find(c=>c.name==='turas_session'||c.name==='__Host-turas_session');if(!cookie)throw Error('Fixture owner cookie missing');const actor=await getCurrentSession(new Request(process.env.TURAS_APP_ORIGIN!,{headers:{cookie:`${cookie.name}=${cookie.value}`}}));if(!actor)throw Error('Fixture owner missing');await db.query("INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,$2,clock_timestamp()) ON CONFLICT(environment_id,worker_id) DO UPDATE SET last_seen_at=EXCLUDED.last_seen_at",[process.env.TURAS_ENVIRONMENT_ID,'ui-active-history-'+randomUUID()]);const prepared=await prepareAttempt(actor,retiredConversation,nativeId,randomUUID(),'Synthetic question');await db.query("UPDATE response_attempts SET response_state='failed',dispatch_state='admitted',native_turn_id='turn_0',input_event_id=(SELECT native_event_id FROM event_projections WHERE conversation_id=$2 AND event_type='message.received' ORDER BY emitted_at LIMIT 1) WHERE id=$1",[prepared.attemptId,retiredConversation]);
  }finally{await db.end();}
  let emptyResumes=0,sends=0;
- await page.route(`**/eve/v1/session/${nativeId}/stream**`,route=>{emptyResumes++;return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-tail-index':'-1','x-eve-stream-version':'25'},body:''});});
+ await page.route(`**/eve/v1/session/${nativeId}/stream**`,route=>{emptyResumes++;return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-tail-index':'-1','x-eve-stream-version':'27'},body:''});});
  await page.route(`**/eve/v1/session/${nativeId}`,route=>{if(route.request().method()==='POST'){sends++;return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({code:'synthetic_display_send_unavailable'})});}return route.continue();});
  await page.goto(`/s/${retiredConversation}`);
  await expect(page.getByText('retired.png',{exact:true})).toBeVisible();
@@ -136,4 +138,6 @@ test('active failed history survives empty SDK resume, reload, a later send atte
  await expect(page.getByText('Customer context has changed. Start a new conversation to use current information.',{exact:true})).toBeVisible();
  await expect(page.locator('.chat-message-assistant')).toHaveCount(0);
  const other=await browser.newContext({baseURL:process.env.TURAS_UI_BASE_URL});try{const outsider=await other.newPage();await signIn(outsider,'panel');expect((await outsider.request.get(`/api/conversations/${retiredConversation}`)).status()).toBe(404);}finally{await other.close();}
+});
+
 });

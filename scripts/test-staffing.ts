@@ -1,3 +1,4 @@
+import {staffingNativeFailureMetadata} from './ci-process-diagnostics';
 import { spawnSync } from "node:child_process";
 import { readdirSync, openSync, closeSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, chmod, writeFile } from "node:fs/promises";
@@ -129,6 +130,7 @@ async function main(): Promise<void> {
               [...(test.failureMessages ?? []).join("\n").matchAll(/(?:tests|scripts|lib)\/[a-zA-Z0-9_./-]+\.[cm]?[jt]sx?:\d+:\d+/g)].map(match => match[0]))] }));
           });
           console.error(JSON.stringify({ gate: "owned-staffing", suite, phase: "failed", status: result.status, signal: result.signal, failures }));
+          if(suite==='tests/integration/staffing-native.test.ts')try{console.error(JSON.stringify(staffingNativeFailureMetadata(JSON.parse(await readFile(resolve('local-artifacts/007/native-request-diagnostic-private.json'),'utf8')))));}catch{/* No raw child output escapes. */}
           throw new Error(`007 disposable staffing suite failed: ${suite}`);
         }
         const report = JSON.parse(await readFile(suiteReportPath, "utf8"));

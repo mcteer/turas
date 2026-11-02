@@ -1,3 +1,4 @@
+import {completeReplayWindow,nextNativeIndex} from "../conversations/replay-window";
 import { withTransaction } from "../db/client";
 import { getServerConfig } from "../config";
 import { hiddenRecord } from "../../contracts/http";
@@ -26,7 +27,7 @@ export async function reconcileSupportNativeEvents(nativeSessionId: string, atte
     const start = Number(row.dispatch_start_index);
     const events = inputEvents.filter(item => item.index >= start).sort((a, b) => a.index - b.index);
     if (!events.length) return unsettled(false);
-    for (let index = 0; index < events.length; index++) if (!Number.isSafeInteger(events[index]!.index) || events[index]!.index !== start + index) return unsettled(true);
+    if(!completeReplayWindow(events,start))return unsettled(true);
     const first = events.find(item => item.event.type === "message.received" && item.event.data?.kind !== "execution.background_task");
     if (!first) return unsettled(false);
     if (typeof first.event.data?.message !== "string" || typeof first.event.data.turnId !== "string" ||
@@ -34,12 +35,12 @@ export async function reconcileSupportNativeEvents(nativeSessionId: string, atte
       row.input_event_id && row.input_event_id !== first.event.meta.id) return unsettled(true);
     let nextIndex = first.index, sawInput = false;
     for (const item of events.filter(item => item.index >= first.index)) {
-      if (item.event.data?.kind === "execution.background_task") { nextIndex = item.index + 1; continue; }
+      if (item.event.data?.kind === "execution.background_task") { nextIndex = nextNativeIndex(item); continue; }
       if (item.event.type === "message.received") { if (sawInput) break; sawInput = true; }
       if (typeof item.event.data?.turnId === "string" && item.event.data.turnId !== first.event.data.turnId) break;
       if (["message.received", "step.completed", "step.failed", "turn.completed", "turn.failed", "turn.cancelled"].includes(item.event.type))
         await projectSupportNativeEventInTransaction(db, nativeSessionId, attemptId, item.event, item.index);
-      nextIndex = item.index + 1;
+      nextIndex = nextNativeIndex(item);
       if (["turn.completed", "turn.failed", "turn.cancelled"].includes(item.event.type)) break;
     }
     await db.query("UPDATE conversations SET projection_next_index=GREATEST(projection_next_index,$2),updated_at=clock_timestamp() WHERE id=$1", [conversation.id, nextIndex]);

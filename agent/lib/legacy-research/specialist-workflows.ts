@@ -1,42 +1,28 @@
-import type {WorkflowToolContext} from 'eve/tools';
-import {z} from 'zod';
-import {sleep} from 'workflow';
-import {specialistResults} from './specialist-results';
-import {researchProgress,assertOrdinaryWorkflow,failReservedResearch,reservedSpecialistInvocation} from './workflow-progress';
-type Input={message:string;agentId?:string};
-export async function runCustomerRecon(input:Input,ctx:WorkflowToolContext){
+import type {WorkflowToolContext,WorkflowServeContext,WorkflowServeReceive} from 'eve/tools';
+import {sleep} from 'eve/workflow';
+import {researchProgress,assertOrdinaryWorkflow,isOwnedNativeResearch} from './workflow-progress';
+import {serveSpecialist} from './persistent-specialists';
+import type {SpecialistOutcome} from '../../../lib/server/research/specialists/discussion-results';
+type Input={message:string};
+export async function runCustomerRecon(receive:WorkflowServeReceive<Input>,ctx:WorkflowServeContext<SpecialistOutcome>){
  'use workflow';
- try {
- await assertOrdinaryWorkflow(ctx);
- const result=await ctx.agent('customer-recon-worker',{...await reservedSpecialistInvocation('customer-update',input,ctx),outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['customer-recon']))});
- const output=specialistResults['customer-recon'].parse(result);
- if(!output.reference)await failReservedResearch('customer-update',ctx);
- return output;
- }catch(error){await failReservedResearch('customer-update',ctx);throw error;}
+ return serveSpecialist('customer-update',receive,ctx);
 }
-export async function runVercelBestPractices(input:Input,ctx:WorkflowToolContext){
+export async function runVercelBestPractices(receive:WorkflowServeReceive<Input>,ctx:WorkflowServeContext<SpecialistOutcome>){
  'use workflow';
- try {
- await assertOrdinaryWorkflow(ctx);
- const result=await ctx.agent('vercel-best-practices-worker',{...await reservedSpecialistInvocation('best-practices',input,ctx),outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['vercel-best-practices']))});
- const output=specialistResults['vercel-best-practices'].parse(result);
- if(!output.reference)await failReservedResearch('best-practices',ctx);
- return output;
- }catch(error){await failReservedResearch('best-practices',ctx);throw error;}
+ return serveSpecialist('best-practices',receive,ctx);
 }
-export async function runImplementationResearch(input:Input,ctx:WorkflowToolContext){
+export async function runImplementationResearch(receive:WorkflowServeReceive<Input>,ctx:WorkflowServeContext<SpecialistOutcome>){
  'use workflow';
- try {
- await assertOrdinaryWorkflow(ctx);
- const result=await ctx.agent('implementation-research-worker',{...await reservedSpecialistInvocation('solution',input,ctx),outputSchema:z.record(z.string(),z.json()).parse(z.toJSONSchema(specialistResults['implementation-research']))});
- const output=specialistResults['implementation-research'].parse(result);
- if(!output.reference)await failReservedResearch('solution',ctx);
- return output;
- }catch(error){await failReservedResearch('solution',ctx);throw error;}
+ return serveSpecialist('solution',receive,ctx);
 }
 export async function joinCustomerResearch({key}:{key:string},ctx:WorkflowToolContext){
  'use workflow';
  await assertOrdinaryWorkflow(ctx);
+ if(await isOwnedNativeResearch(key,ctx)){
+  const result=await researchProgress(key,ctx);
+  return result.status==='working'?{...result,reason:'This chat already owns the native task. Its result arrives automatically; do not poll, restart or commission duplicate work.'}:result;
+ }
  for(let attempt=0;attempt<60;attempt++){
   const result=await researchProgress(key,ctx);if(result.status!=='working')return result;
   await sleep('10s');

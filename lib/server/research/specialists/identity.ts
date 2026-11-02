@@ -15,6 +15,14 @@ export async function researchIdentity(principal: Parameters<typeof customerQues
     const attemptId=principal?.attributes?.turasAttemptId;
     if(!principal?.principalId || typeof attemptId!=='string')throw hiddenRecord();
     if(lineage) {
+      if(lineage.workerSessionId){
+        const {authorizeSpecialistWorker}=await import('./discussions');
+        const scope=(await db.query(`SELECT kind FROM specialist_discussions WHERE parent_session_id=$1 AND child_session_id=$2
+          AND owner_principal_id=$3 AND environment_id=$4`,[lineage.parentSessionId,lineage.workerSessionId,principal.principalId,getServerConfig().TURAS_ENVIRONMENT_ID])).rows[0];
+        if(!scope||lineage.kind&&lineage.kind!==scope.kind)throw hiddenRecord();
+        const bound=await authorizeSpecialistWorker(db,{attemptId,principalId:principal.principalId,parentSessionId:lineage.parentSessionId,workerSessionId:lineage.workerSessionId,kind:scope.kind});
+        return {actor:bound.identity};
+      }
       const authority=await readResearchRuntimeAuthority(db,attemptId,principal.principalId,lineage);
       if(!authority)throw hiddenRecord();
       return authority;

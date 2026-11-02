@@ -67,8 +67,12 @@ test('unusable assignment acknowledgement survives reload and reconciles one ass
 });
 
 test('lost dismissal acknowledgement remains recoverable independently of the record list',async({page})=>{
- const id=await expansionUiCustomer(page),actors=await withExpansionDatabase(async db=>({panel:await createProfileTestSession(db,'panel'),mcteer:await createProfileTestSession(db,'mcteer')}));
- await assignExpansionOwner(actors.mcteer,id,{contractVersion:'expansion-v1',operation:'assign_owner',requestKey:randomUUID(),expectedVersion:0,membershipId:actors.panel.membershipId,rationale:'Explicit synthetic owner for recovery'});await fillExpansionDiscovery(page);let committed=false;
+ // Complete fixture authority setup before the first overview can read it.
+ // Changing owner during initial navigation can correctly reject that read.
+ const id=await expansionUiCustomer(page,'panel',async customerId=>{
+  const actors=await withExpansionDatabase(async db=>({panel:await createProfileTestSession(db,'panel'),mcteer:await createProfileTestSession(db,'mcteer')}));
+  await assignExpansionOwner(actors.mcteer,customerId,{contractVersion:'expansion-v1',operation:'assign_owner',requestKey:randomUUID(),expectedVersion:0,membershipId:actors.panel.membershipId,rationale:'Explicit synthetic owner for recovery'});
+ });await fillExpansionDiscovery(page);let committed=false;
  await page.getByRole('button',{name:'Review Hypothesis',exact:true}).click();await page.getByLabel('Decision Rationale',{exact:true}).fill('Owner dismisses the synthetic discovery');
  await page.route(`**/api/expansion/customers/${id}/commands`,async route=>{const response=await route.fetch();expect(response.status()).toBe(200);committed=true;await route.abort('failed');});
  await page.getByRole('button',{name:'Dismiss Hypothesis',exact:true}).click();await expect.poll(()=>committed).toBe(true);await expect(page.getByRole('button',{name:'Check Decision Status',exact:true})).toBeVisible();

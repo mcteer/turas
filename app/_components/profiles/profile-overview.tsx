@@ -121,7 +121,7 @@ export function ProfileOverview({ customerId }: { customerId: string }) {
     {status === "ready" && profile && <>
       <header className="profile-header"><div><p className="profile-eyebrow">Customer Profile</p><h1>{profile.customer.displayName}</h1>
         <p className="muted">Accepted customer context and researched facts</p></div>
-        <div className="profile-header-actions">{profile.customer.synthetic && <span className="profile-badge">Synthetic demo</span>}
+        <div className="profile-header-actions">{profile.customer.synthetic && <span className="profile-badge">Synthetic Data</span>}
           <Link className="secondary-button" href={`/customers/${customerId}/sources`}>Research Sources</Link>
           <Link className="secondary-button" href={`/customers/${customerId}/journey`}>Customer Journey</Link>
           {profile.canReview && <Link className="secondary-button" href={`/customers/${customerId}/review`}>Review Proposals</Link>}</div>

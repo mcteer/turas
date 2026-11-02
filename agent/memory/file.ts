@@ -14,5 +14,4 @@ export default defineMemory({
   try{const identity=await researchIdentity(ctx.session.auth.current);return [identity.environmentId,identity.workspaceId,principal];}
   catch{return null;}
  },
- visibility:'scope',
 });

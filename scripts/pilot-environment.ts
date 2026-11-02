@@ -80,9 +80,9 @@ async function requireUnusedPilotRoot(root:string,environment:NodeJS.ProcessEnv,
   return;
  }
 }
-export async function withPilotEnvironment<T>(run: (environment: PilotEnvironment) => Promise<T>, options: { priorSchema?: 38|55|57|77|79|80; postgresMajor?:RecoveryPostgresMajor; queryStatistics?:boolean; deadlineMs?: number } = {}): Promise<T> {
+export async function withPilotEnvironment<T>(run: (environment: PilotEnvironment) => Promise<T>, options: { priorSchema?: 38|55|57|77|79|80|81|82|83|84; postgresMajor?:RecoveryPostgresMajor; queryStatistics?:boolean; deadlineMs?: number } = {}): Promise<T> {
  if (Number(process.versions.node.split('.')[0]) !== 24) throw Error('Pilot checks require Node 24');
- if(options.priorSchema!==undefined&&![38,55,57,77,79,80].includes(options.priorSchema))throw Error('Explicit supported owned prior schema required');
+ if(options.priorSchema!==undefined&&![38,55,57,77,79,80,81,82,83,84].includes(options.priorSchema))throw Error('Explicit supported owned prior schema required');
  const protectedBefore=await pilotProtectedSnapshot();
  const digest = async () => createHash('sha256').update(await readFile('agent/agent.ts')).digest('hex');
  const agentDigest = await digest(), previous = { ...process.env };
@@ -149,12 +149,10 @@ export async function withPilotEnvironment<T>(run: (environment: PilotEnvironmen
    if(production&&native){if(built)throw Error('Owned production native startup requires a fresh build');nativePortLease=await reserveOwnedEvalPort();process.env.EVE_NEXT_PRODUCTION_PORT=String(nativePortLease.port);}
    if(production&&!built){child=spawnOwned(['scripts/build-check.mjs'],{...process.env,NODE_ENV:'production'},epoch);for(const stream of [child.stdout,child.stderr])stream?.on('data',b=>{appLog=(appLog+b.toString()).slice(-100000);});const building=child,code=await new Promise<number|null>((done,reject)=>{building.once('error',reject);building.once('exit',done);});await retireChild(building);requireStartup(epoch);child=undefined;remaining();if(code!==0)throw Error('Owned production build failed');built=true;}
    if(production&&native){
-    const lease=nativePortLease!,qualityEnvironment=await qualityChildEnvironment();requireStartup(epoch);await lease.release();
-    nativeChild=spawnOwned([join(appRoot,'.output/server/index.mjs')],{...process.env,...qualityEnvironment,NODE_ENV:'production',HOST:'127.0.0.1',NITRO_HOST:'127.0.0.1',PORT:String(lease.port),NITRO_PORT:String(lease.port)},epoch);
-    for(const stream of [nativeChild.stdout,nativeChild.stderr])stream?.on('data',bytes=>{nativeLog=(nativeLog+bytes.toString()).slice(-100000);});
-    const readyUntil=Date.now()+Math.min(remaining(),60000);
-    while(!nativeLog.includes('http://127.0.0.1:'+lease.port)){remaining();if(nativeChild.exitCode!==null||Date.now()>readyUntil)throw Error('Owned production native service failed readiness');await new Promise(r=>setTimeout(r,200));}
-    process.env.TURAS_EVE_INTERNAL_ORIGIN='http://127.0.0.1:'+lease.port+'/';
+    // Next hosting owns the built Eve service in 0.91. Starting it manually
+    // would compete with withEve for the same reserved production port.
+    await nativePortLease!.release();
+    process.env.TURAS_EVE_INTERNAL_ORIGIN='http://127.0.0.1:'+nativePortLease!.port+'/';
    }
    const qualityEnvironment=await qualityChildEnvironment();requireStartup(epoch);await portLease.release();child=spawnOwned(supervisor?['scripts/dev.mjs']:['node_modules/next/dist/bin/next',production?'start':'dev',...(production?[]:['--webpack']),'--port',String(portLease.port)],{...process.env,PORT:String(portLease.port),NODE_ENV:production?'production':'development',...qualityEnvironment},epoch);let tail='';for(const stream of [child.stdout,child.stderr])stream?.on('data',b=>{tail=(tail+b.toString()).slice(-100000);appLog=tail;const listening=/server listening at (http:\/\/127\.0\.0\.1:\d+)\//.exec(tail);if(listening)process.env.TURAS_EVE_INTERNAL_ORIGIN=listening[1]+'/';});
    while(remaining()>0){if(child.exitCode!==null)break;let ready=false;try{const r=await fetch(`${origin}/api/auth/session`,{signal:AbortSignal.timeout(2000)});await r.body?.cancel();ready=r.status===401&&(!native||production||/server listening at http:\/\/127\.0\.0\.1:\d+\//.test(appLog));}catch{}if(ready){requireStartup(epoch);captureOwnedProcessDescendants(ownedCapabilities.get(child)!);return;}await new Promise(r=>setTimeout(r,300));}

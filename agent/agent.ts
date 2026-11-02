@@ -3,7 +3,9 @@ import {responseFeature} from "../lib/server/conversations/feature";
 import {wrapOrdinaryChatModel} from "../lib/server/conversations/model-budget";
 import { gateway } from "ai";
 import {selectTurasGatewayModel} from "../lib/server/models/gateway-routing";
-import { defineAgent, defineDynamic } from "eve";
+import { defineAgent, defineDynamic, type DynamicModelContext } from "eve";
+import {deferModelAdmission} from "../lib/server/models/deferred";
+import {runs} from "eve/events";
 import { withTransaction } from "../lib/server/db/client";
 import { hiddenRecord } from "../lib/contracts/http";
 import { boundToolActor } from "../lib/server/profiles/tool-actor";
@@ -22,30 +24,28 @@ export default defineAgent({
   // Turas owns durable, authorized captures. Retiring a native session must
   // also remove eve's model/tool payloads and replay log.
   experimental: { workflow: { retention: 0 } },
-  model: defineDynamic({ events: {
-    "session.started": () => selectTurasGatewayModel(selectedModel),
-    async "step.started"(event, ctx) {
-      const data = typeof event === "object" && event !== null && "data" in event ?
-        event.data : null;
-      if (typeof data !== "object" || data === null ||
-          !("turnId" in data) || typeof data.turnId !== "string" ||
-          !("stepIndex" in data) || typeof data.stepIndex !== "number") {
-        throw hiddenRecord();
-      }
-      const turnId = data.turnId;
-      const stepIndex = data.stepIndex;
+  model: defineDynamic(async (ctx: DynamicModelContext) => {
+      const turnId = ctx.turn?.id;
+      if (!turnId) throw hiddenRecord();
+      // Dynamic values are evaluated before model.requested is committed.
+      // Count completed runs for the upcoming step; reuse an outstanding run
+      // when resolving a restored request, without counting context compaction.
+      const requested = runs(ctx.view, {turnId});
+      const stepIndex = requested.length - (requested.at(-1)?.status==='requested'?1:0);
       const principal = ctx.session.auth.current;
       if (await staffingResponseScope(principal)) {
         const responseAttemptId = principal?.attributes?.turasAttemptId;
         if (!principal?.principalId || typeof responseAttemptId !== "string") throw hiddenRecord();
         const identity = { nativeSessionId: ctx.session.id, responseAttemptId, turnId, stepIndex };
-        const admitted = await admitGovernedStaffingModelStep(principal, identity);
-        return selectTurasGatewayModel(wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode, {
-          deadlineAt: admitted.deadlineAt, beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),
+        return selectTurasGatewayModel(deferModelAdmission(parityBudgetModel(gateway(selectedModel),selectedModel),async()=>{
+          const admitted = await admitGovernedStaffingModelStep(principal, identity);
+          return wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode, {
+            deadlineAt: admitted.deadlineAt, beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),
+          });
         }));
       }
       if((await responseFeature(principal))?.kind==='normal')
-        return selectTurasGatewayModel(wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId,{event}));
+        return selectTurasGatewayModel(wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId));
       return selectTurasGatewayModel(await withTransaction(async (client) => {
         const marker = await client.query<{schema_version:number}>(
           "SELECT schema_version FROM turas_environment LIMIT 1");
@@ -72,15 +72,14 @@ export default defineAgent({
         if (!principal?.principalId || typeof responseAttemptId !== "string") {
           throw hiddenRecord();
         }
-        const bound = await boundToolActor(client, principal);
-        if (!bound.planning) throw hiddenRecord();
-        await admitPlanModelStep(client, bound.actor, {
-          nativeSessionId: ctx.session.id, responseAttemptId,
-          turnId, stepIndex,
+        return deferModelAdmission(parityBudgetModel(gateway(selectedModel),selectedModel),async()=>{
+          await withTransaction(async db=>{
+            const bound=await boundToolActor(db,principal);if(!bound.planning)throw hiddenRecord();
+            await admitPlanModelStep(db,bound.actor,{nativeSessionId:ctx.session.id,responseAttemptId,turnId,stepIndex});
+          });
+          return wrapPlanModel(parityBudgetModel(gateway(selectedModel),selectedModel));
         });
-        return wrapPlanModel(parityBudgetModel(gateway(selectedModel),selectedModel));
       }));
-    },
-  } }),
+  }),
   reasoning: "low",
 });

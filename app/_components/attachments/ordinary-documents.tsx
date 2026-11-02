@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { extractAttachmentText, getExtractableFileType } from "../../../lib/attachment-extract";
 import {NativeChatAttachment} from "./native-chat-attachment";
 import { attachmentLimits } from "../../../lib/conversations/attachment-text";
@@ -11,17 +11,18 @@ async function nativeFile(file:File){
  const mediaType=(file.type||'application/octet-stream').split(';')[0].toLowerCase();
  return {type:'file' as const,filename:file.name,mediaType,data:`data:${mediaType};base64,${data.slice(data.indexOf(',')+1)}`};
 }
-export function OrdinaryDocuments({ documents, onChange, onPreparingChange, disabled, buttonLabel = "Attach document", nativeFilesEnabled = false,conversationId }: {
+export function OrdinaryDocuments({ documents, onChange, onPreparingChange, disabled, buttonLabel = "Attach document", nativeFilesEnabled = false,conversationId,inputRef,hideTrigger=false,onReadyChange }: {
   documents: OrdinaryAttachment[]; onChange: (value: OrdinaryAttachment[]) => void;
   onPreparingChange: (value: boolean) => void; disabled: boolean; buttonLabel?: string; nativeFilesEnabled?: boolean;conversationId?:string;
+  inputRef?:RefObject<HTMLInputElement|null>;hideTrigger?:boolean;onReadyChange?:(ready:boolean)=>void;
 }) {
-  const input = useRef<HTMLInputElement>(null), generation = useRef(0), preparingNow = useRef(false), mounted = useRef(false);
+  const localInput = useRef<HTMLInputElement>(null),input=inputRef??localInput,generation = useRef(0), preparingNow = useRef(false), mounted = useRef(false);
   const latest = useRef({documents,onChange,onPreparingChange,disabled,nativeFilesEnabled});
   latest.current={documents,onChange,onPreparingChange,disabled,nativeFilesEnabled};
   const [ready,setReady]=useState(false);
   const [preparing, setPreparing] = useState(false), [error, setError] = useState("");
   useEffect(() => {
-    mounted.current=true;setReady(true);
+    mounted.current=true;setReady(true);onReadyChange?.(true);
     const form=input.current?.closest('form.chat-composer');
     const pasted=(event:Event)=>{
       if(!(event.target instanceof HTMLTextAreaElement)||event.target.getAttribute('aria-label')!=='Message Turi')return;
@@ -42,9 +43,9 @@ export function OrdinaryDocuments({ documents, onChange, onPreparingChange, disa
       if(latest.current.documents.length){event.preventDefault();latest.current.onChange(latest.current.documents.slice(0,-1));}
     };
     form?.addEventListener('paste',pasted);form?.addEventListener('dragover',dragged);form?.addEventListener('drop',dropped);form?.addEventListener('keydown',keydown);
-    return ()=>{mounted.current=false;generation.current++;preparingNow.current=false;latest.current.onPreparingChange(false);
+    return ()=>{mounted.current=false;onReadyChange?.(false);generation.current++;preparingNow.current=false;latest.current.onPreparingChange(false);
       form?.removeEventListener('paste',pasted);form?.removeEventListener('dragover',dragged);form?.removeEventListener('drop',dropped);form?.removeEventListener('keydown',keydown);};
-  }, []);
+  }, [onReadyChange]);
   async function add(files: File[]) {
     if (!mounted.current || latest.current.disabled || preparingNow.current || !files.length) return;
     const {documents,nativeFilesEnabled}=latest.current;
@@ -69,9 +70,9 @@ export function OrdinaryDocuments({ documents, onChange, onPreparingChange, disa
   return <div className="ordinary-documents">
     <input ref={input} type="file" multiple hidden accept={nativeFilesEnabled?undefined:".csv,.docx,.epub,.html,.json,.log,.md,.odp,.ods,.odg,.odt,.pdf,.pptx,.rtf,.txt,.xlsx,.xml,.yaml,.yml"}
       aria-label="Chat document files" disabled={!ready || disabled || preparing} onChange={event => { const files = Array.from(event.target.files ?? []); event.target.value = ""; void add(files); }} />
-    <button type="button" className="composer-attach" aria-label={buttonLabel} disabled={!ready || disabled || preparing} onClick={() => input.current?.click()}>
+    {!hideTrigger&&<button type="button" className="composer-attach" aria-label={buttonLabel} disabled={!ready || disabled || preparing} onClick={() => input.current?.click()}>
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9" /></svg>
-    </button>
+    </button>}
     {preparing && <span role="status">Preparing document…</span>}
     {!!documents.length && <ul className="chat-document-list" aria-label="Message attachments">{documents.map((document, index) => {
       const staged='data' in document&&'sha256' in document&&conversationId;

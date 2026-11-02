@@ -1,3 +1,4 @@
+import {specialistSessionLimits} from '../../../lib/server/research/specialists/discussion-policy';
 import { specialistModel } from "../../lib/authorize-specialist";
 import { defineAgent } from "eve";
 export default defineAgent({
@@ -5,8 +6,8 @@ export default defineAgent({
   model: specialistModel("best-practices"),
   reasoning: "high",
   defaultTools: false,
-  // The workflow caller must be able to read the completed typed result.
-  // Use the existing world retention; zero deletes it before the handoff.
+  // The supervisor validates a completed turn and its current stored receipt.
+  // Retain live turns; ended private sessions follow the trace-derived deletion policy.
   tool: false,
-  limits: { maxInputTokensPerSession: 400000, maxOutputTokensPerSession: 28000, maxTokenCostUsdPerSession: 2, sessionTimeoutMs: 600000 },
+  limits: specialistSessionLimits("best-practices"),
 });

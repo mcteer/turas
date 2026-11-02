@@ -1,3 +1,4 @@
+import {CURRENT_SCHEMA_VERSION} from '../../../lib/contracts/current-schema';
 import {it,expect,vi} from 'vitest';
 import {Client} from 'pg';
 import {productionRecoveryHttpFiles} from '../../../scripts/production-recovery-objects';
@@ -34,7 +35,7 @@ it('requires actual closed restricted runtimes and rejects serialized drill appr
    const identity=await authenticateDemoPrincipal('mcteer',process.env.TURAS_DEMO_PASSWORD!),session=await issueSession(identity!);
    expect(await productionRecoveryHttpFiles(owner,environment.environmentId,DEMO_IDS.workspace,new Headers({cookie:'__Host-turas_session='+session.token}))).toEqual([]);
    await closeRuntimePool();await owner.query('BEGIN');
-   const before=await readDrillDatabaseIdentity(owner);expect(before).toMatchObject({environmentId:environment.environmentId,schemaVersion:81,owner:true,mode:'open'});
+   const before=await readDrillDatabaseIdentity(owner);expect(before).toMatchObject({environmentId:environment.environmentId,schemaVersion:CURRENT_SCHEMA_VERSION,owner:true,mode:'open'});
    await expect(requireClosedDrillRuntime(owner)).rejects.toThrow('Legacy work runtime');
    await owner.query('ALTER ROLE turas_runtime NOLOGIN');
    await owner.query('CREATE ROLE turas_runtime_016 NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS');

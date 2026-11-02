@@ -9,7 +9,7 @@ import { conversationFeature } from "../../conversations/feature";
  * allowExpiredNotification is reserved for a trusted native task notification:
  * it permits a bounded failure explanation, never child/provider admission. */
 export async function readResearchRuntimeAuthority(db:PoolClient,attemptId:string,principalId:string,
-  lineage?:{parentSessionId:string;workerSessionId?:string;kind?:string},allowExpiredNotification=false) {
+  lineage?:{parentSessionId:string;workerSessionId?:string;kind?:string},allowExpiredNotification=false,forWrite=false) {
   const marker=(await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0];
   if((marker?.schema_version??0)<57)return null;
   const row=(await db.query(`SELECT c.id AS conversation_id,c.eve_session_id,c.customer_id,
@@ -35,7 +35,7 @@ export async function readResearchRuntimeAuthority(db:PoolClient,attemptId:strin
   const actor:CurrentSession={sessionId:row.login_session_id,token:'',expiresAt:row.expires_at,
     principalId:row.owner_principal_id,membershipId:row.membership_id,workspaceId:row.workspace_id,
     loginName:row.login_name,displayName:row.display_name,kind:row.kind,role:row.role};
-  await lockWorkspaceActor(db,actor,undefined,true);
+  await lockWorkspaceActor(db,actor,undefined,!forWrite);
   const requests=(await db.query(`SELECT account_id,scope,key,lease_id,context_hash,worker_session_id,receipt IS NOT NULL AS completed,
     least($7::timestamptz,CASE WHEN receipt IS NULL THEN CASE WHEN $9::boolean AND lease_until<=now() THEN clock_timestamp()+interval '120 seconds' ELSE lease_until END
       ELSE completed_at+interval '10 minutes' END) AS valid_until

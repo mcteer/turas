@@ -1,3 +1,4 @@
+import {legacyLineReplayKey} from './recovery-legacy-line-key';
 import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {recoveryJobReplayTables,requireRecoveryJobReplayColumns,requireRecoveryJobSemanticRows} from './recovery-job-replay-keys';
 import currentReplayTables from '../../contracts/recovery-replay-tables.json' with {type:'json'};
@@ -89,7 +90,7 @@ export async function auditRecoveredRequestFencesInTransaction(db:Client|PoolCli
     const declared=new Set((snapshot.tables.find(table=>table.name===name)?.replayKeyColumns??[]).map(columns=>JSON.stringify(columns)));
     if(declared.size!==available.size||[...available].some(columns=>!declared.has(columns)))throw Error('Complete actual business replay indexes required');
    }
-   if([...entry.columns.keys()].some(columns=>!available.has(columns)))throw Error('Actual permanent request index differs');
+   if([...entry.columns.values()].some(columns=>!available.has(JSON.stringify(columns))&&!legacyLineReplayKey(name,columns,[...available])))throw Error('Actual permanent request index differs');
    const keys=[...entry.keys.values()];
    const missing=(await db.query(`SELECT count(*)::int AS missing FROM jsonb_to_recordset($1::jsonb) expected(columns jsonb,digest text)
     WHERE NOT EXISTS(SELECT 1 FROM operations_replay_fences f WHERE f.environment_id=$2 AND f.table_name=$3 AND f.key_digest=expected.digest

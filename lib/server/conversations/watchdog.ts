@@ -5,11 +5,11 @@ import { getServerConfig } from "../config";
 import { query, withTransaction } from "../db/client";
 
 const maintenancePath = "/internal/turas/maintenance";
-const payloadSchema = z.object({
+const payloadSchema = z.union([z.object({
   action: z.enum(["reconcile", "cancel_due"]),
   attemptId: z.uuid(),
   environmentId: z.string().min(1),
-}).strict();
+}).strict(),z.object({action:z.literal("cancel_specialist"),attemptId:z.uuid(),discussionId:z.uuid(),environmentId:z.string().min(1)}).strict()]);
 
 export type MaintenancePayload = z.infer<typeof payloadSchema>;
 

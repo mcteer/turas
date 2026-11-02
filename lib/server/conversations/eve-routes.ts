@@ -1,6 +1,9 @@
+import {stopOwnedQuestionsForSteering} from './question-steering';
+import {confirmNativeEndReceipt} from './retirement-confirmation';
+import {readEveTail} from "./eve-reader";
 import type {PrepareAttemptBoundary} from './dispatch';
 import {assertNativeFileEvaluationOpen} from './native-file-policy';
-import {inputResponsesSchema,authorizeOwnedInputResponse,implicitOwnedQuestionResponse} from "./input-responses";
+import {inputResponsesSchema,nativeInteractionAnswers,authorizeOwnedInputResponse,implicitOwnedQuestionResponse} from "./input-responses";
 import {prepareOrdinarySteering,recordSteeringReceipt,markSteeringUncertain} from './steering';
 import type { EveChannel } from "eve/channels/eve";
 import { z } from "zod";
@@ -186,7 +189,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
               // pending batch. This is an owner/CSRF-checked continuation, never
               // a new chat dispatch or a model-authored approval.
               nativeOperation='input-forward';return await native(new Request(request.url,{method:"POST",headers,
-                body:JSON.stringify(responses.data)}),args);
+                body:JSON.stringify(nativeInteractionAnswers(responses.data))}),args);
             }
             if(!z.uuid().safeParse(requestKey).success)throw new HttpFailure(422,"invalid_input","Invalid request");
             const parsed = sendSchema.safeParse(decoded);
@@ -211,6 +214,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             nativeOperation='ordinary-worker';await startPreviewChatWorker(args.attachSession, args.waitUntil);
             if(parsed.data.turnPolicy==='steer'){
               if(selections.length)throw new HttpFailure(422,'steering_sources','Send new source selections after the active response');
+              await stopOwnedQuestionsForSteering(session,args.params.sessionId,args.attachSession);
               const steering=await prepareOrdinarySteering(session,conversationId!,args.params.sessionId,requestKey!,message);
               if(steering){
                 if(steering.kind==='replay')return steering.response;
@@ -236,7 +240,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
               await intakeOrdinaryAttachmentContext(session,conversationId!,attemptId);
             nativeOperation='ordinary-tail';let tailIndex: number;
             try {
-              tailIndex = await args.attachSession(args.params.sessionId).getStreamTailIndex();
+              tailIndex = await readEveTail(args.attachSession,args.params.sessionId);
             } catch {
               throw new HttpFailure(503, "native_tail_unavailable", "Service unavailable");
             }
@@ -258,7 +262,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const dispatches = prepared.governed ? 1 : 5;
             for (let retry = 0; retry < dispatches && Date.now() - started < 20_000; retry++) {
               nativeResponse = await native(new Request(request.url, {
-                method: "POST", headers, body: JSON.stringify({ message:forwarded }),
+                method: "POST", headers, body: JSON.stringify({ message:forwarded,...(parsed.data.turnPolicy?{turnPolicy:parsed.data.turnPolicy}:{}) }),
               }), args);
               if (nativeResponse.status !== 409) break;
               let rejection: unknown;
@@ -335,14 +339,15 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             let decoded: unknown;
             try { decoded = JSON.parse(raw); }
             catch { throw new HttpFailure(422, "invalid_input", "Invalid request"); }
-            const parsed = z.object({ turnId: z.string().min(1).max(200).optional(),tasks:z.boolean().optional() }).strict().refine(value=>!!value.turnId||value.tasks===true).safeParse(decoded);
+            const parsed = z.object({ turnId: z.string().min(1).max(200).nullable().optional(),tasks:z.boolean().optional() }).strict().safeParse(decoded);
             if (!parsed.success) throw new HttpFailure(422, "invalid_input", "Invalid request");
-            if(parsed.data.tasks)await requestOwnedTaskCancellation(session,args.params.sessionId);
-            else await requestCancellation(session, args.params.sessionId, parsed.data.turnId!);
+            if(parsed.data.tasks||parsed.data.turnId===undefined)await requestOwnedTaskCancellation(session,args.params.sessionId);
+            else if(parsed.data.turnId!==null)await requestCancellation(session, args.params.sessionId, parsed.data.turnId);
+            else await getOwnedConversationByNativeSession(session,args.params.sessionId);
             const headers = new Headers(request.headers);
             headers.delete("content-length");
             const response=await native(new Request(request.url, {
-              method: "POST", headers, body: JSON.stringify(parsed.data),
+              method: "POST", headers, body: JSON.stringify(parsed.data.turnId!==undefined?{turnId:parsed.data.turnId}:{}),
             }), args);
             if(response.ok){
               const receipt:unknown=await response.clone().json().catch(()=>null);
@@ -355,8 +360,8 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
           }
         } };
       }
-      if (route.method === "POST" && route.path === "/eve/v1/session/:sessionId/reset") {
-        const native = route.handler;
+      if (route.method === "POST" && ["/eve/v1/session/:sessionId/reset","/eve/v1/session/:sessionId/end"].includes(route.path)) {
+        const native=route.handler;
         return { ...route, handler: async (request, args) => {
           try {
             const sessionId = args.params.sessionId;
@@ -364,7 +369,7 @@ export function composeEveRoutes(channel: EveChannel): EveChannel {
             const governed=await authorizeNativeRetirement(request,sessionId) || await authorizeExecutionRetirement(request,sessionId) || await authorizeSupportRetirement(request,sessionId) || await authorizeExpansionRetirement(request,sessionId) || await authorizeLearningRetirement(request,sessionId);
             const ordinary=!governed && (await authorizeOrdinaryNativeRetirementRecovery(request,sessionId) || await authorizeOwnedOrdinaryRetirement(request,sessionId));
             if(!governed&&!ordinary)return closed();
-            const response=await native(request,args);
+            const response=await confirmNativeEndReceipt(sessionId,await native(request,args));
             if(ordinary)await reconcileOwnedOrdinaryRetirement(request,sessionId,response);
             return response;
           } catch (error) { return nativeFailure(error); }

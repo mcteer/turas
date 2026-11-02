@@ -15,7 +15,7 @@ import { authorizeLearningRetirement } from '../../lib/server/learning/native-re
 import {authorizeOrdinaryNativeRetirementRecovery} from "../../lib/server/conversations/native-retirement-recovery";
 
 const appCookieAuth: AuthFn<Request> = async (request): Promise<Awaited<ReturnType<AuthFn<Request>>>> => {
-  const retirementSession = new URL(request.url).pathname.match(/^\/eve\/v1\/session\/(wrun_[A-Za-z0-9_-]+)\/reset$/);
+  const retirementSession = new URL(request.url).pathname.match(/^\/eve\/v1\/session\/(wrun_[A-Za-z0-9_-]+)\/(?:reset|end)$/);
   if (request.method === "POST" && retirementSession) {
     const principalId = await authorizeOrdinaryNativeRetirementRecovery(request,retirementSession[1]) ?? await authorizeNativeRetirement(request,retirementSession[1]) ?? await authorizeExecutionRetirement(request,retirementSession[1]) ?? await authorizeSupportRetirement(request,retirementSession[1]) ?? await authorizeExpansionRetirement(request,retirementSession[1]) ?? await authorizeLearningRetirement(request,retirementSession[1]);
     if (principalId) return { authenticator: "turas-source-retirement",
@@ -27,7 +27,7 @@ const appCookieAuth: AuthFn<Request> = async (request): Promise<Awaited<ReturnTy
   const continuation=new URL(request.url).pathname.match(/^\/eve\/v1\/session\/(wrun_[A-Za-z0-9_-]+)$/);
   if(request.method==='POST' && continuation) {
     const body:unknown=await request.clone().json().catch(()=>null);
-    if(body && typeof body==='object' && 'inputResponses' in body) {
+    if(body && typeof body==='object' && ('answers' in body||'inputResponses' in body)) {
       pendingAttempt=await ownedInputResponseAttempt(session,continuation[1],body).catch(()=>undefined);
       if(!pendingAttempt)return null;
     }

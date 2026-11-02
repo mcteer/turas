@@ -134,7 +134,7 @@ export async function runHostedRootBrowser(input:{scope:PilotHostedScope;db:Clie
  try{
   const row=await conversation();native=row.eve_session_id??native;
   if(native){
-   if(!terminalNativeRetirementReceipt(native,await nativePost('/eve/v1/session/'+encodeURIComponent(native)+'/reset',{reason:'Synthetic root transport exercise completed'},true)))throw Error('Exact native retirement receipt missing');
+   if(!terminalNativeRetirementReceipt(native,await nativePost('/eve/v1/session/'+encodeURIComponent(native)+'/end',{reason:'Synthetic root transport exercise completed'},true)))throw Error('Exact native retirement receipt missing');
    const retired=(await db.query("SELECT 1 FROM ordinary_native_retirements WHERE conversation_id=$1 AND native_session_id=$2 AND state='confirmed'",[id,native])).rowCount;
    if(!retired)throw Error('Durable native retirement unconfirmed');
   }

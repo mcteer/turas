@@ -1,9 +1,6 @@
-import {withTransaction} from '../../lib/server/db/client';
-import {redundantApprovalInstructions} from '../../lib/server/conversations/approval-continuation';
 import {defineDynamic,defineInstructions} from 'eve/instructions';
 import {responseFeature} from '../../lib/server/conversations/feature';
-export default defineDynamic({events:{async 'turn.started'(event,ctx){
+export default defineDynamic(async (ctx) => {
  if((await responseFeature(ctx.session.auth.current))?.kind!=='normal')return null;
- if(await withTransaction(db=>redundantApprovalInstructions(db,ctx.session.auth.current,ctx.session.id,event)))return null;
  return defineInstructions({role:'user',content:'For complex ordinary work, use track_tasks to keep a durable private checklist. Marking a task complete never approves customer evidence, a delivery outcome or a consequential action. For real delivery operations, use get_portfolio_summary to discover currently authorized canonical engagement IDs and explicit date scope, then get_engagement_brief for reviewed baseline, evidence, effort, owners and current proposed interventions. Use get_capacity for real dated roster/capacity. Use calculate_engagement_scenario for explicit hypothetical replacement effort and whole-engagement fee/nonlabor/rate/currency assumptions; never mix requested-period financial observations with lifetime EAC; currency amounts are minor units, missing data stays unknown and private finance stays restricted. Never substitute fictional demonstration records. Operations threads retain exact consumed source and authority fences; changed inputs can require a new conversation. Do not claim automatic in-thread refresh. To record a requested intervention decision, use only the exact current proposed scope-change ID, revision and version returned by get_engagement_brief and record_engagement_intervention with native human approval. Model wording or an approved note does not approve the intervention, assign staff or change an accepted plan.'});
-}}});
+});

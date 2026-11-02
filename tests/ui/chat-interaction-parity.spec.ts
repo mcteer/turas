@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {Client} from 'pg';
 import {test,expect,type Page} from '@playwright/test';
-import type {MessageStreamEvent} from 'eve/client';
+import {chatWireResponse,type ChatWireEvent as MessageStreamEvent} from '../fixtures/chat-wire';
 import {signIn,requireUiFixtureDatabaseUrl} from '../fixtures/ui';
 
 // Controlled fetch/fulfill handlers can outlive the last UI assertion. Settle
@@ -27,18 +27,18 @@ async function ownedChat(page:Page,events:(native:string)=>MessageStreamEvent[],
  const created=await page.request.post('/api/conversations',{headers:{origin:process.env.TURAS_UI_BASE_URL!,'x-csrf-token':csrf},data:{requestKey:randomUUID(),title:'Synthetic interaction check'}});
  expect(created.status()).toBe(201);const id=(await created.json()).data.id,native='wrun_interaction_'+randomUUID().replaceAll('-','');
  const db=new Client({connectionString:requireUiFixtureDatabaseUrl()});await db.connect();
- try{await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",[id,native]);}finally{await db.end();}
+ try{await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2,native_protocol=27 WHERE id=$1",[id,native]);}finally{await db.end();}
  // This transport-only race substitutes upload failure below. Expose its file
  // control without enabling native uploads in the shared disposable runtime.
  if(options.nativeFiles)await page.route(`**/api/conversations/${id}`,async route=>{const response=await route.fetch();const body=await response.json();body.data.canAttachNativeFiles=true;await route.fulfill({response,json:body});});
  let current=events(native),reads=0;
- await page.route(`**/eve/v1/session/${native}/stream**`,route=>{reads++;return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':String(current.length-1)},body:current.map(event=>JSON.stringify(event)).join('\n')+'\n'});});
+ await page.route(`**/eve/v1/session/${native}/stream**`,route=>{reads++;return route.fulfill(chatWireResponse(current,route.request().url()));});
  await page.goto(`/s/${id}`);await expect(page.getByLabel('Message Turi',{exact:true})).toBeEditable();
  return {id,native,setEvents:(events:MessageStreamEvent[])=>{current=events;},reads:()=>reads};
 }
 
 test('legacy file paste/drop, empty Backspace and link flow use the current composer',async({page},info)=>{
- await signIn(page,'panel');await expect(page.getByRole('button',{name:'Attach documents',exact:true})).toBeEnabled();
+ await signIn(page,'panel');await expect(page.getByRole('button',{name:'Add attachments',exact:true})).toBeEnabled();
  const composer=page.locator('form.chat-composer'),text=page.getByLabel('Message Turi',{exact:true});
  await text.fill('Keep this draft.');
  await text.evaluate(element=>{const transfer=new DataTransfer();transfer.items.add(new File(['Pasted unverified text'],'pasted.txt',{type:'text/plain'}));element.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:transfer}));});
@@ -49,7 +49,7 @@ test('legacy file paste/drop, empty Backspace and link flow use the current comp
  await expect(page.getByRole('button',{name:'Remove dropped.txt',exact:true})).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Remove pasted.txt',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Remove pasted.txt',exact:true}).click();
- await text.fill('Inspect this page.');await page.getByRole('button',{name:'Add a link',exact:true}).click();
+ await text.fill('Inspect this page.');await page.getByRole('button',{name:'Add attachments',exact:true}).click();await page.getByRole('menuitem',{name:/Add a link/}).click();
  await page.getByLabel('Link URL',{exact:true}).fill('https://example.com/reference');await page.getByRole('button',{name:'Add link',exact:true}).click();
  await expect(text).toHaveValue('Inspect this page.\nhttps://example.com/reference');
  await expect(page.getByRole('list',{name:'Message links'}).getByRole('link')).toHaveAttribute('href','https://example.com/reference');
@@ -218,7 +218,7 @@ test('first send hides the landing immediately and starts in place with one Thin
  await page.route('**/eve/v1/session',async route=>{
   if(route.request().method()!=='POST')return route.continue();
   const id=route.request().headers()['x-turas-conversation-id'];const db=new Client({connectionString:requireUiFixtureDatabaseUrl()});await db.connect();
-  try{await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",[id,native]);}finally{await db.end();}
+  try{await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2,native_protocol=27 WHERE id=$1",[id,native]);}finally{await db.end();}
   await route.fulfill({status:202,json:{sessionId:native}});
  });
  const initial=[wire('session.started',{}),wire('session.waiting',{continuationToken:native,wait:'next-user-message'})];
@@ -230,7 +230,7 @@ test('first send hides the landing immediately and starts in place with one Thin
   wire('actions.requested',{turnId:'in-place',sequence:0,stepIndex:0,actions:[{kind:'tool-call',callId:'lookup',toolName:'get_customer',input:{}}]})];
  const received=running.findIndex(e=>e.type==='message.received');running[received]={...running[received],meta:{...running[received].meta,deliveryIds:['in-place-delivery']}};
  let current=initial;
- await page.route(`**/eve/v1/session/${native}/stream**`,route=>{const start=Number(new URL(route.request().url()).searchParams.get('startIndex')??0);return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':String(current.length-1)},body:current.slice(start).map(e=>JSON.stringify(e)).join('\n')+'\n'});});
+ await page.route(`**/eve/v1/session/${native}/stream**`,route=>{return route.fulfill(chatWireResponse(current,route.request().url()));});
  await page.route(`**/eve/v1/session/${native}`,async route=>{if(route.request().method()!=='POST')return route.continue();sends++;current=running;await route.fulfill({status:202,json:{sessionId:native,deliveryId:'in-place-delivery'}});});
  try{
   const original=await page.locator('.chat-composer').boundingBox();await page.getByLabel('Message Turi',{exact:true}).fill('Synthetic in-place question');await page.getByRole('button',{name:'Send message',exact:true}).click();
@@ -259,8 +259,8 @@ test('first send hides the landing immediately and starts in place with one Thin
   const csrf=(await (await page.request.get('/api/auth/session')).json()).data.csrfToken;
   const other=await page.request.post('/api/conversations',{headers:{origin:process.env.TURAS_UI_BASE_URL!,'x-csrf-token':csrf},data:{requestKey:randomUUID(),title:'Synthetic other saved conversation'}});
   expect(other.status()).toBe(201);const otherId=(await other.json()).data.id,otherNative='wrun_other_'+randomUUID().replaceAll('-','');
-  const db=new Client({connectionString:requireUiFixtureDatabaseUrl()});await db.connect();try{await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2 WHERE id=$1",[otherId,otherNative]);}finally{await db.end();}
-  const saved=transcript(otherNative,'A different saved answer.');await page.route(`**/eve/v1/session/${otherNative}/stream**`,route=>route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':String(saved.length-1)},body:saved.map(e=>JSON.stringify(e)).join('\n')+'\n'}));
+  const db=new Client({connectionString:requireUiFixtureDatabaseUrl()});await db.connect();try{await db.query("UPDATE conversations SET binding_state='bound',eve_session_id=$2,native_protocol=27 WHERE id=$1",[otherId,otherNative]);}finally{await db.end();}
+  const saved=transcript(otherNative,'A different saved answer.');await page.route(`**/eve/v1/session/${otherNative}/stream**`,route=>route.fulfill(chatWireResponse(saved,route.request().url())));
   await page.goto('/s/'+otherId);
   await expect(page.getByText('A different saved answer.',{exact:true})).toBeVisible({timeout:15000});await expect(page.getByRole('heading',{name:'Turi',exact:true})).toHaveCount(0);expect(sends).toBe(1);
   await page.goBack();await expect(page.getByText('Final in-place answer.',{exact:true})).toBeVisible({timeout:15000});expect(sends).toBe(1);
@@ -276,8 +276,10 @@ test('a broken stream reconnects by read only and displays only the final answer
  const final=completed.find(e=>e.type==='message.completed'&&e.data.message==='Final answer after reconnect.');if(final?.type==='message.completed')final.data.stepIndex=1;
  await page.route(`**/eve/v1/session/${chat.native}`,route=>{if(route.request().method()==='POST')sends++;return route.fulfill({status:500,json:{code:'unexpected_send'}});});
  await page.route(`**/eve/v1/session/${chat.native}/stream**`,route=>{
-  if(++streamReads<=2)return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':'0'},body:'broken transport frame\n'});
-  return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':String(completed.length-1)},body:completed.map(e=>JSON.stringify(e)).join('\n')+'\n'});
+  // v27 ignores unknown lines while advancing their source cursor. A failed
+  // HTTP read exercises transport recovery without fabricating consumed lines.
+  if(++streamReads<=2)return route.fulfill({status:503,json:{code:'synthetic_stream_unavailable'}});
+  return route.fulfill(chatWireResponse(completed,route.request().url()));
  });
  await page.reload();await expect(page.getByText('Final answer after reconnect.',{exact:true})).toBeVisible({timeout:15000});
  await expect(page.getByText('Intermediate model narration.',{exact:true})).toHaveCount(0);await expect(page.locator('.chat-thinking')).toHaveCount(0);
@@ -287,14 +289,14 @@ test('a broken stream reconnects by read only and displays only the final answer
 
 test('customer picker searches, supports keyboard selection and clears without losing the draft',async({page},info)=>{
  await signIn(page,'panel');await page.goto('/s');
- const trigger=page.getByRole('button',{name:'Customer (optional)',exact:true});
+ const trigger=page.getByRole('button',{name:'Customer',exact:true});
  await expect(trigger).toBeEnabled();await page.getByLabel('Message Turi',{exact:true}).fill('Preserve my question.');
  await trigger.click();const search=page.getByRole('combobox',{name:'Search customers',exact:true});
  await expect(search).toBeFocused();await search.fill('ced');await expect(page.getByRole('option',{name:'Cedar (synthetic)',exact:true})).toBeVisible();await expect(page.getByRole('option',{name:/Harbor/})).toHaveCount(0);
  await search.press('Enter');await expect(trigger).toHaveText('Cedar (synthetic)');await expect(trigger).toBeFocused();
  await expect(page.getByLabel('Message Turi',{exact:true})).toHaveValue('Preserve my question.');
  await trigger.click();await search.fill('no-matching-synthetic-account');await expect(page.getByText('No customers found.',{exact:true})).toBeVisible();await search.press('Escape');await expect(trigger).toBeFocused();
- await trigger.click();await search.fill('general');await search.press('Enter');await expect(trigger).toHaveText('Customer (optional)');
+ await trigger.click();await search.fill('general');await search.press('Enter');await expect(trigger).toHaveText('Customer');
  await trigger.click();await search.fill('ced');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:`local-artifacts/019/customer-picker-${info.project.name}.png`,fullPage:false});
@@ -311,9 +313,39 @@ test('customer picker searches authorized customers beyond the first directory p
   if(cursor){expect(cursor).toBe('fixture-next-page');laterReads++;}
   return route.fulfill({status:200,json:{data:{items:cursor?[last]:first,nextCursor:cursor?null:'fixture-next-page'}}});
  });
- await page.goto('/s');const trigger=page.getByRole('button',{name:'Customer (optional)',exact:true});
+ await page.goto('/s');const trigger=page.getByRole('button',{name:'Customer',exact:true});
  await expect(trigger).toBeEnabled();await trigger.click();
  await page.getByRole('combobox',{name:'Search customers',exact:true}).fill('Zinnia');
  await page.getByRole('option',{name:last.displayName,exact:true}).click();
  await expect(trigger).toHaveText(last.displayName);expect(laterReads).toBe(1);
+});
+
+test('specialist Stop targets one task and preserves the composer through reload',async({page},info)=>{
+ const chat=await ownedChat(page,native=>transcript(native,'Synthetic specialist progress.'));
+ const first=randomUUID(),second=randomUUID(),updatedAt=new Date().toISOString();
+ let stopped=false,confirmed=false,stops=0;
+ const items=()=>[
+  {discussionId:first,assignmentId:randomUUID(),specialistKind:'customer-update',state:confirmed?'cancelled':stopped?'stopping':'working',canContinue:false,canCancel:!stopped,reasonCode:confirmed?'cancelled':stopped?'stopping':'running',updatedAt},
+  {discussionId:second,assignmentId:randomUUID(),specialistKind:'solution',state:'waiting_input',canContinue:false,canCancel:true,reasonCode:'question',updatedAt},
+ ];
+ await page.route(`**/api/conversations/${chat.id}/specialists`,route=>route.fulfill({status:200,json:{data:{contract:'specialist-discussions-v1',items:items()}}}));
+ await page.route(`**/api/conversations/${chat.id}/specialists/*/cancel`,async route=>{
+  expect(new URL(route.request().url()).pathname).toBe(`/api/conversations/${chat.id}/specialists/${first}/cancel`);
+  expect(Object.keys(route.request().postDataJSON())).toEqual(['requestKey']);stops++;stopped=true;
+  await route.fulfill({status:202,json:{data:{state:'stopping'}}});
+ });
+ const panel=page.getByRole('region',{name:'Specialist tasks'}),text=page.getByLabel('Message Turi',{exact:true});
+ await expect(panel.getByRole('button',{name:'Stop Customer Research',exact:true})).toBeVisible();
+ await text.fill('Keep this unsent draft.');
+ await panel.getByRole('button',{name:'Stop Customer Research',exact:true}).focus();await page.keyboard.press('Enter');
+ await expect.poll(()=>stops).toBe(1);
+ await expect(panel.getByText('Customer Research — Stopping',{exact:true})).toBeVisible();
+ await expect(panel.getByRole('button',{name:'Stop Implementation Research',exact:true})).toBeEnabled();
+ await expect(text).toHaveValue('Keep this unsent draft.');
+ confirmed=true;await page.reload();
+ await expect(panel.getByText('Customer Research — Stopped',{exact:true})).toBeVisible();
+ await expect(panel.getByText('Implementation Research — Waiting for your answer',{exact:true})).toBeVisible();
+ await expect(text).toHaveValue('Keep this unsent draft.');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ await page.screenshot({path:`local-artifacts/019/specialists-${info.project.name}.png`,fullPage:true});
 });

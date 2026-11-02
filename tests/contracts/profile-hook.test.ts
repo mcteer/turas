@@ -17,11 +17,11 @@ vi.mock("../../lib/server/profiles/attempt-context", () => ({
 
 import guardCustomerContext from "../../agent/hooks/guard-customer-context";
 
-type StepHook = (event: { data: { turnId: string } }, context: {
+type StepHook = (event: { scope: { turnId: string } }, context: {
   session: { auth: { current: { principalId: string; attributes: { turasAttemptId: string } } } },
 }) => Promise<void>;
-const step = (guardCustomerContext as unknown as { events: { "step.started": StepHook } })
-  .events["step.started"];
+const step = (guardCustomerContext as unknown as { events: { "model.requested": StepHook } })
+  .events["model.requested"];
 
 describe("model-step context gate", () => {
   it("validates the current attempt and its exact turn injection on every step", async () => {
@@ -32,18 +32,18 @@ describe("model-step context gate", () => {
     gate.receipts = 0;
     gate.queries = 0;
     gate.invalidAttempt = true;
-    await expect(step({ data: { turnId: "synthetic-turn-1" } }, context))
+    await expect(step({ scope: { turnId: "synthetic-turn-1" } }, context))
       .rejects.toThrow("Synthetic context expired");
     expect(gate.queries).toBe(0);
     gate.invalidAttempt = false;
-    await expect(step({ data: { turnId: "synthetic-turn-1" } }, context))
+    await expect(step({ scope: { turnId: "synthetic-turn-1" } }, context))
       .rejects.toThrow("Customer context was not injected");
     expect(gate.checked).toBe(2);
     expect(gate.queries).toBe(1);
     gate.receipts = 1;
-    await expect(step({ data: { turnId: "synthetic-turn-1" } }, context))
+    await expect(step({ scope: { turnId: "synthetic-turn-1" } }, context))
       .resolves.toBeUndefined();
-    await expect(step({ data: { turnId: "synthetic-turn-2" } }, context))
+    await expect(step({ scope: { turnId: "synthetic-turn-2" } }, context))
       .resolves.toBeUndefined();
     expect(gate.checked).toBe(4);
   });

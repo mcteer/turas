@@ -52,6 +52,7 @@ async function directory(context:BrowserContext){const items:Array<{id:string;di
  const response=await context.request.get('/api/customers?limit=50'+(cursor?'&cursor='+encodeURIComponent(cursor):''));if(!response.ok())throw Error('Hosted directory unavailable');const data=(await response.json()).data;items.push(...data.items.filter((item:{synthetic:boolean})=>!item.synthetic));cursor=data.nextCursor;if(!cursor)return items.sort((a,b)=>a.id.localeCompare(b.id));}throw Error('Hosted directory exceeded bound');}
 async function profile(context:BrowserContext,id:string){const response=await context.request.get('/api/customers/'+id+'/profile');if(!response.ok())throw Error('Hosted profile unavailable');return(await response.json()).data;}
 function factsDigest(data:any){const sources=data.attributedResearch.map((row:any)=>({id:row.sourceRevisionId,title:row.title,location:row.location,claim:row.supportedClaim,publicationAt:row.publicationAt,observationAt:row.observationAt,retrievalAt:row.retrievalAt})).sort((a:any,b:any)=>a.id.localeCompare(b.id));return createHash('sha256').update(JSON.stringify({customer:data.customer,workloads:data.workloads,acceptedFacts:data.acceptedFacts.map((row:any)=>({id:row.id,kind:row.kind,payload:row.payload,workloadId:row.workloadId,audience:row.audience})),sources})).digest('hex');}
+let primaryFailure:unknown;
 try{
  const preview=await signedIn(options.origin,true),production=await signedIn('https://www.turas.dev');
  await signedIn(branchOrigin,true);
@@ -75,7 +76,7 @@ try{
   customers.push({name,researchCount:data.attributedResearch.length,productionResearchMatches:true,overviewFirst:true,productsVisible:true,sourceDetailsReady:true,sandboxSearchResults:found.results.length,searchMode:found.mode});
  }
  const receipt={gate:'customer-profile-hosted-preview',id:randomUUID(),origin:options.origin,commit:options.commit,verifiedAt:new Date().toISOString(),actualHttpData:true,responseSubstitution:false,browserFormLogin:true,branchOrigin,branchLogin:true,realCustomerCount:previewCustomers.length,directoryMatchesProduction:true,webkit:true,customers};await writeFile(join(root,'receipt.json'),JSON.stringify(receipt),{mode:0o600});console.log(JSON.stringify(receipt));
-}finally{
+}catch(error){primaryFailure=error;throw error;}finally{
  let cleanupFailed=false;for(const session of sessions){try{if(!session.csrf){const current=await session.context.request.get('/api/auth/session',{maxRedirects:0});if(current.ok())session.csrf=(await current.json()).data?.csrfToken??'';if(!session.csrf)throw Error('Session cleanup token unavailable');}const response=await session.context.request.post('/api/auth/logout',{headers:{Origin:session.origin,'x-csrf-token':session.csrf}});if(!response.ok())cleanupFailed=true;}catch{cleanupFailed=true;}}
- await Promise.all(contexts.map(context=>context.close()));await browser.close();if(cleanupFailed)throw Error('Hosted test session cleanup failed');
+ await Promise.all(contexts.map(context=>context.close()));await browser.close();if(cleanupFailed){if(!primaryFailure)throw Error('Hosted test session cleanup failed');console.error(JSON.stringify({kind:'hosted_profile_cleanup_incomplete',primaryFailurePreserved:true}));}
 }

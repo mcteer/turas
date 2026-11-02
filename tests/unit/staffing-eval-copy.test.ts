@@ -51,12 +51,12 @@ describe("original-allowance owned filesystem setup", () => {
       await expect(withOwnedNestedCloneCallback({...proof,created:false},async()=>undefined,env)).rejects.toMatchObject({code:'OWNED_NESTED_CLONE_IDENTITY'});
       await expect(withOwnedNestedCloneCallback({...proof,readback:{...proof.readback,owner_marker:'foreign'}},async()=>undefined,env)).rejects.toMatchObject({code:'OWNED_NESTED_CLONE_IDENTITY'});
       const foreign={...env,DATABASE_URL:'postgresql://synthetic:synthetic@127.0.0.1:12345/production'};expect(()=>requireOwnedStaffingClone(foreign)).toThrow();
-      // Exercise the three actual owned-runtime environment expressions and a
+      // Exercise the actual owned-runtime environment expressions and a
       // real Node child. Copy children stay unpreloaded; model runtime children
       // must retain only the explicitly selected quality bootstrap.
       const runtimeSource=await readFile(resolve("scripts/plan-eval-environment.ts"),"utf8");
       const expressions=[...runtimeSource.matchAll(/env:(\{\.\.\.process\.env,[\s\S]*?\}),/g)].map(match=>match[1]);
-      expect(expressions).toHaveLength(3);
+      expect(expressions).toHaveLength(4);
       const bootstrap=join(f.root,"selected-quality-bootstrap.mjs");
       await writeFile(bootstrap,"globalThis.__selectedQualityGuardInstalled = true;\n",{mode:0o600});
       const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;

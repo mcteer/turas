@@ -28,7 +28,7 @@ export async function processExecutionNativeRetirement():Promise<boolean>{
   });
   if(!job)return false;
   try{
-    const response=await fetch(`${origin}eve/v1/session/${encodeURIComponent(job.eve_session_id)}/reset`,{method:"POST",
+    const response=await fetch(`${origin}eve/v1/session/${encodeURIComponent(job.eve_session_id)}/end`,{method:"POST",
       headers:{"content-type":"application/json",...signExecutionRetirement(job.eve_session_id,job.attempt_id)},
       body:JSON.stringify({reason:"Execution advice retention expired"}),signal:AbortSignal.timeout(5000)});
     const body=await response.text();

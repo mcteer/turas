@@ -35,7 +35,7 @@ See installed `guides/frontend/nextjs.mdx` and `guides/frontend/overview.mdx`.
 | --- | --- | --- |
 | Agent core | Existing eve runtime, AI SDK and AI Gateway | Scaffold exists; no model changes in 001 |
 | Web app and previews | Next.js + Vercel hosting through eve | 002, after compatibility review of `channel/web` |
-| Identity | Three demo logins with shared server authorization; full provider integration deferred | 002 uses mcteer (internal admin), panel (internal employee) and partner (external member) per user clarification; platform protection is not app authorization |
+| Identity | Three configured application accounts with shared server authorization; full provider integration deferred | 002 uses mcteer (internal admin), panel (internal employee) and partner (external member) per user clarification; platform protection is not app authorization |
 | Authoritative records | Local Postgres 17 for 002; Neon selected for future hosted storage | Explicit migrations and isolated resources; no hosted provisioning in planning |
 | Semantic search | Postgres pgvector plus full-text retrieval | 005, only after scoped evidence contracts exist |
 | Private artifacts | Private local filesystem adapter in 004; private Vercel Blob proposed for hosted readiness | 004 validates local authorization/lifecycle; hosted adapter only when provisioned and exercised |

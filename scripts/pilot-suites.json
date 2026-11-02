@@ -2224,12 +2224,13 @@
     },
     {
       "file": "tests/unit/pilot/native-model-routing.test.ts",
-      "expectedCases": 4,
+      "expectedCases": 5,
       "cases": [
         "serializes the actual session selection with the same model and request-local Anthropic-only route",
         "passes the route through the actual support guard without replacing the model or permitting a second generate call",
         "preserves the same route and shared no-replay guard for streaming calls",
-        "serializes the selection through the installed Gateway SDK for generate and stream without real network access"
+        "serializes the selection through the installed Gateway SDK for generate and stream without real network access",
+        "passes upcoming zero-based model ordinals into governed admission before request facts exist"
       ]
     },
     {
@@ -2262,6 +2263,20 @@
       "cases": [
         "binds an isolated drill to actual provider readback and refuses Production or pre-start targets",
         "requires actual closed restricted runtimes and rejects serialized drill approval without changing control"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-specialist-accounting.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "restores a real older dump without replenishing specialist caps or replaying a native step"
+      ]
+    },
+    {
+      "file": "tests/integration/pilot/recovery-legacy-line.test.ts",
+      "expectedCases": 1,
+      "cases": [
+        "keeps old whole-line denials across fact-index migration and audits inherited fences"
       ]
     }
   ],

@@ -16,7 +16,7 @@ import {readLearningEvaluation} from '../lib/server/learning/evaluation-captures
 import {prepareLearningEvaluationArm} from '../lib/server/learning/evaluation';
 import type {CurrentSession} from '../lib/server/auth/sessions';
 import {featureSourceDigest} from './execution-source-digest';
-import {learningNativeAssertion} from './learning-native-diagnostics';
+import {learningNativeCleanupMetadata,learningNativeAssertion} from './learning-native-diagnostics';
 const assert=(value:unknown,message:string)=>{if(!value){console.error(JSON.stringify(learningNativeAssertion(message)));throw Error(message);}};
 if(process.argv.length!==2)throw Error('Learning native acceptance takes no filters');
 const digest=await featureSourceDigest('014');let checks=0;
@@ -29,7 +29,7 @@ await withLearningEnvironment(async environment=>{
   const cookie=`turas_session=${actor.token}`,session=await fetch(`${environment.origin}/api/auth/session`,{headers:{cookie}}),auth=await session.json();assert(session.ok&&auth.data?.csrfToken,'Native learning auth required');
   const headers={cookie,origin:environment.origin,'content-type':'application/json','x-csrf-token':String(auth.data.csrfToken),'x-turas-conversation-id':meta.conversationId};
   const bind=await fetch(`${environment.origin}/eve/v1/session`,{method:'POST',headers,body:JSON.stringify({operationId:meta.operationId}),signal:AbortSignal.timeout(20000)}),binding=await bind.json().catch(()=>({}));assert(bind.ok&&binding.sessionId,'Native learning session binding failed');
-  const response=await fetch(`${environment.origin}/eve/v1/session/${binding.sessionId}`,{method:'POST',headers:{...headers,'x-turas-request-key':meta.nativeRequestId},body:JSON.stringify({message:prompt}),signal:AbortSignal.timeout(45000)});if(!response.ok){let code='unknown';try{const body=await response.json();if(typeof body?.error?.code==='string'&&/^[a-z_]{1,80}$/.test(body.error.code))code=body.error.code;}catch{}throw Error(`Native learning dispatch denied (${response.status}; ${code})`);}
+  const response=await fetch(`${environment.origin}/eve/v1/session/${binding.sessionId}`,{method:'POST',headers:{...headers,'x-turas-request-key':meta.nativeRequestId},body:JSON.stringify({message:prompt}),signal:AbortSignal.timeout(45000)});if(!response.ok){let code='unknown';try{const body=await response.json();if(typeof body?.error?.code==='string'&&/^[a-z_]{1,80}$/.test(body.error.code))code=body.error.code;}catch{}const failure=`Native learning dispatch denied (${response.status}; ${code})`;console.error(JSON.stringify(learningNativeAssertion(failure)));throw Error(failure);}
   if(response.body){const reader=response.body.getReader();let bytes=0;try{for(;;){const part=await reader.read();if(part.done)break;bytes+=part.value.byteLength;assert(bytes<=2097152,'Native stream exceeds fixture bound');}}finally{await reader.cancel();}}
   return binding.sessionId as string;
  }
@@ -81,7 +81,16 @@ await withLearningEnvironment(async environment=>{
   if(hostedMaintenanceTicks===1&&Date.now()>=nextHostedTick)await hostedTick();
   await new Promise(r=>setTimeout(r,200));
  }
- if(retiredCount!==22)console.info(JSON.stringify({kind:'learning_native_cleanup_incomplete',retiredCount:Math.min(999,retiredCount),expected:22,ticks:hostedMaintenanceTicks}));
+ if(retiredCount!==22){try{
+  const jobs=await withLearningDatabase(async db=>(await db.query(`SELECT a.purpose,m.mode,a.state AS "attemptState",j.state AS "jobState",j.attempts,
+   GREATEST(0,extract(epoch FROM(j.next_attempt_at-clock_timestamp()))*1000)::float8 AS "nextEligibleInMs",j.due_at<=clock_timestamp() AS due,
+   a.native_session_id IS NOT NULL AS "nativeSessionBound",a.native_turn_id IS NOT NULL AS "nativeTurnBound",r.dispatch_state AS "dispatchState",r.native_response_status AS "nativeResponseStatus",a.model_steps AS "modelSteps",false AS "receiptPresent"
+   FROM learning_attempts a LEFT JOIN learning_cleanup_jobs j ON j.owner_kind='attempt' AND j.owner_id=a.id
+   LEFT JOIN response_attempts r ON r.id=a.response_attempt_id LEFT JOIN learning_native_fixture_modes m ON m.customer_id=a.customer_id
+   WHERE NOT EXISTS(SELECT 1 FROM learning_native_retirement_receipts receipt WHERE receipt.attempt_id=a.id) ORDER BY a.purpose,a.id LIMIT 22`)).rows);
+  const diagnostic=learningNativeCleanupMetadata({retiredCount,ticks:hostedMaintenanceTicks,jobs});
+  await mkdir('local-artifacts/014',{recursive:true,mode:0o700});await writeFile('local-artifacts/014/native-cleanup-diagnostic-private.json',JSON.stringify(diagnostic),{mode:0o600});console.info(JSON.stringify(diagnostic));
+ }catch{console.info(JSON.stringify({kind:'learning_native_cleanup_diagnostic_unavailable'}));}}
  assert(retiredCount===22,'Actual hosted adapter must retire all owned native sessions');
  const mcpDeadline=Date.now()+35000;for(;;){const purged=await withLearningDatabase(async db=>{const row=(await db.query('SELECT credential_hash,revoked_at FROM mcp_connections WHERE id=$1',[mcpProbe.connection.id])).rows[0];return row?.credential_hash===null&&!!row.revoked_at;});if(purged)break;assert(Date.now()<mcpDeadline,'Actual disabled hosted adapter must purge revoked MCP hashes');await new Promise(r=>setTimeout(r,200));}await withLearningDatabase(async db=>{assert((await db.query('SELECT count(*)::int n FROM mcp_management_receipts WHERE connection_id=$1',[mcpProbe.connection.id])).rows[0].n===2,'Hosted cleanup must retain exact create/revoke receipts');});checks++;
  // Run the same cleanup implementation against the real owned eve service.

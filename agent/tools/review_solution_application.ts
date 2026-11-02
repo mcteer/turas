@@ -12,8 +12,8 @@ const authoredTool=defineTool({
   description: "Separately approve or withdraw a target-account adaptation of an exact solution pattern version. Inspect current target context hash and application version first. Requires evidence and adaptation for all six fit dimensions, validation plan and target-steward approval. This records a reviewed plan, not deployment authorization, commercial commitment or proven outcomes. Reuse requestId only for an identical retry.",
   inputSchema: z.object({ accountId: accountIdSchema, command: applicationCommandSchema }).strict(),
   outputSchema: z.object({ status: z.enum(["updated", "denied", "unavailable"]), receipt: z.object({ applicationId: z.uuid(), version: z.number().int(), action: z.string() }).nullable(), reason: z.string() }),
-  approval: { request: always(), response: async ({ responder, request }) => {
-    const identity = await researchHumanResponderIdentity(responder).catch(()=>null);
+  approval: { request: always(), response: async ({ response, request }) => {
+    const identity = await researchHumanResponderIdentity(response.principal).catch(()=>null);
     if (!identity || !request.toolInput) return { status: "rejected", reason: "The account steward must approve this exact change." };
     try {
       const canWrite = await canReviewWorkspaceSolution(identity, request.toolInput.accountId);

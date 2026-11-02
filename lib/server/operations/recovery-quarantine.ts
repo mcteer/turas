@@ -1,3 +1,4 @@
+import {retireRecoveredSpecialists} from './recovery-specialist-accounting';
 import {CURRENT_SCHEMA_VERSION} from '../../contracts/current-schema';
 import {requireAuthenticatedRetainedDenials,type RetainedWorkDenials} from '../../../scripts/pilot-denial-reader';
 import {reconcileOwnedCredentialDenialsInTransaction,reconcileAuthenticatedWorkCredentialDenialsInTransaction} from './recovery-credential-denials';
@@ -59,6 +60,11 @@ async function quarantineAuthority(db:Client|PoolClient,raw:z.infer<typeof scope
    FROM parity_evaluation_operations o JOIN parity_evaluation_budgets b ON b.id=o.budget_id WHERE b.environment_id=$1 AND o.settled_at IS NULL
    ON CONFLICT(environment_id,operation_kind,operation_id) DO NOTHING`,[scope.environmentId,scope.recoveryId,scope.controlRevision]);
   await db.query("UPDATE parity_evaluation_budgets SET state='closed' WHERE environment_id=$1 AND state='open'",[scope.environmentId]);
+  await db.query(`INSERT INTO operations_recovery_model_holds(environment_id,operation_kind,operation_id,scope_id,discussion_id,assignment_id,native_step_key,ceiling_input_tokens,ceiling_output_tokens,ceiling_micro_usd,actual_input_tokens,actual_output_tokens,actual_micro_usd,completed_at,settled_at,evidence_digest,evidence_digest_kind,source_captured_at,recovery_id,control_revision)
+   SELECT $1,'specialist',o.id,d.conversation_id,o.discussion_id,o.assignment_id,o.native_step_key,o.ceiling_input_tokens,o.ceiling_output_tokens,o.ceiling_micro_usd,o.actual_input_tokens,o.actual_output_tokens,o.actual_micro_usd,o.completed_at,o.settled_at,encode(sha256(convert_to(to_jsonb(o)::text,'UTF8')),'hex'),'operation_row',clock_timestamp(),$2,$3
+   FROM specialist_operations o JOIN specialist_discussions d ON d.id=o.discussion_id WHERE d.environment_id=$1
+   ON CONFLICT(environment_id,operation_kind,operation_id) DO NOTHING`,[scope.environmentId,scope.recoveryId,scope.controlRevision]);
+  await retireRecoveredSpecialists(db,scope.environmentId);
   const learningHolds=await db.query(`INSERT INTO operations_recovery_paid_holds(reservation_id,environment_id,recovery_id,control_revision)
    SELECT r.id,$1,$2,$3 FROM learning_budget_reservations r JOIN learning_attempts a ON a.id=r.attempt_id
    WHERE a.environment_id=$1 AND NOT EXISTS(SELECT 1 FROM learning_budget_settlements s WHERE s.reservation_id=r.id)

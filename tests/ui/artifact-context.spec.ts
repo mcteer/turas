@@ -29,7 +29,8 @@ test("exact source selection prepares a file-only chat draft", async ({ page }, 
       origin: "native",ocrConfidence: null,hidden: false,formula: null }],nextCursor: null } }) }));
   await page.goto("/s");
   await selectCustomer(page,"Cedar (synthetic)");
-  await page.getByRole("button", { name: "Customer sources" }).click();
+  await page.getByRole("button", { name: "Add attachments", exact: true }).click();
+  await page.getByRole("menuitem", { name: /Customer sources/ }).click();
   await page.getByRole("button", { name: "Attach to this chat" }).click();
   await page.getByRole("button", { name: "Inspect source" }).click();
   await page.getByLabel("Include unit 1 in draft chat context").check();
