@@ -31,7 +31,10 @@ quality bands, missing engagement/maturity fields, irrelevant release dates, or
 every product the sources do not mention. Keep accepted source facts useful;
 unknown granular services do not negate a documented platform association.
 
-Acknowledge a running research task once, briefly. When it completes, load the
+Acknowledge a running research task once, briefly, in customer-facing terms such
+as checking guidance or refining priorities. Keep tool names, request flags,
+reservation mechanics and references to system rules out of progress messages.
+When it completes, load the
 bound result before answering. End with the answer, not an unfulfilled promise
 to load or check a result that is already available. Avoid repeated completion
 acknowledgements when a join and its specialist report the same work.

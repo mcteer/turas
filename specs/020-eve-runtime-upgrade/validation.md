@@ -4,6 +4,25 @@
 
 ### Server-Authoritative Best-Practices Handoff
 
+Exact7b62 Preview (`https://turas-jxqtoc9g2-turas-6e414af3.vercel.app`) passes the
+strict actual-provider exercise: two completed assignments reuse one child and
+workflow with unchanged expiry; both actual stored-brief reads and both cited
+final answers are verified. There are two canonical user messages, keyboard Close
+has actual terminal evidence, the draft survives, and parent retirement returns202.
+All9 specialist model operations have measured receipts (121,695microUSD); the
+two completed embeddings retain28microUSD of unknown monetary holds. No unknown
+cost is released. Independent rendered review confirms sensible downtime
+priorities, checked citations, explicit gaps and customer-data separation.
+
+Existing mcteer credentials, all four composer layouts, real Production/Preview
+Customer Profiles comparison and eight clean captured surfaces pass on7b62.
+Vercel's request-only automation header removes its Preview toolbar for capture;
+send hit testing passes in four layouts without app CSS or project changes.
+Mobile profile captures cover the first viewport. A minor internal-flag phrase in
+intermediate progress prompted a content-only instruction to use customer-facing
+progress; final frozen-source checks remain required. T052 is complete from the
+actual governed handoff/useful-answer evidence. Production is still unchanged.
+
 The reliable fb10 hosted reproduction narrows the failure to a schema-related
 native handoff after the current finalization receipt was committed. It supplies
 no JSON issue fields and does not establish the exact underlying exception. The
