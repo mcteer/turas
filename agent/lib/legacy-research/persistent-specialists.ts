@@ -3,7 +3,7 @@ import {getWorkflowMetadata,sleep,createHook,type WorkflowHook} from 'eve/workfl
 import type {SpecialistOutcome} from '../../../lib/server/research/specialists/discussion-results';
 import type {SpecialistKind} from '../../../lib/contracts/specialist-discussions';
 import {specialistResults} from './specialist-results';
-import {logSpecialistFailure} from '../../../lib/server/research/specialists/discussion-diagnostics';
+import {logSpecialistFailure,logSpecialistChildResult} from '../../../lib/server/research/specialists/discussion-diagnostics';
 
 type Input={message:string};
 type Context=WorkflowServeContext<SpecialistOutcome>;
@@ -85,7 +85,8 @@ export async function serveSpecialist(kind:SpecialistKind,receive:WorkflowServeR
     const outcome=await Promise.race([work,deadline,stopped!]);
     if('stopped' in outcome){await close(workflowRunId,parentSessionId,owner,'cancelled');ctx.reply({...unavailable(kind),reason:'This specialist was stopped at its owner’s request. Do not automatically restart it.'});return;}
     if('expired' in outcome){await close(workflowRunId,parentSessionId,owner,'expired');ctx.reply(unavailable(kind));return;}
-    if(outcome.status!=='completed'){logSpecialistFailure(kind,'child-result',outcome.error);await close(workflowRunId,parentSessionId,owner,'failed');ctx.reply(unavailable(kind));return;}
+    logSpecialistChildResult(kind,outcome,current.abortSignal.aborted);
+    if(outcome.status!=='completed'){await close(workflowRunId,parentSessionId,owner,'failed');ctx.reply(unavailable(kind));return;}
     const output=configuration.schema.parse(outcome.data);
     const result=await publish(kind,await parentConversation(ctx),admitted.discussionId,admitted.assignmentId,output,ctx);
     ctx.reply(result);

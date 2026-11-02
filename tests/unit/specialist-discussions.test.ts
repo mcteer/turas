@@ -1,4 +1,4 @@
-import {describe,expect,it} from 'vitest';
+import {describe,expect,it,vi} from 'vitest';
 import {remainingSpecialistAllowance,assertSpecialistReservation} from '../../lib/server/research/specialists/discussion-budget';
 const limit={inputTokens:100,outputTokens:100,microUsd:100};
 const first={id:'first',ceiling:{inputTokens:40,outputTokens:40,microUsd:40},actual:null};
@@ -65,4 +65,15 @@ it('does not replace a primary failure when exception metadata is unreadable',as
  const {specialistFailureMetadata}=await import('../../lib/server/research/specialists/discussion-diagnostics');
  const unreadable=new Proxy({},{get(){throw Error('PRIVATE_ERROR_GETTER');}});
  expect(specialistFailureMetadata('best-practices','workflow',unreadable)).toMatchObject({code:'unknown',failureClass:'unknown'});
+});
+it('distinguishes cancellation from failure without exposing child output',async()=>{
+ const {logSpecialistChildResult}=await import('../../lib/server/research/specialists/discussion-diagnostics');
+ const log=vi.spyOn(console,'warn').mockImplementation(()=>{});
+ try{
+  logSpecialistChildResult('best-practices',{status:'cancelled',sessionEnded:false},false);
+  expect(JSON.parse(log.mock.calls[0][0])).toMatchObject({kind:'specialist_child_result',status:'cancelled',sessionEnded:false,signalAborted:false});
+  logSpecialistChildResult('solution',{status:'failed',sessionEnded:true,error:{message:'PRIVATE_OUTPUT'}},true);
+  expect(JSON.stringify(log.mock.calls)).not.toContain('PRIVATE_OUTPUT');
+  expect(JSON.parse(log.mock.calls[1][0])).toMatchObject({status:'failed',sessionEnded:true,signalAborted:true});
+ }finally{log.mockRestore();}
 });

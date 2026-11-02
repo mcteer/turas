@@ -2,6 +2,18 @@
 
 ## Current Acceptance State
 
+### Child Terminal Status Follow-up
+
+The a064 Preview passes the existing mcteer credential, four composer layouts,
+account terminology and authenticated Production/Preview profile comparison.
+Compatibility CI is green. Its strict specialist refinement still fails at the
+child-result boundary. Error-only diagnostics cannot distinguish a cancelled
+result (which has no error) from an unknown failure. The follow-up records only
+terminal status, session-ended and call-aborted booleans, including the first
+completed handoff, and fixed native usage-limit booleans on unsuccessful turns.
+No reply, structured output, error prose, identifiers or credentials are logged.
+Limits, models, clocks, retries and accounting remain unchanged; T052 stays open.
+
 ### Native Fixture Isolation, Restarted Route Readiness and Safe Failure Codes
 
 The416 hosted refinement now has its own completed cache receipt, so the

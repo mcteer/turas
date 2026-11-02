@@ -1,4 +1,7 @@
 import {defineHook} from 'eve/hooks';
+import {usage} from 'eve/events';
+import {specialistPolicies} from '../../../lib/server/research/specialists/discussion-policy';
+import {specialistFailureMetadata} from '../../../lib/server/research/specialists/discussion-diagnostics';
 import {withTransaction} from '../../../lib/server/db/client';
 import {authorizeSpecialistWorker} from '../../../lib/server/research/specialists/discussions';
 import type {SpecialistKind} from '../../../lib/contracts/specialist-discussions';
@@ -15,5 +18,13 @@ export function researchTurnHook(kind:SpecialistKind){
   researchState.update(current=>({...current,context:null,mode:kind,requestTicket:{key:assignment.research_key,lease:assignment.lease_id},requestScope:undefined,
    finalized:false,customerRecon:undefined,customerUpdateRevisionCallId:undefined,solutionRevisionCallId:undefined,
    startedAt:bound.discussion.created_at.getTime()}));
- }} });
+ },'turn.settled'(event,ctx){
+  if(event.data.outcome==='completed')return;
+  try{
+   const total=usage(ctx.view).total,policy=specialistPolicies[kind];
+   console.warn(JSON.stringify({...specialistFailureMetadata(kind,'child-result',event.data.error),status:event.data.outcome,
+    inputLimitReached:total.inputTokens>=policy.inputTokens,outputLimitReached:total.outputTokens>=policy.outputTokens,
+    costLimitReached:(total.costUsd??0)*1000000>=policy.microUsd}));
+  }catch{/* A diagnostic must not affect the child's terminal outcome. */}
+ }}});
 }

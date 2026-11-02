@@ -6,7 +6,7 @@ export function specialistFailureMetadata(kind:SpecialistKind,stage:'model-admis
  try{
  const row=error&&typeof error==='object'?error as Record<string,unknown>:{};
  const code=typeof row.code==='string'&&codes.has(row.code)?row.code:'unknown';
- const text=typeof row.message==='string'?row.message.slice(0,8192):'';
+ const text=typeof error==='string'?error.slice(0,8192):typeof row.message==='string'?row.message.slice(0,8192):'';
  const failureClass=/specialist allowance|specialist_budget|budget.*exhaust/i.test(text)?'allowance':
   /prior specialist usage|usage.*unconfirmed/i.test(text)?'usage_unconfirmed':
   /source.*changed|context.*changed|no longer eligible/i.test(text)?'context':
@@ -17,6 +17,10 @@ export function specialistFailureMetadata(kind:SpecialistKind,stage:'model-admis
   /ECONN|network|socket|fetch failed|gateway|provider|service unavailable/i.test(text)?'provider':'unknown';
  return {kind:'specialist_failure' as const,specialistKind:kind,stage,code,failureClass};
  }catch{return {kind:'specialist_failure' as const,specialistKind:kind,stage,code:'unknown',failureClass:'unknown'};}
+}
+/** Only terminal enums and booleans cross this boundary; never log a reply. */
+export function logSpecialistChildResult(kind:SpecialistKind,result:{status:'completed'|'failed'|'cancelled';sessionEnded:boolean;error?:unknown},signalAborted:boolean){
+ try{console.warn(JSON.stringify({...specialistFailureMetadata(kind,'child-result',result.error),kind:'specialist_child_result',status:result.status,sessionEnded:result.sessionEnded,signalAborted}));}catch{/* Diagnostics cannot replace settlement. */}
 }
 /** Diagnostic failure must never replace the primary failure. Workflow logs can
  * repeat on replay; these are observations, never accounting or dispatch proof. */
