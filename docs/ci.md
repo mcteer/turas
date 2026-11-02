@@ -26,7 +26,9 @@ fixtures, schemas and lockfiles remain bound. Only explicitly supported scheduli
 wrappers are normalized. Changes to the underlying execution contract require
 fresh broad checks.
 
-PR reuse binds the historical base/head and verifies that head and merge checkout
+PR reuse derives the historical base/head from actual checkout logs and immutable
+Git commit trees/parents; workflow PR-reference fields can change after a push.
+It verifies that head and merge checkout
 contexts have identical trees. A later main update invalidates an older merge
 context. A completed merge may reuse a genuinely tested equivalent tree; it does
 not need a fictitious ancestor relationship to a squash commit.

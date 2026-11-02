@@ -1019,3 +1019,17 @@ inventory and unknown changes remain conservative. Reuse requires both fully gre
 GitHub workflows with matching application/test inputs, execution contracts and
 historical checkout context; original source/run provenance remains explicit.
 Hosted execution of the new selector is pending; Production remains unchanged.
+
+The first hosted selector trial at `805fbb71` fell back to broad checks because
+GitHub updates the PR references attached to historical workflow runs. Both
+redundant workflows were cancelled immediately; they are not recorded as passes.
+The corrected selector derives checkout identity from trusted completed-job logs
+and immutable Git commit trees/parents. It supports only the original default
+merge/head checkout strategies, rejects ambiguous/missing evidence, and does not
+use mutable PR refs as historical base/head proof.
+
+All 23 policy tests pass, including mutable-reference replay and advanced-base
+rejection. Independent review found no blocker. A real-API probe after the head
+changed selected the original CFC baseline and identified its actual checkout
+`ee15c9b42875cc481695049999fe09f764b74499` and historical base
+`0ae36e29384aa10232fc630f4f968b816e1c4ec4`. Hosted retry remains pending.

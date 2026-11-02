@@ -76,6 +76,25 @@ export function executionContract(source){
 export function successfulExecution(run,jobs,{repo,minimum}){
  return run.status==='completed'&&run.conclusion==='success'&&run.repository?.full_name===repo&&sha.test(run.head_sha??'')&&jobs.length>=minimum&&jobs.every(j=>j.status==='completed'&&j.conclusion==='success');
 }
+export function checkoutFromLog(log){
+ const lines=log.replace(/\x1b\[[0-9;]*m/g,'').split(/\r?\n/).map(line=>line.replace(/^\d{4}-\d{2}-\d{2}T\S+Z\s*/,''));
+ const commits=[];
+ for(let i=0;i<lines.length;i++)if(/\[command\].*\bgit log -1 --format=%H\s*$/.test(lines[i])){
+  for(const line of lines.slice(i+1,i+4)){if(sha.test(line.trim())){commits.push(line.trim());break;}}
+ }
+ const unique=[...new Set(commits)];if(unique.length!==1)throw Error('Unambiguous checkout execution required');return unique[0];
+}
+export function supportedCheckouts(source){
+ const original=executionContract(source),jobs=JSON.parse(original).jobs;
+ return jobs.every(job=>{
+  const steps=job.split(/^      - /m).slice(1),checkouts=steps.filter(step=>/^uses: actions\/checkout@[a-f0-9]{40}/.test(step));
+  if(checkouts.length===0&&/^  execution-webkit-complete:/u.test(job))return true;
+  return checkouts.length===1&&checkouts.every(step=>{
+   if(/^          (?:repository|path|sparse-checkout|submodules):/m.test(step))return false;
+   const ref=/^          ref: (.+)$/m.exec(step)?.[1];return ref===undefined||ref==="${{ github.event.pull_request.head.sha || github.sha }}";
+  });
+ });
+}
 const gitRaw=(...args)=>execFileSync('git',args,{encoding:'utf8',stdio:['ignore','pipe','pipe']});
 const git=(...args)=>gitRaw(...args).trim();
 const changes=(base,head)=>git('diff','--name-only','--no-renames',base,head).split('\n').filter(Boolean);
@@ -100,9 +119,9 @@ export async function select({event,token,api=fetch}){
   const clientOnly=clientFiles(paths,base,head);
   if(clientOnly)return {full:false,mode:'ui',reason:'Existing client-component/style changes only; all browser projects and core build checks selected',paths};
  }
- const request=async path=>{
+ const request=async(path,text=false)=>{
   const response=await api(`https://api.github.com/repos/${repo}/${path}`,{headers:{authorization:`Bearer ${token}`,accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},signal:AbortSignal.timeout(15000)});
-  if(!response.ok)throw Error('Trusted CI metadata unavailable');return response.json();
+  if(!response.ok)throw Error('Trusted CI metadata unavailable');return text?response.text():response.json();
  };
  try{
   const [main,legacy]=await Promise.all(workflows.map(name=>request(`actions/workflows/${name}/runs?status=success&per_page=50`)));
@@ -112,15 +131,30 @@ export async function select({event,token,api=fetch}){
    try{git('cat-file','-e',`${prior}^{commit}`);}catch{git('fetch','--no-tags','origin',prior);}
    const delta=changes(prior,head),deltaKind=classify(delta);if(!['documentation','ci-only','ui-candidate','ui-ci-candidate'].includes(deltaKind)||!ordinaryFiles(delta,prior,head))continue;
    const clientDelta=['ui-candidate','ui-ci-candidate'].includes(deltaKind);if(clientDelta&&!clientFiles(delta,prior,head))continue;
-   if(!workflows.every(name=>executionContract(gitRaw('show',`${prior}:.github/workflows/${name}`))===executionContract(gitRaw('show',`${head}:.github/workflows/${name}`))))continue;
+   if(!workflows.every(name=>{
+    const old=gitRaw('show',`${prior}:.github/workflows/${name}`),current=gitRaw('show',`${head}:.github/workflows/${name}`);
+    return supportedCheckouts(old)&&supportedCheckouts(current)&&executionContract(old)===executionContract(current);
+   }))continue;
+   const [a,b]=await Promise.all([candidate,companion].map(r=>request(`actions/runs/${r.id}/jobs?filter=latest&per_page=100`)));
+   if(!successfulExecution(candidate,a.jobs??[],{repo,minimum:54})||!successfulExecution(companion,b.jobs??[],{repo,minimum:8}))continue;
+   const representatives=[a.jobs.find(j=>j.name==='verify'),b.jobs.find(j=>j.name==='acceptance (domains)')];if(representatives.some(j=>!Number.isSafeInteger(j?.id)))continue;
+   // Run.pull_requests contains mutable *current* PR refs. The checkout logs
+   // and immutable Git commit objects establish what this execution tested.
+   const checkouts=await Promise.all(representatives.map(async j=>checkoutFromLog(await request(`actions/jobs/${j.id}/logs`,true))));
+   const commits=await Promise.all(checkouts.map(id=>request(`git/commits/${id}`)));
+   const tree=git('rev-parse',`${prior}^{tree}`);if(commits.some(c=>c.tree?.sha!==tree))continue;
+   const directMain=candidate.event==='push'&&candidate.head_branch===(event.repository.default_branch??'main')&&checkouts.every(id=>id===prior);
+   const historicalBase=commits[0].parents?.[0]?.sha;
+   if(!directMain&&(!sha.test(historicalBase??'')||commits.some(c=>c.parents?.length!==2||c.parents[0].sha!==historicalBase||c.parents[1].sha!==prior)))continue;
    // Same PR/base, or a merged source already in the comparison base/current
    // merge. An unrelated green branch cannot supply the baseline.
    let related=false;
+   if(directMain){try{git('merge-base','--is-ancestor',prior,base);related=true;}catch{}}
    for(const reference of candidate.pull_requests??[]){
-    if(reference.head?.sha!==prior||!sha.test(reference.base?.sha??''))continue;
-    if(!(companion.pull_requests??[]).some(r=>r.number===reference.number&&r.head?.sha===prior&&r.base?.sha===reference.base.sha))continue;
+    if(related)break;
+    if(!(companion.pull_requests??[]).some(r=>r.number===reference.number))continue;
     const pr=await request(`pulls/${reference.number}`);
-    if(pr.number===event.pull_request?.number&&pr.base?.sha===base&&reference.base.sha===base){
+    if(pr.number===event.pull_request?.number&&pr.base?.sha===base&&historicalBase===base){
      try{
       git('merge-base','--is-ancestor',prior,head);
       // Some original jobs check out the PR head and others GitHub's merge.
@@ -138,15 +172,13 @@ export async function select({event,token,api=fetch}){
        if(!['documentation','ci-only'].includes(classify(changes(prior,pr.head.sha))))continue;
       }catch{continue;}
      }
-     try{if(git('merge-tree','--write-tree',reference.base.sha,prior)!==git('rev-parse',`${prior}^{tree}`))continue;}catch{continue;}
+     try{if(git('merge-tree','--write-tree',historicalBase,prior)!==git('rev-parse',`${prior}^{tree}`))continue;}catch{continue;}
      if(pr.merge_commit_sha===head){related=true;break;}
      try{git('merge-base','--is-ancestor',pr.merge_commit_sha,base);related=true;break;}catch{}
     }
    }
    if(!related)continue;
-   const [a,b]=await Promise.all([candidate,companion].map(r=>request(`actions/runs/${r.id}/jobs?filter=latest&per_page=100`)));
-   if(!successfulExecution(candidate,a.jobs??[],{repo,minimum:54})||!successfulExecution(companion,b.jobs??[],{repo,minimum:8}))continue;
-   return {full:false,mode:clientDelta?'ui':'none',reason:clientDelta?'Client-only delta from a complete green baseline; fresh browser/build checks required':'Unchanged application/test inputs and full execution contracts; trusted complete green baseline',paths,provenance:{sourceCommit:prior,workflows:[{id:candidate.id,url:candidate.html_url},{id:companion.id,url:companion.html_url}]}};
+   return {full:false,mode:clientDelta?'ui':'none',reason:clientDelta?'Client-only delta from a complete green baseline; fresh browser/build checks required':'Unchanged application/test inputs and full execution contracts; trusted complete green baseline',paths,provenance:{sourceCommit:prior,testedCheckouts:checkouts,historicalBase,workflows:[{id:candidate.id,url:candidate.html_url},{id:companion.id,url:companion.html_url}]}};
   }
  }catch{return {full:true,mode:'full',reason:'No verifiable complete green baseline; broad checks required',paths};}
  return {full:true,mode:'full',reason:'Runtime, test, inventory, unknown, or unproven changes; broad checks required',paths};
