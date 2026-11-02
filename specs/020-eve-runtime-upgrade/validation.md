@@ -34,8 +34,14 @@ that case using the actual checkout commands in both completed jobs, immutable
 commit trees/parents and exact-SHA verification after a verified PR-ref fallback.
 All 25 policy tests and documentation checks pass; independent review found no
 blocker. A real-API probe for the actual merged `0148c517` correctly selects the
-original complete CFC baseline without redundant runtime execution. Hosted PR and
-post-merge confirmation of this correction is still pending.
+original complete CFC baseline without redundant runtime execution. Actual PR scope jobs passed in main workflow
+[41489883282](https://github.com/mcteer/turas/actions/runs/41489883282)
+and legacy workflow
+[41489883292](https://github.com/mcteer/turas/actions/runs/41489883292).
+Both select `mode: none`, explicitly retain the original CFC execution provenance
+and skip redundant runtime families. The final merge/check outcomes are recorded
+in [PR #60](https://github.com/mcteer/turas/pull/60), including its post-merge
+confirmation; these scope results alone do not claim a completed merge.
 
 Final cleanup removed only the independently verified unused 1560 operator
 preparation package (36 files, 22,958,953 logical bytes) and the disposable debug
