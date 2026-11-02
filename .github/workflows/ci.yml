@@ -18,13 +18,67 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      full: ${{ steps.select.outputs.full }}
+      mode: ${{ steps.select.outputs.mode }}
+      run_governed_learning: ${{ steps.select.outputs.run_governed_learning }}
+      matrix_governed_learning: ${{ steps.select.outputs.matrix_governed_learning }}
+      run_partner_enablement: ${{ steps.select.outputs.run_partner_enablement }}
+      matrix_partner_enablement: ${{ steps.select.outputs.matrix_partner_enablement }}
+      run_expansion: ${{ steps.select.outputs.run_expansion }}
+      matrix_expansion: ${{ steps.select.outputs.matrix_expansion }}
+      run_expansion_webkit_projects: ${{ steps.select.outputs.run_expansion_webkit_projects }}
+      matrix_expansion_webkit_projects: ${{ steps.select.outputs.matrix_expansion_webkit_projects }}
+      run_expansion_webkit_complete: ${{ steps.select.outputs.run_expansion_webkit_complete }}
+      run_support_deterministic: ${{ steps.select.outputs.run_support_deterministic }}
+      matrix_support_deterministic: ${{ steps.select.outputs.matrix_support_deterministic }}
+      run_reporting: ${{ steps.select.outputs.run_reporting }}
+      matrix_reporting: ${{ steps.select.outputs.matrix_reporting }}
+      run_verify: ${{ steps.select.outputs.run_verify }}
+      run_execution: ${{ steps.select.outputs.run_execution }}
+      matrix_execution: ${{ steps.select.outputs.matrix_execution }}
+      run_execution_webkit_complete: ${{ steps.select.outputs.run_execution_webkit_complete }}
+      run_product_gaps: ${{ steps.select.outputs.run_product_gaps }}
+      matrix_product_gaps: ${{ steps.select.outputs.matrix_product_gaps }}
+      run_read_only_mcp: ${{ steps.select.outputs.run_read_only_mcp }}
+      matrix_read_only_mcp: ${{ steps.select.outputs.matrix_read_only_mcp }}
+      run_legacy_chat: ${{ steps.select.outputs.run_legacy_chat }}
+      matrix_legacy_chat: ${{ steps.select.outputs.matrix_legacy_chat }}
+      run_pilot_hardening: ${{ steps.select.outputs.run_pilot_hardening }}
+      matrix_pilot_hardening: ${{ steps.select.outputs.matrix_pilot_hardening }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      - name: Verify CI selection and documentation
+        run: |
+          node --test .github/ci/change-scope.test.mjs
+          node scripts/check-docs.mjs
+      - name: Select required runtime checks
+        id: select
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/ci/change-scope.mjs
+
   governed-learning:
+    needs: scope
+    if: ${{ needs.scope.outputs.run_governed_learning == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        gate: [deterministic, native, webkit, recovery, benchmark, evaluation-fixture, regressions]
+        gate: ${{ fromJSON(needs.scope.outputs.matrix_governed_learning) }}
     env:
       AI_GATEWAY_API_KEY: ''
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
@@ -104,12 +158,14 @@ jobs:
             local-artifacts/014/runtime-*.log
 
   partner-enablement:
+    needs: scope
+    if: ${{ needs.scope.outputs.run_partner_enablement == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 100
     strategy:
       fail-fast: false
       matrix:
-        gate: [deterministic, webkit, recovery, benchmark, regressions]
+        gate: ${{ fromJSON(needs.scope.outputs.matrix_partner_enablement) }}
     env:
       AI_GATEWAY_API_KEY: ''
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
@@ -173,12 +229,14 @@ jobs:
         run: node --import tsx scripts/print-ci-test-failures.ts
 
   expansion:
+    needs: scope
+    if: ${{ needs.scope.outputs.run_expansion == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        gate: [deterministic, native, recovery, benchmark, evaluation-fixture, regressions]
+        gate: ${{ fromJSON(needs.scope.outputs.matrix_expansion) }}
     services:
       postgres:
         image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
@@ -285,13 +343,15 @@ jobs:
         run: node --import tsx scripts/print-ci-test-failures.ts
 
   expansion-webkit-projects:
+    needs: scope
+    if: ${{ needs.scope.outputs.run_expansion_webkit_projects == 'true' }}
     name: expansion WebKit (${{ matrix.project }})
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        project: [webkit-desktop-light, webkit-desktop-dark, webkit-mobile-light, webkit-mobile-dark]
+        project: ${{ fromJSON(needs.scope.outputs.matrix_expansion_webkit_projects) }}
     services:
       postgres:
         image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
@@ -375,8 +435,8 @@ jobs:
 
   expansion-webkit-complete:
     name: expansion (webkit)
-    if: always()
-    needs: expansion-webkit-projects
+    if: ${{ always() && needs.scope.outputs.run_expansion_webkit_complete == 'true' }}
+    needs: [scope, expansion-webkit-projects]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -410,12 +470,14 @@ jobs:
         run: node --import tsx scripts/verify-expansion-webkit-ci.ts --input local-artifacts/011/ci-webkit-input
 
   support-deterministic:
+    needs: scope
+    if: ${{ needs.scope.outputs.run_support_deterministic == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        gate: [deterministic, webkit]
+        gate: ${{ fromJSON(needs.scope.outputs.matrix_support_deterministic) }}
     services:
       postgres:
         image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
@@ -503,12 +565,14 @@ jobs:
         run: node --import tsx scripts/print-ci-test-failures.ts
 
   reporting:
+    needs: scope
+    if: ${{ needs.scope.outputs.run_reporting == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        gate: [deterministic, regressions, webkit]
+        gate: ${{ fromJSON(needs.scope.outputs.matrix_reporting) }}
     env:
       TURAS_APP_ORIGIN: http://127.0.0.1:3000
       TURAS_DEMO_USERNAME: mcteer
@@ -565,6 +629,8 @@ jobs:
         run: node --import tsx scripts/print-ci-test-failures.ts
 
   verify:
+    needs: scope
+    if: ${{ needs.scope.outputs.run_verify == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     services:
@@ -643,16 +709,23 @@ jobs:
       - run: npm run check:docs
       - run: npm run typecheck
       - run: npm run test:unit
+        if: ${{ needs.scope.outputs.mode != 'ui' }}
       - name: Discover versioned behavior cases without model calls
         run: npx eve eval --list
       - run: npm run test:integration
+        if: ${{ needs.scope.outputs.mode != 'ui' }}
       - run: npm run test:contracts
+        if: ${{ needs.scope.outputs.mode != 'ui' }}
       - run: npm run test:artifacts
+        if: ${{ needs.scope.outputs.mode != 'ui' }}
       - name: Test governed retrieval and research on disposable Postgres
+        if: ${{ needs.scope.outputs.mode != 'ui' }}
         run: npm run test:retrieval
       - name: Test delivery plans on an isolated disposable clone
+        if: ${{ needs.scope.outputs.mode != 'ui' }}
         run: npm run test:plans
       - name: Test staffing with complete suite coverage on an owned disposable clone
+        if: ${{ needs.scope.outputs.mode != 'ui' }}
         run: npm run test:staffing
       - name: Compile without sandbox preparation
         run: npm run build:check
@@ -711,13 +784,15 @@ jobs:
         run: npm run profiles:ui:check
 
   execution:
+    needs: scope
+    if: ${{ needs.scope.outputs.run_execution == 'true' }}
     runs-on: ubuntu-latest
     # Each WebKit project keeps its full case inventory and owns a separate runner.
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        gate: [deterministic, regressions, webkit-desktop-light, webkit-desktop-dark, webkit-mobile-light, webkit-mobile-dark]
+        gate: ${{ fromJSON(needs.scope.outputs.matrix_execution) }}
     services:
       postgres:
         image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
@@ -847,8 +922,8 @@ jobs:
     name: execution (webkit)
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: execution
-    if: always()
+    needs: [scope, execution]
+    if: ${{ always() && needs.scope.outputs.run_execution_webkit_complete == 'true' }}
     steps:
       - name: Require every execution project and core gate
         env:
@@ -856,12 +931,14 @@ jobs:
         run: test "$TURAS_EXECUTION_RESULT" = success
 
   product-gaps:
+    needs: scope
+    if: ${{ needs.scope.outputs.run_product_gaps == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 50
     strategy:
       fail-fast: false
       matrix:
-        gate: [deterministic, webkit, recovery, benchmark, regressions]
+        gate: ${{ fromJSON(needs.scope.outputs.matrix_product_gaps) }}
     env:
       AI_GATEWAY_API_KEY: ''
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
@@ -940,12 +1017,14 @@ jobs:
         run: node --import tsx scripts/print-ci-test-failures.ts
 
   read-only-mcp:
+    needs: scope
+    if: ${{ needs.scope.outputs.run_read_only_mcp == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 100
     strategy:
       fail-fast: false
       matrix:
-        gate: [deterministic, consumer, build, webkit, recovery, benchmark, regressions]
+        gate: ${{ fromJSON(needs.scope.outputs.matrix_read_only_mcp) }}
     env:
       AI_GATEWAY_API_KEY: ''
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
@@ -1022,12 +1101,14 @@ jobs:
           retention-days: 1
 
   legacy-chat:
+    needs: scope
+    if: ${{ needs.scope.outputs.run_legacy_chat == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        flow: [text-preferences, file-preferences, file-corrections]
+        flow: ${{ fromJSON(needs.scope.outputs.matrix_legacy_chat) }}
     env:
       AI_GATEWAY_API_KEY: ''
       VERCEL_OIDC_TOKEN: ''
@@ -1063,12 +1144,14 @@ jobs:
         run: node scripts/check-legacy-parity-disposable.mjs --native-memory-files --native-files-only
 
   pilot-hardening:
+    needs: scope
+    if: ${{ needs.scope.outputs.run_pilot_hardening == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 300
     strategy:
       fail-fast: false
       matrix:
-        gate: [deterministic, webkit, regressions]
+        gate: ${{ fromJSON(needs.scope.outputs.matrix_pilot_hardening) }}
     env:
       AI_GATEWAY_API_KEY: ''
       TURAS_ALLOW_LIVE_MODEL_TESTS: '0'
@@ -1151,3 +1234,26 @@ jobs:
       - name: Bounded redacted failed-test diagnostics
         if: failure()
         run: node --import tsx scripts/print-ci-test-failures.ts
+
+  ci-result:
+    if: always()
+    needs: [scope, governed-learning, partner-enablement, expansion, expansion-webkit-projects, expansion-webkit-complete, support-deterministic, reporting, verify, execution, execution-webkit-complete, product-gaps, read-only-mcp, legacy-chat, pilot-hardening]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every selected check or verified scope decision
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          node --input-type=module <<'JS'
+          const needs=JSON.parse(process.env.RESULTS);
+          if(needs.scope?.result!=='success')throw Error('CI selection did not succeed');
+          const mode=needs.scope.outputs.mode;
+          if(!['full','ui','none'].includes(mode))throw Error('Missing explicit CI scope');
+          for(const [name,job] of Object.entries(needs)){
+            if(name==='scope')continue;
+            const selected=needs.scope.outputs['run_'+name.replaceAll('-','_')];
+            if(!['true','false'].includes(selected))throw Error('Unmapped CI job: '+name);
+            if(job.result!==(selected==='true'?'success':'skipped'))throw Error('Required check did not succeed: '+name);
+          }
+          console.log('All checks selected for '+mode+' passed. See CI Scope for original execution provenance.');
+          JS

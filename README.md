@@ -176,6 +176,12 @@ Dependabot checks the three npm projects and GitHub Actions weekly on Monday at
 09:00 America/Denver. Eve and its AI SDK peer updates are grouped for compatibility
 review. Dependency PRs follow the normal review and CI process.
 
+CI uses the complete PR diff. Documentation-only changes run fast consistency
+checks; existing client-component/style changes run browser and build checks.
+Shared runtime and unclassified changes retain broad coverage. Equivalent green
+executions can be reused with verified GitHub provenance and unchanged inputs.
+See [CI selection and reuse rules](docs/ci.md).
+
 Start with the checks appropriate to the change:
 
 ```sh

@@ -36,7 +36,7 @@ governed regressions and saved-history checks preserve input, authority and usag
 - [x] T009 [US1] Diagnose and fix the staged 10 MiB process-restart failure in `scripts/check-ordinary-native-files.ts` and the affected native-file/runtime recovery path; preserve canonical input/delivery, authority expiry and unknown usage; pass the real restart fixture without weakening assertions (FR-001, FR-005, FR-017, SC-005).
 - [x] T010 [US1] Verify session retirement and memory/file recovery through `lib/server/conversations/ordinary-retirement.ts`, `retirement-confirmation.ts` and existing native fixtures; distinguish accepted end, released execution and retained accounting (FR-001, FR-005, FR-017).
 - [x] T011 [US1] Run the ordinary questions and staged-4/staged-10 native fixtures sequentially through `scripts/check-legacy-parity-disposable.mjs`; record actual outcomes and cleanup in `specs/020-eve-runtime-upgrade/validation.md` (FR-001, FR-011, SC-005).
-- [ ] T012 [US1] Run affected ordinary/customer/partner and governed workflow suites from `.github/workflows/ci.yml` and `.github/workflows/legacy-backend-parity.yml` on the frozen source; record coverage/failures in `specs/020-eve-runtime-upgrade/validation.md` (FR-001, FR-004, SC-005).
+- [x] T012 [US1] Run affected ordinary/customer/partner and governed workflow suites from `.github/workflows/ci.yml` and `.github/workflows/legacy-backend-parity.yml` on the frozen source; record coverage/failures in `specs/020-eve-runtime-upgrade/validation.md` (FR-001, FR-004, SC-005).
 
 ## Phase 4: US2 — Continue Specialist Work (P1)
 
@@ -136,3 +136,5 @@ production change occurs as part of the planning/model-switch handoff.
 - [x] T051 Reconcile specialist termination from the exact validated parent native-retirement receipt when a workflow has failed without a delivered task-end fact; preserve completed results, financial holds and native positions, verify atomic confirmation and recovery of existing confirmed receipts, and repeat hosted acceptance (FR-005, FR-011, FR-012).
 
 - [x] T052 Complete governed parent retrieval of exact stored best-practices results, preserving partial coverage, citations, source eligibility and owner boundaries; verify native tool delivery and actual hosted answer usefulness rather than treating a completed assignment as sufficient (FR-003, FR-007, FR-009, SC-007).
+
+- [ ] T053 Implement and verify user-requested change-aware CI: documentation-only checks, client/style browser/build selection, trusted unchanged-source reuse, original-source provenance, fail-closed unknown/shared inputs, historical-base/merge-tree protection, and explicit selected-job completeness; record policy tests, independent review and actual hosted CI in `validation.md`.

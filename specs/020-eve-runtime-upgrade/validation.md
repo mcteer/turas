@@ -989,3 +989,33 @@ Current account descriptions in architecture, product blueprint and decisions
 now say application accounts. Historical implementation references and existing
 credential names remain compatible. Documentation checks passed. Production
 remains on its existing release; merge and Production verification are pending.
+
+### Complete Runtime Baseline and Change-Aware CI
+
+Commit `cfc8cf7e966152bf6477fa18ba49a00779af6e91` passed all 54 main
+workflow jobs ([41457284559](https://github.com/mcteer/turas/actions/runs/41457284559))
+and all eight legacy jobs
+([41457284394](https://github.com/mcteer/turas/actions/runs/41457284394)).
+The corrected catalog completed; the prior WebKit reload failure did not recur.
+Exact-source Preview login, eight independently reviewed captures, and the real
+184-customer Production/Preview profile comparison passed. Its application, agent,
+schema and dependency inputs remain identical to the earlier real-provider
+acceptance source.
+
+The user requested change-aware CI instead of repeated unrelated coverage. The
+new selector has 20 passing Node policy tests, including real temporary Git
+repositories, historical-base advancement, actual squash merges, CI-only follow-ups,
+failed/cancelled/skipped provenance, UI/server distinction, all browser projects,
+unique native-browser journeys and explicit job completeness. Independent review
+found no remaining blocker. Both workflows pass actionlint 1.7.12 and unique-key
+YAML parsing; their normalized full execution contracts match the complete
+baseline byte-for-byte. Test assertions, deadlines and full-mode matrices are
+unchanged.
+
+Documentation-only changes use fresh consistency checks. Existing client/style
+changes retain browser/build coverage, including native correction/history, staged
+files, questions and specialist controls. Shared, server, schema, dependency,
+inventory and unknown changes remain conservative. Reuse requires both fully green
+GitHub workflows with matching application/test inputs, execution contracts and
+historical checkout context; original source/run provenance remains explicit.
+Hosted execution of the new selector is pending; Production remains unchanged.

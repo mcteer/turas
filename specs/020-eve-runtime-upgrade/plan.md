@@ -165,3 +165,13 @@ For an explicit user-requested refinement, the parent prepares the same research
 kind/customer/workload with a fresh authorized reservation, then sends to the
 actual existing workflow taskId. Ordinary factual follow-ups retain cache reuse.
 Task reuse is never inferred as authority to renew expiry or reset allowance.
+
+## User-Directed CI Scoping
+
+Use a complete PR comparison, a verified existing-client/style browser path,
+and explicit documentation-only checks. CI-only updates may reuse only trusted
+fully green workflows with equivalent executable inputs and execution contracts,
+including historical PR base/head and actual merge-tree binding. Keep original
+source provenance. Unknown, server, agent, schema, dependency and inventory changes
+remain broad until their narrower dependency closure is verified. Always check
+selection policy and require successful selected jobs in a final summary gate.

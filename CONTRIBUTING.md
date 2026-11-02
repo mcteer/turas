@@ -26,14 +26,19 @@ templates and agent skills; do not rerun initialization over project policy.
 5. Run `$speckit-analyze`; resolve critical gaps before `$speckit-implement`.
    Select a coding model appropriate to the work without changing Turi's runtime
    model as a side effect. Keep each PR small enough for focused review.
-6. Run relevant checks and `$speckit-converge` when useful. Mark tasks complete
+6. Use the [CI scope policy](docs/ci.md) to run checks relevant to changed inputs;
+   documentation-only changes require consistency checks, and client-only changes
+   require browser/build verification. Shared or unproven inputs retain broad
+   coverage. Run `$speckit-converge` when useful. Mark tasks complete
    only with evidence. Document skipped or unavailable checks and their impact.
 7. Open a PR using the template, link the spec, and explain resulting behavior.
-   Verify the exact PR commit in an authenticated Preview deployment before merge.
+   For application or runtime changes, verify the exact PR commit in an
+   authenticated Preview deployment before merge.
    For UI changes, inspect its rendered layout and complete CLI Playwright/WebKit
    checks against Preview; local builds and CI do not substitute for this review.
-   Record the Preview URL, commit, results and unresolved checks in the PR. The hosted
-   Customer Profiles check must use real HTTP data with no response substitution:
+   Record the Preview URL, commit, results and unresolved checks in the PR. Changes
+   to customer profiles, research, authentication, shared UI or runtime dependencies
+   require the hosted Customer Profiles check with real HTTP data and no response substitution:
    `npm run profiles:preview:check -- --origin <Preview origin> --commit <PR SHA> --output local-artifacts/customer-profile-fixes/preview-check`.
    Supply each target's existing credential through protected inputs:
    `TURAS_DEMO_PASSWORD` for Preview and `TURAS_PRODUCTION_DEMO_PASSWORD` for Production.
@@ -41,6 +46,9 @@ templates and agent skills; do not rerun initialization over project policy.
    The check compares the real directory and 1Password/Notion research with Production
    and verifies navigation, overview placement, products, sources and evidence search.
    A synthetic-only Preview or mismatched research fails this check.
+   Documentation/CI-only updates with verified unchanged application inputs retain
+   the original Preview acceptance; repeat the checks relevant to their actual
+   changes instead of repeating hosted model, retrieval or browser work.
    Obtain maintainer review, address comments, and merge after checks pass. Do not
    bypass protection or self-report an independent review that did not occur.
 8. Complete the authorized release: apply required database migrations and runtime
