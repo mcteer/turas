@@ -74,3 +74,31 @@ The first native-staged10 CI check failed at restart_after_native_receipt with
 WebKit page.reload frame-load interruption. The unchanged original check is being
 replayed locally. This failed CI is not a reusable passing baseline. Other
 completed jobs retain their original scope and outcomes.
+
+## Corrected-source acceptance and platform findings
+
+Node24 rebuilt application/Eve checks pass. The unchanged original native-staged10
+owned restart check passes locally with zero paid calls; the original CI frame-load
+interruption remains a failure. Source67438a3b passes actual authenticated Preview
+and branch-alias login, real directory comparison and1Password/Notion profile,
+source and hybrid evidence-search checks. Four desktop-dark/mobile-light captures
+were inspected: overview/layout is readable; mobile captures cover the first
+viewport, not the entire long profile. No response substitution or research
+mutation was used.
+
+The current Linux/amd64 renderer was also built, pushed to the existing project
+registry and reported Ready. Its immutable index is8055c355a9ab77e15e6bc4f439b126413ac65ee012b2732017988575e27c3d89,
+with manifest2517b68bea4d6f6d42b97450fb4a88d96d8ebbf05eb5d026807e3f349205b9b8.
+The existing Production renderer reference remains unchanged: its digest is part
+of the immutable paid-job budget scope. Reporting is not enabled in the Production
+environment. Prepared image publication is not a claim of hosted execution or
+permission to reset/expand budget authority. A separately governed bounded scope
+handoff is needed before activating that image; original holds/caps/expiry remain.
+
+Source67438a3b CI exposed a Linux-only controller defect: absent TMPDIR was assigned
+to process.env as the literal string undefined. A shared defined-only parent
+allowlist now applies the existing pilot guard to gaps, learning, partners and MCP
+controllers. Eleven focused cases (including missing-TMPDIR, private-input exclusion
+and original gap coverage checks) and typecheck pass. The complete affected deterministic
+acceptance passes with TMPDIR absent:15 suites /121 cases, zero skips. No
+case/assertion/deadline was removed. Final-source CI remains required.

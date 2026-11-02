@@ -71,3 +71,34 @@ Reviewed upstream [Playwright1.64](https://github.com/microsoft/playwright/relea
 ### Initial alert disposition map
 
 Alerts10–12 (Next),13/33 (Zod),14/16/18/20/22/24/26/28/36/37/38/39/42/43 (Undici),8/9 (Vitest mocker), and3–7 plus2 (Vite) are addressed by selected installed versions, subject to final CI/hosted validation. Alert30 (glob),31/32 (minimatch), and1 (KaTeX) remain explicit consumer-compatibility work. Reconcile exact final GitHub alert state after merge; do not dismiss records to make counts agree.
+
+## Completed historical-source and archive assessment
+
+The [historical branch disposition](branch-disposition.md) records squash
+provenance,839 exact historical blob versions,101 evolved variants, migration
+renumbering, intentional framework/pilot removals and the preserved full bundle.
+No additional unported production feature was identified; current-source acceptance
+remains separate from that static/history conclusion.
+
+Read-only queries against each project's independently configured archive database
+found18 archives in the current backup project,17 unexpired,6 held (one held
+beyond ordinary expiry), latest actual capture2026-11-02T12:00:17.737Z. The older
+recovery project has42 archives,32 protected by authority holds; all32 remain held
+beyond ordinary seven-day expiry. These holds deliberately outlive managed backup
+retention. Keep both projects, archive stores and key custody. Key-count comparison
+alone does not prove recoverability: master-wrapped keys and independently retained
+captures also exist. No archive/chunk/authority or key was deleted by this audit.
+
+## Canonical Preview configuration
+
+After real authenticated acceptance of the existing isolated review environment,
+its25 existing records were promoted to default Preview scope without changing
+values or record IDs. Twelve obsolete Preview-only defaults are temporarily held
+under the existing PR53 branch for rollback until a fresh default-scope deployment
+passes. Three formerly shared records retain their original Production/Development
+scopes and values; their Preview bindings use the already verified review records.
+The single sensitive Production/Preview administrator record is unchanged. The
+first attempt to use a nonexistent temporary branch was rejected before any edit;
+the final scope transition uses an existing branch. Remove the twelve rollback
+records only after new-build default-scope acceptance, then verify no branch-scoped
+records remain. This avoids leaving another batch of orphan overrides after merge.

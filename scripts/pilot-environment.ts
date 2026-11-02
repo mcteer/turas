@@ -13,6 +13,7 @@ import { copyOwnedEvalFiles } from './eval-owned-copy';
 import { reserveOwnedEvalPort } from './eval-port';
 import { closeRuntimePool } from '../lib/server/db/client';
 import {finishPilotEnvironment} from './pilot-environment-cleanup';
+import {ownedParentEnvironment} from './owned-parent-environment';
 
 export function requireOwnedPilotDatabase(env: NodeJS.ProcessEnv = process.env, owner = false) {
  const raw = env[owner ? 'DATABASE_URL_UNPOOLED' : 'DATABASE_URL'];
@@ -26,11 +27,8 @@ export function requireOwnedPilotDatabase(env: NodeJS.ProcessEnv = process.env, 
 export type PilotEnvironment = { appRoot: string; storeRoot: string; workflowRoot: string; origin: string; readonly deadlineAt:number;
  databaseContainer:string; databaseOwnerLabel:string; appPid:()=>number|null; workerPid:()=>number|null; databaseName: string; environmentId: string; signal:AbortSignal; cancellationCause:()=> 'none'|'deadline'|'signal'; start: () => Promise<void>; startProduction:()=>Promise<void>; startProductionNative:()=>Promise<void>; startNative:()=>Promise<void>; startWorker: () => Promise<void>; crashWorker: () => Promise<void>; startSupervisor: () => Promise<void>; stop: () => Promise<void>;
  backupRestore:()=>Promise<void>; stopDatabase:()=>Promise<void>; startDatabase:()=>Promise<void>; restartDatabase:()=>Promise<void>; upgradeToCurrent: () => Promise<void> };
-const safeParentKeys = ['PATH','HOME','TMPDIR','LANG','LC_ALL','SYSTEMROOT'] as const;
 export function pilotParentEnvironment(environment:Record<string,string|undefined>=process.env):NodeJS.ProcessEnv{
- // Object.assign(process.env, {TMPDIR: undefined}) creates the string
- // "undefined". On Linux that turns os.tmpdir() into a relative mount path.
- return {...Object.fromEntries(safeParentKeys.filter(key=>environment[key]!==undefined).map(key=>[key,environment[key]])),NODE_ENV:'test'};
+ return ownedParentEnvironment(environment);
 }
 function command(cmd: string, args: string[], env: NodeJS.ProcessEnv, cwd = process.cwd(), timeout = 120_000) {
  const result = spawnSync(cmd,args,{cwd,env,encoding:'utf8',timeout,maxBuffer:1_000_000});

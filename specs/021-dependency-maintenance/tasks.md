@@ -20,7 +20,7 @@
 
 ## US3 — Assessed cleanup
 
-- [ ] T010 Complete historical branch delta and Vercel dependency/retention assessment in research.md; preserve unresolved unique work and key custody.
+- [x] T010 Complete historical branch delta and Vercel dependency/retention assessment in research.md; preserve unresolved unique work and key custody.
 - [ ] T011 Remove only evidenced stale Vercel branch overrides after release acceptance; verify credential inheritance and canonical project metadata.
 - [ ] T012 Retire superseded PRs/branches only after replacement release; verify main README and remaining GitHub inventory.
 
@@ -32,4 +32,4 @@
 
 ## Dependencies and strategy
 
-T001→T002→T003 precede implementation. T004 precedes T006. T005/T006/T008 feed T007/T009. T010 informs T011/T012; T011/T012 follow T014/T015. T013 precedes PR acceptance. Independent source reads and local checks may run concurrently; shared manifests, installs, deployment and cleanup remain sequential. Deliver US1/US2 as one reviewed release, then complete evidence-based US3 cleanup. No parallel agents are required.
+T001→T002→T003 precede implementation. T004 precedes T006. T005/T006/T008 feed T007/T009. T010 informs T011/T012; T011/T012 follow T014/T015. T013 precedes PR acceptance. Independent source reads and local checks may run concurrently; shared manifests, installs, deployment and cleanup remain sequential. Deliver US1/US2 as one reviewed release, then complete evidence-based US3 cleanup. No parallel agents are required. CI-exposed controller compatibility includes defined-only parent environment filtering in scripts/owned-parent-environment.ts and all affected owned controllers, with tests/unit/owned-parent-environment.test.ts and a missing-TMPDIR full gap acceptance replay.

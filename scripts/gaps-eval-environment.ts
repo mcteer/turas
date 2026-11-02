@@ -1,3 +1,4 @@
+import {ownedParentEnvironment} from './owned-parent-environment';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { mkdir, mkdtemp, rm, symlink, readFile, writeFile, rename } from 'node:fs/promises';
@@ -20,7 +21,6 @@ export function requireOwnedGapDatabase(env: NodeJS.ProcessEnv = process.env, ow
 export type GapEnvironment = { appRoot: string; storeRoot: string; workflowRoot: string; origin: string;
  databaseName: string; environmentId: string; signal:AbortSignal; start: () => Promise<void>; startProduction: () => Promise<void>; startWorker: () => Promise<void>; crashWorker: () => Promise<void>; startSupervisor: () => Promise<void>; stop: () => Promise<void>;
  upgradeToCurrent: () => Promise<void> };
-const safeParentKeys = ['PATH','HOME','TMPDIR','LANG','LC_ALL','SYSTEMROOT'] as const;
 function command(cmd: string, args: string[], env: NodeJS.ProcessEnv, cwd = process.cwd(), timeout = 120_000) {
  const result = spawnSync(cmd,args,{cwd,env,encoding:'utf8',timeout,maxBuffer:1_000_000});
  if (result.error || result.status !== 0) throw Error(`Owned gap setup failed: ${cmd.split('/').pop()}`);
@@ -32,7 +32,7 @@ export async function withGapEnvironment<T>(run: (environment: GapEnvironment) =
  const agentDigest = await digest(), previous = { ...process.env };
  const codeVersion=command('git',['rev-parse','HEAD'],process.env);if(!/^[a-f0-9]{40}$/.test(codeVersion))throw Error('Exact owned source identity required');
  const selectedHash=async()=>{try{return createHash('sha256').update(await readFile('.env.local')).digest('hex');}catch(error){if((error as {code?:string}).code==='ENOENT')return null;throw error;}};const selectedBefore=await selectedHash();
- const safeEnv: NodeJS.ProcessEnv = { ...Object.fromEntries(safeParentKeys.map(k=>[k,process.env[k]])), NODE_ENV: 'test' };
+ const safeEnv: NodeJS.ProcessEnv = ownedParentEnvironment();
  const token = randomUUID().replaceAll('-','').slice(0,12), name = `turas_test_012_eval_${token}`,
   container = `turas-012-check-${token}`, environmentId = `test-gap-${token}`, password = randomBytes(24).toString('hex');
  await mkdir(resolve('local-artifacts/012'),{recursive:true,mode:0o700});
