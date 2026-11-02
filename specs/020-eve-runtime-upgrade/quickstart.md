@@ -88,8 +88,8 @@ No production promotion is part of the planning handoff.
 
 ## Migration and Release Gate
 
-Rehearse explicit 082/083/084 migrations, grants and recovery on a disposable
-copy of schema 081, plus 083 → 084 for current Preview. Verify rollback/forward
+Rehearse explicit 082–085 migrations, grants and recovery on a disposable
+copy of schema 081, plus the current Preview upgrade through schema 085. Verify rollback/forward
 repair under the application's exact-schema readiness checks. Preserve old
 bindings/history, private objects and accounting. Before any later production
 release, verify target and backup, green CI, independent review and Preview

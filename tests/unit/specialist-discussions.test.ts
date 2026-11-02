@@ -47,3 +47,9 @@ it('associates a pending specialist question with its native task without derivi
  fixture.commit({type:'interaction.settled',scope:{turnId:'turn_0'},data:{interactionId:'private-question',outcome:'withdrawn'}});
  expect(openInteractions(fixture.snapshot.view)).toHaveLength(0);
 });
+it('rejects an uncited practice before the shared finalizer contract can store it',async()=>{
+ const {practiceBriefSchema}=await import('../../lib/contracts/vercel-practice-result');
+ const brief={summary:'Checked guidance with a retained source.',practices:[{practice:'Verify the deployment before promoting it.',rationale:'The checked source supports this recommendation.',sourceIds:['checked-source'],caveat:'Preserve the documented platform prerequisites.'}],gaps:[]};
+ expect(practiceBriefSchema.safeParse(brief).success).toBe(true);
+ expect(practiceBriefSchema.safeParse({...brief,practices:[{...brief.practices[0],sourceIds:[]}]}).success).toBe(false);
+});

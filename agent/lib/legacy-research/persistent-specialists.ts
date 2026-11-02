@@ -25,7 +25,8 @@ async function prepare(kind:SpecialistKind,input:Input,callId:string,workflowRun
  const principal=step.session.auth.current,attemptId=principal?.attributes?.turasAttemptId;
  if(!principal?.principalId||typeof attemptId!=='string')throw Error('Research identity unavailable');
  const admitted=await admitSpecialistCall({kind,message:input.message,callId,workflowRunId,attemptId,principalId:principal.principalId,parentSessionId:step.session.id});
- return {...admitted,message:`Server-bound research reservation: ${JSON.stringify(admitted.scope)}\nCall get_research_context first using this exact accountId. The reservation supplies the question and workload.\n\nParent research instructions:\n${input.message}`};
+ const contextTool=kind==='best-practices'?'get_practice_context':'get_research_context',finalizerTool=kind==='best-practices'?'finalize_vercel_practices':kind==='customer-update'?'finalize_customer_update':'finalize_research';
+ return {...admitted,message:`Server-bound research reservation: ${JSON.stringify(admitted.scope)}\nCall ${contextTool} first using this exact accountId. The reservation supplies the current question and workload. This is a new admitted assignment, even when this child already completed earlier work. Reuse eligible prior evidence, but successfully finalize the current assignment once using ${finalizerTool} with its current context/reservation, including a refinement that only reorganizes stored guidance. Follow its pre-execution validation-correction rules. Return that finalizer's current receipt unchanged. An earlier assignment's stored reference does not complete this reservation. Do not restart discovery unless this assignment requires it.\n\nParent research instructions:\n${input.message}`};
 }
 async function publish(conversationId:string,discussionId:string,assignmentId:string,output:{status:string;reference:unknown},ctx:Context){
  'use step';

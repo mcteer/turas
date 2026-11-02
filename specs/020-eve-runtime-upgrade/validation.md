@@ -2,6 +2,50 @@
 
 ## Current Acceptance State
 
+### Current-Assignment Finalization and CI Readiness Follow-up
+
+Commit31's compatibility CI is **8/8 green**. Its broader CI confirms a staffing
+fixture prerequisite failure: all five first sends returned
+`maintenance_unavailable` because HTTP readiness preceded the required live
+maintenance heartbeat. The fixture now observes a real heartbeat after HTTP
+readiness and after restart, using the original180-second startup and120-second
+restart envelopes. It inserts no heartbeat and changes no admission guard or
+provider retry. The exact five-case native rerun passes74.41s, including restart.
+
+The separate MCP predecessor failure was the30-second desktop-dark partner
+feedback journey. Fixed named steps and whitelisted failure-stage retention now
+identify the actual boundary if it recurs. Its original journey passes in the
+compiled Production-mode local harness, one project/one case, no retries or
+skips; this **subset is not full four-project acceptance**. Current-source full
+CI remains required. Diagnostic tests and both typechecks pass.
+
+The strict31 hosted result check did not pass. One run had148,896 input tokens
+remaining against its last conservative171,686-token prompt bound, consistent
+with a subsequent allowance denial; all admitted operations completed and
+financial holds remain. A separate bounded refinement reused prior guidance but
+returned without completing its current cache reservation: assignment1 has a
+completion receipt, assignment2 does not. The server correctly returned
+unavailable rather than accepting the prior reference as new work.
+
+The common assignment message and best-practices instructions now explicitly
+require successful finalization once **per current admitted assignment**,
+including refinements using retained sources. They name the correct context and
+finalizer tools per specialist, preserve the allowed pre-execution schema
+correction, and prohibit replaying a successful or uncertain write. Shared
+practice input now rejects uncited practices before storage, matching the
+reader's existing source requirement. No allowance, model, authorization or
+expiry changes occur. Independent review found no blocker;35 focused tests pass.
+Updated hosted acceptance remains pending.
+
+Read-only Production preflight confirms the exact branch, schema081 and all three
+established accounts active; it does not substitute for password/deployment
+verification. No Production writes occurred. Cleanup removed27 exact owned
+sandbox containers from the first Staffing/Learning reproductions and five from
+the heartbeat rerun, with private custody receipts and zero readback. Shared
+images, unverified older worlds and selected runtime state were preserved. An
+untracked8.1MiB Playwright transform cache from the owned check was also removed.
+
+
 ### Stored Result Retrieval Follow-up
 
 Inspection of the real rendered663 conversation exposed a distinction hidden by
