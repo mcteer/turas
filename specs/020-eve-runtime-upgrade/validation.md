@@ -37,6 +37,16 @@ blocker. A real-API probe for the actual merged `0148c517` correctly selects the
 original complete CFC baseline without redundant runtime execution. Hosted PR and
 post-merge confirmation of this correction is still pending.
 
+Final cleanup removed only the independently verified unused 1560 operator
+preparation package (36 files, 22,958,953 logical bytes) and the disposable debug
+fork. API absence was verified after deletion. The verified v2 recovery fork,
+current Production/Preview endpoints, current operator package and operational
+key custody were preserved. Physical disk reclamation was not measured. Earlier
+scoped container/image cleanup and accounting-preservation evidence remain valid;
+unverified historical workflow state was retained. The merged PR #52 feature
+branch is absent both locally and remotely. T043/T044 release and cleanup actions
+are complete; this follow-up corrects README on main and verifies the final CI path.
+
 Application inputs are unchanged in this CI/documentation follow-up. Production
 remains on the verified `0148c517`; another application deployment or paid-provider
 exercise would not establish additional coverage for these changes.
