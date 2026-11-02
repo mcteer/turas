@@ -92,7 +92,7 @@ migrations/grants and environment-specific release evidence are available.
 
 ## Phase 8: Final Verification and Release
 
-- [ ] T041 Run required CI/type/build/unit/integration/contract/native/UI checks from `.github/workflows/ci.yml` and `.github/workflows/legacy-backend-parity.yml` on the final source, resolve failures and record independent review in `specs/020-eve-runtime-upgrade/validation.md` (FR-001, SC-005, SC-006, SC-007).
+- [x] T041 Run required CI/type/build/unit/integration/contract/native/UI checks from `.github/workflows/ci.yml` and `.github/workflows/legacy-backend-parity.yml` on the final source, resolve failures and record independent review in `specs/020-eve-runtime-upgrade/validation.md` (FR-001, SC-005, SC-006, SC-007).
 - [x] T042 Run Spec Kit convergence against `specs/020-eve-runtime-upgrade/spec.md`, `plan.md` and `tasks.md`; append any uncovered work and complete it before declaring the implementation ready (FR-001–019, SC-001–008).
 - [ ] T043 After Preview review and the authorized release decision, merge only with green CI/review, coordinate explicit Production schema/grants/code release, verify deployed commit and authenticated behavior, then remove the merged feature branches and verify `README.md` on main; record actual outcomes in `specs/020-eve-runtime-upgrade/validation.md` (FR-015, SC-007, SC-008).
 - [ ] T044 Remove verified-unneeded task-owned test apps, private scratch artifacts, containers/images and temporary Preview resources after review/recovery no longer needs them; preserve `turas-back` and selected runtime state, and record custody/accounting exceptions in `specs/020-eve-runtime-upgrade/validation.md` (FR-005, FR-019).
@@ -137,4 +137,4 @@ production change occurs as part of the planning/model-switch handoff.
 
 - [x] T052 Complete governed parent retrieval of exact stored best-practices results, preserving partial coverage, citations, source eligibility and owner boundaries; verify native tool delivery and actual hosted answer usefulness rather than treating a completed assignment as sufficient (FR-003, FR-007, FR-009, SC-007).
 
-- [ ] T053 Implement and verify user-requested change-aware CI: documentation-only checks, client/style browser/build selection, trusted unchanged-source reuse, original-source provenance, fail-closed unknown/shared inputs, historical-base/merge-tree protection, and explicit selected-job completeness; record policy tests, independent review and actual hosted CI in `validation.md`.
+- [x] T053 Implement and verify user-requested change-aware CI: documentation-only checks, client/style browser/build selection, trusted unchanged-source reuse, original-source provenance, fail-closed unknown/shared inputs, historical-base/merge-tree protection, and explicit selected-job completeness; record policy tests, independent review and actual hosted CI in `validation.md`.

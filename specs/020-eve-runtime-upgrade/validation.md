@@ -1033,3 +1033,16 @@ rejection. Independent review found no blocker. A real-API probe after the head
 changed selected the original CFC baseline and identified its actual checkout
 `ee15c9b42875cc481695049999fe09f764b74499` and historical base
 `0ae36e29384aa10232fc630f4f968b816e1c4ec4`. Hosted retry remains pending.
+
+Hosted selector acceptance passed at
+`e5640dd638c87fee15a6e7c64841c31eae57e2d1`: main workflow
+[41478983026](https://github.com/mcteer/turas/actions/runs/41478983026)
+and legacy workflow
+[41478983157](https://github.com/mcteer/turas/actions/runs/41478983157)
+each completed successfully with fresh scope/policy/documentation and final-summary
+checks. Unchanged runtime families were explicitly skipped. Actual scope logs
+identify `mode: none`, original CFC source, both completed green baseline runs,
+checkout `ee15c9b42875cc481695049999fe09f764b74499` and base
+`0ae36e29384aa10232fc630f4f968b816e1c4ec4`. No duplicate catalog was needed.
+This is verified original-source reuse, not a claim of new runtime execution.
+T041/T053 are complete; Production release and final cleanup remain pending.
