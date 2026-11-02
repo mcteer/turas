@@ -160,3 +160,8 @@ Its dedicated single-connection pool therefore derives a direct Neon endpoint
 from the runtime URL, verified against the owner descriptor's endpoint/database.
 Runtime credentials/TLS/options are retained; query routing overrides and target
 mismatches fail closed. General application queries keep their existing pool.
+
+For an explicit user-requested refinement, the parent prepares the same research
+kind/customer/workload with a fresh authorized reservation, then sends to the
+actual existing workflow taskId. Ordinary factual follow-ups retain cache reuse.
+Task reuse is never inferred as authority to renew expiry or reset allowance.

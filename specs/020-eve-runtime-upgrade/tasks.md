@@ -130,3 +130,5 @@ production change occurs as part of the planning/model-switch handoff.
 - [x] T048 Move specialist embedding reservation after prerequisite admissions and record a confirmed validated response before rejecting cancelled downstream use; preserve unknown dispatched holds, with provider-boundary and cancellation regressions (FR-004, FR-005, FR-015).
 
 - [x] T049 Use a verified direct runtime connection for Neon's session-level private-I/O fence; preserve runtime credentials/options, reject routing mismatches/query overrides and verify live session lock release without provider calls (FR-005, FR-015).
+
+- [x] T050 Align ordinary research instructions and all three workflow-tool descriptions with explicit specialist refinements: prepare a fresh authorized same-scope assignment, reuse the actual taskId, preserve expiry/allowances and keep ordinary factual follow-ups on cached evidence; verify metadata/governance checks. Final real hosted routing acceptance remains in T041.

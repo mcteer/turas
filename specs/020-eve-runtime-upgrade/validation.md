@@ -2,6 +2,31 @@
 
 ## Current Acceptance State
 
+### Explicit Refinement Routing Follow-up
+
+On exact d7d93df2 Preview, existing mcteer login and all four composer layouts pass
+and their captures were inspected. The actual Production/Preview profile comparison
+passes. The first specialist assignment now completes:12 operations have completion
+facts, seven model operations settle at$0.134171, and context/embedding ceilings
+$0.020468 remain reserved. The parent then answered the explicit refinement directly
+without sending a second assignment, so that exercise timed out and is **not** a
+positive refinement pass. Retirement returned202. Original failed-run receipts and
+all held amounts remain intact; root usage is separate.
+
+The root's ordinary instructions lacked the explicit retained-task routing already
+available in the workflow tool protocol. New guidance prepares the same canonical
+account/kind/workload with the exact user refinement and `refresh:true`, then calls
+the existing workflow taskId rather than starting a replacement or only rewriting
+its answer. Only an explicit specialist refinement uses this route; ordinary
+factual follow-ups still reuse eligible evidence. Closed/expired/cancelled tasks
+cannot silently restart. Expiry, allowance and current authorization remain
+server-enforced. All three workflow descriptions and preparation guidance agree.
+
+The existing26 metadata/governance unit checks, TypeScript and documentation checks
+pass (`/tmp/turas-020-refinement-guidance-tests.txt`). Independent review found no
+blocker. Updated-source real hosted routing and required final CI remain pending.
+
+
 ### Direct Runtime Fence Follow-up
 
 The947 Preview passed its real existing-account composer and Production profile
