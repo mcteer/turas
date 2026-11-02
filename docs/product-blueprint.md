@@ -34,7 +34,7 @@ Turi is the eve assistant. The primary loop is:
 | Partner lead / engineer | Assigned customer planning, execution, enablement | Explicit customer/project grants; internal notes and margins hidden |
 | MCP consumer | Query authorized structured context | Read-only scopes; same domain policy as the application |
 
-Feature 002 uses three demo logins: `mcteer` for internal Vercel administrators,
+The platform uses three configured application accounts: `mcteer` for internal Vercel administrators,
 `panel` for internal Vercel employees, and `partner` for an external partner member.
 Internal users can access every current and future customer profile in their workspace,
 including for purposes beyond delivery; this does not make private chats shared.

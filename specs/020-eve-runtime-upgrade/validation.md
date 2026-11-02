@@ -966,3 +966,26 @@ projection cases and TypeScript passed. The actual native memory/file rerun pass
 other-user isolation, removal and native retirement, with zero paid calls. The
 latest shared native-file receipt covers this memory run; earlier named logs
 retain the distinct staged-file results.
+
+### Catalog Inventory and Production Account Terminology
+
+The `1560018` legacy workflow (`41392319520`) passed. The main workflow
+(`41392319454`) completed with 52 successful jobs and two failures: a WebKit
+internal reload error in the MCP browser gate, and catalog verification of
+`native-model-routing.test.ts`. The latter occurred after 1,075 earlier cases
+passed: the source contained five tests while the inventory still declared four.
+The inventory now includes the existing zero-based model-ordinal test; no test
+assertion, deadline, runtime behavior or account credential was changed.
+
+Independent owned verification of the final six catalog suites passed all 21
+cases (5 routing, 10 fixture installers, 2 Production recovery, 2 recovery drill,
+1 specialist accounting, 1 legacy-line recovery), with no skips, retries or model
+calls. Owned lifecycle cleanup completed and matching containers were absent.
+The private summary digest is
+`a070cf9317e96b315fb5a5cf07ac4f238573168dfce66a142fe5b81b2ec865af`.
+These subset results do not replace full CI on the corrected source.
+
+Current account descriptions in architecture, product blueprint and decisions
+now say application accounts. Historical implementation references and existing
+credential names remain compatible. Documentation checks passed. Production
+remains on its existing release; merge and Production verification are pending.
