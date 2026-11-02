@@ -2,6 +2,25 @@
 
 ## Current Acceptance State
 
+### Current-Protocol Research Fixtures
+
+The59fa broader CI exposed two005 research browser scenarios that inserted bound
+conversations without `native_protocol`. Migration082 intentionally defaults such
+rows to historical25, so the upgraded UI correctly rendered a closed/read-only
+thread. Both fixtures now explicitly use27, and the empty mocked stream uses27.
+All12 original research cases pass across four WebKit projects with unchanged
+assertions and deadlines. The earlier private wrapper/import/Node selection stops
+never reached those assertions and are not counted as passes. Cleanup is confirmed.
+
+The separate59fa MCP regression failed at learning-metrics mobile-light with a
+WebKit internal navigation error. Its unchanged original scenario passes in all
+four projects; no product fix is supported. Because the research fixture requires
+a new commit, the new full CI run includes that unchanged MCP gate rather than
+rerunning an obsolete commit. Final-source CI is still required. Application,
+agent, dependency and migration code remains byte-equivalent to59fa, whose actual
+hosted specialist and independent rendered acceptance passed. A new exact-commit
+Preview authentication/visual check remains required before merge.
+
 ### Server-Authoritative Best-Practices Handoff
 
 Exact7b62 Preview (`https://turas-jxqtoc9g2-turas-6e414af3.vercel.app`) passes the

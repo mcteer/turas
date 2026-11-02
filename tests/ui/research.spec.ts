@@ -46,9 +46,9 @@ test("public research preview stays explicit in an owned synthetic chat",async (
       (id,environment_id,workspace_id,customer_id,owner_principal_id,
        eve_session_id,creation_operation_id,binding_state,title,
        context_snapshot_schema,context_login_session_id,context_membership_id,
-       context_audience,context_generation,context_valid_until,live_customer_context)
+       context_audience,context_generation,context_valid_until,live_customer_context,native_protocol)
       VALUES($1,$2,$3,$4,$5,$6,$7,'bound','Synthetic research preview',
-        'customer-context-v1',$8,$9,'internal',$10,now()+interval '1 hour',true)`,
+        'customer-context-v1',$8,$9,'internal',$10,now()+interval '1 hour',true,27)`,
     [id,process.env.TURAS_TEST_ENVIRONMENT_ID,DEMO_IDS.workspace,
       DEMO_IDS.sharedCustomer,DEMO_IDS.mcteer,`synthetic_${randomUUID().replaceAll("-","")}`,
       randomUUID(),session.rows[0].id,DEMO_IDS.mcteerMembership,
@@ -220,9 +220,9 @@ test("keyboard cancellation retains only checked public findings",async ({ page 
       (id,environment_id,workspace_id,customer_id,owner_principal_id,
        eve_session_id,creation_operation_id,binding_state,title,
        context_snapshot_schema,context_login_session_id,context_membership_id,
-       context_audience,context_generation,context_valid_until,live_customer_context)
+       context_audience,context_generation,context_valid_until,live_customer_context,native_protocol)
       VALUES($1,$2,$3,$4,$5,$6,$7,'bound','Synthetic cancelled research',
-        'customer-context-v1',$8,$9,'internal',$10,now()+interval '1 hour',true)`,
+        'customer-context-v1',$8,$9,'internal',$10,now()+interval '1 hour',true,27)`,
     [conversationId,process.env.TURAS_TEST_ENVIRONMENT_ID,DEMO_IDS.workspace,
       DEMO_IDS.sharedCustomer,DEMO_IDS.mcteer,
       nativeId,randomUUID(),
@@ -269,7 +269,7 @@ test("keyboard cancellation retains only checked public findings",async ({ page 
     // This UI fixture owns no native provider session. Resume an idle synthetic
     // transport explicitly so the real non-ready chat guard remains enforced.
     let idleReads=0;
-    await page.route(`**/eve/v1/session/${nativeId}/stream**`,route=>{idleReads++;return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'25','x-eve-stream-tail-index':'-1'},body:''});});
+    await page.route(`**/eve/v1/session/${nativeId}/stream**`,route=>{idleReads++;return route.fulfill({status:200,contentType:'application/x-ndjson',headers:{'x-eve-stream-version':'27','x-eve-stream-tail-index':'-1'},body:''});});
     await page.route(`**/eve/v1/session/${nativeId}`,route=>route.fulfill({status:503,json:{code:'synthetic_research_delivery_unavailable'}}));
     await visitAfterSignIn(page,`/s/${conversationId}`);
     await page.getByRole("button",{ name: "Customer context",exact: true }).click();
