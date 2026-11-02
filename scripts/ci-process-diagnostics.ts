@@ -113,7 +113,7 @@ function artifactStartupDiagnostic(value:unknown){
  * payloads, credentials or arbitrary errors can enter the CI summary. */
 export function ordinaryOperationsDiagnostic(value:unknown){
  if(!value||typeof value!=='object')return undefined;const row=value as Record<string,unknown>;if(row.kind!=='native_operations_fixture_failure')return undefined;
- const phases=['scenario','first_pending','intervening_fill','intervening_send','intervening_completion','fresh_approval','member_refusal','changed_source','knowledge'];
+ const phases=['scenario','first_pending','intervening_fill','intervening_send','intervening_completion','fresh_approval','member_refusal','changed_source','changed_source_overview','changed_source_revise','knowledge'];
  const number=(value:unknown,max=1000000)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=0&&value<=max?value:undefined;
  const send=row.send&&typeof row.send==='object'?row.send as Record<string,unknown>:{};
  const attempts=Array.isArray(row.attempts)?row.attempts.slice(0,8).flatMap(value=>{if(!value||typeof value!=='object')return [];const attempt=value as Record<string,unknown>;return [{responseState:typeof attempt.responseState==='string'&&['pending','running','stopping','waiting_input','completed','cancelled','failed'].includes(attempt.responseState)?attempt.responseState:'unknown',dispatchState:typeof attempt.dispatchState==='string'&&['prepared','dispatching','admitted','uncertain','retryable','rejected'].includes(attempt.dispatchState)?attempt.dispatchState:'unknown',...Object.fromEntries(['intervening','nativeTurnBound','receiptPresent'].filter(key=>typeof attempt[key]==='boolean').map(key=>[key,attempt[key]]))}];}):[];
@@ -134,4 +134,11 @@ export function setupFailureMetadata(value:unknown){
  const operations=['scripts/db-migrate.ts','scripts/db-roles.ts','scripts/bootstrap-demo.ts'].filter(file=>message.includes(file));
  const signatures=['Owned local setup failed','Disposable clone','Marked disposable test source required','Disposable production build failed','Disposable app failed readiness','Report UI discovery failed','Prior-feature integration failed','Report suite failed','Regression source changed','Report source changed','Report UI source changed','Migration digest mismatch','Migration manifest does not match','Turas configuration invalid','Rendered binding changed'];
  return {stage:typeof row.stage==='string'&&stages.includes(row.stage)?row.stage:'unknown',operations,setupSignatures:signatures.filter(s=>message.includes(s)),...processFailureMetadata({message,code:row.code,signal:row.signal})};
+}
+
+/** Fixed native response codes and boundary positions only; never response prose. */
+export function staffingNativeFailureMetadata(value:unknown){
+ const row=value&&typeof value==='object'?value as Record<string,unknown>:{};
+ const boundary=ordinaryOperationsDiagnostic({kind:'native_operations_fixture_failure',boundaryStages:row.boundaryStages,boundaryErrors:row.boundaryErrors,send:{nativeCode:row.code}})!;
+ return {kind:'owned_staffing_native_error' as const,status:typeof row.status==='number'&&Number.isInteger(row.status)&&row.status>=400&&row.status<=599?row.status:null,code:boundary.nativeCode,boundaryStages:boundary.boundaryStages??[],boundaryErrors:boundary.boundaryErrors,dormantGeneration:row.dormantGeneration===true};
 }

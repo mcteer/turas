@@ -1,3 +1,4 @@
+import {installOwnedEveResume} from '../owned-eve-resume';
 import { readFile, writeFile, realpath } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import type { StaffingEvalEnvironment } from "../../../scripts/staffing-eval-environment";
@@ -12,11 +13,11 @@ export async function installStaffingNativeFixture(environment: StaffingEvalEnvi
   const path = join(root, "agent/agent.ts"), source = await readFile(path, "utf8");
   const target = "wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode";
   if (source.split(target).length !== 2 || !source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";') || !source.includes('reasoning: "low"')) throw new Error("Native fixture model shape changed");
+ if(!source.includes('beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),'))throw Error('Fixture model metadata changed');
+  await installOwnedEveResume(environment.appRoot,'007');
   const fixture = source.replace(target, "wrapStaffingModel(createStaffingNativeFixtureModel(principal, identity), admitted.mode")
-    .replace("return selectTurasGatewayModel(wrapStaffingModel(createStaffingNativeFixtureModel(principal, identity), admitted.mode, {",
-      "return { ...selectTurasGatewayModel(wrapStaffingModel(createStaffingNativeFixtureModel(principal, identity), admitted.mode, {")
-    .replace("beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),\n        }));",
-      "beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),\n        })), modelContextWindowTokens: 128_000 };");
+    .replace("return selectTurasGatewayModel(deferModelAdmission(", "return { ...selectTurasGatewayModel(deferModelAdmission(")
+    .replace("        }));", "        })), modelContextWindowTokens: 128_000 };");
   if (!fixture.includes("modelContextWindowTokens: 128_000")) throw new Error("Native fixture metadata shape changed");
   await writeFile(path, 'import { createStaffingNativeFixtureModel } from "../tests/fixtures/staffing/native-model";\n' + fixture, { mode: 0o600 });
   await query(`CREATE TABLE staffing_native_fixture_calls(id uuid PRIMARY KEY,response_attempt_id uuid NOT NULL REFERENCES response_attempts(id),

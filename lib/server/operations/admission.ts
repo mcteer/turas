@@ -129,7 +129,7 @@ async function releaseIo(environmentId:string){
  const client=ioClient;ioClient=undefined;if(!client)return;let destroy=false;
  try{destroy=(await client.query('SELECT pg_advisory_unlock_shared(hashtextextended($1,16017)) AS released',[environmentId])).rows[0]?.released!==true;}
  catch{destroy=true;}finally{client.release(destroy);}
- if(destroy)throw Error('Private IO capture fence could not be verified');
+ if(destroy){console.error(JSON.stringify({event:'operations.io_fence_release_failed'}));throw Error('Private IO capture fence could not be verified');}
 }
 
 /** Positive provider/cache work shares the capture fence for its entire lifetime.

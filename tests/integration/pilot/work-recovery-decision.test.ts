@@ -1,3 +1,4 @@
+import {turnFixture} from '../../fixtures/eve-v27';
 import {CURRENT_SCHEMA_VERSION} from '../../../lib/contracts/current-schema';
 import {WORK_BACKUP_LIMITS} from '../../../lib/server/operations/work-backup-limits';
 import {workMcpCaseFailureMetadata} from '../../../scripts/ci-process-diagnostics';
@@ -819,15 +820,15 @@ it('retires prepared plan drafting before reopening without changing original id
 
 
 it('rejects unaccounted current root model steps before provider selection while preserving legacy model selection',async()=>{
- const {default:agent}=await import('../../../agent/agent'),resolveModel=(agent.model as unknown as {events:{'step.started':(event:unknown,context:unknown)=>Promise<unknown>}}).events['step.started'];
- const resolve=()=>resolveModel({data:{turnId:'synthetic-unbound-turn',stepIndex:0}},{session:{id:'wrun_synthetic_unbound',auth:{current:null}}});
+ const {default:agent}=await import('../../../agent/agent');const model=agent.model;if(!model||typeof model!=='object')throw Error('Missing dynamic root model');
+ const resolve=()=>Reflect.get(model,Symbol.for('eve.dynamic'))({session:{id:'wrun_synthetic_unbound',auth:{current:null}},turn:{id:'synthetic-unbound-turn'},view:turnFixture('synthetic-unbound-turn').snapshot.view});
  await fixture(async input=>{
   await withLockedWorkRecoveryTarget(input,async(_db,target)=>{await expect(withTargetRuntime(input,target,resolve)).rejects.toMatchObject({code:'recovery_locked',status:503});});
  },async owner=>{
   await expect(resolve()).rejects.toMatchObject({status:404});
   await owner.query('UPDATE turas_environment SET schema_version=77');
   try{expect(await resolve()).toMatchObject({model:'anthropic/claude-sonnet-5.5',modelOptions:{providerOptions:{gateway:{only:['anthropic']}}}});}
-  finally{await owner.query('UPDATE turas_environment SET schema_version=81');}
+  finally{await owner.query('UPDATE turas_environment SET schema_version=$1',[CURRENT_SCHEMA_VERSION]);}
  });
 },210000);
 

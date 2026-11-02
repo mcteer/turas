@@ -1,16 +1,19 @@
+import {projectSpecialistFact} from '../../lib/server/research/specialists/discussion-events';
 import { defineHook } from "eve/hooks";
+import {projectEveFact} from "../../lib/server/conversations/eve-events";
 import { projectNativeEvent } from "../../lib/server/conversations/projection";
 
 export default defineHook({
   events: {
     async "*"(event, ctx) {
       const attemptId = ctx.session.auth.current?.attributes.turasAttemptId;
-      const inputEvent = event.type === "input.requested" || event.type === "input.resolved";
+      const inputEvent = event.type === "interaction.opened" || event.type === "interaction.settled";
       if (inputEvent) console.info(JSON.stringify({ event: "conversation.native_input_observed",
-        type: event.type, hasAttempt: typeof attemptId === "string" }));
+        type: event.type,...(event.type==='interaction.settled'?{outcome:event.data.outcome}:{}), hasAttempt: typeof attemptId === "string" }));
+      await projectSpecialistFact(ctx.session.id,event,ctx.position,ctx.now.toISOString(),ctx.view);
       if (typeof attemptId !== "string") return;
       try {
-        await projectNativeEvent(ctx.session.id, attemptId, event);
+        await projectNativeEvent(ctx.session.id, attemptId, projectEveFact(ctx.session.id,event,ctx.position,ctx.now.toISOString(),ctx.view),ctx.position.line);
       } catch (error) {
         // Never log event payloads, source passages, principal IDs or provider errors.
         console.warn(JSON.stringify({ event: "conversation.projection_failed", type: event.type,

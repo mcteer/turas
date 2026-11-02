@@ -31,6 +31,8 @@ export type PlanEvalEnvironment = {
 };
 
 export type PlanEvalOptions = {
+  /** Run the real maintenance worker for owned production chat acceptance. */
+  superviseMaintenance?: boolean;
   /** Build once and run the owned Next production server; existing callers stay in dev. */
   production?: boolean;
   deadlineAt?: number;
@@ -197,13 +199,15 @@ export async function withPlanEvalEnvironment<T>(
   const ownership = `turas-owned-${feature}-${randomUUID()}`;
   let prepared = false;
   let child: ChildProcess | null = null;
+  let maintenanceChild:ChildProcess|null=null;
   let productionEve:ChildProcess|null=null,productionProxy:Server|null=null;
   const closeProductionProxy=async()=>{const current=productionProxy;productionProxy=null;if(current){current.closeAllConnections();await new Promise<void>(done=>current.close(()=>done()));}};
   let startupTail = "";
   let bodyFailed=false,bodyFailure:unknown;
     async function stopRuntime(): Promise<void> {
-      const children=await Promise.allSettled([stopChild(child),stopChild(productionEve)]);
+      const children=await Promise.allSettled([stopChild(child),stopChild(productionEve),stopChild(maintenanceChild)]);
       if(children[0].status==='fulfilled')child=null;if(children[1].status==='fulfilled')productionEve=null;
+      if(children[2].status==='fulfilled')maintenanceChild=null;
       const remaining=await Promise.allSettled([closeProductionProxy(),stopOwnedAppProcesses(appRoot)]);
       const failures=[...children,...remaining].filter((result):result is PromiseRejectedResult=>result.status==='rejected');
       if(failures.length)throw new AggregateError(failures.map(result=>result.reason),'Owned evaluation runtime retirement unverified');
@@ -288,7 +292,10 @@ export async function withPlanEvalEnvironment<T>(
       if (child) throw new Error("Disposable app already running");
       startupTail = "";
       const port = new URL(origin).port;
+      const sourceVersion=spawnSync('git',['rev-parse','HEAD'],{cwd:resolve('.'),encoding:'utf8'}).stdout?.trim();
+      if(options.production&&!/^[a-f0-9]{40}$/.test(sourceVersion??''))throw Error('Owned source commit required');
       const productionEnv=options.production?{
+        TURAS_CODE_VERSION:sourceVersion,
         EVE_NEXT_PRODUCTION_PORT:String(evePortLease!.port),
         EVE_NEXT_PRODUCTION_ORIGIN:`http://127.0.0.1:${eveProxyLease!.port}`,
         // The unnamed public agent remains at /eve/v1; only the private
@@ -346,6 +353,12 @@ export async function withPlanEvalEnvironment<T>(
       });
       child.stdout?.on("data",capture);
       child.stderr?.on("data",capture);
+      if(options.production&&options.superviseMaintenance){
+        maintenanceChild=spawnPlanChild(process.execPath,['--import','tsx','scripts/maintenance-worker.ts'],{
+          cwd:appRoot,env:{...process.env,...productionEnv,NODE_OPTIONS:'',NODE_ENV:'production',TURAS_EVE_INTERNAL_ORIGIN:`http://127.0.0.1:${evePortLease!.port}/`,...await qualityChildEnvironment()},
+        });
+        maintenanceChild.stdout?.on('data',capture);maintenanceChild.stderr?.on('data',capture);
+      }
       const readinessStarted=Date.now();
       let lastAuthStatus:number|null=null,lastEveStatus:number|null=null;
       let authTransport='none',eveTransport='none',probeCount=0;

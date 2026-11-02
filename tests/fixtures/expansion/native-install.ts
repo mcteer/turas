@@ -15,9 +15,10 @@ export async function installExpansionNativeFixture(environment: { appRoot: stri
   const target = "wrapStaffingModel(parityBudgetModel(gateway(selectedModel),selectedModel), admitted.mode";
   if (source.split(target).length !== 2 || !source.includes('const selectedModel = "anthropic/claude-sonnet-5.5";') || !source.includes('reasoning: "low"'))
     throw new Error("Fixture model shape changed");
+ if(!source.includes('beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),'))throw Error('Fixture model metadata changed');
   const replacement = source.replace(target, "wrapStaffingModel(createExpansionNativeFixtureModel(principal, identity), admitted.mode")
-    .replace("return selectTurasGatewayModel(wrapStaffingModel(createExpansionNativeFixtureModel(principal, identity), admitted.mode, {", "return { ...selectTurasGatewayModel(wrapStaffingModel(createExpansionNativeFixtureModel(principal, identity), admitted.mode, {")
-    .replace("beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),\n        }));", "beforeProvider: () => assertGovernedStaffingProviderRelease(principal, identity),\n        })), modelContextWindowTokens: 128_000 };");
+    .replace("return selectTurasGatewayModel(deferModelAdmission(", "return { ...selectTurasGatewayModel(deferModelAdmission(")
+    .replace("        }));", "        })), modelContextWindowTokens: 128_000 };");
   if (!replacement.includes("modelContextWindowTokens: 128_000")) throw new Error("Fixture model metadata changed");
   await writeFile(path, 'import { createExpansionNativeFixtureModel } from "../tests/fixtures/expansion/native-model";\n' + replacement, { mode: 0o600 });
   await query(`CREATE TABLE expansion_native_fixture_calls(id uuid PRIMARY KEY,

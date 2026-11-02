@@ -1,3 +1,5 @@
+import {registerSpecialistSources} from '../discussions';
+import {specialistResearchGuard} from '../discussion-research-guard';
 import { embedQuery } from "../embeddings";
 import { sourceSchema } from "../solution-research/schema";
 import { informationTypeSchema } from "../solution-research/freshness";
@@ -37,7 +39,7 @@ async function practiceSourceReceipts(identity: AppIdentity, product: string, qu
   const sql = await evidenceDatabase();
   let vector: number[] | null = null;
   if (embeddingsConfigured() && query) {
-    try { vector = await embedQuery(query, signal); } catch { signal.throwIfAborted(); }
+    try { vector = await embedQuery(query, signal,await specialistResearchGuard(identity,'practice-query:'+digest(query))); } catch { signal.throwIfAborted(); }
   }
   const rows = await sql.query(`WITH candidates AS MATERIALIZED (
       SELECT p.*,s.source,s.url AS source_url,s.truncated,s.checked_at AS snapshot_checked_at,s.refresh_after AS snapshot_refresh_after,
@@ -59,6 +61,7 @@ async function practiceSourceReceipts(identity: AppIdentity, product: string, qu
   signal.throwIfAborted();
   const grouped = new Map<string, PracticeSource>();
   for (const row of rows) {
+    if(identity.workerSessionId&&new Date(row.snapshot_refresh_after).getTime()<=Date.now())continue;
     const source = sourceSchema.parse(row.source);
     const passages = retainedPracticePassages(source, String(row.text), query);
     const current = grouped.get(row.snapshot_id) ?? practiceSourceSchema.parse({
@@ -73,6 +76,8 @@ async function practiceSourceReceipts(identity: AppIdentity, product: string, qu
     }
     grouped.set(row.snapshot_id, current);
   }
+  const selected=[...grouped.keys()].slice(0,8);
+  await registerSpecialistSources(identity,selected.map(snapshotId=>{const row=rows.find(row=>row.snapshot_id===snapshotId)!;return {snapshotId,checkedAt:new Date(row.snapshot_checked_at).toISOString(),refreshAfter:new Date(row.snapshot_refresh_after).toISOString()};}));
   return [...grouped.entries()].slice(0, 8).map(([snapshotId,source])=>({snapshotId,source:completeReferences
     ? {...source,passages:researchPassages(sourceSchema.parse(rows.find(row=>row.snapshot_id===snapshotId)!.source))}
     :source}));

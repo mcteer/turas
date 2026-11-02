@@ -20,4 +20,4 @@ const tool = defineTool({
     return { status: "read" as const, passages, reason: "Exact retained source text; no network retrieval or publication-date change." };
   },
 });
-export default defineDynamic({ events: { "step.started": () => researchState.get().finalized ? null : tool } });
+export default defineDynamic(() => researchState.get().finalized ? null : tool );

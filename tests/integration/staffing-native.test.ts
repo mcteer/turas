@@ -1,5 +1,6 @@
+import {staffingNativeFailureMetadata} from '../../scripts/ci-process-diagnostics';
 import { randomUUID } from "node:crypto";
-import { readFile, stat } from "node:fs/promises";
+import { readFile, stat,writeFile,mkdir,rm } from "node:fs/promises";
 import { readOwnedStaffingPair } from "../fixtures/staffing/pair";
 import { join } from "node:path";
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
@@ -25,8 +26,18 @@ const timeout = (ms = 15_000) => AbortSignal.timeout(ms);
 function headers(auth: Auth, extra: Record<string, string> = {}) {
   return { cookie: auth.cookie, origin: environment.origin, "content-type": "application/json", "x-csrf-token": auth.csrf, ...extra };
 }
+let nativeFailureRetained=false;
 async function post(auth: Auth, path: string, body: unknown, extra: Record<string, string> = {}) {
-  return fetch(`${environment.origin}${path}`, { method: "POST", headers: headers(auth, extra), body: JSON.stringify(body), signal: timeout() });
+  const response=await fetch(`${environment.origin}${path}`, { method: "POST", headers: headers(auth, extra), body: JSON.stringify(body), signal: timeout() });
+  if(response.status>=500&&!nativeFailureRetained){try{
+    const root=join(process.cwd(),'local-artifacts/007');await mkdir(root,{recursive:true,mode:0o700});
+    const runtimeLog=environment.privateLogTail(),body=await response.clone().json().catch(()=>null);
+    const errors=runtimeLog.split('\n').flatMap(line=>{try{const value=JSON.parse(line.slice(line.indexOf('{')));return value.kind==='turas_native_boundary_error'?[value]:[];}catch{return [];}});
+    const diagnostic=staffingNativeFailureMetadata({status:response.status,code:body?.code??body?.error?.code,boundaryStages:errors,boundaryErrors:errors.map(value=>value.code),dormantGeneration:runtimeLog.includes('DevelopmentRunUnavailableError')});
+    await writeFile(join(root,'native-request-diagnostic-private.json'),JSON.stringify(diagnostic),{mode:0o600});nativeFailureRetained=true;
+    console.error(JSON.stringify(diagnostic));
+  }catch{/* Diagnostics must not replace the original response/assertion. */}}
+  return response;
 }
 async function login(name: "panel" | "mcteer"): Promise<Auth> {
   const config = getServerConfig();
@@ -57,6 +68,19 @@ async function until<T>(read: () => Promise<T>, predicate: (value: T) => boolean
     ["state", "responseState", "dispatchState", "failureCode", "fenced", "stepsAdmitted", "readCalls", "outputReadable"]
       .filter(key => key in last).map(key => [key, (last as Record<string, unknown>)[key]])) : last;
   throw new Error(`Owned native fixture did not reach its expected state: ${JSON.stringify(state)}`);
+}
+/** HTTP health can precede the owned maintenance process becoming ready. */
+async function waitForFreshMaintenance(deadline:number){
+ const checkpoint=(await withTransaction(async db=>{await db.query("SET LOCAL statement_timeout='1000ms'");return db.query<{at:Date}>('SELECT clock_timestamp() AS at');})).rows[0].at;
+ let heartbeatPresent=false;
+ while(Date.now()<deadline){
+  const observed=await withTransaction(async db=>{await db.query("SET LOCAL statement_timeout='1000ms'");return db.query<{ready:boolean;present:boolean}>(`SELECT EXISTS(SELECT 1 FROM maintenance_workers WHERE environment_id=$1) AS present,
+   EXISTS(SELECT 1 FROM maintenance_workers WHERE environment_id=$1 AND last_seen_at>=$2 AND last_seen_at>=clock_timestamp()-interval '15 seconds') AS ready`,[getServerConfig().TURAS_ENVIRONMENT_ID,checkpoint]);});
+  heartbeatPresent=observed.rows[0].present;if(observed.rows[0].ready)return;
+  await new Promise(resolve=>setTimeout(resolve,Math.min(100,Math.max(0,deadline-Date.now()))));
+ }
+ console.error(JSON.stringify({kind:'owned_staffing_native_readiness',heartbeatPresent,freshAfterHttpReady:false}));
+ throw Error('Owned maintenance heartbeat did not become fresh after HTTP readiness');
 }
 async function prepare(instructions: string) {
   await resetStaffingFixtureRates();
@@ -111,15 +135,17 @@ async function retireRequiredSkill(f: Fixture) {
 
 describe("owned eve native staffing transport with a bounded fixture provider", () => {
   beforeAll(async () => {
-    assertDeterministicTestMode(); await closeRuntimePool();
+    const readinessDeadline=Date.now()+180000;assertDeterministicTestMode(); await closeRuntimePool();
+    await rm(join(process.cwd(),'local-artifacts/007/native-request-diagnostic-private.json'),{force:true});nativeFailureRetained=false;
     let ready: () => void, failed: (error: unknown) => void;
     const readiness = new Promise<void>((resolve, reject) => { ready = resolve; failed = reject; });
     const lifetime = new Promise<void>(resolve => { finish = resolve; });
     lifecycle = withStaffingEvalEnvironment(async env => {
       environment = env;
-      try { await installStaffingNativeFixture(env); await env.start(); panel = await login("panel"); manager = await login("mcteer"); ready(); await lifetime; }
+      try { env.bootstrapDemo(); await installStaffingNativeFixture(env); await env.start(); await waitForFreshMaintenance(readinessDeadline); panel = await login("panel"); manager = await login("mcteer"); ready(); await lifetime; }
       finally { await env.stop(); }
-    }, { sourceDatabaseUrl: process.env.TURAS_TEST_SOURCE_DATABASE_URL }).then(() => undefined);
+    // A fresh Eve world cannot resume workflow IDs copied from another test DB.
+    }, { empty: true, sourceDatabaseUrl: process.env.TURAS_TEST_SOURCE_DATABASE_URL }).then(() => undefined);
     void lifecycle.catch(error => failed(error));
     await readiness;
   }, 180_000);
@@ -196,6 +222,7 @@ describe("owned eve native staffing transport with a bounded fixture provider", 
     expect((await query("SELECT count(*)::int AS n FROM staffing_allocations WHERE demand_id=$1", [f.demand.demandId])).rows[0].n).toBe(0);
   }, 120_000);
   it("preserves durable cancellation, receipts, selected database and owned stores across the paired supervisor restart", async () => {
+    const restartDeadline=Date.now()+120000;
     const f = await prepare("Synthetic paired restart explanation"), running = await barrier(f);
     const stopped = await post(panel, `/api/staffing/advisory/${f.reserved.attemptId}/cancel`, {});
     expect(stopped.status).toBe(200);
@@ -212,7 +239,7 @@ describe("owned eve native staffing transport with a bounded fixture provider", 
     expect((await query("SELECT environment_id,schema_version FROM turas_environment")).rows).toEqual([{ environment_id: process.env.TURAS_ENVIRONMENT_ID, schema_version: originalPair.schemaVersion }]);
     // Restart the real Next/eve/maintenance supervisor against the same managed
     // DB and owned stores. This reconnects DB clients; it does not reboot Neon.
-    await environment.start();
+    await environment.start(); await waitForFreshMaintenance(restartDeadline);
     expect(await readOwnedStaffingPair(environment)).toEqual(originalPair);
     expect(process.env.TURAS_ARTIFACT_STORE_ROOT).toBe(artifactRoot);
     expect(staffingSha256(await readFile(join(environment.workforceRoot, ".turas-workforce-store.json")))).toBe(marker);

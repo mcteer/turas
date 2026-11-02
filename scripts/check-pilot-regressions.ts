@@ -1,3 +1,4 @@
+import {readLearningNativeAssertion} from './learning-native-diagnostics';
 import {CURRENT_SCHEMA_VERSION} from '../lib/contracts/current-schema';
 import {fixedBrowserPhases,pilotUiChildFailures} from './ci-browser-diagnostics';
 import {pilotRegressionFailureMetadata} from './ci-process-diagnostics';
@@ -39,7 +40,8 @@ export async function checkPilotRegressions(){
   if(predecessor.status!==0||predecessor.error){
    const names=['014-domain-native','014-native','014-webkit','knowledge-retrieval-conversations-reports-support-expansion','012-domain','013-domain','private-conversations-earlier-authorities-and-webkit'];
    const phases=(predecessor.stdout+'\n'+predecessor.stderr).split('\n').flatMap(line=>{try{const row=JSON.parse(line);if(names.includes(row.regression))return [{name:row.regression,state:'failed',browser:Array.isArray(row.diagnostics)?row.diagnostics.slice(0,4).filter((d:any)=>/^webkit-(desktop|mobile)-(light|dark)$/.test(d.project)).map((d:any)=>({project:d.project,failedLocations:Array.isArray(d.failedLocations)?d.failedLocations.slice(0,20).map((f:any)=>({file:/^learning-[a-z-]+\.spec\.ts$/.test(f.file)?f.file:'unknown',line:Number.isInteger(f.line)&&f.line>=0&&f.line<100000?f.line:0,status:['failed','timedOut','interrupted'].includes(f.status)?f.status:'unknown',phases:fixedBrowserPhases(f.phases),signatures:Array.isArray(f.signatures)?f.signatures.filter((s:unknown)=>['Timeout','toBeFocused','toBeVisible','toEqual','toHaveCount','ECONNREFUSED','Execution context was destroyed','Fast Refresh','503','429'].includes(String(s))).slice(0,10):[]})):[]})):[]}];if(names.includes(row.gate)&&row.status==='passed')return [{name:row.gate,state:'passed'}];}catch{}return [];});
-   console.error(JSON.stringify({gate:'pilot-regression-predecessor',state:'failed',exitCode:predecessor.status,processError:predecessor.error,phases}));
+   const nativeDiagnostics=(predecessor.stdout+'\n'+predecessor.stderr).split('\n').flatMap(line=>{try{const row=JSON.parse(line);return Array.isArray(row.nativeDiagnostics)?row.nativeDiagnostics.map(readLearningNativeAssertion).filter(Boolean):[];}catch{return [];}}).slice(0,4);
+   console.error(JSON.stringify({nativeDiagnostics,gate:'pilot-regression-predecessor',state:'failed',exitCode:predecessor.status,processError:predecessor.error,phases}));
    throw Error('Complete predecessor gates failed');
   }
   stage='predecessor-receipt';

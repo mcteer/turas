@@ -1,3 +1,4 @@
+import {projectionFactIndex} from './projection-position';
 import {admitNativeInputReplay,sanitizeNativeInputParts} from './native-input-replay';
 import {projectNativeInputDisplay} from './native-input-display';
 import {questionReconstructionEventWindow} from './question-reconstruction';
@@ -31,7 +32,7 @@ import { recordStaffingTelemetry } from "../staffing/telemetry";
 export type NativeEvent = {
   type: string;
   data?: Record<string, unknown>;
-  meta: { id?: string; at?: string; deliveryIds?: readonly string[] };
+  meta: { id?: string; at?: string; deliveryIds?: readonly string[]; protocol?:27;endOfLine?:boolean;next?:number;position?:{line:number;index:number} };
 };
 
 const visibleTypes = new Set([
@@ -41,20 +42,21 @@ const visibleTypes = new Set([
 
 const ordinaryContinuationTypes = new Set(["turn.started", "approval.settled"]);
 
-function visiblePayload(event: NativeEvent): Record<string, unknown> {
+function visiblePayload(event: NativeEvent,attemptId?:string): Record<string, unknown> {
   const data = event.data ?? {};
   switch (event.type) {
     case "message.received": {
       // Retain the framework's public file metadata, never sandbox paths or
       // another persisted copy of inline bytes, for historical attachment cards.
       const parts=sanitizeNativeInputParts(data.parts);
+      const identity=event.meta.protocol===27&&event.meta.deliveryIds?.length===1?{nativeProtocol:27,deliveryId:event.meta.deliveryIds[0]}:{};
       const sequence=Number.isSafeInteger(data.sequence)&&Number(data.sequence)>=0?{sequence:data.sequence}:{};
-      return parts.some(part=>part.type==='file')?{message:data.message,parts,...sequence}:{message:data.message,...sequence};
+      return parts.some(part=>part.type==='file')?{message:data.message,parts,...sequence,...identity}:{message:data.message,...sequence,...identity};
     }
     case "message.appended": return { messageDelta: data.messageDelta };
     case "message.completed": return { message: data.message, finishReason: data.finishReason };
     case "approval.settled": return {requestId:data.requestId,outcome:data.outcome,sequence:data.sequence};
-    case "input.requested": return {requests:data.requests};
+    case "input.requested": return {requests:data.requests,...(event.meta.protocol===27&&attemptId?{applicationAttemptId:attemptId}:{})};
     case "input.resolved": return {resolutions:data.resolutions,...(Number.isSafeInteger(data.sequence)?{sequence:data.sequence}:{})};
     case "step.completed": return { usage: data.usage ?? null };
     case "step.failed":
@@ -88,7 +90,7 @@ async function inputResolutionAttempt(db:PoolClient,nativeSessionId:string,curre
     ${Number((await db.query('SELECT schema_version FROM turas_environment LIMIT 1')).rows[0]?.schema_version??0)>=68?`OR EXISTS(SELECT 1 FROM ordinary_steering_deliveries steer WHERE steer.attempt_id=a.id AND steer.native_turn_id=requested.turn_id AND steer.native_event_id IS NOT NULL)`:''})
   CROSS JOIN LATERAL jsonb_array_elements(COALESCE(requested.visible_payload->'requests','[]'::jsonb)) request
   WHERE requested.conversation_id=$1 AND requested.native_session_id=$2 AND requested.event_type='input.requested'
-   AND request->>'requestId'=ANY($3::text[])`,[owner.id,nativeSessionId,ids])).rows;
+   AND request->>'requestId'=ANY($3::text[]) AND (requested.visible_payload->>'applicationAttemptId' IS NULL OR requested.visible_payload->>'applicationAttemptId'=a.id::text)`,[owner.id,nativeSessionId,ids])).rows;
  return rows.length===ids.length && new Set(rows.map(row=>row.attempt_id)).size===1?rows[0].attempt_id:null;
 }
 
@@ -123,7 +125,7 @@ export async function projectNativeEvent(
         ${marker>=65?`OR EXISTS(SELECT 1 FROM native_input_resume_windows resume JOIN event_projections resolution ON resolution.native_event_id=resume.native_event_id WHERE resume.attempt_id=a.id AND resolution.turn_id=$2 AND resolution.native_session_id=$3)`:''}
         ${marker>=77?`OR EXISTS(SELECT 1 FROM ordinary_question_continuations question WHERE question.attempt_id=a.id AND question.native_turn_id=$2 AND question.native_session_id=$3)`:''}
         ${marker>=68?`OR EXISTS(SELECT 1 FROM ordinary_steering_deliveries steer WHERE steer.attempt_id=a.id AND steer.native_turn_id=$2 AND steer.native_event_id IS NOT NULL)`:''})`,[current.id,event.data!.turnId,nativeSessionId])).rows;
-      if(targets.length>1)throw new Error('Native turn association is ambiguous');
+      if(targets.length>1){if(event.meta.protocol===27&&targets.some(row=>row.id===attemptId))return attemptId;throw new Error('Native turn association is ambiguous');}
       return targets[0]?.id??null;
     });
     if(original)attemptId=original;
@@ -287,7 +289,7 @@ export async function projectNativeEventInTransaction(
     // A framework continuation prompt can close its control turn while
     // the owned user-input request remains parked. This is neither an answer
     // nor a model admission; preserve the pending request and its allowance.
-    if(event.type==='turn.completed' && row.response_state==='waiting_input' &&
+    if(event.meta.protocol!==27 && event.type==='turn.completed' && row.response_state==='waiting_input' &&
       (await conversationFeature(client,row.conversation_id)).kind==='normal' && !await questionReconstructionEventWindow(client,attemptId,nativeSessionId,data))return;
     const artifact = await artifactContextSchemaReady(client)
       ? await client.query<{ native_text_digest: string }>(
@@ -331,15 +333,16 @@ export async function projectNativeEventInTransaction(
     }
     const inputReplay = feature.kind === 'normal' && event.type === 'message.received'
       ? await admitNativeInputReplay(client, row, nativeSessionId, event, nativeInputDigest) : null;
+    const factIndex=await projectionFactIndex(client,event);
     const inserted = await client.query(`INSERT INTO event_projections
       (native_event_id, conversation_id, native_session_id, stream_index,
-       event_type, turn_id, step_index, visible_payload, emitted_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       event_type, turn_id, step_index, visible_payload, emitted_at${factIndex!==null?",stream_fact_index":""})
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9${factIndex!==null?",$10":""})
       ON CONFLICT (native_event_id) DO NOTHING RETURNING native_event_id`,
     [event.meta.id, row.conversation_id, nativeSessionId, streamIndex ?? null,
       event.type, typeof data.turnId === "string" ? data.turnId : null,
       Number.isInteger(data.stepIndex) ? data.stepIndex : null,
-      JSON.stringify(resumeParent?{sequence:data.sequence,resumeForEventId:resumeParent.native_event_id}:inputReplay?{...visiblePayload(event),applicationInputReplay:inputReplay}:visiblePayload(event)), event.meta.at]);
+      JSON.stringify(resumeParent?{sequence:data.sequence,resumeForEventId:resumeParent.native_event_id}:inputReplay?{...visiblePayload(event,attemptId),applicationInputReplay:inputReplay}:visiblePayload(event,attemptId)), event.meta.at,...(factIndex!==null?[factIndex]:[])]);
     if (!inserted.rowCount) {
       if (streamIndex !== undefined) {
         await client.query(`UPDATE event_projections SET stream_index = COALESCE(stream_index, $2)
@@ -409,6 +412,25 @@ export async function projectNativeEventInTransaction(
         await client.query(`UPDATE watchdog_jobs SET state='settled',lease_owner=NULL,lease_expires_at=NULL,updated_at=now() WHERE attempt_id=$1`,[attemptId]);
       }else{
         if(await inputResolutionAttempt(client,nativeSessionId,attemptId,data)!==attemptId)throw new Error('Native input resolution has no owned pending request');
+        if(event.meta.protocol===27){
+          const resolutions=Array.isArray(data.resolutions)?data.resolutions:[];
+          const records=resolutions.filter((item):item is Record<string,unknown>=>typeof item==='object'&&item!==null);
+          if(records.some(item=>item.kind==='session-limit'&&item.nativeOutcome==='declined')){
+            await client.query("UPDATE response_attempts SET response_state='stopping',updated_at=now(),revision=revision+1 WHERE id=$1 AND response_state IN('waiting_input','running')",[attemptId]);
+            return;
+          }
+          if(!records.some(item=>item.nativeOutcome==='accepted'||item.kind==='tool-approval'&&item.nativeOutcome==='declined')){
+            if(records.length&&records.every(item=>item.nativeOutcome==='withdrawn'||item.nativeOutcome==='interrupted'))await client.query(`UPDATE response_attempts old SET response_state='cancelled',updated_at=now(),revision=revision+1
+              WHERE old.id=$1 AND old.response_state='waiting_input'
+              AND EXISTS(SELECT 1 FROM ordinary_steering_deliveries steer JOIN response_attempts replacement ON replacement.id=steer.attempt_id
+                WHERE replacement.conversation_id=old.conversation_id AND replacement.id<>old.id AND replacement.response_state IN('pending','running') AND steer.native_event_id IS NOT NULL)
+              AND NOT EXISTS(SELECT 1 FROM event_projections requested CROSS JOIN LATERAL jsonb_array_elements(requested.visible_payload->'requests') request
+                WHERE requested.conversation_id=old.conversation_id AND requested.event_type='input.requested' AND requested.visible_payload->>'applicationAttemptId'=old.id::text
+                AND NOT EXISTS(SELECT 1 FROM event_projections resolved CROSS JOIN LATERAL jsonb_array_elements(resolved.visible_payload->'resolutions') resolution
+                  WHERE resolved.conversation_id=old.conversation_id AND resolved.event_type='input.resolved' AND resolution->>'requestId'=request->>'requestId'))`,[attemptId]);
+            return;
+          }
+        }
         const posted=(await client.query(`SELECT min(resume.deadline_at) AS deadline_at FROM native_input_resume_windows resume
           JOIN event_projections request ON request.native_event_id=resume.native_event_id
           CROSS JOIN LATERAL jsonb_array_elements(COALESCE(request.visible_payload->'requests','[]'::jsonb)) item
@@ -443,11 +465,11 @@ export async function projectNativeEventInTransaction(
     };
     if (terminal[event.type]) {
       if(event.type==='turn.completed' && row.native_turn_id===data.turnId && await pendingSteering(client,attemptId))return;
-      if(event.type==='turn.completed' && row.native_turn_id===data.turnId &&
+      if(event.meta.protocol!==27 && event.type==='turn.completed' && row.native_turn_id===data.turnId &&
         await hasNativeInputWindow(client,attemptId,nativeSessionId,'',true))return;
       await client.query(`UPDATE response_attempts SET response_state = $2,
         updated_at = now(), revision = revision + 1 WHERE id = $1
-        AND (response_state IN ('pending','running','stopping') OR response_state='waiting_input' AND $3::boolean)`, [attemptId, terminal[event.type],await questionReconstructionEventWindow(client,attemptId,nativeSessionId,data)]);
+        AND (response_state IN ('pending','running','stopping') OR response_state='waiting_input' AND $3::boolean)`, [attemptId, terminal[event.type],event.meta.protocol===27||await questionReconstructionEventWindow(client,attemptId,nativeSessionId,data)]);
       await client.query(`UPDATE watchdog_jobs SET state = 'settled', lease_owner = NULL,
         lease_expires_at = NULL, updated_at = now() WHERE attempt_id = $1`, [attemptId]);
     }

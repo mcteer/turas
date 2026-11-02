@@ -3,13 +3,14 @@ import { runExecutionRead } from "../../lib/server/execution/tools";
 import { runExpansionRead } from "../../lib/server/expansion/tools";
 import { runSupportRead } from "../../lib/server/support/tools";
 import { defineTool } from "eve/tools";
-import { loadSkill } from "eve/tools/load_skill";
+import {planningSkillMarkdown} from "../../lib/staffing/skill-text";
+import {HttpFailure} from "../../lib/contracts/http";
 import { z } from "zod";
 import { authorizeStaffingSkill } from "../../lib/server/staffing/skill-scope";
 import { loadStaffingSkill } from "../../lib/server/staffing/skill-load";
 import { runLearningRead } from '../../lib/server/learning/tools';
 
-export default defineTool({ ...loadSkill,
+export default defineTool({ description: "Load the currently authorized delivery procedure by its exact skill name.",
   inputSchema: z.object({ skill: z.string().min(1).max(120) }).strict(),
   outputSchema: z.string(),
   availableInSubagents: false,
@@ -25,6 +26,7 @@ export default defineTool({ ...loadSkill,
     if (await authorizeStaffingSkill(ctx.session.auth.current, input.skill)) {
       return loadStaffingSkill(ctx.session.auth.current, ctx.callId);
     }
-    return z.string().parse(await loadSkill.execute(input, ctx));
+    if(input.skill === "delivery-planning") return planningSkillMarkdown;
+    throw new HttpFailure(404,"skill_not_found","The requested procedure is unavailable");
   },
 });

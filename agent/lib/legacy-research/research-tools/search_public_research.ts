@@ -1,3 +1,4 @@
+import {specialistResearchGuard} from '../../../../lib/server/research/specialists/discussion-research-guard';
 import { searchIndependentSources } from "../../../../lib/server/research/specialists/solution-research/independent-search";
 import { researchState } from "../research-state";
 import { researchIdentity } from "../../../../lib/server/research/specialists/identity";
@@ -65,7 +66,7 @@ const researchTool = defineTool({
     try {
       const identity = await researchIdentity(ctx.session.auth.current,ctx.session.parent?{parentSessionId:ctx.session.parent.sessionId,workerSessionId:ctx.session.id}:undefined);
       const search = async (selected: "context" | "gateway_exa") => {
-        const run = () => publicDiscoveryProviders[selected](query, ctx.abortSignal);
+        const run = async () => publicDiscoveryProviders[selected](query, ctx.abortSignal,await specialistResearchGuard(identity,ctx.callId));
         const cached = cacheEnabled() && identity ? await cachedFetch(identity,
           "search:" + digest(JSON.stringify([identity.userId, state.context?.accountId, selected, purpose, normalized(query)])), z.array(publicSearchResultSchema).max(10), run, ctx.abortSignal,
           { notBefore: state.refreshAfter ? new Date(state.refreshAfter) : undefined, ttl: results => results.length ? cachePolicy.recheckMs : cachePolicy.emptySearchMs }) : null;
@@ -99,8 +100,4 @@ const researchTool = defineTool({
   },
 });
 
-export default defineDynamic({
-  events: {
-    "step.started": () => researchState.get().finalized ? null : researchTool,
-  },
-});
+export default defineDynamic(() => researchState.get().finalized ? null : researchTool);

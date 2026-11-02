@@ -1,6 +1,4 @@
-import {hasOwnedQuestionControl} from '../../lib/server/conversations/question-control';
 import { assertCustomerQuestionReads, customerQuestionActor } from "../../lib/server/conversations/customer-accounts";
-import {hasNativeInputWindow} from '../../lib/server/conversations/input-responses';
 import {hiddenRecord} from '../../lib/contracts/http';
 import { defineHook } from "eve/hooks";
 import { withTransaction } from "../../lib/server/db/client";
@@ -13,24 +11,17 @@ import { readLearningDraftInitialContext } from '../../lib/server/learning/nativ
 
 export default defineHook({
   events: {
-    async "step.started"(event, ctx) {
+    async "model.requested"(event, ctx) {
+      const turnId = event.scope?.turnId;
+      if (typeof turnId !== "string" || !turnId) throw hiddenRecord();
       const principal = ctx.session.auth.current;
       const attemptId = principal?.attributes?.turasAttemptId;
       if (typeof attemptId !== "string" || !principal?.principalId) {
         throw new Error("Customer context was not bound to this turn");
       }
       const feature = await responseFeature(principal);
-      // The native question workflow re-enters its boundary with no turn ID
-      // before publishing the input resolution. It has not started a model
-      // turn and cannot have a turn.started instruction receipt yet. Ordinary
-      // provider admission still requires the original injected context and a
-      // running, owner-bound attempt; this boundary grants neither.
-      if (feature?.kind === "normal" && event.data.turnId === "") {
-        if(!await withTransaction(async db=>await hasNativeInputWindow(db,attemptId,ctx.session.id,event.data.turnId)||await hasOwnedQuestionControl(db,principal,ctx.session.id)))throw hiddenRecord();
-        return;
-      }
       if(feature?.kind==='learning'){
-        await readLearningDraftInitialContext(principal,event.data.turnId,ctx.session.id,false);return;
+        await readLearningDraftInitialContext(principal,turnId,ctx.session.id,false);return;
       }
       if (feature?.kind === "support" || feature?.kind === "expansion") {
         // Hooks observe events; they are not the paid-call authorization boundary.
@@ -40,18 +31,18 @@ export default defineHook({
         return;
       }
       if (feature?.kind === "execution") {
-        await readExecutionInitialContext(principal, event.data.turnId, ctx.session.id, false);
+        await readExecutionInitialContext(principal, turnId, ctx.session.id, false);
         return;
       }
       if (feature?.kind === "staffing") {
-        await readStaffingInitialContext(principal, event.data.turnId, ctx.session.id, false);
+        await readStaffingInitialContext(principal, turnId, ctx.session.id, false);
         return;
       }
       await withTransaction(async (client) => {
         const context = await readCurrentAttemptContext(client, attemptId, principal.principalId);
         if (context.contractVersion === "general-context-v1") {
           const receipt = await client.query(`SELECT 1 FROM general_context_injections i JOIN general_context_receipts r ON r.attempt_id=i.attempt_id
-            WHERE i.attempt_id=$1 AND i.turn_id=$2 AND i.snapshot_digest=r.snapshot_digest`,[attemptId,event.data.turnId]);
+            WHERE i.attempt_id=$1 AND i.turn_id=$2 AND i.snapshot_digest=r.snapshot_digest`,[attemptId,turnId]);
           if (!receipt.rowCount) throw new Error("General context was not injected");
           const schema = (await client.query("SELECT schema_version FROM turas_environment LIMIT 1")).rows[0]?.schema_version;
           if (schema < 56) return;
@@ -59,19 +50,19 @@ export default defineHook({
           const conversation = (await client.query("SELECT conversation_id FROM response_attempts WHERE id=$1", [attemptId])).rows[0];
           await assertCustomerQuestionReads(client, scope.actor, conversation.conversation_id, attemptId, false);
           const artifact=await readCurrentArtifactDraft(client,attemptId,principal.principalId);
-          if(artifact && !(await client.query('SELECT 1 FROM artifact_context_injection_receipts WHERE attempt_id=$1 AND turn_id=$2 AND injection_digest=$3',[attemptId,event.data.turnId,artifact.digest])).rowCount)throw new Error('Artifact context was not injected');
+          if(artifact && !(await client.query('SELECT 1 FROM artifact_context_injection_receipts WHERE attempt_id=$1 AND turn_id=$2 AND injection_digest=$3',[attemptId,turnId,artifact.digest])).rowCount)throw new Error('Artifact context was not injected');
           return;
         }
         const receipt = await client.query(`SELECT 1 FROM context_injection_receipts i
           JOIN context_snapshot_receipts s ON s.attempt_id=i.attempt_id
           WHERE i.attempt_id=$1 AND i.turn_id=$2 AND i.snapshot_digest=s.snapshot_digest`,
-        [attemptId, event.data.turnId]);
+        [attemptId, turnId]);
         if (!receipt.rowCount) throw new Error("Customer context was not injected");
         const draft = await readCurrentArtifactDraft(client,attemptId,principal.principalId);
         if (draft) {
           const injected = await client.query(`SELECT 1 FROM artifact_context_injection_receipts
             WHERE attempt_id=$1 AND turn_id=$2 AND injection_digest=$3`,
-          [attemptId,event.data.turnId,draft.digest]);
+          [attemptId,turnId,draft.digest]);
           if (!injected.rowCount) throw new Error("Artifact context was not injected");
         }
       });

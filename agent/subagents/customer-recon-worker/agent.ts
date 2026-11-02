@@ -1,3 +1,4 @@
+import {specialistSessionLimits} from '../../../lib/server/research/specialists/discussion-policy';
 import { specialistModel } from "../../lib/authorize-specialist";
 import { defineAgent } from "eve";
 export default defineAgent({
@@ -8,10 +9,5 @@ export default defineAgent({
   // The workflow caller must be able to read the completed typed result.
   // Use the existing world retention; zero deletes it before the handoff.
   tool: false,
-  limits: {
-    maxInputTokensPerSession: 400000,
-    maxOutputTokensPerSession: 32000,
-    maxTokenCostUsdPerSession: 3,
-    sessionTimeoutMs: 600000,
-  },
+  limits: specialistSessionLimits("customer-update"),
 });

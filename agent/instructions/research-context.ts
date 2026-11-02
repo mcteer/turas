@@ -49,10 +49,8 @@ Retain source publication/event dates separately from the new check date. For mi
 gap and offer a new user-started bounded request rather than hidden follow-up.`,
 });
 
-export default defineDynamic({ events: {
-  async "turn.started"(_event, ctx) {
+export default defineDynamic(async (ctx) => {
     const feature = await responseFeature(ctx.session.auth.current);
     return feature?.kind === "planning" || (feature?.kind === "normal" &&
       await hasBoundResearchAttempt(ctx.session.auth.current)) ? instructions : null;
-  },
-} });
+  });

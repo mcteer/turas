@@ -159,6 +159,6 @@ function StaffingNativeOutput({ nativeSessionId, conversationId, csrfToken, refr
     headers: () => ({ "x-csrf-token": csrfToken, "x-turas-conversation-id": conversationId }), onError: unavailable,
     onEvent(event) { if (["turn.completed", "turn.failed", "turn.cancelled"].includes(event.type)) refresh(); } });
   if (agent.error) return <p role="status">Output is unavailable. Check the saved status.</p>;
-  return <div className="chat-messages" aria-live="polite">{agent.data.messages.filter(message => message.role === "assistant").map(message =>
+  return <div className="chat-messages" aria-live="polite">{agent.messages.filter(message => message.role === "assistant").map(message =>
     <article className="chat-message" key={message.id}><h3>Turi</h3>{message.parts.map((part, index) => part.type === "text" ? <p key={index}>{part.text}</p> : null)}</article>)}</div>;
 }

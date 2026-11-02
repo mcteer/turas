@@ -1,9 +1,11 @@
+import {captureOwnedWorkflowMetadata,installOwnedChatIdentityDiagnostics} from './owned-workflow-diagnostics';
 import {readFile,writeFile,mkdir,rm} from 'node:fs/promises';
 import {createHash,randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {resolve,join} from 'node:path';
 import {Client} from 'pg';
 import {webkit} from 'playwright';
+import {expect} from '@playwright/test';
 import {Client as NativeClient} from 'eve/client';
 import {withPlanEvalEnvironment} from './plan-eval-environment';
 import {DEMO_IDS} from '../lib/server/bootstrap-ids';
@@ -21,26 +23,26 @@ let marker:string|undefined;
 let fixturePhase='owned_environment_preparation';
 const fixtureDeadlineAt=Date.now()+ordinaryNativeFileFixtureMaximumMs;
 try{await withPlanEvalEnvironment(async environment=>{
- environment.bootstrapDemo();
+ environment.bootstrapDemo();await installOwnedChatIdentityDiagnostics(environment.appRoot);
  const path=join(environment.appRoot,'agent/agent.ts'),source=await readFile(path,'utf8');
- const target='return selectTurasGatewayModel(wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId,{event}));';
+ const target='return selectTurasGatewayModel(wrapOrdinaryChatModel(parityBudgetModel(gateway(selectedModel),selectedModel),principal,ctx.session.id,turnId));';
  if(source.split(target).length!==2)throw Error('Authored model shape changed');
- await writeFile(path,'import {createOrdinaryNativeFileFixtureModel} from "../tests/fixtures/ordinary-native-file-model";\n'+source.replace(target,'return {...selectTurasGatewayModel(wrapOrdinaryChatModel(createOrdinaryNativeFileFixtureModel(String(principal?.attributes?.turasAttemptId)),principal,ctx.session.id,turnId,{event})),modelContextWindowTokens:128_000};'),{mode:0o600});
+ await writeFile(path,'import {createOrdinaryNativeFileFixtureModel} from "../tests/fixtures/ordinary-native-file-model";\n'+source.replace(target,'return {...selectTurasGatewayModel(wrapOrdinaryChatModel(createOrdinaryNativeFileFixtureModel(String(principal?.attributes?.turasAttemptId)),principal,ctx.session.id,turnId)),modelContextWindowTokens:128_000};'),{mode:0o600});
  // Exercise the installed framework's real interrupted-step retry only in
  // this owned staged-10 copy. No runtime fault flag exists in the application.
  const interruptedStepMarker=join(environment.appRoot,'.eve','native-file-interruption.json');
  if(process.argv.includes('--staged-10')){
   const hookPath=join(environment.appRoot,'agent/hooks/persist-conversation.ts'),hook=await readFile(hookPath,'utf8');
-  const target='await projectNativeEvent(ctx.session.id, attemptId, event);';
+  const target='await projectNativeEvent(ctx.session.id, attemptId, projectEveFact(ctx.session.id,event,ctx.position,ctx.now.toISOString(),ctx.view),ctx.position.line);';
   if(hook.split(target).length!==2)throw Error('Owned interruption hook shape changed');
   const addition=`
         const eventBytes=Buffer.byteLength(JSON.stringify(event));
         appendFileSync(${JSON.stringify(interruptedStepMarker+'.stream-metrics')},JSON.stringify({type:event.type,eventBytes,base64Bytes:Math.ceil(eventBytes/3)*4})+'\\n');
-        if(event.type==='message.received'&&!existsSync(${JSON.stringify(interruptedStepMarker)})){
+        if(event.type==='delivery.consumed'&&!existsSync(${JSON.stringify(interruptedStepMarker)})){
           const captured=(await query("SELECT a.input_event_id,a.input_digest,a.native_delivery_id,a.deadline_at,(SELECT count(*) FROM ordinary_model_operations WHERE attempt_id=a.id) AS operations FROM response_attempts a WHERE a.id=$1",[attemptId])).rows[0];
           writeFileSync(${JSON.stringify(interruptedStepMarker)},JSON.stringify(captured),{flag:'wx',mode:0o600});
           console.error('OWNED_NATIVE_FILE_POST_RECEIVED_INTERRUPTION');
-          throw Error('OWNED_NATIVE_FILE_POST_RECEIVED_INTERRUPTION');
+          await new Promise<void>(()=>{});
         }`;
   await writeFile(hookPath,'import {existsSync,writeFileSync,appendFileSync} from "node:fs";\nimport {query} from "../../lib/server/db/client";\n'+hook.replace(target,target+addition),{mode:0o600});
  }
@@ -56,6 +58,11 @@ try{await withPlanEvalEnvironment(async environment=>{
  await environment.start();
  const browser=await webkit.launch({headless:true}),context=await browser.newContext({baseURL:environment.origin});let csrf:string|undefined;
  const fileResponses:{kind:'file'|'native';method:string;status:number;chunk:number|null;code?:string}[]=[];
+ const documentDiagnostics:{kind:string;status?:number;failure?:string}[]=[];
+ const retainDocumentDiagnostic=(entry:{kind:string;status?:number;failure?:string})=>{documentDiagnostics.push(entry);if(documentDiagnostics.length>32)documentDiagnostics.shift();};
+ context.on('response',response=>{const request=response.request();if(request.isNavigationRequest()&&request.resourceType()==='document'&&new URL(response.url()).origin===environment.origin)retainDocumentDiagnostic({kind:'document-response',status:response.status()});});
+ context.on('requestfailed',request=>{if(request.isNavigationRequest()&&request.resourceType()==='document'&&new URL(request.url()).origin===environment.origin){const reason=request.failure()?.errorText??'';retainDocumentDiagnostic({kind:'document-request-failed',failure:/timeout/i.test(reason)?'timeout':/cancel|abort/i.test(reason)?'aborted':/connection|network/i.test(reason)?'network':'other'});}});
+ context.on('page',page=>page.on('pageerror',()=>retainDocumentDiagnostic({kind:'page-error',failure:'uncaught-error'})));
  let inspectFileUi:()=>Promise<unknown>=async()=>null;
  let captureFailurePage:()=>Promise<unknown>=async()=>null;
  context.on('response',async response=>{
@@ -77,7 +84,7 @@ try{await withPlanEvalEnvironment(async environment=>{
   // the original byte-size boundary through browser, HTTP, Eve and provider.
   const bytes=boundaryMiB?Buffer.concat([pixel,Buffer.alloc(boundaryMiB*1024*1024-pixel.length,0x5a)]):pixel;
   let page=await context.newPage();
-  inspectFileUi=async()=>({cards:await page.locator('.chat-file-card').evaluateAll(cards=>cards.slice(0,4).map(card=>({downloadPresent:Boolean(card.querySelector('a[download]')),loading:Boolean(card.querySelector('button:disabled')),errorPresent:Boolean(card.querySelector('[role="alert"]'))}))),alerts:(await page.getByRole('alert').allTextContents()).slice(0,4).map(value=>value.slice(0,200)),sendRequestBytes,syntheticPageText:(await page.locator('body').innerText({timeout:1000})).slice(-2000)});
+  inspectFileUi=async()=>({renderedUsers:await page.locator('article.chat-message-user').evaluateAll(items=>items.map(item=>({kind:item.getAttribute('data-owned-kind'),id:item.getAttribute('data-owned-id')}))),cards:await page.locator('.chat-file-card').evaluateAll(cards=>cards.slice(0,4).map(card=>({downloadPresent:Boolean(card.querySelector('a[download]')),loading:Boolean(card.querySelector('button:disabled')),errorPresent:Boolean(card.querySelector('[role="alert"]'))}))),alerts:(await page.getByRole('alert').allTextContents()).slice(0,4).map(value=>value.slice(0,200)),sendRequestBytes,syntheticPageText:(await page.locator('body').innerText({timeout:1000})).slice(-2000)});
   captureFailurePage=()=>page.screenshot({path:join(out,'failure-page-private.png'),animations:'disabled',timeout:1000,mask:[page.locator('input[type="password"]')]});
   const uploadRequestBytes:number[]=[],sendRequestBytes:number[]=[];
   const captureRequest=(request:import('@playwright/test').Request)=>{if(!['POST','PUT'].includes(request.method()))return;
@@ -97,7 +104,7 @@ try{await withPlanEvalEnvironment(async environment=>{
     try{await Promise.race([paused,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('Upload chunk did not reach the pause boundary')),30000);})]);}
     finally{if(timer)clearTimeout(timer);}
     if(!await page.getByRole('button',{name:`Remove ${filename}`,exact:true}).isDisabled()||
-       !await page.getByRole('button',{name:/^Attach documents?$/}).isDisabled())throw Error('Attachment mutation remained enabled during a staged send');
+       !await page.getByRole('button',{name:'Add attachments',exact:true}).isDisabled())throw Error('Attachment mutation remained enabled during a staged send');
     attachmentMutationBlockedDuringUpload=true;
    }finally{resume();await clicked;}
   };
@@ -153,6 +160,20 @@ try{await withPlanEvalEnvironment(async environment=>{
    id=new URL(page.url()).pathname.split('/').at(-1)!;
    const saved=await context.request.get('/api/conversations/'+id);if(!saved.ok())throw Error('Composer conversation unavailable');native=(await saved.json()).data.eveSessionId;
    if(!native)throw Error('Composer native binding unavailable');
+   if(process.argv.includes('--staged-10')){
+    fixturePhase='restart_after_native_receipt';const end=Date.now()+30000;
+    for(;;){try{await readFile(interruptedStepMarker,'utf8');break;}catch(error){if(!(error&&typeof error==='object'&&'code' in error&&error.code==='ENOENT'))throw error;if(Date.now()>end)throw Error('Owned interruption receipt missing');await new Promise(resolve=>setTimeout(resolve,100));}}
+    await captureOwnedWorkflowMetadata(environment.appRoot,[native],join(out,'workflow-before-restart-private.json'));
+    await environment.restart();
+    await captureOwnedWorkflowMetadata(environment.appRoot,[native],join(out,'workflow-after-start-private.json'));
+    fixturePhase='restart_authenticated_thread_warmup';
+    const remaining=fixtureDeadlineAt-Date.now();if(remaining<=0)throw Error('Native file fixture deadline reached before restarted route warmup');
+    const restartedThread=await context.request.get('/s/'+id,{timeout:Math.min(90000,remaining),maxRedirects:0});
+    retainDocumentDiagnostic({kind:'restart-authenticated-thread-warmup',status:restartedThread.status()});
+    if(restartedThread.status()!==200)throw Error('Restarted owned authenticated thread warmup failed');
+    fixturePhase='restart_after_native_receipt';
+    await page.reload({waitUntil:'domcontentloaded'});
+   }
   }else{
   const created=await context.request.post('/api/conversations',{headers,data:{requestKey:operationId}});if(!created.ok())throw Error('Fixture conversation creation failed');id=(await created.json()).data.id;
   for(let i=0;i<5;i++){const response=await context.request.post('/eve/v1/session',{headers:{...headers,'x-turas-conversation-id':id},data:{operationId}});if(response.ok()){native=(await response.json()).sessionId;break;}if(response.status()!==409)throw Error('Native binding failed');await new Promise(resolve=>setTimeout(resolve,1000));}if(!native)throw Error('Native binding unconfirmed');
@@ -212,7 +233,7 @@ try{await withPlanEvalEnvironment(async environment=>{
      const bound=await isolated.request.post('/eve/v1/session',{headers:{...ownHeaders,'x-turas-conversation-id':ownedId},data:{operationId}});if(!bound.ok())throw Error('Preference session binding failed');const ownedNative=(await bound.json()).sessionId;
      const sent=await isolated.request.post('/eve/v1/session/'+ownedNative,{headers:{...ownHeaders,'x-turas-conversation-id':ownedId,'x-turas-request-key':randomUUID()},data:{message:prompt}});if(!sent.ok())throw Error('Preference check send failed');
      fixturePhase='preference_thread_navigation';const page=await isolated.newPage();await page.goto('/s/'+ownedId,{waitUntil:'domcontentloaded'});await page.getByText(expected,{exact:true}).waitFor({timeout:60000});
-     const retired=await isolated.request.post('/eve/v1/session/'+ownedNative+'/reset',{headers:ownHeaders,data:{reason:'Owned preference fixture complete'}});if(!retired.ok())throw Error('Preference session retirement failed');
+     const retired=await isolated.request.post('/eve/v1/session/'+ownedNative+'/end',{headers:ownHeaders,data:{reason:'Owned preference fixture complete'}});if(!retired.ok())throw Error('Preference session retirement failed');
     }finally{if(token)await isolated.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':token}}).catch(()=>{});await isolated.close();}
    };
    await check('mcteer','Check for a stored preference.','No stored preference is visible.');personalPreferenceIsolated=true;
@@ -241,7 +262,7 @@ try{await withPlanEvalEnvironment(async environment=>{
     const ownNative=(await binding.json()).sessionId;
     const sent=await outsider.request.post('/eve/v1/session/'+ownNative,{headers:{...ownHeaders,'x-turas-conversation-id':ownId,'x-turas-request-key':randomUUID()},data:{message:'Check private checklist isolation.'}});if(!sent.ok())throw Error('Checklist isolation send failed');
     const ownPage=await outsider.newPage();await ownPage.goto('/s/'+ownId,{waitUntil:'domcontentloaded'});await ownPage.getByText('New conversation has no private checklist.',{exact:true}).waitFor({timeout:60000});
-    if(!(await outsider.request.post('/eve/v1/session/'+ownNative+'/reset',{headers:ownHeaders,data:{reason:'Owned checklist isolation complete'}})).ok())throw Error('Checklist isolation retirement failed');
+    if(!(await outsider.request.post('/eve/v1/session/'+ownNative+'/end',{headers:ownHeaders,data:{reason:'Owned checklist isolation complete'}})).ok())throw Error('Checklist isolation retirement failed');
    }finally{if(outsiderCsrf)await outsider.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':outsiderCsrf}}).catch(()=>{});await outsider.close();}
    await writeFile(join(out,'task-state-receipt.json'),JSON.stringify({actualNativeTool:true,deterministicProvider:true,paidProviderCalls:0,
     replacedRevision:1,items:[{id:'source-review',text:'Inspect the exact supplied file.',status:'in_progress'}],freshOwnerLogin:true,
@@ -257,11 +278,12 @@ try{await withPlanEvalEnvironment(async environment=>{
    const current=(await query('SELECT input_event_id,input_digest,native_delivery_id,deadline_at FROM response_attempts WHERE conversation_id=$1',[id])).rows;
    const inputs=(await query("SELECT visible_payload FROM event_projections WHERE conversation_id=$1 AND event_type='message.received'",[id])).rows;
    const aliases=inputs.filter(row=>row.visible_payload.applicationInputReplay);
-   if(Number(captured.operations)!==0||current.length!==2||!current.some(row=>row.input_event_id===captured.input_event_id&&row.input_digest===captured.input_digest&&row.native_delivery_id===captured.native_delivery_id&&row.deadline_at.toISOString()===captured.deadline_at)||aliases.length!==1||aliases[0].visible_payload.applicationInputReplay.retryOfInputEventId!==captured.input_event_id||aliases[0].visible_payload.applicationInputReplay.admittedDeliveryId!==captured.native_delivery_id)throw Error('Owned interrupted-step recovery changed canonical input, deadline or delivery');
+   if(Number(captured.operations)!==0||current.length!==2||!current.some(row=>row.input_event_id===captured.input_event_id&&row.input_digest===captured.input_digest&&row.native_delivery_id===captured.native_delivery_id&&row.deadline_at.toISOString()===captured.deadline_at)||aliases.length>1||aliases.some(alias=>alias.visible_payload.applicationInputReplay.retryOfInputEventId!==captured.input_event_id||alias.visible_payload.applicationInputReplay.admittedDeliveryId!==captured.native_delivery_id))throw Error('Owned interrupted-step recovery changed canonical input, deadline or delivery');
+   await expect(page.locator('article.chat-message-user')).toHaveCount(2);
    const rendered=await page.locator('article.chat-message-user').allTextContents();
-   if(rendered.length!==2||rendered.filter(text=>text.includes(firstPrompt)).length!==1)throw Error('Interrupted native delivery duplicated rendered user sends');
+   if(rendered.length!==2||rendered.filter(text=>text.includes(firstPrompt)).length!==1||rendered.filter(text=>text.includes('Inspect the previously attached file after reload.')).length!==1)throw Error('Interrupted native delivery rendered user sends incorrectly: total='+rendered.length+', original='+rendered.filter(text=>text.includes(firstPrompt)).length+', followup='+rendered.filter(text=>text.includes('Inspect the previously attached file after reload.')).length);
    interruptedStepRecovery=true;
-   await writeFile(join(out,'interrupted-step-recovery.json'),JSON.stringify({actualEveRuntime:true,maximumNativeEventBytes,maximumBase64EventBytesEstimate,hostedPlatformLimitBytes:10*1024*1024,forcedInterruptions:1,initialModelOperations:0,canonicalInputPreserved:true,originalDeadlinePreserved:true,admittedAliases:1,renderedUserSends:2,originalUserSendCopies:1,providerFileBytesPreserved:true,paidProviderCalls:0},null,2),{mode:0o600});
+   await writeFile(join(out,'interrupted-step-recovery.json'),JSON.stringify({actualEveRuntime:true,maximumNativeEventBytes,maximumBase64EventBytesEstimate,hostedPlatformLimitBytes:10*1024*1024,forcedInterruptions:1,initialModelOperations:0,canonicalInputPreserved:true,originalDeadlinePreserved:true,admittedAliases:aliases.length,renderedUserSends:2,originalUserSendCopies:1,providerFileBytesPreserved:true,paidProviderCalls:0},null,2),{mode:0o600});
   }
   let failedFileHistoryRecovery=false;let activeFailedNativeSnapshot:{messages:number;events:number}|undefined;let failedOperationSnapshot:unknown[]|undefined;let failedProviderCalls=0;let failedUnknownHoldsPreserved=false;
   const failedPrompt='Fail this native file turn explicitly.',recoveryPrompt='Recover after the failed native file turn.';
@@ -275,7 +297,7 @@ try{await withPlanEvalEnvironment(async environment=>{
    failedProviderCalls=failedCalls.length;if(!failedCalls.length||failedCalls.some(row=>row.bytes_digest!==createHash('sha256').update(bytes).digest('hex')))throw Error('Failed provider turn did not receive original file bytes');
    if(!(await query("SELECT 1 FROM event_projections e JOIN response_attempts a ON a.conversation_id=e.conversation_id AND a.native_turn_id=e.turn_id WHERE a.id=$1 AND e.event_type IN('step.failed','turn.failed') AND e.visible_payload->>'code'='MODEL_CALL_FAILED'",[failedAttempt])).rowCount)throw Error('Actual synthetic SDK failure was not projected');
    failedOperationSnapshot=(await query('SELECT id,ceiling_tokens,actual_tokens,settled_at FROM ordinary_model_operations WHERE attempt_id=$1 ORDER BY id',[failedAttempt])).rows;if(!failedOperationSnapshot.length)throw Error('Synthetic failed provider did not reserve original allowance');
-   const cookie=(await context.cookies()).map(c=>c.name+'='+c.value).join('; ');const nativeClient=new NativeClient({host:environment.origin,headers:{cookie,origin:environment.origin}});const nativeEvents=[];for await(const event of nativeClient.sessions.attach(native).stream({follow:false,signal:AbortSignal.timeout(30000)}))nativeEvents.push(event);activeFailedNativeSnapshot={messages:nativeEvents.filter(event=>event.type==='message.received'||event.type==='message.completed').length,events:nativeEvents.length};await writeFile(join(out,'active-failed-native-snapshot-private.json'),JSON.stringify(nativeEvents,null,2),{mode:0o600});
+   const cookie=(await context.cookies()).map(c=>c.name+'='+c.value).join('; ');const nativeClient=new NativeClient({baseUrl:environment.origin,headers:{cookie,origin:environment.origin}});const nativeEvents=[];for await(const event of nativeClient.sessions.attach(native).stream({follow:false,signal:AbortSignal.timeout(30000)}))nativeEvents.push(event);activeFailedNativeSnapshot={messages:nativeEvents.filter(event=>event.type==='delivery.consumed'||event.type==='content.completed').length,events:nativeEvents.length};await writeFile(join(out,'active-failed-native-snapshot-private.json'),JSON.stringify(nativeEvents,null,2),{mode:0o600});
    const assertFailedUser=async()=>{await page.locator('article.chat-message-user').filter({hasText:failedPrompt}).waitFor({timeout:30000});const users=await page.locator('article.chat-message-user').allTextContents();if(users.filter(text=>text.includes(failedPrompt)).length!==1)throw Error('Failed native user turn lost or duplicated');await page.locator('article.chat-message-user').filter({hasText:failedPrompt}).getByText('pixel.png',{exact:true}).waitFor();};
    await page.reload();await page.getByRole('button',{name:'Send message',exact:true}).waitFor();await assertFailedUser();
    fixturePhase='successful_turn_after_provider_failure';await page.getByLabel('Message Turi').fill(recoveryPrompt);await page.getByRole('button',{name:'Send message',exact:true}).click();await page.getByText('Native file recovery completed.',{exact:true}).waitFor({timeout:60000});await page.reload();await page.getByText('Native file recovery completed.',{exact:true}).waitFor({timeout:30000});await assertFailedUser();
@@ -284,16 +306,17 @@ try{await withPlanEvalEnvironment(async environment=>{
    const held=Number((await query('SELECT COALESCE(sum(COALESCE(actual_tokens,ceiling_tokens)),0) AS n FROM ordinary_model_operations WHERE conversation_id=$1',[id])).rows[0].n);if(held>20000)throw Error('Failed turn reset cumulative conversation allowance');
    failedUnknownHoldsPreserved=true;failedFileHistoryRecovery=true;
   }
-  const retired=await context.request.post('/eve/v1/session/'+native+'/reset',{headers,data:{reason:'Owned native file fixture complete'}});if(!retired.ok())throw Error('Native file retirement unconfirmed');
+  const retired=await context.request.post('/eve/v1/session/'+native+'/end',{headers,data:{reason:'Owned native file fixture complete'}});if(!retired.ok())throw Error('Native file retirement unconfirmed');
   if(failedFileHistoryRecovery){await page.reload();await page.getByText('Native file recovery completed.',{exact:true}).waitFor({timeout:30000});const retiredDetail=await context.request.get('/api/conversations/'+id);if(!retiredDetail.ok()||(await retiredDetail.json()).data.nativeRetired!==true)throw Error('Failed-file fixture retirement missing');const users=await page.locator('article.chat-message-user').allTextContents();if(users.filter(text=>text.includes(failedPrompt)).length!==1)throw Error('Retired failed file user lost or duplicated');await page.getByText('pixel.png',{exact:true}).first().waitFor();}
   if(boundaryMiB&&(!uploadRequestBytes.length||Math.max(...uploadRequestBytes)>512*1024||!sendRequestBytes.length||Math.max(...sendRequestBytes)>4096))throw Error('Large native file bypassed bounded staging transport');
   const receipt={failedFileHistoryRecovery,failedProviderCalls,failedUnknownHoldsPreserved,activeFailedNativeSnapshot,activeFailedNativeEmpty:activeFailedNativeSnapshot?activeFailedNativeSnapshot.events===0:null,retirementEmptyIsActiveFailureProof:false,interruptedStepRecovery,kind:'ordinary-native-file-bytes',actualEveRuntime:true,fixtureProvider:true,paidProviderCalls:0,runtimeDependencyInstallation:false,providerBytesPreserved:!process.argv.includes('--memory'),stagedFileBytes:boundaryMiB?bytes.length:null,maximumUploadRequestBytes:uploadRequestBytes.length?Math.max(...uploadRequestBytes):null,maximumSendRequestBytes:sendRequestBytes.length?Math.max(...sendRequestBytes):null,attachmentMutationBlockedDuringUpload,readyDraftRemovalReleasedQuota,uncertainDraftRemovalPreserved,previousFileAvailableAfterReload,personalPreferenceSaved:process.argv.includes('--memory')||process.argv.includes('--memory-files'),personalPreferenceCrossSession,personalPreferenceIsolated,personalPreferenceRemoved,providerToolSets:calls.map(row=>row.tool_names),actualCanonicalCustomerResolved:true,nativeFileCorrection:process.argv.includes('--steer'),toolNames:calls[0].tool_names,composerUsed:process.argv.includes('--composer'),reloadedHistory:true,nativeRetirementStatus:retired.status()};await writeFile(join(out,'receipt.json'),JSON.stringify(receipt,null,2),{mode:0o600});console.log(JSON.stringify(receipt));for(const name of ['failure-private.json','failure-private.log','failure-page-private.png','send-private.json'])await rm(join(out,name),{force:true});
  }catch(error){
+  if(process.argv.includes('--staged-10'))await captureOwnedWorkflowMetadata(environment.appRoot,(await query('SELECT eve_session_id FROM conversations WHERE eve_session_id IS NOT NULL LIMIT 20')).rows.map(row=>row.eve_session_id),join(out,'workflow-after-failure-private.json')).catch(()=>{});
   await writeFile(join(out,'runtime-state-private.json'),JSON.stringify({
    attempts:(await query('SELECT id,dispatch_state,response_state,native_turn_id,last_error_code FROM response_attempts')).rows,
    corrections:(await query('SELECT dispatch_state,native_turn_id,native_event_id,native_status FROM ordinary_steering_deliveries')).rows,
    providerCalls:(await query('SELECT attempt_id,bytes_digest FROM ordinary_native_file_fixture_calls')).rows,
-   events:(await query('SELECT event_type,turn_id FROM event_projections ORDER BY emitted_at,native_event_id')).rows,
+   events:(await query(`SELECT native_event_id,event_type,turn_id,visible_payload->>'deliveryId' AS delivery_id FROM event_projections ORDER BY emitted_at,native_event_id`)).rows,
   }),{mode:0o600}).catch(()=>{});
   // Only this unpaid, synthetic fixture is eligible for bounded CI diagnostics.
   // Keep full logs private; remove URLs and known credentials from error lines.
@@ -305,27 +328,39 @@ try{await withPlanEvalEnvironment(async environment=>{
   let ui:unknown=null,timer:ReturnType<typeof setTimeout>|undefined;
   try{ui=await Promise.race([inspectFileUi(),new Promise(resolve=>{timer=setTimeout(()=>resolve({unavailable:true}),1000);})]);}catch{ui={unavailable:true};}finally{if(timer)clearTimeout(timer);}
   await captureFailurePage().catch(()=>undefined);
-  const diagnostic={phase:fixturePhase,applicationMode:'development',fileResponses,ui};
+  const diagnostic={phase:fixturePhase,applicationMode:'development',fileResponses,documentDiagnostics,ui};
   if(process.env.CI)console.error(JSON.stringify({kind:'native_file_boundary_diagnostic',...diagnostic}));
   await writeFile(join(out,'failure-private.log'),environment.privateLogTail(),{mode:0o600});await writeFile(join(out,'failure-private.json'),JSON.stringify({name:error instanceof Error?error.name:'Unknown',message:error instanceof Error?error.message:String(error),...diagnostic}),{mode:0o600});throw error;}
  finally{if(csrf)await context.request.post('/api/auth/logout',{headers:{origin:environment.origin,'x-csrf-token':csrf}}).catch(()=>{});await context.close();await browser.close();}
 },{feature:'010',empty:true,deadlineAt:fixtureDeadlineAt,prepare:async({appRoot,environmentId})=>{
  marker=fixtureOwner;
+ if(process.argv.includes('--staged-10')){const manifestPath=join(appRoot,'package.json'),manifest=JSON.parse(await readFile(manifestPath,'utf8'));manifest.scripts['build:eve:check']='eve build';await writeFile(manifestPath,JSON.stringify(manifest,null,2)+'\n');}
  await writeFile(join(appRoot,'package-lock.json'),await readFile(resolve('package-lock.json')),{mode:0o600});
- // Eve's native runtime can request its documented optional local provider.
- // Install it before the browser turn, into a fully owned dependency tree;
- // never let an in-turn install replace the shared checkout's dependency link.
- await rm(join(appRoot,'node_modules'));
- const prepared=spawnSync('npm',['install','--save-dev','--ignore-scripts','--no-audit','--no-fund','just-bash@3.1.0'],{cwd:appRoot,env:{...process.env,AI_GATEWAY_API_KEY:'',VERCEL_OIDC_TOKEN:''},encoding:'utf8',timeout:120000,maxBuffer:4*1024*1024});
- if(prepared.status!==0){await writeFile(join(out,'dependency-preparation-private.log'),String(prepared.stderr??''),{mode:0o600});throw Error('Owned native dependency preparation failed');}
- const compatibility=spawnSync(process.execPath,['scripts/eve-memory-context-compat.mjs'],{cwd:appRoot,encoding:'utf8',timeout:10000});if(compatibility.status!==0)throw Error('Owned native memory compatibility preparation failed');
+ // npm ci installs the pinned local provider before any agent turn. Keep the
+ // shared dependency link intact; no in-turn or fixture-specific installs.
+ const provider=JSON.parse(await readFile(join(appRoot,'node_modules/just-bash/package.json'),'utf8'));
+ if(provider.version!=='3.6.0')throw Error('Pinned local sandbox provider required');
  // Eve prepares every declared environment on the first native file. Keep all
  // owned fixture environments on its selected Docker provider, rather than
  // auto-installing an unrelated default provider during the browser turn.
  for(const specialist of ['customer-recon-worker','implementation-research-worker','vercel-best-practices-worker'])
   await writeFile(join(appRoot,'agent/subagents',specialist,'sandbox.ts'),"import {defineParentSandbox} from 'eve/sandbox';export default defineParentSandbox();\n",{mode:0o600});
- const dev=join(appRoot,'scripts/dev.mjs');await writeFile(dev,(await readFile(dev,'utf8')).replace('["dev"]','["dev","--webpack"]'),{mode:0o600});
- await writeFile(join(appRoot,'agent/sandbox.ts'),`import {defineSandbox} from 'eve/sandbox';import {DockerSandbox} from 'eve/sandbox/docker';export const environment=DockerSandbox.image(${JSON.stringify(image)},{pullPolicy:'never',env:{TURAS_NATIVE_FILE_FIXTURE_OWNER:${JSON.stringify(fixtureOwner)}}});export default defineSandbox(()=>environment.open({networkPolicy:'deny-all'}));\n`,{mode:0o600});return {};
+ const devPath=join(appRoot,'scripts/dev.mjs');let source=await readFile(devPath,'utf8');
+ // The documented --resume CLI owns this disposable app's retained local world.
+ // withEve reuses that already-running local server. Do not enable automatic
+ // recovery for the user's selected development database or workflow state.
+ const launcher=`const ownedEve=spawn(resolve(cwd,'node_modules/.bin/eve'),['dev','--resume','--no-ui','--port','0'],{cwd,env:process.env,stdio:['ignore','pipe','pipe']});
+let ownedOrigin='';
+await new Promise((done,reject)=>{let text='';const timer=setTimeout(()=>reject(Error('Owned resume server timeout')),90000);const listen=chunk=>{const value=chunk.toString();process.stdout.write(value);text=(text+value).slice(-200000);const match=text.match(/server listening at (http:\\/\\/127\\.0\\.0\\.1:\\d+)\\//);if(match){ownedOrigin=match[1];clearTimeout(timer);done();}};ownedEve.stdout.on('data',listen);ownedEve.stderr.on('data',listen);ownedEve.once('exit',()=>{clearTimeout(timer);reject(Error('Owned resume server exited'));});});
+`;
+ source=source.replace('const next = spawn(',launcher+'const next = spawn(').replace('["dev"]','["dev","--webpack"]').replace('  next.kill("SIGTERM");','  next.kill("SIGTERM");\n  ownedEve.kill("SIGTERM");');
+ source+='\nconsume("server listening at "+ownedOrigin+"/");\n';
+ await writeFile(devPath,source,{mode:0o600});
+ await writeFile(join(appRoot,'agent/sandbox.ts'),`import {defineSandbox} from 'eve/sandbox';import {DockerSandbox} from 'eve/sandbox/docker';export const environment=DockerSandbox.image(${JSON.stringify(image)},{pullPolicy:'never',env:{TURAS_NATIVE_FILE_FIXTURE_OWNER:${JSON.stringify(fixtureOwner)}}});export default defineSandbox(()=>environment.open({networkPolicy:'deny-all'}));\n`,{mode:0o600});
+ // Queue the owned local-world step separately: its default inline-owner lease
+ // is 860 seconds, longer than this unchanged attempt authority. This setting
+ // applies before initial execution and only to this disposable runtime.
+ return process.argv.includes('--staged-10')?{WORKFLOW_INLINE_OWNERSHIP:'false'}:{};
 }});}catch(error){
  const reason=(error instanceof Error?error.message:'Unknown fixture failure').split('\n')[0].replace(/[a-z][a-z0-9+.-]*:\/\/[^\s/@:]+:[^\s/@]+@/gi,'<redacted>@').slice(0,200);
  console.error(JSON.stringify({kind:'native_file_fixture_failure',phase:fixturePhase,name:error instanceof Error?error.name:'Unknown',reason}));throw error;

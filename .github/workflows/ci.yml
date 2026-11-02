@@ -1004,6 +1004,15 @@ jobs:
         if: failure()
         run: node --import tsx scripts/print-ci-test-failures.ts
 
+      - name: Retain sanitized predecessor failure stages
+        if: failure() && matrix.gate == 'regressions'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mcp-regression-stages-${{ github.run_id }}-${{ github.run_attempt }}
+          path: local-artifacts/015/regressions-*/*-failure-diagnostic-private.json
+          if-no-files-found: ignore
+          retention-days: 1
+
   legacy-chat:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -1121,6 +1130,14 @@ jobs:
       - name: Complete affected predecessor composition and fresh browser journeys
         if: matrix.gate == 'regressions'
         run: npm run pilot:regressions
+      - name: Retain owned production readiness diagnostics
+        if: failure() && matrix.gate == 'webkit'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: owned-production-readiness-${{ github.run_id }}
+          path: local-artifacts/016/startup-*.log
+          if-no-files-found: warn
+          retention-days: 1
       - name: Bounded redacted failed-test diagnostics
         if: failure()
         run: node --import tsx scripts/print-ci-test-failures.ts

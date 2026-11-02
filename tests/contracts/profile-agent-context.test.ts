@@ -50,9 +50,9 @@ describe("bounded agent profile tools", () => {
 
   it("refuses a model step before a customer attempt is bound", async () => {
     const hook = guardCustomerContext as unknown as { events: {
-      "step.started": (event: { data: { turnId: string } }, context: {
+      "model.requested": (event: { scope: { turnId: string } }, context: {
         session: { auth: { current: null } } }) => Promise<void> } };
-    await expect(hook.events["step.started"]({ data: { turnId: crypto.randomUUID() } },
+    await expect(hook.events["model.requested"]({ scope: { turnId: crypto.randomUUID() } },
       { session: { auth: { current: null } } }))
       .rejects.toThrow("Customer context was not bound to this turn");
   });

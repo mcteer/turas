@@ -32,7 +32,7 @@ not copy Preview data or credentials into Production as a schema update.
 | --- | --- |
 | `DATABASE_URL` (Production and Preview) | Runtime pooled connection. Local development now selects the Preview endpoint. The legacy Production site continues to use its Production connection; hosted cutover is a separate release. |
 | `CONTEXT_API_KEY` (Production and Preview) | Server-only Context.dev public search key for 005 live research. Set per scope when research is enabled. |
-| `TURAS_DEMO_USERNAME`, `TURAS_DEMO_PASSWORD`, `PANEL_USERNAME`, `PANEL_PASSWORD` | Temporary login configuration still used by the fresh app. Supply only if these demo accounts are intentionally enabled for that environment. |
+| `TURAS_DEMO_USERNAME`, `TURAS_DEMO_PASSWORD`, `PANEL_USERNAME`, `PANEL_PASSWORD` | Existing application-account credentials. Preserve the deployed values and supply them privately for the target environment. |
 | `CRON_SECRET` | Legacy Vercel cron authentication; no current reader. Do not carry forward without a hosted worker design. |
 | `TURAS_SESSION_SECRET` | Legacy signed-session secret; fresh sessions are held in Postgres and do not read it. |
 | `EVE_MEMORY_BLOB_WEBHOOK_PUBLIC_KEY`, `EVE_MEMORY_BLOB_STORE_ID` | Legacy file-memory integration; the fresh agent does not use this backend. Do not carry forward absent an implemented use. |

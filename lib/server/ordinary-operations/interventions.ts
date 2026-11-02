@@ -15,6 +15,17 @@ type Principal=Parameters<typeof customerQuestionActor>[1];
 const digest=(input:z.infer<typeof interventionSchema>)=>createHash('sha256').update(JSON.stringify(input)).digest('hex');
 const conflict=()=>new HttpFailure(409,'intervention_changed','The intervention, decision or baseline changed; inspect and review the exact proposal again');
 function receipt(row:Record<string,unknown>){return {id:row.id,engagementId:row.engagement_id,proposalId:row.proposal_id,proposalRevisionId:row.proposal_revision_id,status:row.status,rationale:row.rationale,createdAt:row.created_at instanceof Date?row.created_at.toISOString():row.created_at};}
+/** Denying a native request requires the same live owner and reviewer rights,
+ * but creates neither a decision nor an execution authorization. */
+export async function authorizeOrdinaryInterventionDenial(responder:Principal,input:unknown){
+ const command=interventionSchema.parse(input);
+ return withTransaction(async db=>{
+  const scope=await humanResponderScope(db,responder);
+  const engagement=await readEngagement(scope.actor,command.engagementId,db);
+  if(!scope.general&&scope.customerId!==engagement.customerId)throw hiddenRecord();
+  await lockExecutionActor(db,scope.actor,engagement.customerId,'review',true);
+ });
+}
 /** Native approval response only; the executor never creates human authorization. */
 export async function approveOrdinaryIntervention(responder:Principal,input:unknown,native:{requestId:string;callId:string}){
  const command=interventionSchema.parse(input);if(!native.requestId||!native.callId)throw hiddenRecord();

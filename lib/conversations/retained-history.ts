@@ -6,7 +6,7 @@ export type RetainedChatEvent = {
 export type RetainedChatPart = {type: 'text'; text: string} |
   {type: 'file'; filename?: string; mediaType: string; size?: number};
 export type RetainedChatMessage = {
-  id: string; role: 'user' | 'assistant'; parts: RetainedChatPart[]; partial: boolean;
+  id: string; deliveryId?:string; role: 'user' | 'assistant'; parts: RetainedChatPart[]; partial: boolean;
   turnId?: string | null; stepIndex?: number | null; inputAliasEventIds?: string[];
 };
 
@@ -29,7 +29,7 @@ export function retainedChatMessages(events: readonly RetainedChatEvent[], inclu
     }
     const text = partial ? event.payload.messageDelta : event.payload.message;
     if (!parts.length && typeof text === 'string' && text.length) parts.push({type: 'text', text});
-    if (parts.length) messages.push({id: event.eventId, role: user ? 'user' : 'assistant', parts, partial,...(event.turnId!==undefined?{turnId:event.turnId}:{}),...(event.stepIndex!==undefined?{stepIndex:event.stepIndex}:{}),...(event.inputAliasEventIds?{inputAliasEventIds:event.inputAliasEventIds}:{})});
+    if (parts.length) messages.push({id: event.eventId, ...(user&&event.payload.nativeProtocol===27&&typeof event.payload.deliveryId==='string'?{deliveryId:event.payload.deliveryId}:{}), role: user ? 'user' : 'assistant', parts, partial,...(event.turnId!==undefined?{turnId:event.turnId}:{}),...(event.stepIndex!==undefined?{stepIndex:event.stepIndex}:{}),...(event.inputAliasEventIds?{inputAliasEventIds:event.inputAliasEventIds}:{})});
   }
   return messages;
 }

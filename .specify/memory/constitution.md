@@ -10,6 +10,17 @@ code, tests, and documentation MUST remain traceable. Small fixes can reference 
 existing spec; cosmetic changes do not require a new feature ceremony. The roadmap
 is a sequence of proposals, not evidence that functionality exists.
 
+Dependency or framework upgrades spanning **three or more dot-release steps**
+(minor or patch), or **any major-version boundary** (including **0.x → 1.x**),
+MUST have a dedicated specification before implementation. The specification
+MUST review the intervening release capabilities, select those useful to Turas,
+and include wiring those capabilities into governed application workflows with
+acceptance criteria. Merely listing new capabilities or completing a version bump
+and compatibility fixes does not satisfy this requirement. Excluded or deferred
+capabilities MUST have an explicit rationale. Dependency-bot pull requests follow
+the same gate before merge or deployment. Smaller upgrades remain subject to the
+normal requirements for material features and breaking behavior.
+
 ### II. Customer outcomes define maturity
 
 Assessments MUST record workload scope, period, rubric version, evidence, unknowns,
@@ -97,4 +108,4 @@ scope, reason, owner, and expiry. Review compliance before and after design.
 Version 1.0.0 is proposed for adoption with the foundation PR. Ratification is
 pending that merge; its merge date will establish the ratification date.
 
-**Version**: 1.0.0 | **Last Amended**: 2026-09-26
+**Version**: 1.1.0 | **Last Amended**: 2026-11-01

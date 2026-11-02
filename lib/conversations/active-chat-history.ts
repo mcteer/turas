@@ -5,7 +5,8 @@ import type {NativeAttachmentReference,NativeUserDisplayPart} from './native-mes
 export type ChatDisplayMessage={kind:'native';message:EveMessage}|{kind:'retained';message:RetainedChatMessage;activity?:EveMessage['parts']};
 /** Presentation only. Application history never enters the native session,
  * event reducer, input controls, delivery admission or provider context. */
-export function activeChatHistory(native:readonly EveMessage[],history:readonly RetainedChatEvent[]):ChatDisplayMessage[]{
+export function activeChatHistory(native:readonly EveMessage[],history:readonly RetainedChatEvent[],canonicalUsers=false):ChatDisplayMessage[]{
+ if(canonicalUsers)native=native.filter(message=>message.role!=='user');
  if(!history.length)return native.map(message=>({kind:'native' as const,message}));
  // Split only the display of multi-step assistant messages, preserving live
  // unprojected steps when one completed step already has canonical prose.
@@ -13,7 +14,7 @@ export function activeChatHistory(native:readonly EveMessage[],history:readonly 
   if(message.role!=='assistant')return [message];
   const groups=new Map<number|undefined,typeof message.parts>();
   const firstStep=message.parts.find(part=>part.type==='text')?.stepIndex;
-  for(const part of message.parts){if(part.type==='step-start')continue;const step='stepIndex' in part?part.stepIndex:firstStep;const group=groups.get(step)??[];groups.set(step,[...group,part]);}
+  for(const part of message.parts){const step='stepIndex' in part?part.stepIndex:firstStep;const group=groups.get(step)??[];groups.set(step,[...group,part]);}
   return groups.size>1?[...groups].map(([step,parts])=>({...message,id:message.id+':display-step:'+String(step),parts})):[message];
  });
  const used=new Set<number>(),result:ChatDisplayMessage[]=[];
@@ -21,6 +22,7 @@ export function activeChatHistory(native:readonly EveMessage[],history:readonly 
   const counterpart=slots.findIndex(message=>{
    if(message.role!==saved.role)return false;
    const id=message.id.replace(/:(?:user|assistant)$/,'');
+   if(saved.role==='user'&&saved.deliveryId===id)return true;
    if(saved.id===id||saved.role==='user'&&saved.inputAliasEventIds?.includes(id))return true;
    if(saved.role==='user'||saved.turnId===undefined||saved.turnId===null||message.metadata?.turnId!==saved.turnId)return false;
    return saved.stepIndex!==undefined&&saved.stepIndex!==null&&message.parts.some(part=>part.type==='text'&&part.stepIndex===saved.stepIndex);
@@ -34,7 +36,7 @@ export function activeChatHistory(native:readonly EveMessage[],history:readonly 
    // Identity was established above; text containment only prevents replacing
    // retained prose with a shorter or empty resume placeholder.
    const preferLive=saved.role==='user'?nativeVisible:saved.partial&&!!liveText.trim()&&liveText.includes(savedText);
-   const activity=live.parts.filter(part=>part.type!=='text'&&part.type!=='step-start');
+   const activity=live.parts.filter(part=>part.type!=='text');
    result.push(preferLive?{kind:'native',message:live}:{kind:'retained',message:saved,...(activity.length?{activity}:{})});
   }else result.push({kind:'retained',message:saved}); // Distinct persisted events are never consumed by another event's counterpart.
  }
@@ -57,7 +59,7 @@ export function retainedActiveParts(message:RetainedChatMessage,reference?:Nativ
 
 /** Display only the settled answer for each user delivery. Intermediate model
  * steps stay in the authorized history; this never changes execution or storage. */
-export function finalChatHistory(messages:readonly ChatDisplayMessage[],working:boolean):ChatDisplayMessage[]{
+export function finalChatHistory(messages:readonly ChatDisplayMessage[],working:boolean,activeTurnId?:string|null):ChatDisplayMessage[]{
  const result:ChatDisplayMessage[]=[];
  let answer:ChatDisplayMessage|undefined;
  const flush=()=>{if(answer)result.push(answer);answer=undefined;};
@@ -72,6 +74,9 @@ export function finalChatHistory(messages:readonly ChatDisplayMessage[],working:
    answer={...item,message:{...item.message,parts:item.message.parts.filter(part=>part.type==='file'||part.type==='text'&&(last===undefined||part.stepIndex===last))}};
   }else answer=item;
  }
- if(!working)flush();
+ // A pending dispatch without a current native turn must not hide a settled
+ // historical answer. Withhold only the answer belonging to the running turn.
+ const answerTurn=answer?.kind==='native'?answer.message.metadata?.turnId:answer?.message.turnId;
+ if(!working||activeTurnId!==undefined&&(activeTurnId===null||answerTurn!==activeTurnId))flush();
  return result;
 }

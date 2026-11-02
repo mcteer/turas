@@ -8,7 +8,10 @@ Turi, the built-in assistant, helps people research, explain and draft using the
 context they are allowed to access. Evidence, proposals, approvals and completed
 work remain distinct records with inspectable sources and history.
 
-## What you can do
+Start a conversation with Turi, select a customer when useful, and use the **+**
+menu to add files, links or existing customer sources.
+
+## What You Can Do
 
 | Area | Capabilities |
 | --- | --- |
@@ -26,7 +29,7 @@ evidence, draft a proposed action or plan, review its exact revision, and track
 execution against the accepted baseline. Customer maturity, delivery progress and
 commercial opportunity are tracked separately.
 
-### Partner access and privacy
+### Partner Access and Privacy
 
 Partners see explicitly assigned customer delivery data and eligible published
 guidance. They do not receive general workspace access to personnel, financial or
@@ -39,14 +42,18 @@ or mark delivery complete. Withdrawal and changed access affect subsequent use.
 See the [evidence policy](docs/evidence-policy.md) and
 [partner operations guide](docs/partner-operations.md).
 
-## Project status
+## Project Status
 
 Turas is under active development. Production hardening is deployed: ordinary
 account access, chat reliability, private storage, bounded processing, maintenance
-and backup/recovery protections are in place. The private pilot programme and its
-selectable workspace have been removed. Production login, privacy and a normal
+and backup/recovery protections are in place. Production login, privacy and a normal
 chat request passed verification; service readiness and all 15 maintenance classes
 were healthy at the release check.
+
+The [Eve upgrade and specialist continuity](specs/020-eve-runtime-upgrade/spec.md)
+implementation includes retained specialist follow-ups, task-specific Stop and
+progress controls, verified in local native and WebKit checks. Compatibility and
+hosted release acceptance are still in progress; these changes are not yet released.
 
 Implementation, local checks, CI, Preview acceptance and Production verification
 are recorded separately. A passing local test does not establish hosted behavior,
@@ -58,7 +65,7 @@ recovery-assurance limits and operational follow-up. The [roadmap](ROADMAP.md) d
 [feature specifications](specs/) contain the detailed contracts and acceptance
 records. Historical deployment and incident details belong in those records.
 
-## Getting started
+## Getting Started
 
 ### Prerequisites
 
@@ -73,12 +80,15 @@ records. Historical deployment and incident details belong in those records.
 - A Vercel AI Gateway credential for live Turi requests. Deterministic checks do
   not require live model access.
 
-### Install and configure
+### Install and Configure
 
 ```sh
 npm ci
 npm ci --prefix packages/artifact-extractor
 ```
+
+`npm ci` also installs the pinned local sandbox provider used by Eve during
+local execution and session shutdown; agent turns must not install it on demand.
 
 On a **new checkout**, create local configuration:
 
@@ -96,22 +106,24 @@ credentials, customer data, private stores or `.eve` runtime state.
 | `DATABASE_URL_UNPOOLED` | Direct owner connection used only for explicit migrations and grants. |
 | `TURAS_ENVIRONMENT_ID` | Identity shared by the selected database and private stores. |
 | `TURAS_APP_ORIGIN` | Exact application origin, such as `http://localhost:3000`. |
-| Temporary account usernames and passwords | Configured application accounts described below. |
+| Application account usernames and passwords | Configured application accounts described below. |
 | `TURAS_MAINTENANCE_SECRET` | Private maintenance secret of at least 32 characters. |
 | `TURAS_ARTIFACT_STORE_ROOT` | Absolute private-store path outside `public/`. |
 | `AI_GATEWAY_API_KEY` | Live model access through Vercel AI Gateway. |
 
 Provision the runtime login using the platform quickstart. Run the application
-with that login rather than the database owner.
+with that login rather than the database owner. Keep the pooled and direct Neon
+URLs on the same endpoint and database. The private I/O fence preserves the runtime
+login when it opens the direct session required for its recovery lock.
 
-### Initialize and run
+### Initialize and Run
 
 For a **new, empty development database** with its environment marker configured:
 
 ```sh
 npm run db:init
 npm run db:roles
-npm run db:bootstrap-demo
+npm run db:bootstrap
 npm run dev
 ```
 
@@ -129,11 +141,14 @@ reporting have additional prerequisites in the
 [staffing quickstart](specs/007-skills-staffing/quickstart.md) and
 [reporting operations guide](docs/reporting-operations.md).
 
-### Temporary accounts
+### Application Accounts
 
-These are temporary application accounts, configured privately by the environment
-operator. This is not a general-purpose SSO system; no passwords are published in
-this repository.
+Preview deployments use the same `mcteer` credentials as Production. They inherit
+the existing sensitive credential record; local or test passwords must not
+override it. Verify this with `npm run preview:credentials:check`.
+
+Application accounts are configured privately by the environment operator.
+Passwords are never published in this repository.
 
 | Account | Intended access |
 | --- | --- |
@@ -144,7 +159,22 @@ this repository.
 All three retain owner-private conversation boundaries. See the
 [platform quickstart](specs/002-identity-platform-shell/quickstart.md) for setup.
 
-## Development and testing
+## Development and Testing
+
+The runtime is pinned to **Eve 0.91.0**. Existing conversations from the older
+runtime remain readable as saved history; start a new conversation to use the
+current runtime with fresh authorization. Apply the checked-in migrations before
+running an upgraded deployment.
+
+To explicitly recover retained local runs, start
+`npm run dev:eve -- --resume --no-ui` before `npm run dev` in a second terminal.
+Eve loads `.env.local`; keep the selected database and `.eve/.workflow-data`
+together. A normal new development generation leaves older runs dormant. This
+local recovery mode is separate from hosted recovery verification.
+
+Dependabot checks the three npm projects and GitHub Actions weekly on Monday at
+09:00 America/Denver. Eve and its AI SDK peer updates are grouped for compatibility
+review. Dependency PRs follow the normal review and CI process.
 
 Start with the checks appropriate to the change:
 
@@ -180,7 +210,7 @@ opt-in, finite budgets and private captures; mocked or deterministic results are
 not actual-model acceptance. Follow the feature's quickstart before running an
 operational, recovery or paid check.
 
-## How the repository fits together
+## How the Repository Fits Together
 
 The web application, Turi tools, jobs, reports and MCP interface share one governed
 domain layer. Authorization is applied before retrieval, and source eligibility
@@ -220,7 +250,7 @@ Read that feature's `spec.md`, `plan.md` and `tasks.md`. A roadmap entry does no
 authorize implementing it. Keep the README and relevant feature/release status in
 the same PR as the change, obtain review and complete the required checks.
 
-## Operations and security
+## Operations and Security
 
 Hosted releases require explicit target verification, a recovery backup, migration
 rehearsal, runtime grants and compatible schema/code deployment. After merge,
@@ -240,7 +270,7 @@ Start with [production operations](docs/pilot-operations.md),
 [partners](docs/partner-operations.md), [learning](docs/learning-operations.md) and
 [MCP](docs/mcp-operations.md).
 
-## Documentation and help
+## Documentation and Help
 
 | Need | Start here |
 | --- | --- |

@@ -207,12 +207,12 @@ function ActivePlanDraft({conversationId,nativeSessionId,csrf,onTerminal,onCance
     onEvent(event){if(["turn.completed","turn.failed","turn.cancelled"].includes(event.type))
       onTerminal();}});
   return <div className="chat-messages" aria-live="polite">
-    {agent.data.messages.map((message)=><article className="chat-message" key={message.id}>
+    {agent.messages.map((message)=><article className="chat-message" key={message.id}>
       <h3>{message.role==="assistant" ? "Turi":"You"}</h3>
       {message.parts.map((part,index)=>part.type==="text" ?
         <p key={index}>{part.text}</p>:null)}
     </article>)}
-    {(agent.status==="streaming" || agent.status==="submitted") &&
+    {(agent.status!=="idle") &&
       <button type="button" className="secondary-button" onClick={()=>{
         void agent.cancel().catch(()=>undefined).finally(onCancel);
       }}>Stop Turi</button>}

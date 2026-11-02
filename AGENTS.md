@@ -18,8 +18,23 @@ Use the checked-in Spec Kit skills in `.agents/skills/`. Feature branches use
 Git extension is not installed. Do not overwrite customized governance during an
 upgrade. Review installed version and manifest changes in their own PR.
 
+## Dependency and framework upgrades
+
+An upgrade spanning **3 or more dot releases** (minor or patch), or **any major
+version change** (including **0.x → 1.x**), requires a dedicated spec before
+implementation. This applies to dependency-bot PRs before merge or deployment.
+Review the intervening release notes, identify new capabilities useful to Turas,
+and include wiring the selected capabilities into the app/platform, with governed
+scope and acceptance tests. A package bump, compatibility fixes, or a list of
+unused capabilities alone is insufficient. Explain each excluded or deferred
+capability. Smaller upgrades still follow the normal material-change rules.
+
 ## Implementation boundaries
 
+- Turas is a production platform. Use production/account terminology in product
+  copy, documentation and operational updates. Preserve existing credential
+  variable names and working passwords for compatibility; a historical variable
+  name is not a reason to rotate credentials or ask for a replacement password.
 - The private pilot programme is removed. Do not restore its workspace login,
   provisioning, feedback or approval tasks. Keep evaluation-only Root/Learning
   bindings out of Production; preserve ordinary accounts and production safeguards.
@@ -28,11 +43,14 @@ upgrade. Review installed version and manifest changes in their own PR.
 - Keep `.env.local`, `.eve`, credentials, private artifacts, and customer data out
   of commits and tool output. Use `.env.example` for documented variable names.
 - Preserve `agent/agent.ts` model selection unless explicitly asked to change it.
+- Preview deployments must inherit the existing Production `mcteer` credential
+  record. Never replace it with local/test credentials or rotate the Production
+  password to prepare a Preview. Run `npm run preview:credentials:check`.
 - For feature 002, root `npm run dev` supervises the local Next.js app, eve and
   the Postgres maintenance worker. Preserve both the selected database and
   `.eve/.workflow-data` across restart/recovery checks. The repo is disconnected
   from Vercel; do not link, reconnect or deploy during this slice.
-- `mcteer` and `panel` are temporary internal logins that can read every workspace
+- `mcteer` and `panel` are internal application logins that can read every workspace
   customer reference, while `partner` is limited to explicitly assigned customer
   delivery data. Conversations remain private to their owner for every role.
 - Do not install speculative eve integrations. Search the registry when an active

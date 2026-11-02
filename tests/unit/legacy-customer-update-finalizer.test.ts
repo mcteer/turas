@@ -1,3 +1,4 @@
+import {resolveStaticDynamic} from '../fixtures/dynamic';
 import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import {context,identity} from '../fixtures/legacy-specialist-contracts';
 import {researchState} from '../../agent/lib/legacy-research/research-state';
@@ -14,7 +15,7 @@ const source={id:'customer',url:'https://example.com/product',title:'Synthetic c
 const input=()=>customerUpdateSubmissionSchema.parse({accountId:context.accountId,question:'What does this source establish?',findings:[{claim:'Documents a scoped workflow.',scope:'Named workload only',sourceId:source.id,passageId:researchPassages(source)[0].id,publisherType:'customer'}],conflicts:[],unknowns:[],coverage:{release_history:{status:'checked',sourceIds:['customer','unretained-release'],currentIndexSourceId:'customer',note:'A synthetic source references a missing release.'},current_documentation:{status:'checked',sourceIds:['customer'],note:'The supplied source documents this workload.'},availability_and_pricing:{status:'not_applicable',sourceIds:[],note:'Focused question does not assess pricing.'},operations_and_limits:{status:'not_applicable',sourceIds:[],note:'Focused question does not assess all limits.'},employee_testimony:{status:'not_applicable',sourceIds:[],searchIds:[],note:'Focused question does not assess testimony.'},practitioner_experience:{status:'not_applicable',sourceIds:[],searchIds:[],note:'Focused question does not assess practitioner experience.'}}});
 const ctx=(callId:string,principal:unknown={principalId:identity.principalId},abortSignal=new AbortController().signal)=>({callId,abortSignal,session:{id:'synthetic-worker',auth:{current:principal}}});
 type UnitTool={execute:(submission:ReturnType<typeof input>,context:ReturnType<typeof ctx>)=>Promise<{status:string;reference:unknown;reason:string}>};
-const current=()=>(definition as unknown as {events:{'step.started':()=>UnitTool|null}}).events['step.started']();
+const current=()=>resolveStaticDynamic<UnitTool|null>(definition);
 let state:ReturnType<typeof researchState.get>;
 beforeEach(()=>{state={context:structuredClone(context),sources:[source],calls:{},startedAt:Date.now(),mode:'customer-update'};vi.spyOn(researchState,'get').mockImplementation(()=>state);vi.spyOn(researchState,'update').mockImplementation(update=>{state=update(state);});boundary.stored.mockReset().mockResolvedValue({accountId:context.accountId,researchId:'a'.repeat(64)});boundary.finished.mockReset().mockResolvedValue(undefined);boundary.finalContext.mockReset().mockResolvedValue(context);vi.stubEnv('TURAS_MAINTENANCE_SECRET','synthetic-unit-signing-secret');});
 afterEach(()=>{vi.restoreAllMocks();vi.unstubAllEnvs();});

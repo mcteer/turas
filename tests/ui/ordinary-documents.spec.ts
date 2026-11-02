@@ -41,7 +41,8 @@ test('opening customer sources preserves attached context and does not dispatch 
  await picker.setInputFiles({name:'draft.txt',mimeType:'text/plain',buffer:Buffer.from('Unverified customer context for a later send.')});
  await expect(page.getByRole('button',{name:'Remove draft.txt'})).toBeVisible();
  let sends=0;page.on('request',request=>{if(request.method()==='POST'&&/\/eve\/v1\/session\/[^/]+$/.test(new URL(request.url()).pathname))sends++;});
- await page.getByRole('button',{name:'Customer sources',exact:true}).click();
+ await page.getByRole('button',{name:'Add attachments',exact:true}).click();
+ await page.getByRole('menuitem',{name:/Customer sources/}).click();
  await expect(page).toHaveURL(/\/s\/[0-9a-f-]+\?attachments=1$/);
  await expect(page.getByLabel('Message Turi')).toHaveValue('Review these selected sources before sending.');
  await expect(page.getByRole('button',{name:'Remove draft.txt'})).toBeVisible();

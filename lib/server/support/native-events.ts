@@ -1,3 +1,4 @@
+import {projectionFactIndex} from '../conversations/projection-position';
 import type { PoolClient } from "pg";
 import { HttpFailure, hiddenRecord } from "../../contracts/http";
 import { validateSupportAdviceResult } from "../../support/advice";
@@ -62,14 +63,15 @@ export async function projectSupportNativeEventInTransaction(db: PoolClient, nat
   const payload = finalOutput && !["cancelled", "failed", "expired", "unconfirmed"].includes(advice.state)
     ? { message: JSON.stringify(finalOutput), finishReason: data.finishReason }
     : step ? { usage: { inputTokens, outputTokens } } : invalidOutput ? { code: "invalid_advice" } : {};
+  const factIndex=await projectionFactIndex(db,event);
   const inserted = await db.query(`INSERT INTO event_projections(native_event_id,conversation_id,native_session_id,stream_index,
-    event_type,turn_id,step_index,visible_payload,emitted_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9)
+    event_type,turn_id,step_index,visible_payload,emitted_at${factIndex!==null?",stream_fact_index":""}) VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9${factIndex!==null?",$10":""})
     ON CONFLICT(native_event_id) DO NOTHING RETURNING native_event_id`,
   [event.meta.id, association.id, nativeSessionId, streamIndex ?? null, event.type, data.turnId,
-    Number.isSafeInteger(data.stepIndex) ? data.stepIndex : null, JSON.stringify(payload), event.meta.at]);
+    Number.isSafeInteger(data.stepIndex) ? data.stepIndex : null, JSON.stringify(payload), event.meta.at,...(factIndex!==null?[factIndex]:[])]);
   if (!inserted.rowCount) {
     const prior = (await db.query("SELECT * FROM event_projections WHERE native_event_id=$1", [event.meta.id])).rows[0];
-    if (!prior || prior.conversation_id !== association.id || prior.native_session_id !== nativeSessionId || prior.event_type !== event.type ||
+    if (!prior || factIndex!==null&&Number(prior.stream_fact_index)!==factIndex || prior.conversation_id !== association.id || prior.native_session_id !== nativeSessionId || prior.event_type !== event.type ||
       prior.turn_id !== data.turnId || prior.emitted_at.getTime() !== Date.parse(event.meta.at) || supportDigest(prior.visible_payload) !== supportDigest(payload)) throw hiddenRecord();
     return { support: true };
   }
