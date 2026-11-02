@@ -95,6 +95,16 @@ exposes no new continuation/cancellation authority.
 
 ## Stored Best-Practices Result Read
 
+Best-practices publication requires an actual completed child turn and the exact
+current assignment's server-stored finalization receipt. It does not require the
+child to repeat that receipt through a second structured-output schema. The
+supervisor validates the current lease, parent/child/owner binding, stored hash,
+freshness and eligible source snapshots, derives ready/incomplete from the stored
+brief's gaps, then rechecks authorization before its once-only publication. Child
+prose cannot supply a reference, complete an unfinished reservation, or replace a
+stored result. Failed/cancelled child turns remain unavailable even if they wrote
+earlier data. The other two specialists retain their existing typed handoff.
+
 `get_vercel_practice_brief({reference})` is available only in ordinary chat. The
 hash identifies a stored result; it grants no authority. The domain reader binds
 it to a completed best-practices assignment owned by the current parent session,

@@ -108,6 +108,9 @@ export function specialistContinuityWorker(principal:CurrentPrincipal|null,paren
    await finishResearchRequest(identity,request.ticket,receipt,signal);
   }
   await query('INSERT INTO specialist_continuity_calls(assignment_id,worker_id) VALUES($1,$2)',[assignment.id,workerSessionId]);
+  // Best-practices publication must use the current server finalization receipt,
+  // never a model-formatted reference in this deliberately irrelevant prose.
+  if(kind==='best-practices')return {text:'The current assignment was finalized; this prose is not a result reference.',usage};
   const reply=tools.find(tool=>tool.name==='eve__reply');
   if(!reply)throw Error('Native structured reply tool missing');
   return {toolCalls:[{name:reply.name,input:{kind,status:'incomplete',reference,reason:'Synthetic continuity fixture; no live research.'}}],usage};

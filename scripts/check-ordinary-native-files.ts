@@ -133,7 +133,14 @@ try{await withPlanEvalEnvironment(async environment=>{
     await page.waitForFunction(()=>{const input=document.querySelector<HTMLInputElement>('input[type="file"][aria-label="Chat document files"]');return input&&!input.disabled;},null,{timeout:30000});
     const readyBytes=Buffer.alloc(1024*1024,0x62),key=randomUUID(),path='/api/conversations/'+warmupId+'/native-uploads';
     const intent=await context.request.post(path,{headers,data:{requestKey:key,filename:'unused.bin',mediaType:'application/octet-stream',size:readyBytes.length,sha256:createHash('sha256').update(readyBytes).digest('hex')}});
-    if(!intent.ok())throw Error('Restored draft upload reservation failed');
+    if(!intent.ok()){
+     // APIRequestContext traffic is not emitted by BrowserContext's observer.
+     // Preserve this failed prerequisite's status/code without body or identity.
+     const entry:{kind:'file';method:string;status:number;chunk:null;code?:string}={kind:'file',method:'POST',status:intent.status(),chunk:null};
+     try{const body=await intent.json();if(typeof body.code==='string'&&/^[a-zA-Z0-9_]{1,80}$/.test(body.code))entry.code=body.code;}catch{/* No JSON is required for a failed request. */}
+     fileResponses.push(entry);if(fileResponses.length>64)fileResponses.shift();
+     throw Error('Restored draft upload reservation failed');
+    }
     const uploadId=(await intent.json()).data.data.slice('turas-upload:'.length);
     for(let offset=0,index=0;offset<readyBytes.length;offset+=512*1024,index++)if(!(await context.request.put(path+'/'+uploadId+'/chunks/'+index,{headers,data:readyBytes.subarray(offset,offset+512*1024)})).ok())throw Error('Restored draft chunk failed');
     const finished=await context.request.post(path+'/'+uploadId,{headers});if(!finished.ok())throw Error('Restored draft completion failed');const reference=(await finished.json()).data;

@@ -290,3 +290,95 @@ it('loads only an owned current best-practices result with its partial coverage 
   await db.query("UPDATE turas_evidence_snapshots SET refresh_after=clock_timestamp()-interval '1 second' WHERE id=$1",[snapshotId]);await expect(read()).rejects.toMatchObject({status:404});
  }finally{await db.end();}
 });
+
+/** Real domain admission and runtime-role writes; no model or external source fetch. */
+async function practicePublicationFixture(hasGaps=true){
+ const {authorizeSpecialistWorker,registerSpecialistSources}=await import('../../lib/server/research/specialists/discussions');
+ const {loadSessionResearchRequest,finishPracticeResearch}=await import('../../lib/server/research/specialists/research-cache/requests');
+ const {recordVercelPracticeRun}=await import('../../lib/server/research/specialists/research-cache/practice-library');
+ const db=new Client({connectionString:url});await db.connect();
+ try{
+  const actor=await isolatedChatActor(db,'internal','admin'),customer=randomUUID(),key=randomUUID();
+  await db.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Owned server receipt publication',false)",[customer,actor.workspaceId]);
+  const {conversation}=await createOwnedConversation(actor,{requestKey:key,customerId:customer});
+  const binding=await claimBinding(actor,conversation.id,key);if(binding.state!=='claimed')throw Error('Binding unavailable');
+  const native='wrun_'+randomUUID(),worker='wrun_'+randomUUID();await bindNativeSession(actor,conversation.id,binding.claimToken,native);
+  await db.query('INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,$2,now())',[process.env.TURAS_ENVIRONMENT_ID,'practice-publication-'+key]);
+  const {attemptId}=await prepareAttempt(actor,conversation.id,native,randomUUID(),'Verify deployment safeguards.');await claimDispatch(actor,conversation.id,attemptId,0);
+  await db.query('SET ROLE turas_runtime');
+  const identity={...actor,userId:actor.principalId,environmentId:process.env.TURAS_ENVIRONMENT_ID!,responseAttemptId:attemptId},signal=new AbortController().signal;
+  const prepared=await prepareResearch(identity,{accountId:customer,kind:'best-practices',workload:'platform',question:'Verify deployment safeguards.'},signal,false,native);
+  if(prepared.status!=='research'||!prepared.ticket)throw Error('Owned practice reservation unavailable');
+  const admitted=await admitSpecialistCall({attemptId,principalId:actor.principalId,parentSessionId:native,workflowRunId:randomUUID(),callId:randomUUID(),kind:'best-practices',message:'Verify deployment safeguards.'});
+  const request=await loadSessionResearchRequest(identity,native,worker,customer,'best-practices',signal);
+  const bound=await withTransaction(client=>authorizeSpecialistWorker(client,{attemptId,principalId:actor.principalId,parentSessionId:native,workerSessionId:worker,kind:'best-practices'}));
+  const checkedAt=new Date(),refreshAfter=new Date(Date.now()+120000),snapshotId=createHash('sha256').update(randomUUID()).digest('hex'),sourceUrl='https://vercel.com/docs/deployments';
+  const source={id:'checked-publication-doc',url:sourceUrl,title:'Checked deployment documentation',retrievedAt:checkedAt.toISOString(),excerpt:'Retain the documented rollback requirements.'};
+  await db.query(`INSERT INTO turas_evidence_snapshots(environment_id,workspace_id,id,fetch_key,url,content_hash,source,truncated,checked_at,refresh_after,index_state)
+   VALUES($1,$2,$3,$3,$4,'fixture',$5,false,$6,$7,'ready')`,[identity.environmentId,actor.workspaceId,snapshotId,sourceUrl,source,checkedAt,refreshAfter]);
+  await registerSpecialistSources(bound.identity,[{snapshotId,checkedAt:checkedAt.toISOString(),refreshAfter:refreshAfter.toISOString()}]);
+  const brief={summary:'Stored server-authoritative guidance with explicit coverage gaps.',practices:[{practice:'Retain a previously verified deployment.',rationale:'Keep a checked rollback target available to the operator.',sourceIds:[source.id],caveat:'The documented platform and plan prerequisites still apply.'}],gaps:hasGaps?['Plan-specific availability remains unverified.']:[]};
+  const reference=await recordVercelPracticeRun(identity,'Next.js','Deployment safeguards',brief,[sourceUrl],signal);
+  await finishPracticeResearch(identity,request.ticket,1,signal,reference);
+  await db.query(`INSERT INTO specialist_operations(id,discussion_id,assignment_id,native_step_key,model,ceiling_input_tokens,ceiling_output_tokens,ceiling_micro_usd,pricing)
+   VALUES($1,$2,$3,$4,'fixture/no-provider',100,100,500,'{}')`,[randomUUID(),admitted.discussionId,admitted.assignmentId,randomUUID()]);
+  const financialRows=(await db.query('SELECT * FROM specialist_operations WHERE discussion_id=$1 ORDER BY id',[admitted.discussionId])).rows;
+  return {db,identity,signal,conversation,native,worker,admitted,reference,brief,snapshotId,request,financialRows};
+ }catch(error){await db.end();throw error;}
+}
+
+it.each([true,false])('publishes the current committed practice receipt without a model result DTO and preserves exact-once holds (gaps=%s)',async hasGaps=>{
+ const {publishSpecialistResult}=await import('../../lib/server/research/specialists/discussion-results');
+ const f=await practicePublicationFixture(hasGaps);
+ try{
+  await expect(publishSpecialistResult(f.identity,f.conversation.id,f.admitted.discussionId,randomUUID(),undefined,f.signal)).rejects.toMatchObject({status:404});
+  await expect(publishSpecialistResult({...f.identity,principalId:randomUUID()},f.conversation.id,f.admitted.discussionId,f.admitted.assignmentId,undefined,f.signal)).rejects.toMatchObject({status:404});
+  await expect(publishSpecialistResult({...f.identity,workspaceId:randomUUID()},f.conversation.id,f.admitted.discussionId,f.admitted.assignmentId,undefined,f.signal)).rejects.toMatchObject({status:404});
+  const publish=()=>publishSpecialistResult(f.identity,f.conversation.id,f.admitted.discussionId,f.admitted.assignmentId,undefined,f.signal);
+  const first=await publish();expect(first).toMatchObject({kind:'best-practices',status:hasGaps?'incomplete':'ready',reference:f.reference});
+  const before=(await f.db.query('SELECT * FROM specialist_assignments WHERE id=$1',[f.admitted.assignmentId])).rows;
+  expect(await publish()).toEqual(first);
+  expect((await f.db.query('SELECT * FROM specialist_assignments WHERE id=$1',[f.admitted.assignmentId])).rows).toEqual(before);
+  expect((await f.db.query('SELECT * FROM specialist_operations WHERE discussion_id=$1 ORDER BY id',[f.admitted.discussionId])).rows).toEqual(f.financialRows);
+ }finally{await f.db.end();}
+});
+
+it.each(['missing-receipt','old-run','foreign-reference','tampered-brief','stale-source','wrong-lease'] as const)('does not publish an ineligible current practice receipt: %s',async failure=>{
+ const {publishSpecialistResult}=await import('../../lib/server/research/specialists/discussion-results');
+ const f=await practicePublicationFixture();
+ try{
+  if(failure==='missing-receipt')await f.db.query('UPDATE turas_research_requests SET receipt=NULL WHERE key=$1',[f.request.key]);
+  if(failure==='old-run')await f.db.query("UPDATE turas_vercel_practice_runs SET created_at=$2::timestamptz-interval '1 second' WHERE id=$1",[f.reference,f.request.started_at]);
+  if(failure==='foreign-reference')await f.db.query("UPDATE turas_research_requests SET receipt=jsonb_set(receipt,'{reference}',to_jsonb($2::text)) WHERE key=$1",[f.request.key,'f'.repeat(64)]);
+  if(failure==='tampered-brief')await f.db.query("UPDATE turas_vercel_practice_runs SET brief=jsonb_set(brief,'{summary}','\"Tampered server-authoritative practice summary.\"') WHERE id=$1",[f.reference]);
+  if(failure==='stale-source')await f.db.query("UPDATE turas_evidence_snapshots SET refresh_after=clock_timestamp()-interval '1 second' WHERE id=$1",[f.snapshotId]);
+  if(failure==='wrong-lease')await f.db.query('UPDATE turas_research_requests SET lease_id=$2 WHERE key=$1',[f.request.key,randomUUID()]);
+  let result:Awaited<ReturnType<typeof publishSpecialistResult>>|undefined;
+  try{result=await publishSpecialistResult(f.identity,f.conversation.id,f.admitted.discussionId,f.admitted.assignmentId,undefined,f.signal);}catch(error){expect(error).toMatchObject(failure==='stale-source'?{status:409,code:'context_changed'}:{status:404});}
+  if(result)expect(result).toMatchObject({status:'unavailable',reference:null});
+  const saved=(await f.db.query('SELECT result_reference FROM specialist_assignments WHERE id=$1',[f.admitted.assignmentId])).rows[0].result_reference;
+  expect(saved?.reference??null).toBeNull();
+  expect((await f.db.query('SELECT * FROM specialist_operations WHERE discussion_id=$1 ORDER BY id',[f.admitted.discussionId])).rows).toEqual(f.financialRows);
+ }finally{await f.db.end();}
+});
+
+it('never uses the previous assignment receipt to publish a newly admitted refinement',async()=>{
+ const {publishSpecialistResult}=await import('../../lib/server/research/specialists/discussion-results');
+ const {loadSessionResearchRequest}=await import('../../lib/server/research/specialists/research-cache/requests');
+ const f=await practicePublicationFixture();
+ try{
+  const old=await publishSpecialistResult(f.identity,f.conversation.id,f.admitted.discussionId,f.admitted.assignmentId,undefined,f.signal);
+  expect(old.reference).toBe(f.reference);
+  await f.db.query("UPDATE specialist_assignments SET state='completed' WHERE id=$1",[f.admitted.assignmentId]);
+  const next=await prepareResearch(f.identity,{accountId:f.request.scope.accountId,kind:'best-practices',workload:'platform',question:'Verify deployment safeguards.'},f.signal,true,f.native);
+  if(next.status!=='research'||!next.ticket)throw Error('New refinement reservation unavailable');
+  const workflow=(await f.db.query('SELECT workflow_run_id FROM specialist_discussions WHERE id=$1',[f.admitted.discussionId])).rows[0].workflow_run_id;
+  const admitted=await admitSpecialistCall({attemptId:f.identity.responseAttemptId,principalId:f.identity.principalId,parentSessionId:f.native,workflowRunId:workflow,callId:randomUUID(),kind:'best-practices',message:'Refine the existing deployment safeguards.'});
+  expect(admitted.assignmentId).not.toBe(f.admitted.assignmentId);
+  await loadSessionResearchRequest(f.identity,f.native,f.worker,f.request.scope.accountId,'best-practices',f.signal);
+  await expect(publishSpecialistResult(f.identity,f.conversation.id,admitted.discussionId,f.admitted.assignmentId,undefined,f.signal)).rejects.toMatchObject({status:404});
+  expect(await publishSpecialistResult(f.identity,f.conversation.id,admitted.discussionId,admitted.assignmentId,undefined,f.signal)).toMatchObject({status:'unavailable',reference:null});
+  expect((await f.db.query('SELECT result_reference FROM specialist_assignments WHERE id=$1',[f.admitted.assignmentId])).rows[0].result_reference).toEqual(old);
+  expect((await f.db.query('SELECT * FROM specialist_operations WHERE discussion_id=$1 ORDER BY id',[f.admitted.discussionId])).rows).toEqual(f.financialRows);
+ }finally{await f.db.end();}
+});

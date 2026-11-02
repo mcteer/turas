@@ -6,7 +6,7 @@ export default defineAgent({
   model: specialistModel("best-practices"),
   reasoning: "high",
   defaultTools: false,
-  // The workflow caller must be able to read the completed typed result.
+  // The supervisor validates a completed turn and its current stored receipt.
   // Retain live turns; ended private sessions follow the trace-derived deletion policy.
   tool: false,
   limits: specialistSessionLimits("best-practices"),

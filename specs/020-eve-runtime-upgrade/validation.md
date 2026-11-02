@@ -2,6 +2,33 @@
 
 ## Current Acceptance State
 
+### Server-Authoritative Best-Practices Handoff
+
+The reliable fb10 hosted reproduction narrows the failure to a schema-related
+native handoff after the current finalization receipt was committed. It supplies
+no JSON issue fields and does not establish the exact underlying exception. The
+best-practices supervisor now removes that redundant model-format dependency:
+after an actual completed native turn, it validates the current server receipt
+and its fresh, hash-checked, source-eligible stored brief. Ready/incomplete comes
+from the actual gaps. Failed/cancelled turns remain rejected; previous receipts,
+model prose and copied references cannot complete a new assignment. Other
+specialists' typed handoffs, limits, fixed expiry and financial holds are unchanged.
+
+Independent source review found no blocker. Nine new runtime-role database cases
+pass for ready/incomplete, current assignment/lease/owner binding, old and missing
+receipts, tampering/staleness, idempotency and unchanged financial rows. Forty-four
+focused tests pass under Node24. The actual all-three native/restart/control
+fixture passes with zero paid calls, including three real server-receipt reads
+when the best-practices mock deliberately returns irrelevant prose. TypeScript
+passes. The first local invocation stopped at the Node24 prerequisite under the
+host's default Node26; the passing run uses the pinned Node24 binary. Exact hosted
+acceptance and final CI remain pending. The separate fb10 staged10 CI failure
+occurred at the initial1MiB draft reservation, before chunks, sends or restart.
+The existing browser observer misses APIRequestContext traffic, so its status/
+safe error code are now retained on that failed prerequisite without body or
+identity. The original assertion and deadlines remain. No cause or passing CI
+rerun has been inferred from the missing response details.
+
 ### Child Terminal Status Follow-up
 
 The41f3 source passes all eight compatibility CI gates. Its affected baseline UI
