@@ -85,3 +85,9 @@ it('retains known native failure metadata without upstream response bodies',asyn
  const unknown=specialistFailureMetadata('solution','child-result',{name:'PRIVATE_NAME',message:'PRIVATE_TEXT',details:{statusCode:999}});
  expect(unknown).toMatchObject({errorName:'unknown',httpStatus:null,hints:[]});
 });
+it('identifies bounded validation fields while dropping private issue values',async()=>{
+ const {specialistFailureMetadata}=await import('../../lib/server/research/specialists/discussion-diagnostics');
+ const result=specialistFailureMetadata('solution','child-result',{message:JSON.stringify([{code:'invalid_type',expected:'string',path:['reference','PRIVATE_FIELD',2],message:'PRIVATE_VALUE'},{code:'PRIVATE_CODE',path:['PRIVATE_FIELD']},{code:'invalid_value',expected:'PRIVATE_TYPE',path:['status']}])});
+ expect(result).toMatchObject({validationIssues:[{code:'invalid_type',expected:'string',path:['reference','other','index']},{code:'invalid_value',expected:'unknown',path:['status']}]});
+ expect(JSON.stringify(result)).not.toMatch(/PRIVATE_/);
+});

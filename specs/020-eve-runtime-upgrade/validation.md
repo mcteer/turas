@@ -4,6 +4,23 @@
 
 ### Child Terminal Status Follow-up
 
+The41f3 source passes all eight compatibility CI gates. Its affected baseline UI
+scenarios pass20/20 across four projects with no skips, retries or weakened
+assertions. Its authenticated Preview passes existing credentials, four composer
+layouts and the real Customer Profiles comparison. Independent review accepted
+eight clean captures for the captured surfaces. The mobile overlay was Vercel
+Toolbar: its documented request-only automation header removed it for capture;
+four layout send-center hit tests pass. No app CSS or project setting changed.
+
+The actual41f3 refinement still fails after its current cache completion receipt.
+Native diagnostics isolate a validation-related error with no limit/abort/session-
+termination evidence. A local real-parent case never delegated; a separate hybrid-
+parent/real-child case returned unavailable on its initial publication. Neither
+reached or proves the hosted refinement failure. The follow-up retains only
+whitelisted validation codes, expected types and field paths from JSON issue
+messages; arbitrary paths, values, prose and bodies are excluded. Twelve focused
+tests and TypeScript pass. Actual hosted validation-field evidence remains pending.
+
 Commit0cea's compatibility CI is **8/8 green**. Its exact authenticated Preview
 passes existing mcteer credentials, all four composer layouts, workspace-account
 terminology and the real Production/Preview Customer Profiles comparison. The
