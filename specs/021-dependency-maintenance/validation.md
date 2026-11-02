@@ -50,3 +50,27 @@ administrator record serves Production and Preview, with zero overrides. No
 credential was changed. No Vercel resource or environment record was deleted.
 The large historical branch still requires disposition of unmatched file
 versions; exact historical blob coverage alone is not complete behavior proof.
+
+## First hosted pass and renderer correction
+
+PR61 source7b6e3eea built successfully in Vercel Preview, but authenticated login
+returned an unavailable state. Baseline Preview configuration was insufficient
+for the current source. The25 existing isolated review overrides from absent
+chore/eve-dependabot-composer were reassigned to021-dependency-maintenance by
+changing only gitBranch. IDs, types, targets and values were retained; Production
+records were unchanged and shared credential inheritance still passes. A new
+source deployment is required to exercise that configuration.
+
+First CI reporting deterministic/WebKit and product-gap deterministic checks
+failed. Reporting deterministic reached renderer output validation. The renderer
+package was1.64.1 while its Docker base digest was the verified1.63.0 image.
+The base now pins the registry-verified1.64.1 multi-platform image digest. The
+rebuilt image passes the actual owned report-audience contract (one case, no skips).
+The first local focused invocation stopped at an absent fixture image tag; after
+adding the expected tag to the same rebuilt image, the real rendering case passed.
+No report output validation was weakened.
+
+The first native-staged10 CI check failed at restart_after_native_receipt with
+WebKit page.reload frame-load interruption. The unchanged original check is being
+replayed locally. This failed CI is not a reusable passing baseline. Other
+completed jobs retain their original scope and outcomes.
