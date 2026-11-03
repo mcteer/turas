@@ -65,7 +65,7 @@ describe("support disposable ownership guard", () => {
     const workflow = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
     const support = workflow.split("\n  support-deterministic:\n")[1]?.split(/\n  [a-zA-Z][\w-]*:/)[0];
     expect(support).toBeDefined();
-    expect(support).toContain("[deterministic, webkit]");
+    expect(support).toContain("gate: ${{ fromJSON(needs.scope.outputs.matrix_support_deterministic) }}");
     const role = support!.indexOf("CREATE ROLE turas_runtime NOLOGIN");
     const migrate = support!.indexOf("npm run db:init");
     expect(role).toBeGreaterThanOrEqual(0);

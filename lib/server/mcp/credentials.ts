@@ -19,7 +19,7 @@ export async function authenticateMcpBearer(authorization:string|null):Promise<M
  * operational admission; callers must still invoke canonical workspace policy. */
 export async function authenticateMcpCredential(db:PoolClient,authorization:string|null):Promise<McpReadActor>{
   const raw=authorization?.startsWith('Bearer ')?authorization.slice(7):'';
-  if(!mcpBearerSchema.safeParse(raw).success)throw new HttpFailure(401,'unauthorized','Authentication required');
+  if(!mcpBearerSchema.validate(raw))throw new HttpFailure(401,'unauthorized','Authentication required');
   const [,id,secret]=raw.split('.');
   await assertMcpReady(db,true);
     const row=(await db.query(`SELECT c.id,c.environment_id,c.workspace_id,c.principal_id,c.membership_id,c.categories,c.scope_digest,c.expires_at,c.revoked_at,c.credential_hash,

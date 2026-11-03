@@ -8,6 +8,15 @@ meaningful tests; verify actual changed production behavior through normal relea
 
 # Turas delivery roadmap
 
+## In Progress: Assessed Dependency Maintenance
+
+[Feature021](specs/021-dependency-maintenance/spec.md) consolidates PR53–59,
+includes the missing application-framework security patch and adopts interrupted
+provider accounting fences, boolean credential validation and artifact digest
+enforcement. Historical branches and Vercel resources require evidence-based
+dispositions; active backups and unresolved unique work stay preserved. This is
+not yet a Production release. See its [validation record](specs/021-dependency-maintenance/validation.md).
+
 ## Released: Eve Upgrade and Specialist Continuity
 
 [Feature020](specs/020-eve-runtime-upgrade/spec.md) upgraded Eve 0.67.1 → 0.91.0

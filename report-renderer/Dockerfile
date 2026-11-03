@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+FROM mcr.microsoft.com/playwright@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
 ENV DEBIAN_FRONTEND=noninteractive
 COPY infra/ci/apt.conf /etc/apt/apt.conf.d/99turas-ci-timeouts
 RUN for apt_source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do \
