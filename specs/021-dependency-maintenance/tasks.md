@@ -11,23 +11,23 @@
 - [x] T004 Add credential rejection and interrupted generation/stream accounting regressions in tests/unit/dependency-maintenance.test.ts.
 - [x] T005 Implement selected dependency versions and compatible transitive patches in root/renderer manifests and lockfiles; audit extractor dependencies without blind major overrides.
 - [x] T006 Adopt MCP boolean syntax validation and interrupted provider fences in lib/server/mcp/credentials.ts and lib/server/research/specialists/discussion-provider.ts.
-- [ ] T007 Run regression/type/unit/extractor/build/audit checks and record actual results in validation.md.
+- [x] T007 Run regression/type/unit/extractor/build/audit checks and record actual results in validation.md.
 
 ## US2 — Trusted verification artifacts
 
 - [x] T008 Update immutable action pins in .github/workflows/ci.yml and legacy-backend-parity.yml and enforce digest errors while retaining report attempt/directory/completeness behavior.
-- [ ] T009 Validate workflow selection and actual complete-report CI execution; record evidence in validation.md.
+- [x] T009 Validate workflow selection and actual complete-report CI execution; record evidence in validation.md.
 
 ## US3 — Assessed cleanup
 
 - [x] T010 Complete historical branch delta and Vercel dependency/retention assessment in research.md; preserve unresolved unique work and key custody.
-- [ ] T011 Remove only evidenced stale Vercel branch overrides after release acceptance; verify credential inheritance and canonical project metadata.
+- [x] T011 Remove only evidenced stale Vercel branch overrides after actual Preview acceptance; verify credential inheritance and canonical project metadata.
 - [ ] T012 Retire superseded PRs/branches only after replacement release; verify main README and remaining GitHub inventory.
 
 ## Release and documentation
 
 - [x] T013 Update README.md and ROADMAP.md with actual maintenance status; run check:docs.
-- [ ] T014 Open replacement PR; require up-to-date complete CI, actual protected Preview profiles and inspected WebKit captures; record exact source/results in validation.md.
+- [x] T014 Open replacement PR; require up-to-date complete CI, actual protected Preview profiles and inspected WebKit captures; record exact source/results in validation.md.
 - [ ] T015 Obtain maintainer review and merge passing source; verify deployed identity/schema and authenticated Production HTTP/WebKit before recording completion.
 
 ## Dependencies and strategy

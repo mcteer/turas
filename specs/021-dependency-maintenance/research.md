@@ -30,7 +30,7 @@ Adopt duplicate approval, toolChoice-none, orphaned reasoning, partial JSON and 
 
 ### Connect2.5.2→2.6.0
 
-Reviewed [changelog](https://github.com/vercel/vercel/blob/main/packages/connect/CHANGELOG.md):2.5.3–2.5.6 advance OIDC and tighten project/environment-bound forwarded webhook verification. Preserve these protections. Upstream main currently lacks a2.6.0 section: inspect the published package changelog before acceptance and record any remaining provenance gap. Defer managed subscriptions/channels: no authorized use case in this slice. Existing Context connection and Eve build are acceptance boundaries.
+Reviewed [changelog](https://github.com/vercel/vercel/blob/main/packages/connect/CHANGELOG.md):2.5.3–2.5.6 advance OIDC and tighten project/environment-bound forwarded webhook verification. Preserve these protections. Upstream main lacks a2.6.0 section; the published2.5.2 and2.6.0 package contents and README were compared directly. OIDC advances4.0.1→4.0.5. New opt-in autoProvision resolves the project-local UID without widening an existing link and reports setup-required as nonretryable. Keep its default false: automatic provisioning has no authorized use case here. Defer managed subscriptions/channels: no authorized use case in this slice. Existing Context connection and Eve build are acceptance boundaries.
 
 ### Next16.3.8→16.4.3
 
