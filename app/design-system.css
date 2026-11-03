@@ -151,7 +151,10 @@ button, a { touch-action: manipulation; }
 .primary-button { background: var(--foreground); color: var(--surface); border-color: var(--foreground); box-shadow: 0 1px 2px #00000012; }
 .primary-button:hover:not(:disabled) { opacity: .88; text-decoration: none; }
 .secondary-button:hover:not(:disabled), .profile-page button:not([class]):hover:not(:disabled), .content-page button:not([class]):hover:not(:disabled) { background: var(--subtle); border-color: var(--muted); text-decoration: none; }
-.field { min-height: 40px; padding: .55rem .75rem; font-size: 13px; border-color: var(--border-strong); border-radius: 7px; box-shadow: 0 1px 2px #00000003; }
+.field { min-width: 0; max-width: 100%; min-height: 40px; padding: .55rem .75rem; font-size: 13px; border-color: var(--border-strong); border-radius: 7px; box-shadow: 0 1px 2px #00000003; }
+/* WebKit date controls otherwise retain their native intrinsic width. */
+input.field:is([type="date"], [type="datetime-local"]) { appearance: none; display: block; }
+input.field::-webkit-date-and-time-value { min-width: 0; text-align: left; }
 .field::placeholder { color: var(--muted); opacity: .85; }
 .field:focus-visible { border-color: var(--focus); }
 select.field {
@@ -293,7 +296,15 @@ input[type="file"]::file-selector-button { font: inherit; color: var(--foregroun
   .evidence-search-form, .knowledge-form, .profile-form, .plan-editor { padding: 1.125rem; }
   .primary-button, .secondary-button, .profile-page button:not([class]) { min-height: 40px; }
   .profile-form-grid, .profile-quality .profile-form-grid { grid-template-columns: 1fr; gap: 1rem; }
-  .staffing-period fieldset { grid-template-columns: 1fr; padding: 1rem; }
+  .staffing-period fieldset { min-width: 0; grid-template-columns: minmax(0, 1fr); padding: 1rem; }
+  /* Keep focused controls from triggering iPhone's automatic text zoom. */
+  input.field, select.field, textarea.field,
+  .customer-picker-popover .customer-picker-search { font-size: 16px; }
+  /* Anchor the menu to the composer, with room on both sides of the phone. */
+  .chat-composer { position: relative; }
+  .composer-prompt-row .customer-selector { position: static; min-width: 0; }
+  .composer-prompt-row .customer-picker-popover { right: 6px; left: auto; width: min(300px, calc(100% - 12px)); max-width: none; }
+  .customer-picker-option > span:first-child { min-width: 0; overflow-wrap: anywhere; }
   .staffing-period button { width: 100%; }
   .login-card { padding: 1.75rem; }
   .nav-link { min-height: 40px; }
