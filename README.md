@@ -191,6 +191,10 @@ Shared runtime and unclassified changes retain broad coverage. Equivalent green
 executions can be reused with verified GitHub provenance and unchanged inputs.
 See [CI selection and reuse rules](docs/ci.md).
 
+`npm run mobile:ui:check` checks date-control containment and the Turi customer
+menu with WebKit iPhone 13 emulation in both themes, at phone portrait, landscape
+and desktop widths. It uses an owned disposable clone of the marked test database.
+
 Start with the checks appropriate to the change:
 
 ```sh
