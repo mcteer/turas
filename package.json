@@ -176,7 +176,7 @@
     "@streamdown/math": "1.0.2",
     "@streamdown/mermaid": "1.0.2",
     "@vercel/analytics": "2.0.1",
-    "@vercel/blob": "2.8.1",
+    "@vercel/blob": "2.8.2",
     "@vercel/connect": "2.6.0",
     "@vercel/oidc": "3.8.8",
     "@vercel/sandbox": "3.6.1",
