@@ -49,6 +49,9 @@ is in progress. It consolidates the assessed dependency updates, patches the
 application framework and preserves interrupted-response accounting. Local
 validation and hosted acceptance are recorded separately in its
 [validation record](specs/021-dependency-maintenance/validation.md).
+A [Glob cancellation follow-up](specs/021-dependency-maintenance/glob-follow-up.md)
+uses the compatible security backport; advisory reconciliation and release
+verification remain pending.
 
 Turas is under active development. Production hardening is deployed: ordinary
 account access, chat reliability, private storage, bounded processing, maintenance
