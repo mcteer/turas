@@ -28,7 +28,9 @@ export function authorizeHostedWatchdog(request: Request, secret = process.env.C
 }
 
 /** Cleanup classes retain independent durable leases; already-admitted indexing
- * stays outside cleanup authority. Preview keeps its original bounded lifetime. */
+ * stays outside cleanup authority. Production overlaps two one-minute cron
+ * periods so delayed successors do not leave six-second freshness gaps.
+ * Preview keeps its original bounded lifetime. */
 export async function runHostedWatchdog(attachSession:AttachSessionFn,options:{preview?:boolean;ready?:()=>void;unavailable?:(error:unknown)=>void}={}):Promise<void>{
  const scheduler=startMaintenanceScheduler(getServerConfig().TURAS_ENVIRONMENT_ID,operationalCodeVersion(),createMaintenanceBindings({attachSession}),(id,result)=>{
   if(id==='conversation'){if(result.state==='pass')options.ready?.();else if(result.state==='fail')options.unavailable?.(Error('Conversation worker unavailable'));}
@@ -37,7 +39,7 @@ export async function runHostedWatchdog(attachSession:AttachSessionFn,options:{p
  const lane=(id:string,interval:number,run:()=>Promise<unknown>)=>{const tick=()=>{if(stopping||pending.has(id))return;const task=run().catch(()=>{console.warn(JSON.stringify({kind:'hosted_worker_lane_failed',lane:id}));}).finally(()=>pending.delete(id));pending.set(id,task);};timers.push(setInterval(tick,interval));tick();};
  lane('reconciliation',30000,()=>runHostedReconciliation({limit:20,signal:AbortSignal.timeout(30000)}));
  lane('retrieval-index',5000,()=>runRetrievalWorkerTick());
- try{await new Promise(resolve=>setTimeout(resolve,options.preview?180000:65000));}
+ try{await new Promise(resolve=>setTimeout(resolve,options.preview?180000:125000));}
  finally{stopping=true;for(const timer of timers)clearInterval(timer);await Promise.allSettled([scheduler.stop(),...pending.values()]);}
 }
 
