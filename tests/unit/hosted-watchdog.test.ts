@@ -33,6 +33,19 @@ describe("hosted watchdog authentication", () => {
 });
 
 describe('bounded hosted watchdog',()=>{
+ it('keeps maintenance continuous across a delayed cron successor',async()=>{
+  vi.useFakeTimers();mocks.claim.mockResolvedValue([]);mocks.learning.mockResolvedValue({processed:0});mocks.mcp.mockResolvedValue({processed:0});
+  const heartbeats:number[]=[];mocks.heartbeat.mockImplementation(async()=>{heartbeats.push(Date.now());});
+  const attach=(()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0];
+  const first=runHostedWatchdog(attach);
+  // The next minute invocation can arrive 20 seconds late. A 65-second
+  // worker leaves a 15-second hole, beyond critical maintenance freshness.
+  await vi.advanceTimersByTimeAsync(80000);const second=runHostedWatchdog(attach);
+  await vi.advanceTimersByTimeAsync(125000);await Promise.all([first,second]);
+  expect(heartbeats.length).toBeGreaterThan(2);
+  expect(Math.max(...heartbeats.slice(1).map((stamp,index)=>stamp-heartbeats[index]))).toBeLessThanOrEqual(5000);
+  expect(vi.getTimerCount()).toBe(0);
+ });
  it('admits a Preview send only after a real conversation tick and keeps its original worker lifetime',async()=>{
   vi.useFakeTimers();vi.stubEnv('VERCEL_ENV','preview');
   let release!:()=>void;mocks.claim.mockReturnValueOnce(new Promise(resolve=>{release=()=>resolve([]);})).mockResolvedValue([]);
@@ -50,17 +63,17 @@ describe('bounded hosted watchdog',()=>{
   await vi.advanceTimersByTimeAsync(1);await refused;expect(mocks.heartbeat).not.toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(179999);await retained;expect(mocks.mcp).toHaveBeenCalled();expect(vi.getTimerCount()).toBe(0);
  });
- it('refreshes independently for 65 seconds and records cancellation retries',async()=>{
+ it('refreshes independently for 125 seconds and records cancellation retries',async()=>{
   vi.useFakeTimers();mocks.learning.mockResolvedValue({processed:0});mocks.mcp.mockResolvedValue({processed:0});mocks.claim.mockResolvedValue([]).mockResolvedValueOnce([{attemptId:'synthetic-attempt'}]);mocks.maintain.mockRejectedValueOnce(Error('Controlled native failure'));
-  const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);await vi.advanceTimersByTimeAsync(65000);await running;
-  expect(mocks.learning).toHaveBeenCalledTimes(3);expect(mocks.mcp).toHaveBeenCalledTimes(3);expect(mocks.claim.mock.calls.every(args=>args[1]===1)).toBe(true);expect(mocks.heartbeat.mock.calls.length).toBeGreaterThanOrEqual(13);expect(mocks.finish).toHaveBeenCalledWith(expect.any(String),'synthetic-attempt','retry','maintenance_call_failed');expect(vi.getTimerCount()).toBe(0);
+  const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);await vi.advanceTimersByTimeAsync(125000);await running;
+  expect(mocks.learning).toHaveBeenCalledTimes(5);expect(mocks.mcp).toHaveBeenCalledTimes(5);expect(mocks.claim.mock.calls.every(args=>args[1]===1)).toBe(true);expect(mocks.heartbeat.mock.calls.length).toBeGreaterThanOrEqual(25);expect(mocks.finish).toHaveBeenCalledWith(expect.any(String),'synthetic-attempt','retry','maintenance_call_failed');expect(vi.getTimerCount()).toBe(0);
  });
  it('does not announce conversation readiness when claiming fails while other cleanup continues',async()=>{
   vi.useFakeTimers();mocks.claim.mockRejectedValue(Error('Controlled database failure'));mocks.mcp.mockResolvedValue({processed:0});mocks.learning.mockResolvedValue({processed:0});
-  const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);await vi.advanceTimersByTimeAsync(65000);await running;expect(mocks.heartbeat).not.toHaveBeenCalled();expect(mocks.mcp).toHaveBeenCalledTimes(3);expect(vi.getTimerCount()).toBe(0);
+  const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);await vi.advanceTimersByTimeAsync(125000);await running;expect(mocks.heartbeat).not.toHaveBeenCalled();expect(mocks.mcp).toHaveBeenCalledTimes(5);expect(vi.getTimerCount()).toBe(0);
  });
  it('runs MCP cleanup independently without overlapping ticks and drains it on exit',async()=>{
   vi.useFakeTimers();let releaseClaim!:()=>void,releaseCleanup!:()=>void;mocks.claim.mockReturnValue(new Promise(resolve=>{releaseClaim=()=>resolve([]);}));mocks.mcp.mockReturnValueOnce(new Promise(resolve=>{releaseCleanup=()=>resolve({processed:0});})).mockResolvedValue({processed:0});mocks.learning.mockResolvedValue({processed:0});
-  const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);await vi.advanceTimersByTimeAsync(30000);expect(mocks.mcp).toHaveBeenCalledTimes(1);expect(mocks.heartbeat).not.toHaveBeenCalled();releaseCleanup();await vi.advanceTimersByTimeAsync(30000);expect(mocks.mcp).toHaveBeenCalledTimes(2);expect(mocks.heartbeat).not.toHaveBeenCalled();releaseClaim();await vi.advanceTimersByTimeAsync(5000);await running;expect(vi.getTimerCount()).toBe(0);
+  const running=runHostedWatchdog((()=>{throw Error('unused');}) as Parameters<typeof runHostedWatchdog>[0]);await vi.advanceTimersByTimeAsync(30000);expect(mocks.mcp).toHaveBeenCalledTimes(1);expect(mocks.heartbeat).not.toHaveBeenCalled();releaseCleanup();await vi.advanceTimersByTimeAsync(30000);expect(mocks.mcp).toHaveBeenCalledTimes(2);expect(mocks.heartbeat).not.toHaveBeenCalled();releaseClaim();await vi.advanceTimersByTimeAsync(65000);await running;expect(vi.getTimerCount()).toBe(0);
  });
 });

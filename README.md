@@ -51,7 +51,9 @@ validation and hosted acceptance are recorded separately in its
 [validation record](specs/021-dependency-maintenance/validation.md).
 A [Glob cancellation follow-up](specs/021-dependency-maintenance/glob-follow-up.md)
 uses the compatible security backport; advisory reconciliation and release
-verification remain pending.
+verification remain pending. An observed minute-boundary maintenance gap is
+being repaired in the [watchdog handoff follow-up](specs/016-pilot-hardening/watchdog-handoff.md);
+full final-source hosted verification remains pending.
 
 Turas is under active development. Production hardening is deployed: ordinary
 account access, chat reliability, private storage, bounded processing, maintenance
