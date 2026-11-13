@@ -442,6 +442,10 @@ DO $$ BEGIN
  IF to_regclass('public.ordinary_context_refreshes') IS NOT NULL THEN
   GRANT SELECT,INSERT ON ordinary_context_refreshes,ordinary_evidence_refreshes TO turas_runtime;
  END IF;
+ IF to_regclass('public.ordinary_practice_guidance_reads') IS NOT NULL THEN
+  REVOKE ALL ON ordinary_practice_guidance_reads FROM turas_runtime;
+  GRANT SELECT,INSERT,UPDATE ON ordinary_practice_guidance_reads TO turas_runtime;
+ END IF;
 END $$;
 
 DO $$ BEGIN

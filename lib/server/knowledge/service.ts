@@ -12,6 +12,7 @@ import { governedIdSchema, writeEnvelopeSchema } from "../../contracts/retrieval
 import type { CurrentSession } from "../auth/sessions";
 import { getServerConfig } from "../config";
 import { sharedPublicationQuality } from "./quality";
+import {publicEvidenceQuality} from '../retrieval/context';
 import { assertExactKnowledgeLineage, assertNoDirectIdentifiers,
   lockKnowledgeAuthor, requireKnowledgePublisher } from "./policy";
 import { materializeSharedProjection,retireRetrievalProjection } from "../retrieval/projections";
@@ -256,7 +257,7 @@ export async function decideKnowledgeCandidate(client: PoolClient,actor: Current
     JSON.stringify(command.action === "publish" ? command.checklist : {})]);
   if (command.action === "publish") {
     const at = new Date();
-    const quality = await sharedPublicationQuality(client,revision.id,at);
+    const quality = publicEvidenceQuality(await sharedPublicationQuality(client,revision.id,at));
     if (head) {
       await client.query(`UPDATE knowledge_publications SET revision_id=$2,
         head_generation=head_generation+1,state='published',public_quality=$3,

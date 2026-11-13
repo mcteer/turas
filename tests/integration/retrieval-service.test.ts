@@ -46,7 +46,7 @@ describe("retrieval domain service", () => {
             await client.query(`INSERT INTO customer_references(id,workspace_id,display_name,synthetic)
               VALUES($1,$2,'Synthetic searchable customer',true)`,[id,workspace]);
           }
-          async function source(customerId: string,text: string) {
+          async function source(customerId: string,text: string,ageDays?:number) {
             const id = randomUUID();
             const revision = randomUUID();
             await client.query(`INSERT INTO evidence_sources(id,workspace_id,customer_id,origin,
@@ -55,11 +55,14 @@ describe("retrieval domain service", () => {
             [id,workspace,customerId,`https://vercel.com/docs/${id}`]);
             await client.query(`INSERT INTO evidence_source_revisions
               (id,source_id,workspace_id,customer_id,version,location,title,passage,
-               supported_claim,passage_digest,retrieval_at,rights,audience,quality_input)
+               supported_claim,passage_digest,retrieval_at,rights,audience,quality_input,observation_at)
               VALUES($1,$2,$3,$4,1,$5,'Synthetic search doc',$6,'Synthetic cache claim',
-                $7,now(),'Public documentation','internal','{}'::jsonb)`,
+                $7,now(),'Public documentation','internal',$8::jsonb,$9)`,
             [revision,id,workspace,customerId,`https://vercel.com/docs/${id}`,
-              text,passageDigest(text)]);
+              text,passageDigest(text),ageDays===undefined?'{}':JSON.stringify({rubricVersion:'evidence-quality-v1',
+                R:4,D:4,C:4,reliabilityRationale:'Primary source',directnessRationale:'Exact passage',
+                corroborationRationale:'Independent',informationType:'architecture',dateBasis:'observation'}),
+              ageDays===undefined?null:new Date(Date.now()-ageDays*86400000)]);
             await client.query(`INSERT INTO research_checks
               (source_revision_id,trusted_ingest_identity,check_version,identity_result,
                scope_result,integrity_result,content_result,rationale)
@@ -98,6 +101,16 @@ describe("retrieval domain service", () => {
           const persisted = await client.query<{id:string}>(
             "SELECT id FROM retrieval_receipt_sources WHERE receipt_id=$1 ORDER BY ordinal",[bounded.receiptId]);
           expect(persisted.rows.map(row=>row.id)).toEqual(bounded.results.map(result=>result.citationId));
+          // More old matches than the candidate limit cannot crowd out current
+          // evidence, even though their architecture quality rating is Recent.
+          for(let index=0;index<35;index++)await source(customer,`Cache cache cache historical outdated guidance ${index}`,8);
+          const fresh=await source(customer,'Cache current verified guidance.',1);
+          const current=await searchEvidence(actor,{scope:'customer',customerId:customer,query:'cache',use:'current_fact',limit:5});
+          expect(current.results.map(result=>result.sourceRevisionId)).toEqual([fresh]);
+          const historical=await searchEvidence(actor,{scope:'customer',customerId:customer,query:'historical outdated',use:'accepted_fact',limit:5});
+          expect(historical.results.length).toBeGreaterThan(0);
+          expect(historical.results.every(result=>result.text.includes('historical outdated'))).toBe(true);
+          expect(historical.results[0].quality.freshness).toBe('Recent');
         } finally { await client.query("ROLLBACK"); }
       });
     } finally { vi.unstubAllEnvs(); }

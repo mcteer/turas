@@ -6,6 +6,8 @@ import { hiddenRecord } from "../../contracts/http";
 import { getServerConfig } from "../config";
 import { evidenceQualitySchema } from "../../contracts/retrieval";
 import { currentFactEligible,retrievalQuality } from "../retrieval/context";
+import {sharedPublicationQuality} from "../knowledge/quality";
+import {profileSourceDates} from '../../profiles/source-dates';
 import { knowledgeLineageHasMaterialConflict } from "../profiles/eligibility";
 import type { PlanIssue } from "../../contracts/plan-content";
 import { authorizeRetrievalScope,recheckRetrievalSource } from "../retrieval/policy";
@@ -269,7 +271,10 @@ async function sourceQuality(client:PoolClient,reference:SourceReference,at:Date
     const row=await client.query<{public_quality:unknown}>(
       "SELECT public_quality FROM knowledge_publications WHERE revision_id=$1 AND state='published'",
       [reference.sourceRevisionId]);
-    return evidenceQualitySchema.safeParse(row.rows[0]?.public_quality).data ?? null;
+    const stored=evidenceQualitySchema.safeParse(row.rows[0]?.public_quality).data;
+    if(!stored)return null;
+    const current=await sharedPublicationQuality(client,reference.sourceRevisionId,at);
+    return {...stored,guidanceRefreshAfter:current.guidanceRefreshAfter??null};
   }
   if (reference.kind==="verified_research") {
     const row=await client.query<{quality_input:unknown;observation_at:Date|null;
@@ -286,10 +291,10 @@ async function sourceQuality(client:PoolClient,reference:SourceReference,at:Date
     [reference.sourceRevisionId]);
   if (!row.rows[0]) return null;
   const payload=row.rows[0].payload;
-  const observed=payload.observedAt ?? payload.observationEnd;
+  const {observed,review}=profileSourceDates(payload);
   return retrievalQuality(row.rows[0].quality_input,{
     observationAt:typeof observed==="string" ? new Date(observed):null,
-    reviewAt:typeof payload.reviewAt==="string" ? new Date(payload.reviewAt):null},at);
+    reviewAt:typeof review==="string" ? new Date(review):null},at);
 }
 
 async function materialConflict(client:PoolClient,actor:CurrentReadActor,

@@ -193,7 +193,7 @@
     },
     {
       "file": "tests/contracts/pilot/recovery.test.ts",
-      "expectedCases": 8,
+      "expectedCases": 9,
       "cases": [
         "requires a matched database and object inventory",
         "requires explicit workflow capability",
@@ -202,7 +202,8 @@
         "rejects a partial object inventory",
         "requires independently current denial authority",
         "rejects an unverified outside-domain copy",
-        "rejects unsupported source ledger identity"
+        "rejects unsupported source ledger identity",
+        "retains schema85 recovery manifests and rejects unknown future schemas"
       ]
     },
     {

@@ -1,5 +1,5 @@
 {
-  "version": 85,
+  "version": 86,
   "migrations": [
     {
       "file": "001-identity-foundation.cjs",
@@ -340,6 +340,10 @@
     {
       "file": "085-specialist-recovery-accounting.cjs",
       "sha256": "da700ee6a21052ee52c2bf4f2b7431fa55a90963fe6e2878329baa9a2e68efdc"
+    },
+    {
+      "file": "086-practice-guidance-expiry.cjs",
+      "sha256": "ef45afb89a14af9c00ea1e8e9024967b9873f6a00971e77fd2d935d3a2ebb906"
     }
   ]
 }

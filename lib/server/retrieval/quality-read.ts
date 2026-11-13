@@ -2,14 +2,19 @@ import {profileSourceDates} from "../../profiles/source-dates";
 import type { PoolClient } from "pg";
 import { evidenceQualitySchema } from "../../contracts/retrieval";
 import { retrievalQuality } from "./context";
+import {sharedPublicationQuality} from '../knowledge/quality';
 
 export async function readRetrievalQuality(client: PoolClient, row: {source_kind:string;source_revision_id:string}, asOf: Date) {
   if (row.source_kind === "published_shared") {
     const shared = await client.query<{ public_quality: unknown }>(
       "SELECT public_quality FROM knowledge_publications WHERE revision_id=$1 AND state='published'",
       [row.source_revision_id]);
-    return evidenceQualitySchema.safeParse(shared.rows[0]?.public_quality).data ??
-      retrievalQuality(null,{},asOf);
+    const stored=evidenceQualitySchema.safeParse(shared.rows[0]?.public_quality).data;
+    if(!stored)return retrievalQuality(null,{},asOf);
+    // Do not rejuvenate a publication's reviewed quality or expose private
+    // originals; derive only the guidance deadline from its current lineage.
+    const current=await sharedPublicationQuality(client,row.source_revision_id,asOf);
+    return {...stored,guidanceRefreshAfter:current.guidanceRefreshAfter??null};
   }
   if (row.source_kind === "verified_research") {
     const found = await client.query<{ quality_input: unknown; observation_at: Date | null;

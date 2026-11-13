@@ -8,8 +8,8 @@ import type { CurrentReadActor } from "../auth/read-actor";
 import { getServerConfig } from "../config";
 import { knowledgeLineageHasMaterialConflict,knowledgeLineageIsCurrent } from "../profiles/eligibility";
 import { authorizeRetrievalScope } from "../retrieval/policy";
-import { currentFactEligible } from '../retrieval/context';
-import { evidenceQualitySchema } from '../../contracts/retrieval';
+import { currentFactEligible,publicEvidenceQuality } from '../retrieval/context';
+import {readRetrievalQuality} from '../retrieval/quality-read';
 
 export type CurrentKnowledgeHeader={id:string;revision_id:string;head_generation:string;content_digest:string;published_at:Date};
 /** Bounded immutable order for MCP; browser history/pagination stays unchanged. */
@@ -31,9 +31,10 @@ export async function readCurrentKnowledge(client:PoolClient,actor:CurrentReadAc
       AND r.content_digest=$5 AND p.state='published' AND ${sharedOriginSql("p","$6")} FOR SHARE OF p`,
     [header.id,getServerConfig().TURAS_ENVIRONMENT_ID,header.revision_id,header.head_generation,header.content_digest,actor.workspaceId])).rows[0];
   if(!exact)return null;
-  const dto=await publicDto(client,exact),quality=evidenceQualitySchema.safeParse(exact.public_quality);
-  if(dto.caveats.length || !quality.success || !currentFactEligible(quality.data))return null;
-  return dto;
+  const dto=await publicDto(client,exact),quality=await readRetrievalQuality(client,
+    {source_kind:'published_shared',source_revision_id:exact.revision_id},new Date());
+  if(dto.caveats.length || !currentFactEligible(quality))return null;
+  return {...dto,quality:publicEvidenceQuality(quality)};
 }
 
 type Row = { id: string; revision_id: string; revision_number: number;

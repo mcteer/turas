@@ -1,5 +1,6 @@
 import {assertHistoricalNamedContentRetained} from './named-content';
 import {practiceCitationPrefix,practiceSnapshotIsCurrent} from './practice-consumption';
+import {assertPracticeGuidanceCurrent} from './practice-guidance';
 import type { PoolClient } from "pg";
 import type { CurrentSession } from "../auth/sessions";
 import { hiddenRecord, HttpFailure } from "../../contracts/http";
@@ -120,6 +121,7 @@ export async function assertCustomerQuestionReads(db: PoolClient, actor: Current
   await assertRetrievalContentRetained(db,conversationId);
   await assertHistoricalNamedContentRetained(db,actor,conversationId);
   if(validateSources)await assertRetrievalDependenciesCurrent(db,conversationId);
+  if(validateSources)await assertPracticeGuidanceCurrent(db,conversationId);
   const reads = (await db.query(`SELECT s.* FROM general_customer_read_scopes s
     JOIN response_attempts a ON a.id=s.attempt_id JOIN conversations c ON c.id=a.conversation_id
     WHERE c.id=$1 AND c.owner_principal_id=$2 AND c.workspace_id=$3

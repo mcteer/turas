@@ -74,7 +74,9 @@ export async function runRetrievalCleanupTick(existingClient?: PoolClient): Prom
       SELECT id FROM retrieval_sources WHERE environment_id=$1
         AND lifecycle_state IN ('retired','tombstoned')
         AND updated_at<now()-interval '60 seconds'
-      ORDER BY updated_at LIMIT 100 FOR UPDATE SKIP LOCKED
+        AND EXISTS(SELECT 1 FROM retrieval_passages passage
+          WHERE passage.source_id=retrieval_sources.id)
+      ORDER BY updated_at,id LIMIT 100 FOR UPDATE SKIP LOCKED
     ) DELETE FROM retrieval_passages passage USING retired
       WHERE passage.source_id=retired.id`,
     [getServerConfig().TURAS_ENVIRONMENT_ID]);

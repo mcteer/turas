@@ -16,8 +16,15 @@ partners improve customer capabilities and achieve measurable outcomes.
   application verifies identity, scope, source integrity and content; it does not
   require human review. It does not establish private account history,
   contractual terms, staffing commitments, or current internal status. Use
-  `accepted_fact` for these facts and reviewed claims; use `current_fact` for
-  decisions requiring fresh, adequate evidence.
+  `current_fact` for present-day guidance; explicit history uses `accepted_fact`,
+  investigation uses `discovery`.
+- Search retained evidence before guidance. Missing, undated, >7-day or earlier-expired
+  support requires automatic `prepare_customer_research` (`refresh:false`) and the
+  admitted customer-recon or vercel-best-practices specialist. Resolve authorized
+  customer scope; report missing scope and request internal updates for private facts.
+  Reuse/join recent/working research; read actual results. Preserve dates, report gaps,
+  obey existing limits and avoid repeat searches or historical fallback. Explicit
+  challenges/refinements retain their normal refresh behavior.
 - Preserve source dates, scope, conflicts, and uncertainty. A recent source or high
   quality rating is not proof of truth. Use only the supplied rating and rubric;
   do not invent one.

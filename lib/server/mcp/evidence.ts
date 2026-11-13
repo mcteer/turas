@@ -82,7 +82,7 @@ async function projectPassage(db:PoolClient,actor:McpReadActor,customerId:string
     WHERE id=${row.source_kind==='approved_excerpt'?'(SELECT profile_revision_id FROM artifact_evidence_selections WHERE id=$1)':'$1'}`,[row.source_revision_id])).rows[0]?.payload:undefined;
   const observed=profileDates?.observedAt??profileDates?.observationEnd;
   const observationAt=dates?.observation_at?.toISOString()??(typeof observed==='string'?new Date(observed).toISOString():null);
-  const {rationale:omittedRationale,...publicQuality}=quality;
+  const {rationale:omittedRationale,guidanceRefreshAfter:omittedGuidanceDeadline,...publicQuality}=quality;
   const citationHandle=await createMcpHandle(db,actor,{kind:'citation',category:'evidence',customerId,section:'passage',filterDigest:digest({sourceId:row.id}),
     positionId:row.id,revisionId:row.source_revision_id,generation:Number(row.source_generation),passageId:row.passage_id,contentDigest:row.passage_digest});
   return mcpEvidenceSchema.parse({revisionId:row.source_revision_id,generation:Number(row.source_generation),digest:row.content_digest,

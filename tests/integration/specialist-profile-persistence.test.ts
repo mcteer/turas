@@ -163,6 +163,20 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(practice.sources[0].passages.some(p=>p.text.includes('exfiltrated'))).toBe(true);
   expect(JSON.stringify(practice)).not.toContain('private-question-marker');
   expect(JSON.stringify(practice)).not.toContain('private-product-marker');
+  // Current guidance excludes due/future snapshots even when duplicate library
+  // metadata says they are fresh. Explicit history preserves original dates.
+  for(const checked of ["now()-interval '8 days'","now()+interval '1 day'"]){
+   await db.query(`UPDATE turas_evidence_snapshots SET checked_at=${checked},refresh_after=now()+interval '6 hours' WHERE id=$1`,[practiceId]);
+   const due=await readOrdinaryPracticeEvidence(searchPrincipal,customerId,'DNS CIDR exfiltrated',new AbortController().signal);
+   expect(due.sources).toEqual([]);expect(due.omittedReferences).toEqual([]);
+   const historical=await readOrdinaryPracticeEvidence(searchPrincipal,customerId,'DNS CIDR exfiltrated',new AbortController().signal,24576,'accepted_fact');
+   expect(historical.sources).toHaveLength(1);
+   expect(historical.sources[0].checkedAt).not.toBe(practice.sources[0].checkedAt);
+  }
+  await db.query("UPDATE turas_evidence_snapshots SET checked_at=now(),refresh_after=now()-interval '1 second' WHERE id=$1",[practiceId]);
+  expect((await readOrdinaryPracticeEvidence(searchPrincipal,customerId,'DNS CIDR exfiltrated',new AbortController().signal)).sources).toEqual([]);
+  expect((await readOrdinaryPracticeEvidence(searchPrincipal,customerId,'DNS CIDR exfiltrated',new AbortController().signal,24576,'discovery')).sources[0].stale).toBe(true);
+  await db.query("UPDATE turas_evidence_snapshots SET checked_at=now(),refresh_after=now()+interval '6 hours' WHERE id=$1",[practiceId]);
   const unassignedPartner=await isolatedChatActor(db,'partner','member',actor.workspaceId);
   const generic=await freshSearchConversation(unassignedPartner);
   const customerDocumentUrl='https://vercel.com/docs/other-account-fixture';
@@ -186,6 +200,21 @@ it('retains new public research for an assigned partner, preserves curated claim
   expect(JSON.stringify(genericPublic)).not.toContain('Other customer identifier');
   expect(JSON.stringify(genericPublic)).not.toContain('private-customer-material-marker');
   expect(JSON.stringify(genericPublic)).not.toContain(customerDocumentUrl);
+  // Freshness consumed as current support survives process boundaries. Expiry
+  // blocks output; the next governed context refresh retires it as dated history
+  // without erasing the independent source-withdrawal ledger.
+  await db.query("UPDATE ordinary_practice_guidance_reads SET valid_until=now()-interval '1 second' WHERE conversation_id=$1",[generic.conversation.id]);
+  await expect(withRuntime(client=>assertCustomerQuestionReads(client,unassignedPartner,generic.conversation.id,generic.principal.attributes.turasAttemptId)))
+   .rejects.toMatchObject({status:409,code:'context_changed'});
+  const publicRefresh=await withRuntime(client=>refreshOrdinaryKnowledge(client,unassignedPartner,generic.principal,generic.conversation.id,generic.principal.attributes.turasAttemptId));
+  expect(publicRefresh?.retiredPublicPracticeCitations).toContain('public_practice:'+practiceId);
+  expect(publicRefresh?.historicalPublicPracticeReferences).toContainEqual({snapshotId:practiceId,url:practiceUrl});
+  const nextPublicRefresh=await withRuntime(client=>refreshOrdinaryKnowledge(client,unassignedPartner,generic.principal,generic.conversation.id,generic.principal.attributes.turasAttemptId));
+  expect(nextPublicRefresh?.historicalPublicPracticeReferences).toContainEqual({snapshotId:practiceId,url:practiceUrl});
+  expect(nextPublicRefresh?.practiceNotice).toMatch(/historical/);
+  await withRuntime(client=>assertCustomerQuestionReads(client,unassignedPartner,generic.conversation.id,generic.principal.attributes.turasAttemptId));
+  expect((await readOrdinaryPracticeEvidence(generic.principal,undefined,'DNS CIDR exfiltrated',new AbortController().signal)).sources).toHaveLength(1);
+  expect((await db.query('SELECT retired_refresh_id FROM ordinary_practice_guidance_reads WHERE conversation_id=$1',[generic.conversation.id])).rows[0].retired_refresh_id).toBeNull();
   await db.query('DELETE FROM turas_vercel_practice_sources WHERE snapshot_id=$1',[customerDocumentId]);
   const boundedPractice=await readOrdinaryPracticeEvidence(searchPrincipal,customerId,'DNS CIDR exfiltrated',new AbortController().signal,1024);
   expect(Buffer.byteLength(JSON.stringify(boundedPractice))).toBeLessThanOrEqual(1024);
