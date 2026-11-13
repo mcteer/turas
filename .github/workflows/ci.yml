@@ -148,7 +148,7 @@ jobs:
         run: node --import tsx scripts/print-ci-test-failures.ts
       - name: Retain failed owned learning recovery diagnostics
         if: failure() && matrix.gate == 'recovery'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: owned-learning-recovery-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ matrix.gate }}
           retention-days: 1
@@ -325,7 +325,7 @@ jobs:
         run: npm run benchmark:expansion
       - name: Retain owned expansion benchmark measurements
         if: failure() && matrix.gate == 'benchmark'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: expansion-benchmark-${{ github.run_id }}-${{ github.run_attempt }}
           path: local-artifacts/011/benchmark-*/*.json
@@ -422,7 +422,7 @@ jobs:
       - name: Complete every expansion journey for this project
         run: npm run expansion:ui:check -- --project "${{ matrix.project }}"
       - name: Retain only safe successful case reports
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: expansion-webkit-${{ github.run_attempt }}-${{ matrix.project }}
           path: local-artifacts/011/ci-webkit-${{ matrix.project }}/*.json
@@ -767,7 +767,7 @@ jobs:
 
       - name: Retain failed owned 005 browser diagnostics
         if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: owned-005-browser-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
           retention-days: 1
@@ -988,7 +988,7 @@ jobs:
           npm run gaps:ui:check
       - name: Retain failed owned Gaps browser diagnostics
         if: failure() && matrix.gate == 'webkit'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: owned-gaps-browser-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ matrix.gate }}
           retention-days: 1
@@ -1097,7 +1097,7 @@ jobs:
 
       - name: Retain sanitized predecessor failure stages
         if: failure() && matrix.gate == 'regressions'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mcp-regression-stages-${{ github.run_id }}-${{ github.run_attempt }}
           path: local-artifacts/015/regressions-*/*-failure-diagnostic-private.json
@@ -1201,7 +1201,7 @@ jobs:
           npm run mcp:build:check
       - name: Retain complete source-bound pilot CI catalog evidence
         if: matrix.gate == 'deterministic' && success()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pilot-catalog-${{ github.run_id }}-${{ github.run_attempt }}
           path: local-artifacts/016/run-*/ci-*.json
@@ -1210,7 +1210,7 @@ jobs:
           compression-level: 6
       - name: Retain original owned pilot catalog receipts
         if: matrix.gate == 'deterministic' && success()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pilot-owned-catalog-${{ github.run_id }}-${{ github.run_attempt }}
           # Include the per-gate proof JSON referenced by run.json as well as
@@ -1227,7 +1227,7 @@ jobs:
         run: npm run pilot:regressions
       - name: Retain owned production readiness diagnostics
         if: failure() && matrix.gate == 'webkit'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: owned-production-readiness-${{ github.run_id }}
           path: |
