@@ -1,9 +1,10 @@
 # Fresh-guidance validation
 
 Date: 2026-11-13. Branch: `022-fresh-guidance-learning`. Base: `dd3e943d`.
-Status: implementation verified locally and in Preview; full application CI passed.
-Actual-model and Production acceptance remain open. The selected local database
-and Production schema/deployment were unchanged; Preview uses an isolated copy.
+Status: deployed to Production at `9a4473b0` on schema 86 after explicit user
+authorization. CI, Preview and Production checks are recorded below. Representative
+automatic-research quality acceptance remains open. The selected local database
+and workflow directory were preserved; Preview uses an isolated copy.
 
 ## Completed CI
 
@@ -75,9 +76,8 @@ support, with the automatic fresh-research warning present. Desktop/mobile WebKi
 captures were inspected. The isolated endpoint suspends after five idle minutes.
 Evidence: local-artifacts/022/preview-check and preview-freshness.json.
 
-Production remains on85. Merge is authorized on green CI; Production rollout and
-actual-model research-quality acceptance remain open. The existing Production
-backup operator and its schedule/budgets were not changed by Preview preparation.
+At Preview preparation, Production remained on85 and its backup operator was
+unchanged. The subsequently authorized Production release is recorded below.
 
 ## Local evidence
 
@@ -117,7 +117,7 @@ that broader permission. Migration086 and role setup now explicitly restrict the
 new table to SELECT/INSERT/UPDATE; owned restore reapplies the role policy before
 runtime resumes. Verification checks these privileges again after restore/restart.
 
-## Acceptance still required before merge/release
+## Automatic-research acceptance still required
 
 FR-003 / SC-002 are **not yet accepted**. Automatic research uses Turi's existing
 model-driven tool orchestration. Instructions and schema tests do not demonstrate
@@ -134,10 +134,9 @@ Run representative actual-agent requests against the exact proposed commit:
 | No authorized customer / exhausted budget / provider failure | Explain the actual limit; no invented scope, false completion or unbounded retry. |
 | Long conversation crossing expiry or upgrade | Preserve conversation history and authorization, refresh active support and retain withdrawal checks. |
 
-Required broad CI, maintainer review, authenticated exact-commit Preview checks
-(including the repository's Customer Profiles check), and subsequently authorized
-Production HTTP/CLI-WebKit checks remain outstanding. No Preview URL, deployed SHA
-or hosted result is asserted here. This draft is not a completed release.
+Broad CI, exact-source Preview and the authorized Production deployment/checks
+are recorded in this document. The table above remains a separate evaluation gate;
+a normal chat smoke check does not satisfy those research-quality scenarios.
 
 ## Release order and recovery
 
@@ -152,3 +151,66 @@ read because their original intended use was not recorded. The withdrawal ledger
 remains intact. Prefer forward repair; code-only rollback against86 is unsafe.
 Restore a matched code/schema recovery set and reapply runtime grants before
 serving requests. A local PostgreSQL restore does not prove hosted workflow replay.
+
+
+## Authorized Production release — 2026-11-13
+
+Merged [PR69](https://github.com/mcteer/turas/pull/69) supplied application commit
+`9a4473b0cb6bf1d6f7a25eae31816999647a382f`. Both main workflows passed:
+[Turas checks](https://github.com/mcteer/turas/actions/runs/43484289023) and
+[Legacy backend parity](https://github.com/mcteer/turas/actions/runs/43484289010).
+The user explicitly requested Production deployment after merge.
+
+A Git-source Production build was prepared without automatic custom-domain
+assignment. Before cutover, the Production target and all three live aliases
+remained on `dpl_3YpzZrfCu9b8L9X9pWiRb7HZzAsf`, code `378a590d`/schema85.
+Endpoint identity and marker were checked independently of the selected local
+Preview database. Endpoint-free backup `br-noisy-river-awc3lnsb` was verified ready,
+with Production branch `br-little-frost-awpx5dzw` as parent and a schema85 source.
+The owned populated migration/restore rehearsal is recorded above. This retained
+Neon backup is not a newly demonstrated full-service/workflow restoration.
+
+The final response census found no active attempts and admission open. An existing
+owned conversation was captured for comparison without retiring its native session.
+Migration086 and runtime grants were applied, followed by promotion of the prepared
+build between 18:50:40 and 18:50:47 UTC. No synthetic account or credential rotation
+was introduced. This was a short coordinated cutover; no global admission lock was
+asserted. Migration and promotion are separate operations, so a transient request
+failure during their compatibility gap cannot be excluded.
+
+Production deployment `dpl_HD1pVKWnZtsPcbHEsgSvurm6rL4x` is READY at
+https://turas-it10c5n57-turas-6e414af3.vercel.app. `www.turas.dev`, `turas.dev` and
+`turas-two.vercel.app` all resolve to that deployment. The Production target and
+Cron ownership moved with promotion. Authenticated HTTP confirmed the exact
+`X-Turas-Code-Version` above. Schema86 and SELECT/INSERT/UPDATE without DELETE on
+`ordinary_practice_guidance_reads` were checked against Production.
+
+Actual Production observations:
+
+- Existing account login and authorized customer profile/retrieval passed.
+- An expired historical control remained readable with `accepted_fact`, while
+  `current_fact` returned no expired support and included the automatic-research
+  warning. This establishes filtering and the warning, not automatic tool choice.
+- The pre-upgrade owned conversation's HTTP detail was identical after cutover;
+  its existing conversation page/composer opened in WebKit.
+- A new ordinary conversation received a real-model reply and retained it after
+  reload. Its completed attempt had no error. The first smoke harness omitted the
+  native-session binding required for a newly created conversation and timed out
+  before dispatch; after fixing the harness, one model send completed successfully.
+- Authenticated status reported service readiness, dispatch readiness, open
+  admission and all15 maintenance classes healthy under `9a4473b0` after the new
+  worker took over. Desktop/mobile WebKit profile captures were inspected.
+
+The independent existing backup operator was rebuilt from the same commit for86
+and deployed through Eve as `dpl_68PeGJZAf61x3fngYee2DkdhfZFZ`. Its twice-daily
+`0 */12 * * *` schedule is unchanged; the protected endpoint rejects unauthenticated
+requests with401. No manual backup capture or budget expansion was performed.
+The next scheduled capture has not yet been observed. Service readiness is healthy,
+but full infrastructure assurance reports stores/images/backups as unverified at
+this new source; no full restoration or renewed assurance is claimed.
+
+Private release receipts, HTTP observations and captures are retained under
+`local-artifacts/022/`; operator package under `local-artifacts/016/`. Credentials,
+customer content and private artifacts are excluded from commits. FR-003/SC-002
+representative automatic-research scenarios remain unaccepted; the deployment and
+normal chat result must not be used to mark them complete.

@@ -37,7 +37,7 @@ grace-period controls unchanged and source audit identities retained.
 
 - [X] T010 Run narrow unit/contract/integration checks and typecheck under Node24; record results and representative agent cases in `specs/022-fresh-guidance-learning/validation.md`.
 - [X] T011 Update `README.md`, `ROADMAP.md` and `docs/evidence-policy.md` with implemented behavior and limits.
-- [ ] T012 Complete representative actual-agent evaluation, required CI/Preview and subsequent authorized Production verification; record exact source/deployment evidence in `specs/022-fresh-guidance-learning/validation.md` before claiming release completion.
+- [ ] T012 Complete representative actual-agent research evaluation (still open); CI/Preview and authorized Production deployment, freshness/history, retained conversation, normal chat and maintenance checks passed on 2026-11-13. Record exact source/deployment evidence in `specs/022-fresh-guidance-learning/validation.md` before claiming release completion.
 
 ## Dependencies and implementation strategy
 

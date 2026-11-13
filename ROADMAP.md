@@ -8,14 +8,16 @@ meaningful tests; verify actual changed production behavior through normal relea
 
 # Turas delivery roadmap
 
-## In Progress: Fresh Guidance and Retained Learning
+## Deployed; Evaluation Open: Fresh Guidance and Retained Learning
 
 [Feature022](specs/022-fresh-guidance-learning/spec.md) restores the user's
 seven-day automatic-research intent for guidance, separates current support from
 explicit historical evidence, filters expired public references and repairs
 multi-batch retired-vector cleanup. It reuses existing research admission and
-reviewed learning. Local checks and remaining agent/hosted release gates are
-recorded in its [validation record](specs/022-fresh-guidance-learning/validation.md).
+reviewed learning. Production now runs `9a4473b0` on schema 86. Authenticated
+freshness/history, retained conversation, real-model chat and all 15 maintenance
+checks passed. Representative automatic-research quality evaluation remains open;
+release evidence and assurance limits are recorded in its [validation record](specs/022-fresh-guidance-learning/validation.md).
 
 ## In Progress: Assessed Dependency Maintenance
 

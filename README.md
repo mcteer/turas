@@ -44,12 +44,14 @@ See the [evidence policy](docs/evidence-policy.md) and
 
 ## Project Status
 
-The [fresh-guidance follow-up](specs/022-fresh-guidance-learning/spec.md) is under
-validation. It makes current evidence the default for Turi guidance, applies
-the seven-day trigger for automatically seeking newer support within existing
+The [fresh-guidance follow-up](specs/022-fresh-guidance-learning/spec.md) is deployed in
+Production at `9a4473b0` on schema 86. It makes current evidence the default for Turi guidance, applies
+the seven-day trigger for seeking newer support within existing
 research limits, and fixes cleanup that could stall after the first 100 retired
 sources. Historical evidence and reviewed shared learning remain available under
-their existing rules. Hosted and actual-agent acceptance are recorded separately
+their existing rules. Production freshness, retained conversation, real chat and
+all 15 maintenance checks passed. Full automatic-research quality evaluation
+remains open; deployment alone does not establish it. Evidence is recorded
 in its [validation record](specs/022-fresh-guidance-learning/validation.md).
 
 The [dependency maintenance release](specs/021-dependency-maintenance/spec.md)
@@ -70,7 +72,7 @@ chat request passed verification; service readiness and all 15 maintenance class
 were healthy at the release check.
 
 The [Eve upgrade and specialist continuity](specs/020-eve-runtime-upgrade/spec.md)
-is deployed in Production at `0148c517` on schema 85. It includes retained
+was released at `0148c517` on schema 85; the current deployment is recorded above. It includes retained
 specialist follow-ups, task-specific Stop and progress controls, the refreshed
 composer and Dependabot configuration. Full CI and authenticated Preview checks
 passed before release; Production verified existing account access, a normal
