@@ -1,6 +1,6 @@
 import {createHash,randomUUID} from 'node:crypto';
 import {Client} from 'pg';
-import {beforeAll,expect,it} from 'vitest';
+import {beforeAll,expect,it,vi} from 'vitest';
 import {requireTestDatabaseUrl} from '../fixtures/database';
 import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
 import {createOwnedConversation} from '../../lib/server/conversations/repository';
@@ -121,11 +121,15 @@ it('keeps discussion authority immutable and allows only one active assignment',
   await guardSpecialistProvider(metered,{...runtime,stepIndex:1},pricing).doGenerate({...parameters,maxOutputTokens:32000});
   expect(generations).toBe(2);expect(outputCaps.at(-1)).toBe(32000-used);
   const {enforceProfileRate}=await import('../../lib/server/profiles/rate');
-  let throttled=false;
-  for(let index=0;index<121;index++){try{await withTransaction(client=>enforceProfileRate(client,actor,customer,'read'));}catch(error){if((error as {status?:number}).status!==429)throw error;throttled=true;break;}}
-  expect(throttled).toBe(true);
-  const {loadResearchContext}=await import('../../lib/server/research/specialists/solution-research/context');
-  await expect(loadResearchContext(identity,customer)).rejects.toMatchObject({status:429});
+  // Keep all requests in one fixed window even at a real minute boundary.
+  const clock=vi.spyOn(Date,'now').mockReturnValue(Date.now());
+  try{
+   let throttled=false;
+   for(let index=0;index<121;index++){try{await withTransaction(client=>enforceProfileRate(client,actor,customer,'read'));}catch(error){if((error as {status?:number}).status!==429)throw error;throttled=true;break;}}
+   expect(throttled).toBe(true);
+   const {loadResearchContext}=await import('../../lib/server/research/specialists/solution-research/context');
+   await expect(loadResearchContext(identity,customer)).rejects.toMatchObject({status:429});
+  }finally{clock.mockRestore();}
   const {authorizeSpecialistWorker}=await import('../../lib/server/research/specialists/discussions');
   expect((await withTransaction(client=>authorizeSpecialistWorker(client,runtime))).assignmentId).toBe(admitted.assignmentId);
 

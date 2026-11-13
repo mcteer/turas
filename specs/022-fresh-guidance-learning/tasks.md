@@ -62,3 +62,7 @@ FR-007: T009; FR-008 and SC-001–004: T002/T005/T008–T012.
 T013–T015 resolve review findings before T010/T012 completion. Automatic research
 orchestration is model-driven and must be demonstrated in T012; the instruction
 change in T006 alone does not establish FR-003/SC-002 acceptance.
+
+- [X] T016 Repair CI regressions without changing production limits: concise root
+  research instructions, legacy partner quality-shape compatibility and a fixed
+  test clock for rate-limit bursts. Verify native, recovery, specialist and types.

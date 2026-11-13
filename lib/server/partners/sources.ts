@@ -8,7 +8,7 @@ import { HttpFailure } from "../../contracts/http";
 import { evidenceQualitySchema } from "../../contracts/retrieval";
 import { lockOriginalHeader,verifyPlanSources } from "../plans/sources";
 import { originalCurrent,originalProfilesCurrent,confirmedConflictAfterAny } from "../retrieval/fences";
-import { retrievalQuality } from "../retrieval/context";
+import { retrievalQuality,publicEvidenceQuality } from "../retrieval/context";
 import { dependencyUnion,type ExpansionDependency } from "../expansion/dependencies";
 import { getServerConfig } from "../config";
 import { readEngagement } from "../engagements/read";
@@ -99,7 +99,11 @@ export async function partnerSourceFence(db:PoolClient,actor:PartnerActor,scope:
  for(const ref of refs){
   if(ref.kind!=="accepted_execution")await verifyPlanSources(db,actor,scope.customerId,scope.workloadId,"delivery",[{id:ref.id,kind:ref.kind,sourceRevisionId:ref.sourceRevisionId,generation:ref.generation,contentDigest:ref.contentDigest,locator:ref.locator!}],false,true);
   const metadata=await partnerSourceMetadata(db,ref),provided={quality:ref.quality,observationAt:ref.observationAt,publicationAt:ref.publicationAt,reviewAt:ref.reviewAt};
-  if(partnerHash(metadata)!==partnerHash(provided)||Date.parse(ref.quality.asOf)>Date.now()||[ref.observationAt,ref.publicationAt].some(v=>v&&Date.parse(v)>Date.now()))throw unavailable();
+  // Pre086 immutable references lack the optional guidance deadline. Compare
+  // their original quality shape; current-source checks above still apply.
+  const comparable=ref.quality.guidanceRefreshAfter===undefined
+   ? {...metadata,quality:publicEvidenceQuality(metadata.quality)}:metadata;
+  if(partnerHash(comparable)!==partnerHash(provided)||Date.parse(ref.quality.asOf)>Date.now()||[ref.observationAt,ref.publicationAt].some(v=>v&&Date.parse(v)>Date.now()))throw unavailable();
   if(Date.parse(metadata.quality.validUntil)<=Date.now())throw unavailable();
   if(qualityRequired){const q=metadata.quality;if(q.Q<60||q.D<3||Date.parse(q.validUntil)<=Date.now()||!(["Recent","Aging"].includes(q.freshness))||ref.classification==="product_evidence"&&q.freshness!=="Recent")throw unavailable();}
  }

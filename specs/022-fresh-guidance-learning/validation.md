@@ -4,6 +4,21 @@ Date: 2026-11-13. Branch: `022-fresh-guidance-learning`. Base: `dd3e943d`.
 Status: local implementation; draft review. Actual-agent and hosted acceptance
 remain open. No selected database, Production schema or deployment was changed.
 
+## CI failure follow-up
+
+The first CI run exposed three regressions. Additional root instructions exceeded
+the learning workflow's cumulative24KiB input limit; concise equivalent instructions
+now retain that limit. Immutable references from released pre086 code omit the new
+optional deadline; partner metadata comparison now preserves their original shape
+while validating supplied deadlines and retaining source/quality fences. The
+specialist rate test now fixes its clock during the burst so a real minute boundary
+cannot split its requests across two windows.
+
+Local follow-up passed: learning native25 checks (real Eve execution with a synthetic
+provider, zero paid calls), partner empty→86 and released049→86 recovery/restarts,
+specialist-discussion16 integration cases and TypeScript typecheck. These synthetic
+native checks do not establish actual-model answer quality. Fresh broad CI is required.
+
 ## Local evidence
 
 All commands use Node24 (24.21.0 on this host). Database checks create owned
