@@ -6,6 +6,7 @@ import {assertCustomerQuestionReads,readCustomerAccountEvidence} from './custome
 import {conversationFeature} from './feature';
 import {confirmedConflictAfter,originalCurrent} from '../retrieval/fences';
 import {hiddenRecord,HttpFailure} from '../../contracts/http';
+import {expiredPracticeGuidance,historicalPracticeGuidance,retireExpiredPracticeGuidance} from './practice-guidance';
 
 type Principal=Parameters<typeof readCustomerAccountEvidence>[1];
 /** Ordinary chat keeps its dated history, but refreshes active factual context
@@ -36,7 +37,7 @@ export async function refreshOrdinaryKnowledge(db:PoolClient,actor:CurrentSessio
    WHERE attempt_id=$1 AND customer_id=$2`,[attemptId,customer_id,citations]);
   const body={...context,notice:'Current authorized customer knowledge. Earlier conversation evidence is dated; omitted entries require the customer evidence tools, not an inference of absence.'};
   const size=Buffer.byteLength(JSON.stringify(body));
-  if(bytes+size<=64*1024){contexts.push(body);bytes+=size;}
+  if(bytes+size<=48*1024){contexts.push(body);bytes+=size;}
   else contexts.push({customerId:customer_id,contextVersion:context.contextVersion,notice:'Additional current knowledge is available through get_customer_evidence; this packet is incomplete.'});
  }
  const dependencies=(await db.query(`SELECT d.*,r.as_of AS receipt_as_of FROM session_evidence_dependencies d
@@ -44,18 +45,24 @@ export async function refreshOrdinaryKnowledge(db:PoolClient,actor:CurrentSessio
    AND NOT EXISTS(SELECT 1 FROM ordinary_evidence_refreshes f WHERE f.dependency_id=d.id)
   ORDER BY d.consumed_at,d.id`,[conversationId])).rows;
  const retired:string[]=[];
+ const retiredPractices=await expiredPracticeGuidance(db,conversationId);
+ const historicalPractices=await historicalPracticeGuidance(db,conversationId);
  for(const d of dependencies){
   if(d.valid_until.getTime()<=Date.now() || await confirmedConflictAfter(db,d.source_kind,d.source_revision_id,d.receipt_as_of)
    || !await originalCurrent(db,d,actor.workspaceId))retired.push(d.id);
  }
  const packet={contractVersion:'ordinary-current-knowledge-v1',asOf:new Date().toISOString(),contexts,
   retiredHistoricalEvidence:retired.length,retiredNamedCitations:retiredNamed,
-  notice:retired.length||retiredNamed.length?'Some earlier evidence expired, changed, or was withdrawn. Treat it as historical, not current support. Re-query evidence tools for current passages, especially shared solution guidance.':undefined};
+  retiredPublicPracticeCitations:retiredPractices.slice(0,20).map(id=>'public_practice:'+id),
+  historicalPublicPracticeReferences:historicalPractices,
+  practiceNotice:historicalPractices.length?'Earlier product-reference tool outputs are historical. This list contains at most 5 references and is incomplete; for current guidance use current_fact search results from this response, not old tool text. Automatically research missing support within existing limits.':undefined,
+  notice:retired.length||retiredNamed.length||historicalPractices.length?'Some earlier evidence expired, changed, or was withdrawn. Treat it as historical, not current support. Re-query evidence tools and automatically seek fresh support within the existing research limits.':undefined};
  const digest=createHash('sha256').update(JSON.stringify(packet)).digest('hex');
  const id=randomUUID();
  await db.query(`INSERT INTO ordinary_context_refreshes(id,attempt_id,conversation_id,packet_digest,customer_ids) VALUES($1,$2,$3,$4,$5)`,[id,attemptId,conversationId,digest,customers.map(c=>c.customer_id)]);
  for(const dependencyId of retired)await db.query(`INSERT INTO ordinary_evidence_refreshes(dependency_id,refresh_id) VALUES($1,$2) ON CONFLICT DO NOTHING`,[dependencyId,id]);
+ await retireExpiredPracticeGuidance(db,conversationId,id,retiredPractices);
  // Recheck still-active exact dependencies and the newest brief before I/O.
  await assertCustomerQuestionReads(db,actor,conversationId,attemptId);
- return customers.length||retired.length?packet:null;
+ return customers.length||retired.length||historicalPractices.length?packet:null;
 }

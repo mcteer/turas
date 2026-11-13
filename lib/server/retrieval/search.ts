@@ -12,7 +12,7 @@ import { getServerConfig } from "../config";
 import { withTransaction } from "../db/client";
 import { knowledgeLineageHasMaterialConflict } from "../profiles/eligibility";
 import { passageDigest } from "./chunker";
-import { currentFactEligible, retrievalCoverageWarnings } from "./context";
+import { currentFactEligible, retrievalCoverageWarnings,publicEvidenceQuality } from "./context";
 import { readRetrievalQuality } from "./quality-read";
 import { embedRetrievalTexts } from "./embeddings";
 import { authorizeRetrievalScope, recheckRetrievalSource } from "./policy";
@@ -229,10 +229,22 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown,
     try { if (!effective?.lexicalOnly) vector = (await embedRetrievalTexts([input.query]))[0]; }
     catch { recordRetrievalMetric("lexical_degraded_count",1); }
     const result = await withTransaction(async (client) => {
-      const sources = await eligibleSources(client,actor,scopedInput,effective?.audience,
+      let sources = await eligibleSources(client,actor,scopedInput,effective?.audience,
         Boolean(effective && effective.workloadId===null));
-      const ranked = await rankPassages(client,sources,input.query,vector);
       const asOf = new Date();
+      const qualities=new Map<string,Awaited<ReturnType<typeof readRetrievalQuality>>>();
+      if(input.use==='current_fact'){
+        const current:Source[]=[];
+        for(const source of sources){
+          const quality=await readRetrievalQuality(client,source,asOf);
+          qualities.set(source.id,quality);
+          if(currentFactEligible(quality,false,asOf))current.push(source);
+        }
+        // Old high-ranking passages must not crowd fresh evidence out of the
+        // bounded lexical/vector candidate lists.
+        sources=current;
+      }
+      const ranked = await rankPassages(client,sources,input.query,vector);
       const bySource = new Map<string,number>();
       const seen = new Set<string>();
       const selections: Array<{ row: Ranked; citationId: string;
@@ -246,7 +258,7 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown,
             passageDigest(row.passage_text) !== row.passage_digest) continue;
         const locators = citationLocatorSchema.array().min(1).max(50).safeParse(row.locators);
         if (!locators.success) continue;
-        const quality = await readRetrievalQuality(client,row,asOf);
+        const quality = qualities.get(row.id)??await readRetrievalQuality(client,row,asOf);
         const conflict = await retrievalSourceHasMaterialConflict(client,row,actor,scopedInput);
         // Original-source eligibility establishes acceptance: reviewed human
         // claims or independently checked research. Freshness/quality are a
@@ -274,14 +286,17 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown,
         bySource.set(row.source_revision_id,(bySource.get(row.source_revision_id) ?? 0)+1);
       }
       const validUntil = new Date(Math.min(asOf.getTime()+86_400_000,
-        ...selections.map((item) => Date.parse(item.quality.validUntil))));
+        ...selections.map((item) => Math.min(Date.parse(item.quality.validUntil),
+          input.use==='current_fact'?Date.parse(item.quality.guidanceRefreshAfter!):Infinity))));
       const receiptId = randomUUID();
       const responseBody = { version: retrievalContractVersion,
         receiptId,asOf: asOf.toISOString(),validUntil: validUntil.toISOString(),
         mode: vector ? "hybrid" : "lexical_degraded",language: "en",
         completenessWarnings: [
           ...retrievalCoverageWarnings(input.query,!vector),
-          ...(selections.length ? [] : ["No eligible evidence found for this request"]),
+          ...(selections.length ? [] : [input.use==='current_fact'
+            ? "No current support found. Automatically seek fresh evidence through the existing research admission and specialist tools; preserve scope and budget limits. Do not fall back to historical evidence as current guidance."
+            : "No eligible evidence found for this request"]),
         ],
         results: selections.map((item) => ({ citationId: item.citationId,
           sourceKind: item.row.source_kind,sourceRevisionId: item.row.source_revision_id,
@@ -290,7 +305,8 @@ export async function searchEvidence(actor: CurrentSession, raw: unknown,
               item.row.source_kind === "published_shared" ? "shared_publication" : "human_review" },
           passageDigest: item.row.passage_digest,
           title: item.title,
-          text: item.row.passage_text,locators: item.locators,quality: item.quality,
+          text: item.row.passage_text,locators: item.locators,
+          quality: item.row.source_kind==='published_shared'?publicEvidenceQuality(item.quality):item.quality,
           caveats: item.caveats,warnings: item.warnings,
           productVersion: item.productVersion })) };
       // Keep complete, ranked passages and their immutable digests. Provenance and

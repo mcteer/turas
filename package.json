@@ -126,6 +126,7 @@
     "typecheck:partners": "tsc -p tsconfig.partner-enablement.json",
     "build:partners:check": "node --import tsx scripts/partners-build-check.ts",
     "test:learning": "node --import tsx scripts/test-learning.ts",
+    "test:guidance": "node --import tsx scripts/test-guidance.ts",
     "learning:native:check": "node --import tsx scripts/check-learning-native.ts",
     "learning:ui:check": "node --import tsx scripts/check-learning-ui.ts",
     "learning:recovery:check": "node --import tsx scripts/learning-recovery-check.ts",

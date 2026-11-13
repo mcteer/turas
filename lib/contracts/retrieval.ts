@@ -67,6 +67,9 @@ export const evidenceQualitySchema = z.object({
   rationale: z.string().max(2_000),
   asOf: utcTimestampSchema,
   validUntil: utcTimestampSchema,
+  // Separate from rubric age: current guidance must seek newer support after
+  // this deadline. Optional for stored quality written before feature 022.
+  guidanceRefreshAfter: utcTimestampSchema.nullable().optional(),
 }).strict();
 
 export const retrievalResultSchema = z.object({

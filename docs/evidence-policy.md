@@ -64,6 +64,29 @@ decision-critical product evidence. Otherwise return a discovery task or caveat.
 
 ## Age and review defaults
 
+For present-day guidance, Turi defaults to current evidence and automatically
+seeks newer support when an underlying claim is **older than seven days**, undated,
+or past an earlier review/cache deadline. The category windows below still describe
+claim quality and historical usefulness; they do not postpone that guidance check.
+The seven-day deadline is assessed separately as `guidanceRefreshAfter` and shared
+guidance inherits the earliest deadline of its supporting originals.
+
+Automatic research uses the existing preparation, reservation and specialist tools,
+within the user's authorized scope and existing spending/cancellation controls.
+Recent completed research and equivalent work in progress are reused. If a bounded
+search finds no newer evidence, explain the gap instead of forcing repeated work
+or silently falling back to historical material as current guidance. Existing
+research requires a canonical authorized customer; missing scope is an explicit
+limitation. Public research cannot renew private customer commitments or internal
+status: those require an internal update.
+
+Current public-reference retrieval excludes expired snapshots before ranking and
+checks their eligibility again before disclosure. Live documentation can establish
+what was observed when checked; fetching a historical article does not change its
+publication/event date. Earlier source-cache deadlines still apply. Explicit
+historical/discovery requests preserve authorized dated evidence. Feedback, factual
+approval, reusable-practice evaluation and publication retain their existing gates.
+
 | Information type | Review window |
 | --- | --- |
 | Account status, blockers and staffing availability | 7 days |
@@ -173,8 +196,9 @@ identities and counts. Source or rights loss withholds the whole released family
 without corrected-subset disclosure. Due review preserves original dates and needs
 fresh research scope/budget admission. See [operations](learning-operations.md).
 
-Customer evidence search separates `accepted_fact` (checked independent research,
+Customer evidence search separates explicit historical `accepted_fact` (checked independent research,
 reviewed human claims and eligible published knowledge) from `current_fact`
-(additional freshness and quality requirements for decisions). Acceptance never
+(the default for guidance, with additional freshness and quality requirements).
+Acceptance never
 changes original dates or guarantees truth beyond the exact sourced claim; material
 conflicts, withdrawal, supersession and access revocation still withhold facts.

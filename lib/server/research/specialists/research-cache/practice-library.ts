@@ -11,6 +11,7 @@ import { embeddingsConfigured } from "../embeddings";
 import { researchPassages } from "../solution-research/source-integrity";
 import { retainedPracticePassages } from "./practice-passages";
 import { z } from "zod";
+import {currentPracticeSnapshotSql} from './practice-guidance';
 
 export const practiceSourceTypeSchema = z.enum(["vercel_documentation", "customer_engineering", "conference_presentation", "webinar", "practitioner_report", "independent_analysis"]);
 export const practiceInformationTypeSchema = informationTypeSchema;
@@ -35,7 +36,7 @@ export async function recordVercelPracticeSource(identity: AppIdentity, product:
   return { source, cacheHit: read.cacheHit };
 }
 
-async function practiceSourceReceipts(identity: AppIdentity, product: string, query: string, signal: AbortSignal, completeReferences=false, documentationOnly=false) {
+async function practiceSourceReceipts(identity: AppIdentity, product: string, query: string, signal: AbortSignal, completeReferences=false, documentationOnly=false,currentGuidance=false) {
   const sql = await evidenceDatabase();
   let vector: number[] | null = null;
   if (embeddingsConfigured() && query) {
@@ -48,6 +49,7 @@ async function practiceSourceReceipts(identity: AppIdentity, product: string, qu
       JOIN turas_evidence_passages p ON p.environment_id=s.environment_id AND p.workspace_id=s.workspace_id AND p.snapshot_id=s.id
       WHERE m.environment_id=$1 AND m.workspace_id=$2 AND ($3='' OR m.product=$3)
         AND (NOT $6::boolean OR (m.source_type='vercel_documentation' AND s.url LIKE 'https://vercel.com/docs/%' AND s.url !~ '[?#]'))
+        AND (NOT $7::boolean OR (${currentPracticeSnapshotSql}))
         AND (p.search_text @@ websearch_to_tsquery('english',$4) OR $4=''
           OR ($5::vector IS NOT NULL AND p.embedding IS NOT NULL AND p.embedding <=> $5::vector < 0.82))
     ), ranked AS (
@@ -57,7 +59,7 @@ async function practiceSourceReceipts(identity: AppIdentity, product: string, qu
       FROM candidates
     ) SELECT * FROM ranked WHERE passage_rank<=8 ORDER BY
       CASE WHEN $5::vector IS NOT NULL AND embedding IS NOT NULL THEN embedding <=> $5::vector ELSE 1 END, passage_rank LIMIT 48`,
-    [identity.environmentId, identity.workspaceId, normalized(product), query, vector ? JSON.stringify(vector) : null,documentationOnly]);
+    [identity.environmentId, identity.workspaceId, normalized(product), query, vector ? JSON.stringify(vector) : null,documentationOnly,currentGuidance]);
   signal.throwIfAborted();
   const grouped = new Map<string, PracticeSource>();
   for (const row of rows) {
@@ -88,8 +90,8 @@ export async function searchVercelPracticeSources(identity:AppIdentity,product:s
  return (await practiceSourceReceipts(identity,product,query,signal)).map(row=>row.source);
 }
 /** Exact retained cache identities for source-consumption fencing. */
-export async function searchVercelPracticeSourceReceipts(identity:AppIdentity,query:string,signal:AbortSignal,documentationOnly=false){
- return practiceSourceReceipts(identity,'',query,signal,true,documentationOnly);
+export async function searchVercelPracticeSourceReceipts(identity:AppIdentity,query:string,signal:AbortSignal,documentationOnly=false,currentGuidance=false){
+ return practiceSourceReceipts(identity,'',query,signal,true,documentationOnly,currentGuidance);
 }
 
 export async function latestVercelPracticeRun(identity: AppIdentity, product: string, topic: string) {

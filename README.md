@@ -44,6 +44,14 @@ See the [evidence policy](docs/evidence-policy.md) and
 
 ## Project Status
 
+The [fresh-guidance follow-up](specs/022-fresh-guidance-learning/spec.md) is under
+local validation. It makes current evidence the default for Turi guidance, applies
+the seven-day trigger for automatically seeking newer support within existing
+research limits, and fixes cleanup that could stall after the first 100 retired
+sources. Historical evidence and reviewed shared learning remain available under
+their existing rules. Hosted and actual-agent acceptance are recorded separately
+in its [validation record](specs/022-fresh-guidance-learning/validation.md).
+
 The [dependency maintenance release](specs/021-dependency-maintenance/spec.md)
 is in progress. It consolidates the assessed dependency updates, patches the
 application framework and preserves interrupted-response accounting. Local

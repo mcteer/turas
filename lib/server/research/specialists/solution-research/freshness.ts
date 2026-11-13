@@ -26,13 +26,14 @@ export function rateFreshness(input: { informationType?: InformationType; dateBa
   const ageDays = Number.isFinite(elapsed) && elapsed >= 0 ? Math.floor(elapsed / 86400000) : null;
   const overdue = input.reviewAfter != null && input.reviewAfter <= now.toISOString().slice(0, 10);
   const rating = ageDays === null ? "unknown" : overdue || ageDays > 2 * reviewWindowDays ? "stale" : ageDays > reviewWindowDays ? "aging" : "recent";
+  const guidanceRefreshDue=Number.isFinite(elapsed)&&elapsed>7*86400000;
   return freshnessSchema.parse({
     policyVersion: 1, informationType, rating, dateBasis: ageDays === null ? "unknown" : input.dateBasis ?? "observation", evidenceDate: ageDays === null ? null : date.data,
     ageDays, checkedAt: checked.success ? checked.data : null, reviewWindowDays,
-    action: rating === "unknown" ? "seek_date_or_corroboration" : rating === "recent" ? "use_with_scope" : "verify_before_current_decision",
+    action: rating === "unknown" ? "seek_date_or_corroboration" : rating === "recent"&&!guidanceRefreshDue ? "use_with_scope" : "verify_before_current_decision",
     reason: rating === "unknown"
       ? "No verified evidence date. Retrieval time does not establish claim age. Seek a dated primary source or current corroboration; if unavailable, preserve the gap without repeating the same lookup."
-      : `${ageDays} days since the evidence date; ${reviewWindowDays}-day review window for ${informationType}.${overdue ? " Explicit review date is due." : ""} ${rating === "recent" ? "Recent is not verified truth; retain scope and resolve conflicts." : "Refresh decision-critical current claims. Older evidence remains usable as attributed history, not proof of present state."}`,
+      : `${ageDays} days since the evidence date; ${reviewWindowDays}-day review window for ${informationType}.${overdue ? " Explicit review date is due." : ""}${guidanceRefreshDue ? " Seven-day guidance refresh is due: automatically seek newer support within admitted scope and budget. A recent check does not change an old claim's date; report no newer evidence instead of repeating the search." : ""} ${rating === "recent" ? "Recent is not verified truth; retain scope and resolve conflicts." : "Refresh decision-critical current claims. Older evidence remains usable as attributed history, not proof of present state."}`,
   });
 }
 

@@ -1063,6 +1063,9 @@ jobs:
           npm run typecheck:mcp
           npm run test:mcp
           npm run check:docs
+      - name: Fresh-guidance migration and restore
+        if: matrix.gate == 'deterministic'
+        run: node --import tsx scripts/check-guidance-migration.ts
       - name: Real pinned SDK consumer acceptance
         if: matrix.gate == 'consumer'
         run: npm run mcp:consumer:check

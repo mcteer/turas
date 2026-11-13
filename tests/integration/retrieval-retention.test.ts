@@ -4,6 +4,49 @@ import { describe,expect,it,vi } from "vitest";
 import { DEMO_IDS } from "../../lib/server/bootstrap-ids";
 import { withTestDatabase } from "../fixtures/database";
 import { runRetrievalCleanupTick } from "../../lib/server/retrieval/cleanup";
+import {insertRetrievalProfileOrigin} from '../fixtures/retrieval-profile-origin';
+import {passageDigest} from '../../lib/server/retrieval/chunker';
+
+it('advances retired-passage cleanup past empty sources across bounded runtime batches',async()=>{
+ for(const [key,value] of Object.entries({
+  DATABASE_URL:'postgres://localhost/turas_unused',DATABASE_URL_UNPOOLED:'postgres://localhost/turas_unused',
+  TURAS_ENVIRONMENT_ID:process.env.TURAS_TEST_ENVIRONMENT_ID!,TURAS_APP_ORIGIN:'http://127.0.0.1:3000',
+  TURAS_DEMO_USERNAME:'mcteer',TURAS_DEMO_PASSWORD:'synthetic',PANEL_USERNAME:'panel',PANEL_PASSWORD:'synthetic',
+  PARTNER_USERNAME:'partner',PARTNER_PASSWORD:'synthetic',TURAS_MAINTENANCE_SECRET:'s'.repeat(32),
+ }))vi.stubEnv(key,value);
+ try{await withTestDatabase(async db=>{
+  await db.query('BEGIN');
+  try{
+   const environment=process.env.TURAS_TEST_ENVIRONMENT_ID!,workspace=randomUUID(),customer=randomUUID();
+   await db.query("INSERT INTO workspaces(id,name) VALUES($1,'Cleanup fixture')",[workspace]);
+   await db.query("INSERT INTO customer_references(id,workspace_id,display_name,synthetic) VALUES($1,$2,'Cleanup customer',true)",[customer,workspace]);
+   const retired:string[]=[],controls:string[]=[],empty:string[]=[];
+   const vector=JSON.stringify([1,...Array(1535).fill(0)]);
+   for(let index=0;index<105;index++){
+    const id=randomUUID(),revisionId=randomUUID(),text=`Synthetic retired passage ${index}`,digest=passageDigest(text);
+    await insertRetrievalProfileOrigin(db,{workspaceId:workspace,customerId:customer,revisionId,text,digest});
+    const state=index===103?'current':index===102?'tombstoned':'retired';
+    const age=index===104?30:index<2?7200:3600;
+    await db.query(`INSERT INTO retrieval_sources(id,environment_id,workspace_id,customer_id,scope,source_kind,
+     source_revision_id,audience,projection_contract,contract_digest,source_generation,content_digest,lifecycle_state,updated_at)
+     VALUES($1,$2,$3,$4,'customer','accepted_profile',$5,'internal','test-v1',$6,1,$7,$8,now()-$9*interval '1 second')`,
+     [id,environment,workspace,customer,revisionId,'a'.repeat(64),digest,state,age]);
+    if(index<2){empty.push(id);continue;}
+    await db.query(`INSERT INTO retrieval_passages(id,source_id,ordinal,passage_digest,passage_text,locators,
+     embedding,embedding_state,embedding_contract,embedded_at) VALUES($1,$2,1,$3,$4,$5,$6::vector,'ready','embedding-v1',now())`,
+     [randomUUID(),id,digest,text,JSON.stringify([{kind:'profile_field',fieldPath:'text'}]),vector]);
+    (index<103?retired:controls).push(id);
+   }
+   expect(retired).toHaveLength(101);
+   await db.query('SET LOCAL ROLE turas_runtime');
+   const remaining=async(ids:string[])=>Number((await db.query('SELECT count(*)::int AS count FROM retrieval_passages WHERE source_id=ANY($1::uuid[])',[ids])).rows[0].count);
+   await runRetrievalCleanupTick(db);expect(await remaining(retired)).toBe(1);
+   await runRetrievalCleanupTick(db);expect(await remaining(retired)).toBe(0);
+   await runRetrievalCleanupTick(db);expect(await remaining(controls)).toBe(2);
+   expect(Number((await db.query('SELECT count(*)::int AS count FROM retrieval_sources WHERE id=ANY($1::uuid[])',[[...retired,...empty]])).rows[0].count)).toBe(103);
+  }finally{await db.query('ROLLBACK');}
+ });}finally{vi.unstubAllEnvs();}
+});
 
 describe("bounded retrieval receipt retention",() => {
   it("removes at most 100 expired receipts per maintenance tick",async () => {
