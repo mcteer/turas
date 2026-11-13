@@ -12,3 +12,5 @@ it('rejects a partial object inventory',()=>{const value=fixture();value.stores[
 it('requires independently current denial authority',()=>{const value=fixture();value.authority.independent=false;expect(()=>verify(value)).toThrow();const stale=fixture();stale.authority.capturedAt='2026-10-09T12:00:00.000Z';expect(()=>verify(stale)).toThrow();});
 it('rejects an unverified outside-domain copy',()=>{const value=fixture();value.outsideCopy.failureDomain=value.outsideCopy.sourceFailureDomain;expect(()=>verify(value)).toThrow();value.outsideCopy.failureDomain='independent';value.outsideCopy.encryptedDigest='c'.repeat(64);expect(()=>verify(value)).toThrow();});
 it('rejects unsupported source ledger identity',()=>{const value=fixture();value.ledgerDigest='d'.repeat(64);expect(()=>verify(value)).toThrow();expect(()=>verify({...fixture(),schemaVersion:78})).toThrow();expect(()=>verify({...fixture(),actor:'mcteer'})).toThrow();});
+
+it('retains schema85 recovery manifests and rejects unknown future schemas',()=>{expect(()=>verify({...fixture(),schemaVersion:85})).not.toThrow();expect(()=>verify({...fixture(),schemaVersion:CURRENT_SCHEMA_VERSION+1})).toThrow();});

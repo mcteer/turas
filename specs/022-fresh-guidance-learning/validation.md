@@ -19,6 +19,12 @@ provider, zero paid calls), partner empty→86 and released049→86 recovery/res
 specialist-discussion16 integration cases and TypeScript typecheck. These synthetic
 native checks do not establish actual-model answer quality. Fresh broad CI is required.
 
+Recovery compatibility audit also retains85 explicitly in historical capture,
+archive, denial, safety-copy/restore readers and the owned prior-schema harness.
+Current application readiness still requires86 and unknown future schemas remain
+rejected. Nine recovery contract tests and the populated85→86 rehearsal passed;
+the rehearsal now also reads the actual85 safety boundary before migration.
+
 ## Local evidence
 
 All commands use Node24 (24.21.0 on this host). Database checks create owned

@@ -66,3 +66,6 @@ change in T006 alone does not establish FR-003/SC-002 acceptance.
 - [X] T016 Repair CI regressions without changing production limits: concise root
   research instructions, legacy partner quality-shape compatibility and a fixed
   test clock for rate-limit bursts. Verify native, recovery, specialist and types.
+- [X] T017 Preserve schema85 as an explicit historical recovery reader while86 is
+  current; verify recovery contracts, future-schema denial and the pre-migration
+  safety boundary in the populated migration rehearsal.

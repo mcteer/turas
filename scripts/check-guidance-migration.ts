@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {readDatabaseSafetyBoundary} from '../lib/server/operations/database-safety-boundary';
 import {withMcpEnvironment} from './mcp-environment';
 import {mcpFixture,withMcpDatabase} from '../tests/fixtures/mcp/setup';
 
@@ -10,6 +11,9 @@ export async function checkGuidanceMigration(){
  await withMcpEnvironment(async environment=>{
   const seeded=await withMcpDatabase(async db=>{
    assert.equal((await db.query('SELECT schema_version FROM turas_environment')).rows[0].schema_version,85);
+   await db.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+   try{await readDatabaseSafetyBoundary(db,process.env.TURAS_ENVIRONMENT_ID!);}
+   finally{await db.query('ROLLBACK');}
    const {browser,customerId}=await mcpFixture(db);
    const conversationId=randomUUID(),messageId=randomUUID(),attemptId=randomUUID();
    await db.query(`INSERT INTO conversations(id,environment_id,workspace_id,customer_id,owner_principal_id,
