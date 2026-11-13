@@ -68,7 +68,7 @@ try{await withPlanEvalEnvironment(async environment=>{
  context.on('response',async response=>{
   const url=new URL(response.url()),method=response.request().method(),file=url.pathname.includes('/native-uploads/'),native=url.pathname.startsWith('/eve/v1/');if(url.origin!==environment.origin||!file&&!native)return;
   const chunk=/\/chunks\/(\d+)$/.exec(url.pathname),entry={kind:file?'file' as const:'native' as const,method,status:response.status(),chunk:chunk?Number(chunk[1]):null,code:undefined as string|undefined};fileResponses.push(entry);if(fileResponses.length>64)fileResponses.shift();
-  if(!response.ok())try{const body=await response.json();if(typeof body.code==='string'&&/^[a-zA-Z0-9_]{1,80}$/.test(body.code))entry.code=body.code;}catch{/* A failed transport need not contain JSON. */}
+  if(!response.ok())try{const body=await response.json();const code=body.error?.code??body.code;if(typeof code==='string'&&/^[a-zA-Z0-9_]{1,80}$/.test(code))entry.code=code;}catch{/* A failed transport need not contain JSON. */}
  });
  try{
   const login=await context.request.post('/api/auth/login',{headers:{origin:environment.origin},data:{username:'panel',password:process.env.PANEL_PASSWORD}});if(!login.ok())throw Error('Fixture login failed');csrf=(await login.json()).data.csrfToken;
@@ -137,7 +137,7 @@ try{await withPlanEvalEnvironment(async environment=>{
      // APIRequestContext traffic is not emitted by BrowserContext's observer.
      // Preserve this failed prerequisite's status/code without body or identity.
      const entry:{kind:'file';method:string;status:number;chunk:null;code?:string}={kind:'file',method:'POST',status:intent.status(),chunk:null};
-     try{const body=await intent.json();if(typeof body.code==='string'&&/^[a-zA-Z0-9_]{1,80}$/.test(body.code))entry.code=body.code;}catch{/* No JSON is required for a failed request. */}
+     try{const body=await intent.json();const code=body.error?.code??body.code;if(typeof code==='string'&&/^[a-zA-Z0-9_]{1,80}$/.test(code))entry.code=code;}catch{/* No JSON is required for a failed request. */}
      fileResponses.push(entry);if(fileResponses.length>64)fileResponses.shift();
      throw Error('Restored draft upload reservation failed');
     }

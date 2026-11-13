@@ -25,6 +25,30 @@ Current application readiness still requires86 and unknown future schemas remain
 rejected. Nine recovery contract tests and the populated85→86 rehearsal passed;
 the rehearsal now also reads the actual85 safety boundary before migration.
 
+The hardening runner's case inventory was updated from eight to nine recovery
+contract cases and registers the new case under its recovery gate. Its actual JSON
+test report passed verifyPilotSuiteResult (9 passed, no skipped/flaky cases).
+Native-file failure diagnostics now read the application's nested error.code.
+An isolated local10MiB browser-composer case passed upload, interruption recovery,
+quota release, byte fidelity and reload after the CI setup503; no production bound
+or timeout was relaxed.
+
+## Hosted Preview preparation and first acceptance
+
+An isolated Neon branch `br-cold-fog-awm3jjip` was cloned from Production85 with
+an endpoint-free pre086 backup `br-dawn-cell-awfczxx1`. Explicit migration/grants
+moved only that new branch to86. Preview bindings are restricted to this Git branch;
+the existing Production mcteer credential record remains shared with Preview and
+has no password override. The new isolated database has a separate runtime login
+credential; no parent/Production credential was changed.
+
+Authenticated actual-data HTTP and desktop/mobile WebKit checks passed against
+`cf1a8835acff40145dfbfefa7ece7599450fe8e0` at
+https://turas-btutghhuu-turas-6e414af3.vercel.app and its Git branch alias. Directory
+and retained research comparisons matched Production. Desktop/mobile captures were
+inspected. Private evidence: local-artifacts/022/preview-check. This precedes the
+test-inventory follow-up; verify the final deployed commit separately before merge.
+
 ## Local evidence
 
 All commands use Node24 (24.21.0 on this host). Database checks create owned
