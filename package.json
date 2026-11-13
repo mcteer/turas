@@ -199,19 +199,19 @@
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@modelcontextprotocol/client": "2.4.0",
-    "@next/env": "16.4.3",
-    "@playwright/test": "1.64.1",
-    "@tailwindcss/postcss": "4.3.3",
+    "@next/env": "16.4.5",
+    "@playwright/test": "1.65.0",
+    "@tailwindcss/postcss": "4.3.5",
     "@types/node": "24.x",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "axe-core": "4.14.0",
     "just-bash": "3.6.0",
-    "tailwindcss": "4.3.3",
+    "tailwindcss": "4.3.5",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
-    "vitest": "5.0.5"
+    "vitest": "5.1.0"
   },
   "engines": {
     "node": "24.x"
