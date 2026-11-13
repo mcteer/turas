@@ -1,3 +1,4 @@
+import {ownedEveSandboxes} from './owned-eve-sandboxes';
 import {configureOwnedNextDependencyRoot} from './owned-next-config';
 import {qualityChildEnvironment} from "./pilot-quality-runtime";
 import {createServer,request as httpRequest,type Server} from 'node:http';
@@ -186,6 +187,7 @@ export async function withPlanEvalEnvironment<T>(
   await mkdir(resolve(`local-artifacts/${feature}`),{recursive:true,mode:0o700});
   const root = await mkdtemp(resolve(`local-artifacts/${feature}/eval-`));
   const appRoot = join(root,"app");
+  const sandboxes=ownedEveSandboxes(appRoot,{...process.env});
   const storeRoot = join(root,"store");
   const portLease = await reserveOwnedEvalPort();
   const origin = `http://127.0.0.1:${portLease.port}`;
@@ -204,7 +206,8 @@ export async function withPlanEvalEnvironment<T>(
   const closeProductionProxy=async()=>{const current=productionProxy;productionProxy=null;if(current){current.closeAllConnections();await new Promise<void>(done=>current.close(()=>done()));}};
   let startupTail = "";
   let bodyFailed=false,bodyFailure:unknown;
-    async function stopRuntime(): Promise<void> {
+    const stopRuntime=()=>sandboxes.retire(retireRuntime);
+    async function retireRuntime(): Promise<void> {
       const children=await Promise.allSettled([stopChild(child),stopChild(productionEve),stopChild(maintenanceChild)]);
       if(children[0].status==='fulfilled')child=null;if(children[1].status==='fulfilled')productionEve=null;
       if(children[2].status==='fulfilled')maintenanceChild=null;
@@ -307,7 +310,7 @@ export async function withPlanEvalEnvironment<T>(
       if(options.production&&!productionBuilt){
         const buildDeadline=Date.now()+remaining(600_000);
         const building=spawnPlanChild(process.execPath,["scripts/build-check.mjs"],{
-          cwd:appRoot,env:{...process.env,NODE_OPTIONS:"",...productionEnv,NODE_ENV:"production",PORT:port,...await qualityChildEnvironment()},
+          cwd:appRoot,env:{...process.env,...sandboxes.environment(),NODE_OPTIONS:"",...productionEnv,NODE_ENV:"production",PORT:port,...await qualityChildEnvironment()},
         });
         child=building;building.stdout?.on("data",capture);building.stderr?.on("data",capture);
         let timedOut=false;
@@ -326,7 +329,7 @@ export async function withPlanEvalEnvironment<T>(
       if(options.production){
         await evePortLease!.release();
         productionEve=spawnPlanChild(process.execPath,[join(appRoot,".output/server/index.mjs")],{
-          cwd:appRoot,env:{...process.env,NODE_OPTIONS:"",...productionEnv,NODE_ENV:"production",
+          cwd:appRoot,env:{...process.env,...sandboxes.environment(),NODE_OPTIONS:"",...productionEnv,NODE_ENV:"production",
             HOST:"127.0.0.1",NITRO_HOST:"127.0.0.1",PORT:String(evePortLease!.port),NITRO_PORT:String(evePortLease!.port),...await qualityChildEnvironment()},
         });
         productionEve.stdout?.on("data",capture);productionEve.stderr?.on("data",capture);
@@ -349,13 +352,13 @@ export async function withPlanEvalEnvironment<T>(
       await portLease.release();
       child = spawnPlanChild(process.execPath,options.production?
         ["node_modules/next/dist/bin/next","start","--hostname","127.0.0.1","--port",port]:["scripts/dev.mjs"],{
-        cwd:appRoot,env:{...process.env,NODE_OPTIONS:"",...productionEnv,NODE_ENV:options.production?"production":"development",PORT:port,...await qualityChildEnvironment()},
+        cwd:appRoot,env:{...process.env,...sandboxes.environment(),NODE_OPTIONS:"",...productionEnv,NODE_ENV:options.production?"production":"development",PORT:port,...await qualityChildEnvironment()},
       });
       child.stdout?.on("data",capture);
       child.stderr?.on("data",capture);
       if(options.production&&options.superviseMaintenance){
         maintenanceChild=spawnPlanChild(process.execPath,['--import','tsx','scripts/maintenance-worker.ts'],{
-          cwd:appRoot,env:{...process.env,...productionEnv,NODE_OPTIONS:'',NODE_ENV:'production',TURAS_EVE_INTERNAL_ORIGIN:`http://127.0.0.1:${evePortLease!.port}/`,...await qualityChildEnvironment()},
+          cwd:appRoot,env:{...process.env,...sandboxes.environment(),...productionEnv,NODE_OPTIONS:'',NODE_ENV:'production',TURAS_EVE_INTERNAL_ORIGIN:`http://127.0.0.1:${evePortLease!.port}/`,...await qualityChildEnvironment()},
         });
         maintenanceChild.stdout?.on('data',capture);maintenanceChild.stderr?.on('data',capture);
       }
@@ -364,6 +367,7 @@ export async function withPlanEvalEnvironment<T>(
       let authTransport='none',eveTransport='none',probeCount=0;
       const readinessDeadline = Date.now()+remaining(90_000);
       while (Date.now()<readinessDeadline) {
+        sandboxes.capture();
         if (child.exitCode !== null || productionEve&&productionEve.exitCode!==null) break;
         try {
           const [auth,eve] = await Promise.all([
@@ -373,7 +377,7 @@ export async function withPlanEvalEnvironment<T>(
           lastAuthStatus=auth.status;lastEveStatus=eve.status;
           probeCount++;authTransport=auth.transport;eveTransport=eve.transport;
           const ready = auth.status === 401 && eve.status!==null && eve.status>=200 && eve.status<300;
-          if (ready) { remaining();return; }
+          if (ready) { sandboxes.capture();remaining();return; }
         } catch { /* App is still starting. */ }
         if (Date.now()<readinessDeadline) await new Promise((done) => setTimeout(done,ownedEvalTimeout(readinessDeadline,500)));
       }
@@ -426,6 +430,7 @@ export async function withPlanEvalEnvironment<T>(
     const retirement=await Promise.allSettled([portLease.release(),evePortLease?.release(),eveProxyLease?.release(),stopRuntime(),closeRuntimePool()]);
     const failures=retirement.filter((result):result is PromiseRejectedResult=>result.status==='rejected');
     if(failures.length)throw new AggregateError(failures.map(result=>result.reason),'Owned evaluation cleanup unverified; target retained');
+    sandboxes.remove();
     if (created && prepared && options.cleanupGuard) {
       await options.cleanupGuard({ appRoot, storeRoot, databaseName: name,
         databaseUrl: cloneUrl.toString(), environmentId: testMarker });

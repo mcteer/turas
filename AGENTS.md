@@ -69,6 +69,11 @@ capability. Smaller upgrades still follow the normal material-change rules.
 - Use explicit migrations, versioned contracts, deterministic calculations, and
   idempotent writes. Never initialize or migrate schemas inside request handlers.
 - Do not claim a planned feature, local check, or mock proves hosted behavior.
+- Disposable Eve checks must capture run ownership before shutdown, delete only
+  those runs' sandbox containers after verified process retirement, and verify
+  container absence before reporting completion. Use `scripts/owned-eve-sandboxes.ts`
+  in disposable harnesses; retain sandbox state during intermediate restart checks.
+  Never substitute global Docker pruning or delete retained development state.
 - When an authorized feature/fix release requires database changes, include its
   explicit migrations and runtime grants in the release. Verify the target and
   recovery backup, rehearse migrations, and coordinate schema/code compatibility.

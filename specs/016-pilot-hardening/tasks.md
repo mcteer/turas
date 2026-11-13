@@ -34,6 +34,8 @@ silently transferred to another deployment.
 
 ## Production operations and programme removal
 
+- [x] T266 Fix disposable Eve sandbox teardown under FR-022: capture exact run ownership before shutdown, preserve intermediate restart state, remove and verify only owned containers at final disposal across shared evaluation harnesses, and cover failure/isolation boundaries plus real local Eve/Docker cleanup. See [local validation and limits](sandbox-cleanup.md); review and merge remain separate.
+
 - [x] T051/T086 Complete and verify a matched recurring database/private-object/workflow recovery set, independent retained encrypted bytes and separate key availability; preserve existing protected archives.
 - [x] T052/T087 Verify current-denial and uncertain-effect reconciliation for the actual recovery target; retain permanent fences, original provider identities and all unknown financial holds.
 - [x] T053/T057/T088/T096 Verify the actual isolated hosted restore of the complete persistent recovery set and restricted service, preserve managed-workflow reconciliation semantics, measure full drill duration/backup age against RTO/RPO objectives, and report quarantined scope. Keep live Production open and distinguish drill results from actual incident/failover evidence; local migration rehearsal alone does not complete this work.

@@ -214,6 +214,12 @@ production data in traces or diagnostics.
 - **FR-022**: Keep release approval separate from implementation completion and from
   merge. Document unresolved hosted limits; preserve local configuration/workflow
   state and clean up only owned test resources and merged feature branches.
+  Disposable Eve fixtures must retain exact run ownership before shutdown, remove
+  their sandbox containers only after verified process retirement, and verify
+  absence at final teardown. Stop/restart checks retain sandbox files until final
+  disposal. Unknown ownership, failed retirement or failed Docker cleanup must
+  fail the check and retain custody for reconciliation; unrelated runs, volumes,
+  images and the selected development workflow/database are protected.
 
 - **FR-023**: Existing private uploads, workforce files, generated reports and gap
   exports must persist across hosted restarts and instances. Preserve existing size,

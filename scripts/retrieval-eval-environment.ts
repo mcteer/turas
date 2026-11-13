@@ -1,3 +1,4 @@
+import {ownedEveSandboxes} from './owned-eve-sandboxes';
 import {configureOwnedNextDependencyRoot} from './owned-next-config';
 import {stopOwnedAppProcesses} from './plan-eval-environment';
 import {copyOwnedEvalFiles} from './eval-owned-copy';
@@ -70,6 +71,7 @@ export async function withRetrievalEvalEnvironment<T>(
   await mkdir(resolve("local-artifacts/005"),{ recursive: true,mode: 0o700 });
   const root = await mkdtemp(resolve("local-artifacts/005/eval-"));
   const app = join(root,"app");
+  const sandboxes=ownedEveSandboxes(app,{...process.env});
   const store = join(root,"store");
   const cloneName = `turas_test_005_eval_${randomUUID().replaceAll("-","").slice(0,12)}`;
   const cloneUrl = new URL(sourceUrl);
@@ -83,6 +85,13 @@ export async function withRetrievalEvalEnvironment<T>(
   let created = false;
   let dev: ChildProcess | null = null;
   let startupOutput = "";
+  const stopRuntime=()=>sandboxes.retire(async()=>{
+    const results=await Promise.allSettled([stop(dev)]);
+    results.push(...await Promise.allSettled([stopOwnedAppProcesses(app)]));
+    const failures=results.filter((value):value is PromiseRejectedResult=>value.status==='rejected');
+    if(failures.length)throw new AggregateError(failures.map(value=>value.reason),'Owned retrieval process retirement failed');
+    dev=null;
+  });
   try {
     await mkdir(app,{ mode: 0o700 });
     await mkdir(store,{ mode: 0o700 });
@@ -153,7 +162,7 @@ export async function withRetrievalEvalEnvironment<T>(
       // from this app start before admitting the first native send.
       const workerStartedAfter = (await readiness.query("SELECT clock_timestamp() AS at")).rows[0].at;
       dev = spawn(process.execPath,["scripts/dev.mjs"],{
-        cwd: app,env: { ...process.env,NODE_ENV:"development",PORT: String(port),...await qualityChildEnvironment() },
+        cwd: app,env: { ...process.env,...sandboxes.environment(),NODE_ENV:"development",PORT: String(port),...await qualityChildEnvironment() },
         stdio: ["ignore","pipe","pipe"] });
       dev.stdout?.on("data",capture);dev.stderr?.on("data",capture);
       const started = Date.now();
@@ -161,6 +170,7 @@ export async function withRetrievalEvalEnvironment<T>(
       let lastEveStatus: number | null = null;
       let transportFailures = 0;
       while (Date.now()-started < 90_000) {
+        sandboxes.capture();
         if (dev.exitCode !== null) {
           await writeFile(resolve("local-artifacts/005/eval-startup-failure.log"),
             startupOutput,{ mode: 0o600 });
@@ -176,7 +186,7 @@ export async function withRetrievalEvalEnvironment<T>(
           if (auth.status === 401 && eve.ok && (await readiness.query(
             `SELECT 1 FROM maintenance_workers WHERE environment_id=$1
              AND last_seen_at >= $2 AND last_seen_at >= clock_timestamp()-interval '15 seconds' LIMIT 1`,
-            [marker,workerStartedAfter])).rowCount) return;
+            [marker,workerStartedAfter])).rowCount) {sandboxes.capture();return;}
         } catch { transportFailures += 1; }
         await new Promise((wait) => setTimeout(wait,500));
       }
@@ -190,19 +200,20 @@ export async function withRetrievalEvalEnvironment<T>(
     }
     await startDev();
     return await run({ appRoot: app,storeRoot: store,origin,
-      stop: async () => { await stop(dev);dev = null; },
+      stop: stopRuntime,
       start: async () => {
         if (dev) throw new Error("Isolated app already started");
         await startDev();
       },
-      restart: async () => { await stop(dev);dev = null;await startDev(); } });
+      restart: async () => { await stopRuntime();await startDev(); } });
   } finally {
-    await stop(dev);
-    await stopOwnedAppProcesses(app);
-    await closeRuntimePool();
+    const retirement=await Promise.allSettled([stopRuntime(),closeRuntimePool()]);
     for (const [key,value] of Object.entries(old)) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
     }
+    const failures=retirement.filter((value):value is PromiseRejectedResult=>value.status==='rejected');
+    if(failures.length)throw new AggregateError(failures.map(value=>value.reason),'Owned retrieval cleanup failed; target retained');
+    sandboxes.remove();
     try {
       if (created && adminUrl) {
         const admin = new Client({ connectionString: adminUrl.toString() });

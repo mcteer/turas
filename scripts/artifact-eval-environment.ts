@@ -1,3 +1,4 @@
+import {ownedEveSandboxes} from './owned-eve-sandboxes';
 import {artifactStartupSentinel,probeArtifactStartupTransport} from './artifact-startup-probe';
 import {configureOwnedNextDependencyRoot} from './owned-next-config';
 import {stopOwnedAppProcesses} from './plan-eval-environment';
@@ -88,6 +89,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>, opti
   await mkdir(resolve("local-artifacts/004"),{recursive:true,mode:0o700});
   const root = await mkdtemp(resolve("local-artifacts/004/eval-"));
   const app = join(root,"app");
+  const sandboxes=ownedEveSandboxes(app,{...process.env});
   const store = join(root,"store");
   const cloneName = `turas_eval_${randomUUID().replaceAll("-","").slice(0,12)}`;
   const cloneUrl = new URL(adminUrl);
@@ -110,7 +112,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>, opti
   let evePortLease: Awaited<ReturnType<typeof reserveOwnedEvalPort>> | null = null;
   let proxyPortLease: Awaited<ReturnType<typeof reserveOwnedEvalPort>> | null = null;
   const owned = new Map<ChildProcess,OwnedProcessRetirement>();
-  const startOwned=(args:string[],env:NodeJS.ProcessEnv)=>{const value=spawnOwnedProcess({command:process.execPath,args,cwd:app,environment:env});owned.set(value.child,value.retirement);return value.child;};
+  const startOwned=(args:string[],env:NodeJS.ProcessEnv)=>{const value=spawnOwnedProcess({command:process.execPath,args,cwd:app,environment:{...env,...sandboxes.environment()}});owned.set(value.child,value.retirement);return value.child;};
   const stopChild=async(child:ChildProcess|null)=>{if(!child)return;const resource=owned.get(child);if(resource)await retireOwnedProcess(resource);else await stop(child);};
   const capture = (chunk: Buffer) => { startupOutput = (startupOutput+chunk.toString("utf8")).slice(-100_000); };
   const observe=(child:ChildProcess)=>{child.stdout?.on("data",capture);child.stderr?.on("data",capture);};
@@ -196,7 +198,7 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>, opti
     const devEnvironment: NodeJS.ProcessEnv = { ...process.env,...productionEnvironment,NODE_ENV:options.production?"production":"development",PORT: String(port),...await qualityChildEnvironment() };
     await portLease.release();
     dev = options.production?startOwned(["node_modules/next/dist/bin/next","start","--hostname","127.0.0.1","--port",String(port)],devEnvironment):spawn(process.execPath,["scripts/dev.mjs"],{
-      cwd: app,env: devEnvironment,stdio: ["ignore","pipe","pipe"] });
+      cwd: app,env: {...devEnvironment,...sandboxes.environment()},stdio: ["ignore","pipe","pipe"] });
     observe(dev);
     const started = Date.now(),readinessMaximumMs=ownedEvalTimeout(options.deadlineAt,60_000);
     let ready = false;
@@ -205,12 +207,13 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>, opti
     const readinessProbes:{ordinal:number;startedMs:number;completedMs:number;authStatus:number|null;eveStatus:number|null;authTransport:string;eveTransport:string;authPhase:string;evePhase:string;authHeadersStatus:number|null;eveHeadersStatus:number|null;authHeadersElapsedMs:number|null;eveHeadersElapsedMs:number|null}[]=[];
     const probe=(path:'/api/auth/session'|'/eve/v1/health')=>observeArtifactReadinessProbe(origin,path);
     while (Date.now()-started < readinessMaximumMs) {
+      sandboxes.capture();
       if (dev.exitCode !== null || productionEve&&productionEve.exitCode!==null) throw new Error(`Isolated evaluation app exited during startup: ${startupOutput}`);
       const probeStartedMs=Date.now()-started;
       const [auth,eve]=await Promise.all([probe('/api/auth/session'),probe('/eve/v1/health')]);
       probeCount++;lastAuthStatus=auth.status;lastEveStatus=eve.status;authTransport=auth.transport;eveTransport=eve.transport;
       readinessProbes.push({ordinal:probeCount,startedMs:probeStartedMs,completedMs:Date.now()-started,authStatus:auth.status,eveStatus:eve.status,authTransport:auth.transport,eveTransport:eve.transport,authPhase:auth.phase,evePhase:eve.phase,authHeadersStatus:auth.headersStatus,eveHeadersStatus:eve.headersStatus,authHeadersElapsedMs:auth.headersElapsedMs,eveHeadersElapsedMs:eve.headersElapsedMs});
-      if(auth.status===401&&eve.status!==null&&eve.status>=200&&eve.status<300){ready=true;break;}
+      if(auth.status===401&&eve.status!==null&&eve.status>=200&&eve.status<300){sandboxes.capture();ready=true;break;}
       await new Promise((wait) => setTimeout(wait,500));
     }
     if (!ready) {
@@ -261,9 +264,14 @@ export async function withArtifactEvalEnvironment<T>(run: () => Promise<T>, opti
   } finally {
    const failures:unknown[]=[];
    const attempt=async(work:()=>Promise<unknown>)=>{try{await work();}catch(error){failures.push(error);}};
-   await attempt(async()=>{const retired=await Promise.allSettled([stopChild(dev),stopChild(productionEve)]);for(const value of retired)if(value.status==='rejected')failures.push(value.reason);});
+   await attempt(()=>sandboxes.retire(async()=>{
+    const retired=await Promise.allSettled([stopChild(dev),stopChild(productionEve)]);
+    const detached=await Promise.allSettled([stopOwnedAppProcesses(app)]);
+    const failed=[...retired,...detached].filter((value):value is PromiseRejectedResult=>value.status==='rejected');
+    if(failed.length)throw new AggregateError(failed.map(value=>value.reason),'Owned artifact process retirement failed');
+   }));
    await attempt(async()=>{if(proxy){proxy.closeAllConnections();await new Promise<void>(done=>proxy!.close(()=>done()));}});
-   await attempt(()=>stopOwnedAppProcesses(app));
+   if(!failures.length)await attempt(async()=>sandboxes.remove());
    for (const [key,value] of Object.entries(old)) {
      if (value === undefined) delete process.env[key]; else process.env[key] = value;
    }
