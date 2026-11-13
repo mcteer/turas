@@ -2,7 +2,7 @@
 
 **Feature Branch**: `022-fresh-guidance-learning`
 **Created**: 2026-11-13
-**Status**: Implemented locally; actual-agent acceptance and hosted release unverified
+**Status**: Implemented and Preview-validated; actual-model acceptance and Production release unverified
 **Input**: Turas should learn as it is used and provide current guidance. The user
 selected automatic research within existing access and spending limits, and
 reaffirmed a seven-day trigger for searching for more current results. Repair the

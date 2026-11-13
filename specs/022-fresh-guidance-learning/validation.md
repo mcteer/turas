@@ -1,8 +1,26 @@
 # Fresh-guidance validation
 
 Date: 2026-11-13. Branch: `022-fresh-guidance-learning`. Base: `dd3e943d`.
-Status: local implementation; draft review. Actual-agent and hosted acceptance
-remain open. No selected database, Production schema or deployment was changed.
+Status: implementation verified locally and in Preview; full application CI passed.
+Actual-model and Production acceptance remain open. The selected local database
+and Production schema/deployment were unchanged; Preview uses an isolated copy.
+
+## Completed CI
+
+All67 checks passed for application/test source
+`73c6374c6a82c8eac2df958a2f3b8d0126c3f530`:
+[Turas checks](https://github.com/mcteer/turas/actions/runs/43465346617) and
+[Legacy backend parity](https://github.com/mcteer/turas/actions/runs/43465346558).
+The strict hardening catalog verified all197 suites/1097 cases, with no omissions,
+skips or flaky passes accepted by its result validator. This establishes the
+registered automated coverage, not actual-model quality or Production readiness.
+
+The subsequent README/spec/plan/validation edits are documentation only; application,
+agent, migrations, dependencies, test inventories and CI execution inputs remain
+identical. They retain this tested source and exact-source Preview acceptance under
+CONTRIBUTING's documentation-only follow-up policy. The CI scope job must verify
+reuse and documentation checks before merge; reused results keep their original
+source/run attribution.
 
 ## CI failure follow-up
 
@@ -49,6 +67,18 @@ and retained research comparisons matched Production. Desktop/mobile captures we
 inspected. Private evidence: local-artifacts/022/preview-check. This precedes the
 test-inventory follow-up; verify the final deployed commit separately before merge.
 
+The final application/test source `73c6374c6a82c8eac2df958a2f3b8d0126c3f530`
+also passed authenticated exact-commit Preview HTTP/WebKit verification at
+https://turas-hq7m6lhwy-turas-6e414af3.vercel.app. The direct current/history HTTP
+check retained seven expired historical controls and returned none as current
+support, with the automatic fresh-research warning present. Desktop/mobile WebKit
+captures were inspected. The isolated endpoint suspends after five idle minutes.
+Evidence: local-artifacts/022/preview-check and preview-freshness.json.
+
+Production remains on85. Merge is authorized on green CI; Production rollout and
+actual-model research-quality acceptance remain open. The existing Production
+backup operator and its schedule/budgets were not changed by Preview preparation.
+
 ## Local evidence
 
 All commands use Node24 (24.21.0 on this host). Database checks create owned
@@ -60,7 +90,7 @@ The harnesses preserve the selected environment and remove their owned container
 | `node --import tsx scripts/test-guidance.ts` | 39 focused Vitest cases across current/history boundaries, retention, persistence/reuse, source fences, plans and MCP. Includes the migration rehearsal below. |
 | `node --import tsx scripts/check-guidance-migration.ts` | Populated85→86, conservative backfill of account/workspace references, fallback for a removed original attempt, runtime grants, backup/restore and restart passed. |
 | `node node_modules/typescript/bin/tsc --noEmit` | Passed. |
-| `node --import tsx scripts/learning-build-check.ts` | Owned Eve and Next production builds and local readiness passed. No hosted proof. Subsequent changes were SQL grants, test/CI wiring and documentation; application TypeScript and authored agent inputs were unchanged. |
+| `node --import tsx scripts/learning-build-check.ts` | Initial owned Eve/Next builds and local readiness passed. Current application source was subsequently built by the successful MCP build CI job and actual Preview deployment. See hosted source identities below. |
 | `node --test .github/ci/change-scope.test.mjs` | 25 passed; new migration CI step retains conservative scope selection. |
 | `node scripts/check-docs.mjs`, `git diff --check` | Passed;277 authored Markdown files and tracked-file hygiene checked. |
 

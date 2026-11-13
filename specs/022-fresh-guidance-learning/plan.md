@@ -88,6 +88,15 @@ After restore, reapply scripts/db-role-setup.sql through the existing db-roles
 operator before reopening runtime access: owner default privileges otherwise grant
 DELETE when tables are recreated, even if the dump records narrower explicit ACLs.
 Deleted retired search copies must never be resurrected for withdrawn sources.
+When Production is explicitly released on86, update the existing scheduled-backup
+operator to matching source before its next capture, preserving its schedule,
+resources, credential bindings and budgets. Its current85 deployment remains valid
+for the unchanged Production85 database until that separate release.
+
+The maintainer authorized merging this PR once CI is green. Actual-model guidance
+orchestration and subsequent Production verification remain separate acceptance
+work; do not claim FR-003/SC-002 or full release completion from CI. Automatic
+Production deployment from main is disabled, so merge does not apply migration086.
 
 ## Complexity Tracking
 

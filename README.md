@@ -45,7 +45,7 @@ See the [evidence policy](docs/evidence-policy.md) and
 ## Project Status
 
 The [fresh-guidance follow-up](specs/022-fresh-guidance-learning/spec.md) is under
-local validation. It makes current evidence the default for Turi guidance, applies
+validation. It makes current evidence the default for Turi guidance, applies
 the seven-day trigger for automatically seeking newer support within existing
 research limits, and fixes cleanup that could stall after the first 100 retired
 sources. Historical evidence and reviewed shared learning remain available under
