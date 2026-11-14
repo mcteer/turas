@@ -244,6 +244,14 @@ opt-in, finite budgets and private captures; mocked or deterministic results are
 not actual-model acceptance. Follow the feature's quickstart before running an
 operational, recovery or paid check.
 
+Disposable evaluation harnesses retain Eve sandbox ownership before shutdown and
+delete only their own session containers at final teardown. Intermediate stops
+preserve sandbox files for restart checks. Cleanup failures fail the check and
+retain the fixture's `eve-sandbox-runs.json` ownership record. The normal
+development database and `.eve/.workflow-data` remain untouched.
+Run `npm run sandbox:cleanup:check` with Docker and an existing Eve sandbox
+template to verify real local shutdown, failed-check cleanup and isolation.
+
 ## How the Repository Fits Together
 
 The web application, Turi tools, jobs, reports and MCP interface share one governed

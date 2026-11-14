@@ -57,6 +57,25 @@ recovery drill. No new pilot programme is required to address these gaps.
 
 ## Evidence and release
 
+### Disposable Eve sandbox cleanup follow-up
+
+Use one ownership helper in the production-hardening, plan, retrieval, artifact,
+partner, learning and MCP evaluation harnesses. Record Eve's generated development run IDs while its cleanup
+intents still exist, and assign a unique run tag to direct local production servers.
+Keep a private fixture-local custody record outside `.eve`. Capture before each
+stop, preserve sandboxes through intermediate restarts, and delete containers by
+both sandbox and exact run labels only after final process retirement. Verify
+absence before deleting the fixture. Cleanup failures remain failures with custody
+retained. No framework upgrade, hosted application change or database migration is
+part of this fix.
+
+Cover unrelated-run isolation, restart continuity, disappearing intents, failed
+retirement, malformed ownership, Docker failure and false successful deletion in
+unit tests. Exercise the real Eve development shutdown and failed-check finalizer
+with owned running/stopped Docker containers through `sandbox:cleanup:check`.
+
+### Release evidence
+
 Keep exact code/deployment/schema/configuration identities and distinguish observed
 results from inference. Preserve original failed invocations and qualified resumptions.
 Use [validation.md](validation.md) for actual evidence; Git retains the superseded

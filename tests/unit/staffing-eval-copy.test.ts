@@ -61,13 +61,15 @@ describe("original-allowance owned filesystem setup", () => {
       await writeFile(bootstrap,"globalThis.__selectedQualityGuardInstalled = true;\n",{mode:0o600});
       const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
       for(const expression of expressions){
-        const compose=new AsyncFunction("process","productionEnv","qualityChildEnvironment","port","evePortLease","options",`return (${expression.replaceAll("evePortLease!.","evePortLease.")});`);
+        const compose=new AsyncFunction("process","productionEnv","qualityChildEnvironment","port","evePortLease","options","sandboxes",`return (${expression.replaceAll("evePortLease!.","evePortLease.")});`);
         for(const active of [false,true]){
           const quality=active?{NODE_OPTIONS:`--import=${JSON.stringify(bootstrap)}`,TURAS_016_QUALITY_RUNTIME_FILE:"/synthetic/selected-runtime.json"}:{NODE_OPTIONS:""};
-          const childEnv=await compose({env:{NODE_OPTIONS:"--synthetic-invalid-must-not-inherit"}},{},async()=>quality,"12345",{port:12346},{production:false});
+          const runId='00000000-0000-4000-8000-000000000001';
+          const childEnv=await compose({env:{NODE_OPTIONS:"--synthetic-invalid-must-not-inherit"}},{},async()=>quality,"12345",{port:12346},{production:false},{environment:()=>({EVE_DEVELOPMENT_SANDBOX_RUN_ID:runId})});
           const child=spawnSync(process.execPath,["--input-type=module","-e",`if(Boolean(globalThis.__selectedQualityGuardInstalled)!==${active})process.exit(43);`],{env:childEnv,encoding:"utf8",timeout:5000});
           expect(child.error).toBeUndefined();expect(child.status).toBe(0);
           expect(childEnv.NODE_OPTIONS).toBe(quality.NODE_OPTIONS);
+          expect(childEnv.EVE_DEVELOPMENT_SANDBOX_RUN_ID).toBe(runId);
         }
       }
     } finally { if (prior === undefined) delete process.env.NODE_OPTIONS; else process.env.NODE_OPTIONS = prior; }

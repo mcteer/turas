@@ -20,6 +20,7 @@
     "build:eve:check": "eve build --skip-sandbox-prewarm",
     "build:web:check": "next build --webpack",
     "check:docs": "node scripts/check-docs.mjs",
+    "sandbox:cleanup:check": "node --import tsx scripts/check-eve-sandbox-cleanup.ts",
     "retrieval:prepare": "node --experimental-strip-types scripts/prepare-retrieval.ts",
     "retrieval:check": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/check-retrieval.ts",
     "test:retrieval": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/test-retrieval.ts",

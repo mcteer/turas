@@ -14,6 +14,7 @@ import { reserveOwnedEvalPort } from './eval-port';
 import { closeRuntimePool } from '../lib/server/db/client';
 import {finishPilotEnvironment} from './pilot-environment-cleanup';
 import {ownedParentEnvironment} from './owned-parent-environment';
+import {ownedEveSandboxes} from './owned-eve-sandboxes';
 
 export function requireOwnedPilotDatabase(env: NodeJS.ProcessEnv = process.env, owner = false) {
  const raw = env[owner ? 'DATABASE_URL_UNPOOLED' : 'DATABASE_URL'];
@@ -91,6 +92,7 @@ export async function withPilotEnvironment<T>(run: (environment: PilotEnvironmen
   container = `turas-016-check-${token}`, environmentId = `test-pilot-${token}`, password = randomBytes(24).toString('hex');
  await mkdir(resolve('local-artifacts/016'),{recursive:true,mode:0o700});
  const root = await mkdtemp(resolve('local-artifacts/016/owned-')), appRoot=join(root,'app'),storeRoot=join(root,'reports'),artifactRoot=join(root,'artifacts'),workforceRoot=join(root,'workforce'),workflowRoot=join(appRoot,'.eve/.workflow-data');
+ const sandboxes=ownedEveSandboxes(appRoot,safeEnv);
  const portLease = await reserveOwnedEvalPort();
  let created=false, child: ChildProcess | undefined,worker:ChildProcess|undefined,nativeChild:ChildProcess|undefined,appLog="",nativeLog="";
  let nativePortLease:Awaited<ReturnType<typeof reserveOwnedEvalPort>>|undefined;
@@ -98,10 +100,10 @@ export async function withPilotEnvironment<T>(run: (environment: PilotEnvironmen
  const deadline=Date.now()+(options.deadlineMs ?? 300_000);
  const remaining=()=>{cancellation.signal.throwIfAborted();const value=deadline-Date.now();if(value<=0)throw Error('Owned pilot check deadline exceeded');return value;};
  let stopping:Promise<void>|null=null,stopEpoch=0;
- function stop(){if(stopping)return stopping;stopEpoch++;stopping=drainStop().finally(()=>{stopping=null;});return stopping;}
+ function stop(){if(stopping)return stopping;stopEpoch++;stopping=sandboxes.retire(drainStop).finally(()=>{stopping=null;});return stopping;}
  const ownedChildren=new Map<ChildProcess,OwnedProcessRetirement>(),ownedCapabilities=new WeakMap<ChildProcess,OwnedProcessRetirement>();
  function requireStartup(epoch:number){remaining();if(stopping||epoch!==stopEpoch)throw Error('Owned pilot startup interrupted by stop');}
- function spawnOwned(args:string[],environment:NodeJS.ProcessEnv,epoch:number){requireStartup(epoch);const owned=spawnOwnedProcess({command:process.execPath,args,cwd:appRoot,environment});ownedChildren.set(owned.child,owned.retirement);ownedCapabilities.set(owned.child,owned.retirement);return owned.child;}
+ function spawnOwned(args:string[],environment:NodeJS.ProcessEnv,epoch:number){requireStartup(epoch);const owned=spawnOwnedProcess({command:process.execPath,args,cwd:appRoot,environment:{...environment,...sandboxes.environment()}});ownedChildren.set(owned.child,owned.retirement);ownedCapabilities.set(owned.child,owned.retirement);return owned.child;}
  async function retireChild(current:ChildProcess){const retirement=ownedCapabilities.get(current);if(!retirement)throw Error('Owned pilot process capability missing');await retireOwnedProcess(retirement);ownedChildren.delete(current);}
  async function drainStop(){
   const failures:unknown[]=[];
@@ -153,7 +155,7 @@ export async function withPilotEnvironment<T>(run: (environment: PilotEnvironmen
     process.env.TURAS_EVE_INTERNAL_ORIGIN='http://127.0.0.1:'+nativePortLease!.port+'/';
    }
    const qualityEnvironment=await qualityChildEnvironment();requireStartup(epoch);await portLease.release();child=spawnOwned(supervisor?['scripts/dev.mjs']:['node_modules/next/dist/bin/next',production?'start':'dev',...(production?[]:['--webpack']),'--port',String(portLease.port)],{...process.env,PORT:String(portLease.port),NODE_ENV:production?'production':'development',...qualityEnvironment},epoch);let tail='';for(const stream of [child.stdout,child.stderr])stream?.on('data',b=>{tail=(tail+b.toString()).slice(-100000);appLog=tail;const listening=/server listening at (http:\/\/127\.0\.0\.1:\d+)\//.exec(tail);if(listening)process.env.TURAS_EVE_INTERNAL_ORIGIN=listening[1]+'/';});
-   while(remaining()>0){if(child.exitCode!==null)break;let ready=false;try{const r=await fetch(`${origin}/api/auth/session`,{signal:AbortSignal.timeout(2000)});await r.body?.cancel();ready=r.status===401&&(!native||production||/server listening at http:\/\/127\.0\.0\.1:\d+\//.test(appLog));}catch{}if(ready){requireStartup(epoch);captureOwnedProcessDescendants(ownedCapabilities.get(child)!);return;}await new Promise(r=>setTimeout(r,300));}
+   while(remaining()>0){sandboxes.capture();if(child.exitCode!==null)break;let ready=false;try{const r=await fetch(`${origin}/api/auth/session`,{signal:AbortSignal.timeout(2000)});await r.body?.cancel();ready=r.status===401&&(!native||production||/server listening at http:\/\/127\.0\.0\.1:\d+\//.test(appLog));}catch{}if(ready){sandboxes.capture();requireStartup(epoch);captureOwnedProcessDescendants(ownedCapabilities.get(child)!);return;}await new Promise(r=>setTimeout(r,300));}
    await writeFile(resolve('local-artifacts/016',`startup-${token}.log`),tail.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]'),{mode:0o600});throw Error('Owned pilot app failed readiness; inspect synthetic startup evidence');}
   const databaseReady=async()=>{const probe=new Pool({connectionString:ownerUrl,connectionTimeoutMillis:1000});try{for(;;){remaining();try{await probe.query("SELECT 1");return;}catch{await new Promise(r=>setTimeout(r,250));}}}finally{await probe.end();}};
   const databaseOwned=()=>{if(command('docker',['inspect','--format','{{index .Config.Labels "turas.016.owner"}}',container],safeEnv)!==token)throw Error('Owned database marker changed');};
@@ -167,6 +169,7 @@ export async function withPilotEnvironment<T>(run: (environment: PilotEnvironmen
    saveLogs:[async()=>{if(nativeLog)await writeFile(resolve('local-artifacts/016',`native-${token}.log`),nativeLog.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]'),{mode:0o600});},async()=>{if(appLog)await writeFile(resolve('local-artifacts/016',`runtime-${token}.log`),appLog.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/g,'[redacted-url]'),{mode:0o600});}],
    restoreParent:()=>{for(const key of Object.keys(process.env))delete process.env[key];Object.assign(process.env,previous);},
    removeOwned:async()=>{
+    sandboxes.remove();
     if(created){const inspected=spawnSync('docker',['inspect','--format',`{{index .Config.Labels "turas.016.owner"}}`,container],{env:safeEnv,encoding:'utf8',timeout:30000});if(inspected.status===0){if(inspected.stdout.trim()!==token)throw Error('Owned pilot container marker changed; cleanup refused');command('docker',['rm','--force','--volumes',container],safeEnv);}else if(!/No such (?:object|container)/i.test(inspected.stderr??''))throw Error('Owned pilot resource cleanup could not be verified');}
     await rm(root,{recursive:true,force:true,maxRetries:5,retryDelay:200});
    },
