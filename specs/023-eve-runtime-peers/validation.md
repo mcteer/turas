@@ -1,7 +1,7 @@
 # Validation — Eve Runtime Peers
 
 Date: 2026-11-16. Baseline: `cffceeb2`; branch: `023-eve-runtime-peers`.
-Implementation is under validation; release is pending.
+Implementation, full CI and authenticated Preview acceptance pass; release is pending.
 
 ## Local Evidence
 
@@ -26,11 +26,25 @@ Implementation is under validation; release is pending.
 
 ## Hosted Evidence and Limits
 
-`npm run preview:credentials:check` fails: Vercel credential metadata HTTP403.
-No secret values were downloaded or printed. Existing credentials and settings remain.
-Authenticated Preview acceptance, inspected CLI WebKit captures, full CI, maintainer
-review, merge and exact Production verification are pending. No deployment or
-schema change was performed. No hosted privacy/behavior success is claimed.
+`npm run preview:credentials:check`: PASS after `vercel whoami` refreshed the existing
+authenticated CLI session. Preview inherits the Production credential record with
+zero overrides. The earlier HTTP403 came from a stale token read directly by the script.
+
+The initial Preview had an older generic database binding. The three existing sensitive
+schema86 Preview bindings were moved from the previous feature branch to this branch,
+preserving their values. The isolated database is distinct from Production; its schema
+and runtime grants pass the repository assertion. Rebuilding exact source `2f2545fa`
+produced [the accepted Preview](https://turas-85wubch30-turas-6e414af3.vercel.app).
+
+- Authenticated HTTP and command-line WebKit customer-profile acceptance: PASS.
+  Real profile data matches Production; desktop/mobile captures were inspected.
+- Real-model ordinary chat: PASS, one completed attempt, response survives reload.
+  The owned verification thread was archived and the session logged out.
+- Preview database and admission are healthy/open. Maintenance samples report the
+  previous code version because Preview has no Production cron; full operational
+  readiness is not claimed. Production preflight is ready with healthy maintenance
+  and schema86. Post-merge verification remains required.
+- No credential values, private artifacts or customer data enter the commit.
 
 ## Release Contract
 
@@ -41,6 +55,12 @@ maintainer review. Verify actual Production commit/schema and changed behavior a
 release. Roll back code and lockfile together; preserve unknown provider holds/history.
 Leave PR56 open until replacement delivery is established.
 
+Production preflight source is `9a4473b0`. Its delta to baseline `cffceeb2`
+contains release documentation and disposable-test cleanup, including a new check
+script command; no intervening application, agent, migration or deployment-config
+change is pending. The runtime application delta is the reviewed023 peer/telemetry
+change. Production schema remains86.
+
 ## Final Local Results
 
 - Environment-loaded Node24 unit run: PASS830cases/182files. The earlier831-case
@@ -50,7 +70,8 @@ Leave PR56 open until replacement delivery is established.
 - Updated root audit matches baseline exactly:12findings (9low/3moderate), no high
   or critical findings and no newly introduced affected package. Remaining findings
   concern existing math/markdown/XML and migration CLI dependencies; outside PR56.
-- No paid model request, operational job, migration or sandbox execution was run.
+- The local unit/build checks made no paid provider requests. The later hosted
+  ordinary-chat acceptance used one real model call; no schema migration was needed.
 
 - Final focused installed-SDK/privacy/accounting suite: PASS88cases/10files,
   including19dependency-maintenance cases and4telemetry privacy cases.
@@ -70,11 +91,43 @@ fresh full CI; investigate the nested owned-cleanup failure if it recurs.
 
 - Node24 `npm ci --ignore-scripts`: PASS; exact lockfile installs591packages.
 
-## Review Handoff
+## Review and CI
 
 Implementation commit: `8803afa65824280ac08b5e925e165416133df8fb`.
-Draft replacement [PR72](https://github.com/mcteer/turas/pull/72) is open; full CI
-and the GitHub-triggered Preview build started. These are pending, not passing
-acceptance. T008 is partially complete (PR prepared; hosted acceptance/review pending).
-T009 remains open. The only pre-existing untracked legacy assessment file was left
-untouched and excluded from commits. No merge or Production release was attempted.
+Replacement [PR72](https://github.com/mcteer/turas/pull/72) is ready for review.
+The maintainer explicitly authorized merge once CI is green. Legacy backend parity
+passes; full Turas checks pass on source `2f2545fa`. Attempt1 had three failing test jobs:
+the product-gap benchmark measured p95 2008ms against its unchanged 2000ms limit, and
+interrupted-dispatch cleanup repeated the existing aggregate retirement error. The
+managed-workflow batch suite reported all11tests passing but a nonzero process exit.
+The dependent execution aggregate and final CI result also failed. These
+were not waived by hosted acceptance. T008 is complete; T009 remains open until
+actual release verification and branch cleanup. The pre-existing
+untracked legacy assessment file remains untouched and excluded.
+
+The specific interrupted-dispatch case passes in a fresh local owned Postgres/Eve
+environment (1 selected case; 7 deliberately unselected). It preserves unknown usage
+across restart and verifies process retirement and exact-owned sandbox absence at
+disposal. This local reproduction does not establish the cause of the CI failure or
+replace a successful CI rerun. Selected development credentials/workflow state remain
+unchanged, as verified by the disposable harness.
+
+The complete managed-workflow batch suite also passes locally (11cases, successful
+process exit and owned environment disposal), both directly and with the catalog's
+nested fixture and JSON reporter. Its CI-only process failure remains
+unexplained. The failed jobs passed on one rerun with the original checks and thresholds;
+all other test jobs, including expansion regressions, passed in the first attempt.
+
+Attempt2 product-gap benchmark: PASS with the original limits and production rate
+controls. List p95 is1188ms (limit2000ms), detail p95 is80ms, review p95 is24ms;
+each uses100samples and five concurrent readers. The execution rerun also passes:
+131cases across31suites, zero failures or skips, including interrupted-dispatch
+retirement. The deterministic catalog passes1081cases across192suites.
+
+[Full CI run43922050736](https://github.com/mcteer/turas/actions/runs/43922050736)
+concludes success with all56reported jobs successful. The companion
+[legacy parity run43922050622](https://github.com/mcteer/turas/actions/runs/43922050622)
+also concludes success (10reported jobs). No thresholds, cleanup guards or code
+changed for the rerun. The subsequent acceptance-record update changes only
+documentation; application/test inputs are unchanged and retain this Preview
+acceptance under CONTRIBUTING.md. Its own required checks must pass before merge.

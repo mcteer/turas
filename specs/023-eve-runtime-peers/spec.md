@@ -2,7 +2,7 @@
 
 **Feature Branch**: `023-eve-runtime-peers`
 **Created**: 2026-11-16
-**Status**: Implemented and locally validated; CI/review/hosted release pending
+**Status**: Implemented; full CI and authenticated Preview accepted; Production release pending
 **Input**: Investigate and implement the Dependabot notification for eve (PR #56).
 
 ## User Scenarios & Testing

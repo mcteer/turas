@@ -416,4 +416,5 @@ on the restored-login release `f8d196f`/schema077.
 AI SDK and Connect peer updates while retaining Eve0.91.0. It selects effective
 content-free research telemetry and records optional integration exclusions.
 See its [validation record](specs/023-eve-runtime-peers/validation.md) for actual
-local evidence and outstanding review/hosted gates. This entry does not mark a release.
+passing local/full CI and authenticated Preview evidence. Production release and
+post-release verification remain pending.
