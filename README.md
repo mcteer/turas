@@ -196,6 +196,12 @@ Eve loads `.env.local`; keep the selected database and `.eve/.workflow-data`
 together. A normal new development generation leaves older runs dormant. This
 local recovery mode is separate from hosted recovery verification.
 
+The [runtime peer update](specs/023-eve-runtime-peers/spec.md) assesses Dependabot
+PR #56: AI SDK 7.0.172 and Connect 2.9.2, retaining Eve 0.91.0. It adds content-free
+diagnostic telemetry to direct research calls. Full CI and authenticated Preview
+acceptance pass, as recorded in its [validation record](specs/023-eve-runtime-peers/validation.md);
+Production release remains pending.
+
 Dependabot checks the three npm projects and GitHub Actions weekly on Monday at
 09:00 America/Denver. Eve and its AI SDK peer updates are grouped for compatibility
 review. Dependency PRs follow the normal review and CI process.

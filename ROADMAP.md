@@ -409,3 +409,12 @@ evaluation found further recovery-fixture, proposal-guidance and accounting
 cancellation issues. The successor inventory has1,054 cases in192 suites.
 These fixes and their release checks remain in progress; Production remains
 on the restored-login release `f8d196f`/schema077.
+
+### Runtime peer maintenance — 2026-11-16
+
+[Feature 023](specs/023-eve-runtime-peers/spec.md) implements Dependabot PR #56's
+AI SDK and Connect peer updates while retaining Eve0.91.0. It selects effective
+content-free research telemetry and records optional integration exclusions.
+See its [validation record](specs/023-eve-runtime-peers/validation.md) for actual
+passing local/full CI and authenticated Preview evidence. Production release and
+post-release verification remain pending.

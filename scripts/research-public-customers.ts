@@ -1,3 +1,4 @@
+import {contentFreeModelTelemetry} from "../lib/server/models/telemetry";
 import { readFile, writeFile, mkdir, rename, lstat } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { existsSync, openSync, writeFileSync, closeSync, unlinkSync } from "node:fs";
@@ -73,7 +74,7 @@ async function modelCall(account:Account,key:string,system:string,prompt:string)
  return dispatch(account,key,async()=>{
   if(account.usage.modelCalls>=6)throw new Error("Customer model-call budget exhausted");
   account.usage.modelCalls++;await save();
-  const result=await generateText({model:gateway(model!),system,prompt,maxOutputTokens:["synthesis","correction","syntax-repair"].includes(key.split(":")[0])?5000:1800,
+  const result=await generateText({telemetry:contentFreeModelTelemetry,model:gateway(model!),system,prompt,maxOutputTokens:["synthesis","correction","syntax-repair"].includes(key.split(":")[0])?5000:1800,
     maxRetries:0,abortSignal:AbortSignal.timeout(180000),providerOptions:{xai:{reasoningEffort:"low"}}});
   account.usage.inputTokens+=result.usage.inputTokens??0;account.usage.outputTokens+=result.usage.outputTokens??0;
   const metadata=result.providerMetadata?.gateway as Record<string,unknown>|undefined;
