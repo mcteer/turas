@@ -198,9 +198,9 @@ local recovery mode is separate from hosted recovery verification.
 
 The [runtime peer update](specs/023-eve-runtime-peers/spec.md) assesses Dependabot
 PR #56: AI SDK 7.0.172 and Connect 2.9.2, retaining Eve 0.91.0. It adds content-free
-diagnostic telemetry to direct research calls. Full CI and authenticated Preview
-acceptance pass, as recorded in its [validation record](specs/023-eve-runtime-peers/validation.md);
-Production release remains pending.
+diagnostic telemetry to direct research calls. Released through PR #72 as
+`70a5870f` on 2026-11-16, with full CI and authenticated Preview/Production
+acceptance recorded in its [validation record](specs/023-eve-runtime-peers/validation.md).
 
 Dependabot checks the three npm projects and GitHub Actions weekly on Monday at
 09:00 America/Denver. Eve and its AI SDK peer updates are grouped for compatibility

@@ -23,7 +23,7 @@ Independent test: installed peer versions, existing budgets/cancellation, typech
 
 - [x] T007 Update README.md and ROADMAP.md, run docs/credential inheritance checks and record source/evidence in specs/023-eve-runtime-peers/validation.md (FR-006).
 - [x] T008 Prepare PR with complete CI, authenticated Preview profiles and inspected CLI WebKit captures; obtain maintainer review before merge (FR-006).
-- [ ] T009 Verify exact Production source/schema and changed research/conversation behavior after release, close superseded PR56 only after replacement is delivered, delete merged branch and verify main README (FR-006).
+- [x] T009 Verify exact Production source/schema and changed research/conversation behavior after release, close superseded PR56 only after replacement is delivered, delete merged branch and verify main README (FR-006). Dependabot automatically closed PR56 after the replacement merge; final hosted acceptance and cleanup are recorded in validation.md.
 
 ## Dependencies and Strategy
 
