@@ -43,6 +43,17 @@ describe('specialist provider termination accounting',()=>{
  }
 });
 
+describe('runtime peer heartbeat accounting',()=>{
+ it('passes pings through without treating them as completion or settlement',async()=>{
+  const model=new MockLanguageModelV4({doStream:async()=>({stream:new ReadableStream({start(c){c.enqueue({type:'ping'});c.close();}})})});
+  const identity={attemptId:'attempt-1',principalId:'principal-1',parentSessionId:'parent-1',workerSessionId:'worker-1',kind:'customer-update' as const,turnId:'turn-1',stepIndex:0};
+  const guarded=guardSpecialistProvider(model,identity,async()=>({input:0,output:0,observedAt:new Date().toISOString()}));
+  const result=await guarded.doStream({prompt:[{role:'user',content:[{type:'text',text:'Synthetic heartbeat fixture.'}]}],maxOutputTokens:10});
+  const reader=result.stream.getReader();expect((await reader.read()).value).toEqual({type:'ping'});expect((await reader.read()).done).toBe(true);
+  expect(seams.settle).not.toHaveBeenCalled();expect(seams.complete).not.toHaveBeenCalled();
+ });
+});
+
 describe('MCP credential syntax remains separate from authorization',()=>{
  it.each([null,'Bearer ','Bearer invalid','bearer tmcp.invalid','Bearer '+'x'.repeat(100000)])('rejects malformed credentials before database access',async header=>{
   const query=vi.fn();
