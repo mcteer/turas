@@ -69,3 +69,12 @@ and not waived by passing local unit/build checks. The replacement PR must pass
 fresh full CI; investigate the nested owned-cleanup failure if it recurs.
 
 - Node24 `npm ci --ignore-scripts`: PASS; exact lockfile installs591packages.
+
+## Review Handoff
+
+Implementation commit: `8803afa65824280ac08b5e925e165416133df8fb`.
+Draft replacement [PR72](https://github.com/mcteer/turas/pull/72) is open; full CI
+and the GitHub-triggered Preview build started. These are pending, not passing
+acceptance. T008 is partially complete (PR prepared; hosted acceptance/review pending).
+T009 remains open. The only pre-existing untracked legacy assessment file was left
+untouched and excluded from commits. No merge or Production release was attempted.
