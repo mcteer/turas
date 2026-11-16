@@ -1,7 +1,8 @@
 # Validation — Eve Runtime Peers
 
 Date: 2026-11-16. Baseline: `cffceeb2`; branch: `023-eve-runtime-peers`.
-Implementation, full CI and authenticated Preview acceptance pass; release is pending.
+Released as `70a5870f` through PR72; full CI and authenticated Preview/Production
+acceptance pass. No schema change.
 
 ## Local Evidence
 
@@ -43,7 +44,7 @@ produced [the accepted Preview](https://turas-85wubch30-turas-6e414af3.vercel.ap
 - Preview database and admission are healthy/open. Maintenance samples report the
   previous code version because Preview has no Production cron; full operational
   readiness is not claimed. Production preflight is ready with healthy maintenance
-  and schema86. Post-merge verification remains required.
+  and schema86. Post-merge verification is recorded below.
 - No credential values, private artifacts or customer data enter the commit.
 
 ## Release Contract
@@ -53,7 +54,7 @@ credentials, database and retained workflow state. Complete full CI and authenti
 Preview customer profiles/changed research checks with WebKit before merge and
 maintainer review. Verify actual Production commit/schema and changed behavior after
 release. Roll back code and lockfile together; preserve unknown provider holds/history.
-Leave PR56 open until replacement delivery is established.
+PR56 closure and replacement delivery are recorded below.
 
 Production preflight source is `9a4473b0`. Its delta to baseline `cffceeb2`
 contains release documentation and disposable-test cleanup, including a new check
@@ -101,8 +102,8 @@ the product-gap benchmark measured p95 2008ms against its unchanged 2000ms limit
 interrupted-dispatch cleanup repeated the existing aggregate retirement error. The
 managed-workflow batch suite reported all11tests passing but a nonzero process exit.
 The dependent execution aggregate and final CI result also failed. These
-were not waived by hosted acceptance. T008 is complete; T009 remains open until
-actual release verification and branch cleanup. The pre-existing
+were not waived by hosted acceptance. T008 completed after the green rerun; T009
+completed with the release verification and branch cleanup recorded below. The pre-existing
 untracked legacy assessment file remains untouched and excluded.
 
 The specific interrupted-dispatch case passes in a fresh local owned Postgres/Eve
@@ -130,4 +131,51 @@ concludes success with all56reported jobs successful. The companion
 also concludes success (10reported jobs). No thresholds, cleanup guards or code
 changed for the rerun. The subsequent acceptance-record update changes only
 documentation; application/test inputs are unchanged and retain this Preview
-acceptance under CONTRIBUTING.md. Its own required checks must pass before merge.
+acceptance under CONTRIBUTING.md. Its own required checks passed before merge.
+
+## Production Release
+
+PR72 merged as `70a5870f344d40a29c484448d8606497e1f812e8` after its documentation
+head `87dee649` passed both workflows and Vercel. Both workflows also pass on the
+merged source. No schema or runtime-grant change was required.
+
+The first `eve deploy --non-interactive --yes` completed from a clean, isolated
+checkout of merged main. Deployment metadata matched the merge, but authenticated
+operations reported the historical fallback `378a590d`; this failed exact-source
+acceptance despite healthy schema86. No model call was made and all three test
+sessions logged out. The documented Git-source redeploy procedure was then used
+with the exact merge SHA and existing Production project/settings/credentials.
+Runtime identity must be checked separately from CLI upload metadata.
+
+The task-owned deployment checkout was removed after successful process retirement.
+Root model, .env.local and retained .eve/.workflow-data hashes are unchanged.
+Dependabot closed PR56 automatically; both its remote branch and PR72's remote
+branch are absent. The local023 branch was deleted and main's README was checked.
+
+Git-source deployment `dpl_CBhxFUazp6STaS45x1BqCuHsyRBm` is READY and assigned to
+`https://www.turas.dev`. Both provider Git source and authenticated runtime identity
+match the exact merge SHA. Production project environment records are unchanged.
+Acceptance completed at2026-11-16T20:43:38Z:
+
+- Real browser-form login/session/directory HTTP checks pass for mcteer, panel and
+  partner; the retired workspace selector is rejected. Partner's unassigned
+  directory stays restricted. The apex redirects to the canonical domain.
+- Authenticated operations: ready, dispatch ready, admission open, maintenance
+  healthy, schema86, direct and effective restricted runtime identity verified.
+- Real directory/profile requests, product source details and attributed evidence
+  searches pass. Desktop/mobile profile captures were inspected. Search remains
+  in its existing `lexical_degraded` mode.
+- One real-model ordinary conversation completed in exactly one attempt and
+  survived reload. Both other roles receive404 for this owner's conversation.
+  Desktop/mobile chat captures and all three role captures were inspected.
+- The owned verification conversation was archived; all three sessions were
+  logged out and then returned401. The acceptance process exited successfully.
+- Broader store/image/backup assurance remains unverified, as before this release;
+  these checks do not establish disaster-recovery assurance. Telemetry content
+  filtering is established by installed-SDK behavioral tests; hosted checks cover
+  runtime compatibility, research retrieval and owner privacy without exporting
+  customer telemetry or dispatching a new customer research job.
+
+The release-record follow-up changes documentation only. It preserves the accepted
+application/test inputs and requires its own documentation/CI checks before merge;
+no second Production deployment is needed for that record.
