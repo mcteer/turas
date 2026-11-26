@@ -21,9 +21,10 @@ async function body(response:Response,maximum:number,signal:AbortSignal){
  try{for(;;){signal.throwIfAborted();const next=await reader.read();if(next.done)break;size+=next.value.byteLength;if(size>maximum)throw Error('Maintenance response exceeds bound');chunks.push(next.value);}}
  finally{await reader.cancel().catch(()=>{});reader.releaseLock();}return Buffer.concat(chunks,size);
 }
-async function denied(application:OwnedRecoveryApplication,path:string,headers:Headers,statuses:readonly number[],signal:AbortSignal){
+async function denied(application:OwnedRecoveryApplication,path:string,headers:Headers,statuses:readonly number[],signal:AbortSignal,kind:OwnedMaintenanceRecord['kind'],stage:'foreign-session'|'wrong-kind'|'ordinary-route'|'retired'){
  const response=await fetch(application.origin+path,{headers,redirect:'manual',cache:'no-store',signal:AbortSignal.any([signal,AbortSignal.timeout(10000)])});
- await response.body?.cancel();if(!statuses.includes(response.status)||response.headers.get('x-turas-code-version')!==application.sourceCommit)throw Error('Maintenance denial or release differs');
+ const releaseMatches=response.headers.get('x-turas-code-version')===application.sourceCommit;
+ await response.body?.cancel();if(!statuses.includes(response.status)||!releaseMatches)throw Error(`Maintenance denial or release differs (${stage}, ${kind}, status ${response.status}, release matches ${releaseMatches})`);
 }
 async function retire(application:OwnedRecoveryApplication,admission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>){
  const signal=AbortSignal.timeout(20000);
@@ -36,8 +37,8 @@ async function retire(application:OwnedRecoveryApplication,admission:Awaited<Ret
   if(closed.length!==1||closed[0].closed!==true)throw Error('Maintenance probe retirement unverified');
  });
 }
-async function readRecord(application:OwnedRecoveryApplication,record:OwnedMaintenanceRecord,input:{scope:Scope;password:string},deadline:number,signal:AbortSignal){
- let admission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined,retirementConfirmed=false;
+async function prepareRecord(application:OwnedRecoveryApplication,record:OwnedMaintenanceRecord,input:{scope:Scope;password:string},deadline:number,signal:AbortSignal){
+ let admission:Awaited<ReturnType<typeof issueOwnedRecoveryHttpRead>>|undefined;
  try{
   await withOwnedRecoveryApplicationConfiguration(application,signal,async db=>{
    await db.query('BEGIN');try{
@@ -46,7 +47,6 @@ async function readRecord(application:OwnedRecoveryApplication,record:OwnedMaint
    }catch(error){await db.query('ROLLBACK');throw error;}
   });
   if(!admission)throw Error('Actual maintenance HTTP admission absent');
-  const owned=admission,path='/api/operations/recovery-read/'+owned.id+'/'+record.kind,headers=new Headers({cookie:'turas_session='+owned.actor.token,'x-turas-recovery-read':owned.secret});
   let canonical:string|undefined;
   if(record.kind==='profile')canonical=await withOwnedRecoveryApplicationConfiguration(application,signal,async db=>{
    await db.query('BEGIN');try{
@@ -66,10 +66,20 @@ async function readRecord(application:OwnedRecoveryApplication,record:OwnedMaint
     const digest=planProjection(plan,record);await db.query('COMMIT');return digest;
    }catch(error){await db.query('ROLLBACK');throw error;}
   });
+  return {record,owned:admission,canonical};
+ }catch(error){
+  if(admission)try{await retire(application,admission);}catch(retirement){throw new AggregateError([error,retirement],'Maintenance preparation and retirement failed');}
+  throw error;
+ }
+}
+async function readRecord(application:OwnedRecoveryApplication,{record,owned,canonical}:Awaited<ReturnType<typeof prepareRecord>>,signal:AbortSignal){
+ const path='/api/operations/recovery-read/'+owned.id+'/'+record.kind,headers=new Headers({cookie:'turas_session='+owned.actor.token,'x-turas-recovery-read':owned.secret});
+ let retirementConfirmed=false;
+ try{
   const foreign=new Headers(headers);foreign.set('cookie','turas_session='+randomBytes(32).toString('base64url'));
-  await denied(application,path,foreign,[403],signal);
-  await denied(application,'/api/operations/recovery-read/'+owned.id+'/'+(record.kind==='profile'?'artifact':'profile'),headers,[403],signal);
-  await denied(application,ordinaryPath(record),headers,[401,403,503],signal);
+  await denied(application,path,foreign,[403],signal,record.kind,'foreign-session');
+  await denied(application,'/api/operations/recovery-read/'+owned.id+'/'+(record.kind==='profile'?'artifact':'profile'),headers,[403],signal,record.kind,'wrong-kind');
+  await denied(application,ordinaryPath(record),headers,[401,403,503],signal,record.kind,'ordinary-route');
   const response=await fetch(application.origin+path,{headers,redirect:'manual',cache:'no-store',signal:AbortSignal.any([signal,AbortSignal.timeout(10000)])});
   if(response.status!==200||response.headers.get('x-turas-code-version')!==application.sourceCommit){await response.body?.cancel();throw Error('Maintenance positive read or release differs');}
   const bytes=await body(response,record.object?.sizeBytes??2097152,signal);
@@ -88,9 +98,9 @@ async function readRecord(application:OwnedRecoveryApplication,record:OwnedMaint
   }
   // The successful retire verifies actual closed SQL state. Keep fallback
   // cleanup for every earlier failure, without repeating confirmed retirement.
-  await retire(application,owned);retirementConfirmed=true;await denied(application,path,headers,[403],signal);
+  await retire(application,owned);retirementConfirmed=true;await denied(application,path,headers,[403],signal,record.kind,'retired');
   return record.object?.sizeBytes??0;
- }finally{if(admission&&!retirementConfirmed)await retire(application,admission);}
+ }finally{if(!retirementConfirmed)await retire(application,owned);}
 }
 async function requireRetiredMaintenanceRuntime(db:import('pg').Client,scope:Scope){
   if((await db.query("SELECT 1 FROM pg_roles WHERE rolname IN('turas_runtime','turas_runtime_016') AND rolcanlogin UNION ALL SELECT 1 FROM pg_stat_activity WHERE usename IN('turas_runtime','turas_runtime_016')")).rowCount)throw Error('Maintenance runtime retirement incomplete');
@@ -110,10 +120,19 @@ export async function verifyOwnedMaintenanceRecovery(input:{target:OwnedRestoreT
   for(let offset=0;offset<inventory.records.length;offset+=4){
    input.signal.throwIfAborted();const deadline=Math.min(input.deadline,Date.now()+59000),batch=inventory.records.slice(offset,offset+4);
    await withOwnedRestoredRuntime(input.target,input.scope,input.signal,async(_runtime,signal,environment)=>withOwnedRecoveryApplication(application,environment,signal,async()=>{
-    // Each read has its own admission and owner connections. Keep the original
-    // four-record lease, and await every retirement before closing its runtime,
-    // including when a sibling read fails.
-    const results=await Promise.allSettled(batch.map(record=>readRecord(application,record,input,deadline,signal)));
+    // Owner issuance and canonical reads take the exclusive recovery fence.
+    // Commit them before any shared-fence HTTP probe; keep the four-record lease.
+    const prepared:Awaited<ReturnType<typeof prepareRecord>>[]=[];
+    try{
+     for(const record of batch){signal.throwIfAborted();prepared.push(await prepareRecord(application,record,input,deadline,signal));}
+    }catch(error){
+     const retired=await Promise.allSettled(prepared.map(record=>retire(application,record.owned)));
+     const failures=retired.flatMap(result=>result.status==='rejected'?[result.reason]:[]);
+     if(failures.length)throw new AggregateError([error,...failures],'Maintenance batch preparation and retirement failed');
+     throw error;
+    }
+    // Await every HTTP read and its retirement before closing the runtime.
+    const results=await Promise.allSettled(prepared.map(record=>readRecord(application,record,signal)));
     const failures=results.filter((result):result is PromiseRejectedResult=>result.status==='rejected');
     if(failures.length)throw new AggregateError(failures.map(result=>result.reason),'Maintenance batch incomplete');
     for(const result of results)if(result.status==='fulfilled'){bytes+=result.value;verified++;}
