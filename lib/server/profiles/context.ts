@@ -52,7 +52,7 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
     if (options.adoptionOnly) {
       const packed = contextPage(await customerAdoptionEntries(client, actor.workspaceId, customerId, profile), page, limit);
       return { contractVersion: customerAdoptionVersion, customer: profile.customer,
-        contextVersion: profile.contextVersion, asOf: asOf.toISOString(), entries: packed.entries,
+        contextVersion: profile.contextVersion, asOf: asOf.toISOString(), page, entries: packed.entries,
         nextPage: packed.hasNextPage && page < 10 ? page + 1 : null,
         coverage: 'partial',
         notice: 'Only reviewed product records and curated public workload references. Missing or unlisted use is unknown, not non-use. Public signals describe dated scope, not current deployment. Null workload means unspecified.' };

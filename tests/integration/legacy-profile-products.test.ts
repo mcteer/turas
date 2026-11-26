@@ -9,7 +9,6 @@ import {createOwnedConversation} from '../../lib/server/conversations/repository
 import {claimBinding,bindNativeSession} from '../../lib/server/conversations/binding';
 import {prepareAttempt,claimDispatch} from '../../lib/server/conversations/dispatch';
 import {refreshOrdinaryKnowledge} from '../../lib/server/conversations/current-knowledge';
-import {adoptionAccountsInTurn} from '../../lib/server/conversations/adoption-context';
 import {randomUUID,createHash} from 'node:crypto';
 import {Client} from 'pg';
 import {beforeAll,expect,it,vi} from 'vitest';
@@ -202,8 +201,7 @@ it('keeps unrelated vendor prose out of the adoption tool and following model-co
   const expected={type:'attributed_research',citationId:revisionId,name:'Next.js',workload:'Storefront',publishedAt:'2022-03-29',url};
   expect(result).toMatchObject({contractVersion:'customer-adoption-v1',coverage:'partial',entries:[expected]});
   expect(JSON.stringify(result)).not.toContain('Vercel Blob');
-  const ids=adoptionAccountsInTurn([{role:'user',content:'Which frameworks does this customer use?'},
-   {role:'tool',content:[{type:'tool-result',toolName:'get_customer_adoption',output:{type:'json',value:result}}]}]);
+  const ids=new Set([customerId]);
   const turnId='turn_'+randomUUID();
   await projectNativeEvent(native,attempt.attemptId,{type:'message.received',data:{message:'Which frameworks does this customer use?',turnId},meta:{id:'evt_'+randomUUID(),at:new Date().toISOString()}});
   await db.query(`INSERT INTO general_context_injections(attempt_id,turn_id,snapshot_digest)
@@ -213,10 +211,11 @@ it('keeps unrelated vendor prose out of the adoption tool and following model-co
    async doGenerate(options:{prompt:unknown}){providerPrompt=options.prompt;return {};},
    async doStream(){throw Error('Unused fixture stream');},
   } as unknown as Parameters<typeof wrapOrdinaryChatModel>[0];
-  await wrapOrdinaryChatModel(provider,principal,native,turnId).doGenerate({prompt:[
+  const generate=(receipt: unknown)=>wrapOrdinaryChatModel(provider,principal,native,turnId).doGenerate({prompt:[
    {role:'user',content:[{type:'text',text:'Which frameworks does this customer use?'}]},
-   {role:'tool',content:[{type:'tool-result',toolName:'get_customer_adoption',toolCallId:'fixture-adoption',output:{type:'json',value:JSON.parse(JSON.stringify(result))}}]},
+   {role:'tool',content:[{type:'tool-result',toolName:'get_customer_adoption',toolCallId:'fixture-adoption',output:{type:'json',value:JSON.parse(JSON.stringify(receipt))}}]},
   ]});
+  await generate(result);
   expect(JSON.stringify(providerPrompt)).toContain('ordinary-current-knowledge-v1');
   expect(JSON.stringify(providerPrompt)).toContain('Next.js');
   expect(JSON.stringify(providerPrompt)).not.toContain('Vercel Blob');
@@ -226,16 +225,22 @@ it('keeps unrelated vendor prose out of the adoption tool and following model-co
   await db.query(`INSERT INTO evidence_conflict_targets(id,environment_id,scope,workspace_id,customer_id,first_kind,first_revision_id,second_kind,second_revision_id,period_start,period_end,state,rationale)
     VALUES($1,$2,'customer',$3,$4,'verified_research',$5,'verified_research',$6,'2022-01-01','2022-12-31','confirmed','Synthetic adoption conflict')`,[conflict,identity.environmentId,identity.workspaceId,customerId,revisionId,randomUUID()]);
   expect(await adoptionTool.execute({accountId:customerId,page:1},ctx)).toMatchObject({entries:[],coverage:'partial'});
+  providerPrompt=undefined;
+  await expect(generate(result)).rejects.toMatchObject({status:409});
+  expect(providerPrompt).toBeUndefined();
   expect((await withTransaction(client=>refreshOrdinaryKnowledge(client,actor,principal,conversation.id,attempt.attemptId,ids)))?.contexts).toMatchObject([{entries:[]}]);
   await db.query("UPDATE evidence_conflict_targets SET state='resolved' WHERE id=$1",[conflict]);
   const proposed=await submitProfileCommand(actor,customerId,{action:'propose_record',requestKey:randomUUID(),
     payload:{kind:'product_use',productKey:'fixture-evaluated-product',displayName:'Fixture evaluated product',state:'evaluating',usageDescription:'Synthetic review',observedAt:'2026-09-01T00:00:00Z'}}) as {revisionId:string};
   const draft=(await db.query(`SELECT v.content_digest,r.version FROM profile_revisions v JOIN profile_records r ON r.id=v.record_id WHERE v.id=$1`,[proposed.revisionId])).rows[0];
   await submitProfileCommand(admin,customerId,{action:'accept_revision',requestKey:randomUUID(),revisionId:proposed.revisionId,digest:draft.content_digest,expectedRecordVersion:Number(draft.version),expectedAcceptedRevisionId:null,rationale:'Reviewed the synthetic evaluating state'});
-  expect(await adoptionTool.execute({accountId:customerId,page:1},ctx)).toMatchObject({entries:[{citationId:proposed.revisionId,state:'evaluating'},expected]});
+  const beforeManualConflict=await adoptionTool.execute({accountId:customerId,page:1},ctx);
+  expect(beforeManualConflict).toMatchObject({entries:[{citationId:proposed.revisionId,state:'evaluating'},expected]});
   await db.query(`INSERT INTO evidence_conflict_targets(id,environment_id,scope,workspace_id,customer_id,first_kind,first_revision_id,second_kind,second_revision_id,period_start,period_end,state,rationale)
     VALUES($1,$2,'customer',$3,$4,'accepted_profile',$5,'accepted_profile',$6,'2026-01-01','2026-12-31','confirmed','Synthetic reviewed adoption conflict')`,[randomUUID(),identity.environmentId,identity.workspaceId,customerId,proposed.revisionId,randomUUID()]);
   expect(await adoptionTool.execute({accountId:customerId,page:1},ctx)).toMatchObject({entries:[expected]});
+  await expect(generate(beforeManualConflict)).rejects.toMatchObject({status:409});
+  expect(providerPrompt).toBeUndefined();
   await db.query("INSERT INTO evidence_source_events(id,source_revision_id,lifecycle_version,event_type,rationale) VALUES($1,$2,1,'withdraw','Synthetic withdrawal')",[randomUUID(),revisionId]);
   expect(await adoptionTool.execute({accountId:customerId,page:1},ctx)).toMatchObject({entries:[],coverage:'partial'});
  }finally{try{await settleSyntheticConversationAttempts(db,owned);}finally{await db.end();}}

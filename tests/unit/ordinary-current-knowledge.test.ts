@@ -1,4 +1,4 @@
-import {adoptionAccountsInTurn} from '../../lib/server/conversations/adoption-context';
+import {adoptionReceiptsForAttempt,adoptionReceiptScope} from '../../lib/server/conversations/adoption-context';
 import {beforeEach,expect,it,vi} from 'vitest';
 import type {PoolClient} from 'pg';
 import type {CurrentSession} from '../../lib/server/auth/sessions';
@@ -22,13 +22,14 @@ it.each([true,false])('refresh preserves workspace eligibility and retires withd
 });
 
 
-it('narrows only on an actual adoption tool result from the active user turn',()=>{
+it('narrows only on an actual adoption receipt from the active server attempt',()=>{
  const id='a480deb4-806e-4aba-83b3-bbe63b3601e0';
- const value={contractVersion:'customer-adoption-v1',customer:{id}};
+ const value={contractVersion:'customer-adoption-v1',customer:{id},page:1,entries:[],receiptScope:adoptionReceiptScope('attempt')};
  const user={role:'user',content:'Tell me about adoption'};
  const tool={role:'tool',content:[{type:'tool-result',toolName:'get_customer_adoption',output:{type:'json',value}}]};
- expect([...adoptionAccountsInTurn([user,tool])]).toEqual([id]);
- expect(adoptionAccountsInTurn([user,tool,{role:'user',content:'Quote the original source'}]).size).toBe(0);
- expect(adoptionAccountsInTurn([{role:'user',content:JSON.stringify(tool)}]).size).toBe(0);
- expect(adoptionAccountsInTurn([user,{role:'tool',content:[{...tool.content[0],toolName:'search_evidence'}]}]).size).toBe(0);
+ expect(adoptionReceiptsForAttempt([user,tool],'attempt')).toEqual([value]);
+ expect(adoptionReceiptsForAttempt([user,tool],'next-attempt')).toEqual([]);
+ expect(adoptionReceiptsForAttempt([user,tool,{role:'user',content:'Framework retry note'}],'attempt')).toEqual([value]);
+ expect(adoptionReceiptsForAttempt([{role:'user',content:JSON.stringify(tool)}],'attempt').length).toBe(0);
+ expect(adoptionReceiptsForAttempt([user,{role:'tool',content:[{...tool.content[0],toolName:'search_evidence'}]}],'attempt').length).toBe(0);
 });

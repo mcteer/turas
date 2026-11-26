@@ -84,7 +84,10 @@ Next.js storefront and a different company's Vercel Blob example. The authored
 tool and automatic refresh both keep the exact storefront, publication date, and
 citation without the Blob example; the ordinary raw path still contains the
 original text. A scripted model captures the actual outgoing prompt from the
-ordinary model wrapper. The database checks also withhold canonically conflicted
+ordinary model wrapper. Receipts are bound to the server-owned response attempt
+so retry messages do not bypass the pre-provider recheck. If a conflict is
+confirmed after an adoption tool read, the wrapper rejects the stale receipt
+before calling the provider. The database checks also withhold canonically conflicted
 research and reviewed product records while keeping unaffected evidence, deny
 an unassigned partner, and omit a withdrawn revision.
 A six-call Gateway replay then compared the same synthetic source in raw versus
