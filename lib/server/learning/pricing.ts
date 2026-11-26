@@ -2,13 +2,15 @@ import { z } from 'zod';
 import { HttpFailure } from '../../contracts/http';
 import { sha256Schema,utcTimestampSchema } from '../../contracts/retrieval';
 import { learningHash } from './repository';
+const legacyOutputContractSource='https://vercel.com/ai-gateway/models/claude-sonnet-5.5';
+const outputContractSource='https://vercel.com/ai-gateway/models/anthropic/claude-sonnet-5.5';
 export const learningPriceSchema=z.object({
  version:z.literal('learning-price-v1'),modelId:z.literal('anthropic/claude-sonnet-5.5'),
  inputMicroUsdPerMillion:z.string().regex(/^[1-9]\d{0,12}$/),outputMicroUsdPerMillion:z.string().regex(/^[1-9]\d{0,12}$/),
  providerInputLimit:z.number().int().positive().max(2000000),providerOutputLimit:z.number().int().positive().max(2000000),
  hardOutputCapIncludesReasoning:z.literal(true),
  pricingSource:z.literal('https://ai-gateway.vercel.sh/v1/models'),
- outputContractSource:z.literal('https://vercel.com/ai-gateway/models/claude-sonnet-5.5'),
+ outputContractSource:z.enum([outputContractSource,legacyOutputContractSource]),
  pricingCaptureDigest:sha256Schema,outputContractCaptureDigest:sha256Schema,
  verifiedAt:utcTimestampSchema,expiresAt:utcTimestampSchema,
 }).strict();
@@ -55,7 +57,7 @@ export async function resolveLearningPrice(at=new Date()):Promise<LearningPrice>
  * authorize another live evaluation catalog. */
 export async function resolvePublishedLearningPrice(at=new Date()):Promise<LearningPrice>{
  try{
-  const [catalog,document]=await Promise.all([publicPriceEvidence('https://ai-gateway.vercel.sh/v1/models',4194304),publicPriceEvidence('https://vercel.com/ai-gateway/models/claude-sonnet-5.5',8388608)]);
+  const [catalog,document]=await Promise.all([publicPriceEvidence('https://ai-gateway.vercel.sh/v1/models',4194304),publicPriceEvidence(outputContractSource,8388608)]);
   const entry=JSON.parse(catalog).data?.find((model:{id?:unknown})=>model.id==='anthropic/claude-sonnet-5.5');
   if(!entry||!Number.isSafeInteger(entry.context_window)||!Number.isSafeInteger(entry.max_tokens)||!entry.supported_parameters?.includes('max_tokens'))throw Error('Finite provider limits unavailable');
   const prose=document.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ');
@@ -85,6 +87,6 @@ export async function resolvePublishedLearningPrice(at=new Date()):Promise<Learn
   // Sonnet cache writes can cost twice base input for a one-hour TTL.
   // Double the maximum published input/cache rate; never assume cache discounts.
   const maximum=(kind:'input'|'output')=>(rates[kind].reduce((a,b)=>a>b?a:b)*(kind==='input'?2n:1n)).toString();
-  return assertLearningPrice({version:'learning-price-v1',modelId:entry.id,inputMicroUsdPerMillion:maximum('input'),outputMicroUsdPerMillion:maximum('output'),providerInputLimit:entry.context_window,providerOutputLimit:entry.max_tokens,hardOutputCapIncludesReasoning:true,pricingSource:'https://ai-gateway.vercel.sh/v1/models',outputContractSource:'https://vercel.com/ai-gateway/models/claude-sonnet-5.5',pricingCaptureDigest:learningHash(entry),outputContractCaptureDigest:learningHash(prose),verifiedAt:at.toISOString(),expiresAt:new Date(at.getTime()+86400000).toISOString()},at);
+  return assertLearningPrice({version:'learning-price-v1',modelId:entry.id,inputMicroUsdPerMillion:maximum('input'),outputMicroUsdPerMillion:maximum('output'),providerInputLimit:entry.context_window,providerOutputLimit:entry.max_tokens,hardOutputCapIncludesReasoning:true,pricingSource:'https://ai-gateway.vercel.sh/v1/models',outputContractSource,pricingCaptureDigest:learningHash(entry),outputContractCaptureDigest:learningHash(prose),verifiedAt:at.toISOString(),expiresAt:new Date(at.getTime()+86400000).toISOString()},at);
  }catch(error){if(error instanceof HttpFailure)throw error;throw new HttpFailure(503,'pricing_unavailable','Verified provider pricing and reasoning-inclusive limits unavailable');}
 }

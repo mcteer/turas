@@ -82,14 +82,22 @@ await withLearningEnvironment(async environment=>{
   await new Promise(r=>setTimeout(r,200));
  }
  if(retiredCount!==22){try{
-  const jobs=await withLearningDatabase(async db=>(await db.query(`SELECT a.purpose,m.mode,a.state AS "attemptState",j.state AS "jobState",j.attempts,
-   GREATEST(0,extract(epoch FROM(j.next_attempt_at-clock_timestamp()))*1000)::float8 AS "nextEligibleInMs",j.due_at<=clock_timestamp() AS due,
-   a.native_session_id IS NOT NULL AS "nativeSessionBound",a.native_turn_id IS NOT NULL AS "nativeTurnBound",r.dispatch_state AS "dispatchState",r.native_response_status AS "nativeResponseStatus",a.model_steps AS "modelSteps",false AS "receiptPresent"
-   FROM learning_attempts a LEFT JOIN learning_cleanup_jobs j ON j.owner_kind='attempt' AND j.owner_id=a.id
-   LEFT JOIN response_attempts r ON r.id=a.response_attempt_id LEFT JOIN learning_native_fixture_modes m ON m.customer_id=a.customer_id
-   WHERE NOT EXISTS(SELECT 1 FROM learning_native_retirement_receipts receipt WHERE receipt.attempt_id=a.id) ORDER BY a.purpose,a.id LIMIT 22`)).rows);
-  const diagnostic=learningNativeCleanupMetadata({retiredCount,ticks:hostedMaintenanceTicks,jobs});
-  await mkdir('local-artifacts/014',{recursive:true,mode:0o700});await writeFile('local-artifacts/014/native-cleanup-diagnostic-private.json',JSON.stringify(diagnostic),{mode:0o600});console.info(JSON.stringify(diagnostic));
+  const diagnostic=await withLearningDatabase(async db=>{
+   const jobs=(await db.query(`SELECT a.purpose,m.mode,a.state AS "attemptState",j.id IS NOT NULL AS "jobPresent",j.state AS "jobState",j.attempts,
+    CASE WHEN j.next_attempt_at IS NOT NULL THEN GREATEST(0,extract(epoch FROM(j.next_attempt_at-clock_timestamp()))*1000)::float8 END AS "nextEligibleInMs",j.due_at<=clock_timestamp() AS due,
+    c.binding_state AS "bindingState",(a.native_session_id IS NOT NULL AND a.native_session_id=c.eve_session_id) AS "nativeSessionMatchesBinding",
+    a.native_session_id IS NOT NULL AS "nativeSessionBound",a.native_turn_id IS NOT NULL AS "nativeTurnBound",r.dispatch_state AS "dispatchState",r.native_response_status AS "nativeResponseStatus",a.model_steps AS "modelSteps",false AS "receiptPresent"
+    FROM learning_attempts a LEFT JOIN learning_cleanup_jobs j ON j.owner_kind='attempt' AND j.owner_id=a.id
+    LEFT JOIN conversations c ON c.id=a.conversation_id LEFT JOIN response_attempts r ON r.id=a.response_attempt_id
+    LEFT JOIN learning_native_fixture_modes m ON m.customer_id=a.customer_id
+    WHERE NOT EXISTS(SELECT 1 FROM learning_native_retirement_receipts receipt WHERE receipt.attempt_id=a.id) ORDER BY a.purpose,a.id LIMIT 22`)).rows;
+   const maintenance=(await db.query(`SELECT LEAST(generation,9999)::integer AS generation,lease_id IS NOT NULL AND lease_expires_at>clock_timestamp() AS "leaseActive",
+    last_completed_at>=last_started_at AS completed,last_success_at>=last_started_at AS succeeded,safe_failure AS "safeFailure",duration_ms AS "durationMs"
+    FROM operations_maintenance_status WHERE environment_id=$1 AND class_id='learning'`,[environment.environmentId]).catch(()=>null))?.rows[0];
+   return learningNativeCleanupMetadata({retiredCount,ticks:hostedMaintenanceTicks,jobs,maintenance});
+  });
+  console.info(JSON.stringify(diagnostic));
+  await writeFile('local-artifacts/014/native-cleanup-diagnostic-private.json',JSON.stringify(diagnostic),{mode:0o600}).catch(()=>undefined);
  }catch{console.info(JSON.stringify({kind:'learning_native_cleanup_diagnostic_unavailable'}));}}
  assert(retiredCount===22,'Actual hosted adapter must retire all owned native sessions');
  const mcpDeadline=Date.now()+35000;for(;;){const purged=await withLearningDatabase(async db=>{const row=(await db.query('SELECT credential_hash,revoked_at FROM mcp_connections WHERE id=$1',[mcpProbe.connection.id])).rows[0];return row?.credential_hash===null&&!!row.revoked_at;});if(purged)break;assert(Date.now()<mcpDeadline,'Actual disabled hosted adapter must purge revoked MCP hashes');await new Promise(r=>setTimeout(r,200));}await withLearningDatabase(async db=>{assert((await db.query('SELECT count(*)::int n FROM mcp_management_receipts WHERE connection_id=$1',[mcpProbe.connection.id])).rows[0].n===2,'Hosted cleanup must retain exact create/revoke receipts');});checks++;

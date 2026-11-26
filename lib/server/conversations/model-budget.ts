@@ -1,3 +1,4 @@
+import {adoptionReceiptsForAttempt} from './adoption-context';
 import {nativeFileEvaluationDeadline} from './native-file-policy';
 import {wrapLanguageModel} from 'ai';
 import {refreshOrdinaryKnowledge} from './current-knowledge';
@@ -37,7 +38,9 @@ export function wrapOrdinaryChatModel(model:Model,principal:Principal,nativeSess
       AND i.snapshot_digest=r.snapshot_digest
     WHERE a.id=$1 AND a.conversation_id=$2`,[scope.attemptId,conversation.id]);
    if(!injected.rowCount)throw hiddenRecord();
-   const packet=await refreshOrdinaryKnowledge(db,scope.actor,principal,conversation.id,scope.attemptId);
+   const adoptionReceipts=adoptionReceiptsForAttempt(params.prompt,scope.attemptId);
+   const packet=await refreshOrdinaryKnowledge(db,scope.actor,principal,conversation.id,scope.attemptId,
+     adoptionReceipts);
    const files=await readNativeProviderFiles(db,scope.actor,conversation.id,scope.attemptId,{questionContinuation:!!(inputDeadline&&turnId!=='')});
    const spent=Number((await db.query('SELECT COALESCE(sum(output_tokens),0)::text AS tokens FROM response_attempts WHERE conversation_id=$1',[conversation.id])).rows[0].tokens);
    if(!Number.isSafeInteger(spent)||spent>=ordinaryConversationOutputLimit)throw new HttpFailure(429,'conversation_budget','Conversation output allowance exhausted');

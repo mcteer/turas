@@ -65,6 +65,33 @@ async function stage(actor: CurrentSession, conversationId: string, bytes: Buffe
   return { reference: (await finished.json()).data, uploadId, input };
 }
 
+it('reserves uploads while a read holds principal authority, without exceeding the shared owner quota', async () => {
+  const db = new Client({ connectionString: url }); await db.connect();
+  const prior = process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED;
+  process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED = '1';
+  try {
+    const { actor, conversation } = await fixture(db), other = await fixture(db, actor);
+    const reserve = (id: string, mib: number) => nativeUploadHttp(request(actor, 'POST', JSON.stringify({
+      requestKey: randomUUID(), filename: 'quota-fixture.bin', mediaType: 'application/octet-stream',
+      size: mib * 1024 * 1024, sha256: 'a'.repeat(64),
+    })), { id }, 'create');
+    await db.query('BEGIN');
+    try {
+      // Ordinary readers hold this share lock before reading the conversation.
+      await db.query('SELECT id FROM principals WHERE id=$1 FOR SHARE', [actor.principalId]);
+      expect((await reserve(conversation.id, 9)).status).toBe(201);
+    } finally { await db.query('ROLLBACK'); }
+    for (let i = 0; i < 9; i++) expect((await reserve(conversation.id, 10)).status).toBe(201);
+    const responses = await Promise.all([reserve(conversation.id, 1), reserve(other.conversation.id, 1)]);
+    expect(responses.map(response => response.status).sort()).toEqual([201,429]);
+    const denied = responses.find(response => response.status === 429)!;
+    expect(await denied.json()).toMatchObject({ error: { code: 'native_upload_capacity' } });
+  } finally {
+    if (prior === undefined) delete process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED; else process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED = prior;
+    await db.end();
+  }
+}, 15_000);
+
 it.each([4, 10])("stages actual %i MiB bytes through bounded HTTP handlers and hydrates only the exact immutable owned send", async mib => {
   const db = new Client({ connectionString: url }); await db.connect();
   const owned: string[] = [], prior = process.env.TURAS_ORDINARY_NATIVE_FILES_ENABLED;

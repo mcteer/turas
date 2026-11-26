@@ -57,7 +57,7 @@ The lifecycle is staged for clarity, but iteration is normal. A team may return 
 | 4. Promote | Build or harden the production-shaped solution and its operating controls. | Security/access review; integration tests; performance/reliability evidence; observability; support/runbook; training; release and rollback plan. | Customer operating owner accepts release readiness. |
 | 5. Adopt and Hand Over | Establish sustained use and customer operational ownership. | Adoption evidence; trained owners; access/support transfer; runbooks; customer acceptance; documented open risks and next review date. | Customer can operate and extend the solution; FDE intensity reduces or ends. |
 | 6. Realize and Expand | Confirm outcome realization and choose the next highest-value customer move. | Post-launch baseline comparison; customer feedback; value realization narrative; next-opportunity or closeout decision. | Expand deliberately, optimize, sustain through normal ownership, or close. |
-| 7. Codify | Convert field evidence into organizational leverage. This runs throughout the engagement and closes with an explicit decision. | Pattern submission; evidence of repeatability; owner; disposition; resulting playbook, accelerator, roadmap input, documentation, or exception record. | A named owner accepts the follow-through, or the team documents why no generalization is appropriate. |
+| 7. Close | Complete the reviewed handoff and closeout. | Handoff acknowledgement, milestone decisions, resolved blockers or accepted exceptions, and reviewed time. | The authorized reviewer accepts closeout or identifies the remaining blockers. |
 
 ### Stage 0 — Qualify the Engagement
 
@@ -160,9 +160,13 @@ Revisit the baseline after enough operating time for the result to be meaningful
 
 Expansion must be earned. Recommend it when the first workflow has a credible outcome, operating ownership, and a reusable lesson or strategically valuable next problem. If those are missing, prioritize stabilization, adoption, or closeout over a larger roadmap.
 
-### Stage 7 — Codify Field Learning
+### Stage 7 — Close
 
-For every reusable candidate, submit an evidence-backed pattern record:
+Review closeout against the accepted baseline and recorded handoff. Explain any open blockers; only the authorized review can close the engagement.
+
+### Codify Field Learning (cross-cutting)
+
+Identify eligible field learning throughout delivery and document its disposition at closeout. For a reusable candidate, recommend an evidence-backed pattern proposal through the governed review path; do not submit or publish it automatically. Include:
 
 - problem and customer context, with sensitive details minimized;
 - what was built/tested and the result, including evidence and limitations;

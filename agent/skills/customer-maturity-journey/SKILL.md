@@ -98,7 +98,7 @@ Surface stale data, conflicts, and missing sources prominently. Ask for or propo
 
 ### 3. Establish the current profile
 
-For each relevant dimension, state:
+A formal `customer-maturity-v1` assessment records all six dimensions. Mark unsupported dimensions **Unknown** and describe the evidence gap and next step. For each dimension included in the response, state:
 
 1. observed state;
 2. evidence and freshness;
@@ -106,7 +106,7 @@ For each relevant dimension, state:
 4. customer consequence; and
 5. the constraint that most limits the desired outcome.
 
-Then name the current journey stage as a concise narrative, for example: “The customer is activating a first production workflow: outcome ownership and delivery collaboration are established for this scope, while operational trust and adoption evidence remain incomplete.”
+The journey-stage summary is optional, evidenced, and human-reviewed. Report it only when supported by the reviewed assessment; otherwise note that the overall stage is not assessed. For example: “The customer is activating a first production workflow: outcome ownership and delivery collaboration are established for this scope, while operational trust and adoption evidence remain incomplete.”
 
 ### 4. Select the next maturity milestone
 

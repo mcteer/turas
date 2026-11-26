@@ -128,6 +128,7 @@ if (process.argv.includes("--webkit-child")) {
   process.exit(0);
 }
 const profileProductsOnly=process.argv.includes("--profile-products");
+const uploadDomainOnly=process.argv.includes("--native-upload-domain");
 const acceptanceOnly=["--execution-check","--support-native","--native-specialists","--specialist-domain","--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].some(flag=>process.argv.includes(flag));
 mkdirSync("local-artifacts",{recursive:true,mode:0o700});
 const name = `turas-parity-owned-${process.pid}`;
@@ -194,7 +195,7 @@ try {
     DATABASE_URL:"postgresql://unused:unused@127.0.0.1:1/application",
     DATABASE_URL_UNPOOLED:"postgresql://unused:unused@127.0.0.1:1/application",
     TURAS_TEST_DATABASE_URL:url,TURAS_TEST_ENVIRONMENT_ID:environment.TURAS_ENVIRONMENT_ID};
-  if(!profileProductsOnly&&!acceptanceOnly&&!process.argv.includes("--native-only")&&!process.argv.includes("--native-files-only"))run(["node_modules/vitest/vitest.mjs","run","tests/integration/specialist-discussions.test.ts","tests/contracts/specialist-discussions.test.ts","tests/contracts/specialist-routes.test.ts","tests/integration/named-customer-chat.test.ts",
+  if(!profileProductsOnly&&!uploadDomainOnly&&!acceptanceOnly&&!process.argv.includes("--native-only")&&!process.argv.includes("--native-files-only"))run(["node_modules/vitest/vitest.mjs","run","tests/integration/specialist-discussions.test.ts","tests/contracts/specialist-discussions.test.ts","tests/contracts/specialist-routes.test.ts","tests/integration/named-customer-chat.test.ts",
     "tests/integration/general-chat.test.ts","tests/integration/ordinary-attachments.test.ts","tests/integration/ordinary-native-files.test.ts","tests/integration/native-input-replay.test.ts","tests/integration/legacy-research-transactions.test.ts",
     "tests/integration/parity-evaluation-budget.test.ts","tests/integration/specialist-profile-persistence.test.ts","tests/integration/legacy-knowledge-mechanics.test.ts","tests/integration/live-customer-chat.test.ts","tests/integration/ordinary-steering.test.ts","tests/integration/legacy-document-formats.test.ts","tests/integration/research-maintenance.test.ts","tests/integration/retrieval-retention.test.ts","tests/integration/retrieval-service.test.ts","tests/integration/profile-context.test.ts","tests/integration/public-customer-inventory.test.ts",
     "tests/integration/legacy-profile-products.test.ts","tests/integration/legacy-source-library.test.ts",
@@ -227,6 +228,7 @@ try {
     run(["node_modules/vitest/vitest.mjs","run","tests/integration/specialist-profile-persistence.test.ts",
       "--testNamePattern=retains new public research"],integrationEnvironment);
   }
+  if(uploadDomainOnly)run(["node_modules/vitest/vitest.mjs","run","tests/integration/legacy-native-uploads.test.ts"],integrationEnvironment);
   // Route contracts read DATABASE_URL directly; they do not use the integration
   // fixture's explicit test-database selector.
   const contractUrl=new URL(url);contractUrl.searchParams.set('options','-c role=turas_runtime');
@@ -269,9 +271,9 @@ try {
     if(postgres.deadlocks||postgres.statementTimeouts)throw Error('Owned native operations encountered database lock/statement failures');
   }
   mkdirSync("local-artifacts/018/ci-disposable",{recursive:true,mode:0o700});
-  const gateName=process.argv.find(flag=>["--profile-products","--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag))?.slice(2)??"domains";
+  const gateName=process.argv.find(flag=>["--profile-products","--native-upload-domain","--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag))?.slice(2)??"domains";
   writeFileSync(join("local-artifacts/018/ci-disposable",gateName+"-private.log"),output,{mode:0o600});
-  console.log(JSON.stringify({gate:profileProductsOnly?"profile-products":acceptanceOnly?process.argv.find(flag=>["--native-specialists","--specialist-domain","--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag)):"domains",ownedDisposableDatabase:true,migrationsAndRuntimeGrants:true,passed:true,paidProviderCalls:0}));
+  console.log(JSON.stringify({gate:uploadDomainOnly?"native-upload-domain":profileProductsOnly?"profile-products":acceptanceOnly?process.argv.find(flag=>["--native-specialists","--specialist-domain","--chat-interaction","--webkit","--native-operations","--native-staged-4","--native-staged-10","--native-task-state","--native-questions"].includes(flag)):"domains",ownedDisposableDatabase:true,migrationsAndRuntimeGrants:true,passed:true,paidProviderCalls:0}));
 } catch(error) {
   mkdirSync("local-artifacts/018/ci-disposable",{recursive:true,mode:0o700});
   writeFileSync(join("local-artifacts/018/ci-disposable","failed-"+randomUUID()+"-private.log"),output,{mode:0o600});

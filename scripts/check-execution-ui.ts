@@ -4,12 +4,13 @@ import { spawn, spawnSync } from "node:child_process";
 import { supportUiGlobalDiagnostic, supportUiCaseDiagnostic } from "./support-ui-diagnostic";
 import { mkdir, mkdtemp, writeFile, chmod, readdir, lstat } from "node:fs/promises";
 import { existsSync, readdirSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { installExecutionNativeFixture } from "../tests/fixtures/execution/native";
 import { withExecutionEvalEnvironment } from "./execution-eval-environment";
 import { assertDeterministicTestMode } from "../tests/fixtures/runtime";
 import { executionUiDiscovery, verifyExecutionUiReport } from "./execution-ui-report";
 import { executionSourceDigest } from "./execution-source-digest";
+import { ownedUiFailureCategories } from "./owned-ui-failure";
 
 // Keep the event loop draining the owned app's output while Playwright runs.
 // A synchronous child blocks the app supervisor's pipe consumers.
@@ -40,6 +41,7 @@ const selectedProject = focused ? args[1] : args[0];
 const specs = (focused ? [focusMode === "--us1" ? "execution-records" : focusMode === "--us2" ? "execution-time" : focusMode === "--us3" ? "execution-changes" : focusMode === "--us5" ? "execution-advisory" : "execution-handoff"] : allSpecs).map(name => `tests/ui/${name}.spec.ts`);
 if (specs.some(file => !existsSync(file))) throw new Error("Missing required execution UI suite; full gate cannot run");
 let activeStage = "configuration";
+let activeCase: { project: string; file: string; index: number; line: number } | undefined;
 async function main() {
 assertDeterministicTestMode();
 await mkdir("local-artifacts/008", { recursive: true, mode: 0o700 });
@@ -65,20 +67,28 @@ for (const project of selectedProject ? [selectedProject] : projects) {
   const cases = executionUiDiscovery(JSON.parse(discovered.stdout), specs, project);
   await unchanged();
   console.log(JSON.stringify({ gate: "execution-ui-discovery", project, cases: cases.length, executed: 0 }));
-  activeStage = `owned-${project}`;
   for (const [caseIndex, testCase] of cases.entries()) {
+  activeCase = { project, file: basename(testCase.file), index: caseIndex, line: testCase.line };
+  activeStage = "owned-clone";
+  const priorNativeReady = process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY;
+  try {
   await withExecutionEvalEnvironment(async environment => {
+  activeStage = "runtime-preparation";
   await environment.prepareRuntime();
   const nativeCase = testCase.file.endsWith("execution-advisory.spec.ts");
-  if (nativeCase) await installExecutionNativeFixture(environment);
-  const priorNativeReady = process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY;
+  if (nativeCase) {
+    activeStage = "native-fixture";
+    await installExecutionNativeFixture(environment);
+  }
   process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY = nativeCase ? "1" : "0";
   const ownerUrl = process.env.DATABASE_URL!;
   const runtimeUrl = new URL(ownerUrl);
   runtimeUrl.searchParams.set("options", "-c role=turas_runtime");
   process.env.DATABASE_URL = runtimeUrl.toString();
   try {
+    activeStage = "app-start";
     await environment.start();
+    activeStage = "route-preparation";
     // Compile the unauthenticated command route before timed browser saves.
     // No identity, CSRF token or customer data is supplied; dispatch must deny.
     const response=await fetch(`${environment.origin}/api/execution/engagements/00000000-0000-4000-8000-000000000000/commands`,{
@@ -88,7 +98,7 @@ for (const project of selectedProject ? [selectedProject] : projects) {
     if(![401,403].includes(response.status))throw Error("Owned execution route did not deny unauthenticated preparation");
   }
   finally { process.env.DATABASE_URL = ownerUrl; }
-  try {
+    activeStage = "browser-execution";
     await unchanged();
     const caseArgs = ["node_modules/@playwright/test/cli.js", "test", `${testCase.file}:${testCase.line}`, `--project=${project}`,
       "--reporter=json", `--output=${captures}/case-${caseIndex}`, "--forbid-only", "--retries=0", "--repeat-each=1"];
@@ -97,6 +107,7 @@ for (const project of selectedProject ? [selectedProject] : projects) {
       AI_GATEWAY_API_KEY: "", TURAS_ALLOW_LIVE_MODEL_TESTS: "0",
       TURAS_EXECUTION_FIXTURE_READY: "1", TURAS_EXECUTION_NATIVE_FIXTURE_READY: !focused || focusMode === "--us5" ? "1" : "0", CI: process.env.CI ?? "",
     });
+    activeStage = "browser-report";
     await writeFile(join(directory, `${project}-case-${caseIndex}-runtime.log`),environment.privateLogTail(),{mode:0o600,flag:"wx"});
     await writeFile(join(directory, `${project}-case-${caseIndex}.json`), result.stdout ?? "", { mode: 0o600, flag: "wx" });
     await writeFile(join(directory, `${project}-case-${caseIndex}-stderr.log`), result.stderr ?? "", { mode: 0o600, flag: "wx" });
@@ -120,16 +131,21 @@ for (const project of selectedProject ? [selectedProject] : projects) {
     }
     await unchanged();
     for (const key of ["expected", "unexpected", "skipped", "flaky"] as const) total[key] += counts[key];
-  } finally { await environment.stop(); if(priorNativeReady===undefined) delete process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY; else process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY=priorNativeReady; }
-});
+    // The owned environment retires the runtime and verifies cleanup once.
+    activeStage = "owned-cleanup";
+  });
+  } finally {
+    if (priorNativeReady === undefined) delete process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY;
+    else process.env.TURAS_EXECUTION_NATIVE_FIXTURE_READY = priorNativeReady;
+  }
   }
 }
+activeStage = "evidence";
+activeCase = undefined;
 await writeFile(join(directory, "completed.json"), JSON.stringify({ sourceDigest, counts: total, status: "passed" }), { mode: 0o600, flag: "wx" });
 console.log(JSON.stringify({ gate: focused ? `focused-${focusMode!.slice(2)}` : "complete-execution", projects: selectedProject ? 1 : 4, suites: specs.length, counts: total }));
 }
 main().catch(error => {
-  const errorCode = error && typeof error === "object" && "code" in error &&
-    ["ENOTFOUND", "EAI_AGAIN", "EPERM", "ECONNREFUSED", "ETIMEDOUT"].includes(String(error.code)) ? String(error.code) : "gate_failed";
-  console.error(JSON.stringify({ gate: "execution-ui", stage: activeStage, errorCode }));
+  console.error(JSON.stringify({ gate: "execution-ui", stage: activeStage, ...activeCase, categories: ownedUiFailureCategories(error) }));
   console.error("008 UI gate incomplete; inspect the private discovery and execution reports."); process.exitCode = 1;
 });

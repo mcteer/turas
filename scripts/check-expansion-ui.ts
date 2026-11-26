@@ -5,12 +5,16 @@ import { installExpansionNativeFixture } from "../tests/fixtures/expansion/nativ
 import { spawnSync } from "node:child_process";
 import {captureUiChild} from './capture-ui-child';
 import { mkdir, mkdtemp, writeFile, readdir, lstat, chmod, readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { withExpansionEvalEnvironment } from "./expansion-eval-environment";
 import { createExpansionActors } from "../tests/fixtures/expansion/seed";
 import { executionUiDiscovery, verifyExecutionUiReport } from "./execution-ui-report";
 import { featureSourceDigest } from "./execution-source-digest";
 import { supportUiGlobalDiagnostic as expansionUiGlobalDiagnostic, supportUiCaseDiagnostic as expansionUiCaseDiagnostic } from "./support-ui-diagnostic";
+import { ownedUiFailureCategories } from "./owned-ui-failure";
+
+let activeStage = "configuration";
+let activeCase: { project: string; file: string; index: number; line: number } | undefined;
 
 async function privateCaptures(path: string): Promise<void> {
   const stat = await lstat(path);
@@ -52,6 +56,8 @@ async function main() {
   const directory = await mkdtemp(resolve("local-artifacts/011/ui-"));
   let passed = 0;
   for (const project of projects) {
+    activeStage = `discovery-${project}`;
+    activeCase = undefined;
     const args = ["node_modules/@playwright/test/cli.js", "test", ...specs, `--project=${project}`, "--reporter=json", "--forbid-only", "--retries=0", "--repeat-each=1"];
     const discoveryPath=resolve(directory, `${project}-discovery.json`);
     const discovery = spawnSync(process.execPath, [...args, "--list"], { env: {...process.env,PLAYWRIGHT_JSON_OUTPUT_FILE:discoveryPath}, encoding: "utf8", timeout: 60000, maxBuffer: 10000000 });
@@ -66,15 +72,24 @@ async function main() {
     if(focused&&cases.filter(isRecovery).length!==(partner?1:2))throw new Error("Expansion recovery journeys are missing");
     for (const [index, current] of cases.filter(item => (!advice || item.file.endsWith("expansion-advice.spec.ts")) && (!focused || isRecovery(item)) && (!authoring || item.file.endsWith("expansion-authoring.spec.ts")) && (!decisions || item.file.endsWith("expansion-decisions.spec.ts")) && (!queue || item.file.endsWith("expansion-review-queue.spec.ts"))).entries()) {
      const fixtureDeadline=Date.now()+360000;
-     await withExpansionEvalEnvironment(async environment => {
-      await createExpansionActors(environment.appRoot);
-      const nativeCase = current.file.endsWith("expansion-advice.spec.ts");
-      const previousNative = process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY;
-      if (nativeCase) {await installExpansionNativeFixture(environment);process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY="1";}
-      try {
+     activeCase = { project, file: basename(current.file), index, line: current.line };
+     activeStage = "owned-clone";
+     const previousNative = process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY;
+     try {
+      await withExpansionEvalEnvironment(async environment => {
+        activeStage = "fixture-actors";
+        await createExpansionActors(environment.appRoot);
+        if (current.file.endsWith("expansion-advice.spec.ts")) {
+          activeStage = "native-fixture";
+          await installExpansionNativeFixture(environment);
+          process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY = "1";
+        }
+        activeStage = "app-start";
         await environment.start();
+        activeStage = "route-preparation";
         const preparation=await prepareOwnedExpansionUi(environment.origin,fixtureDeadline);
         await writeFile(resolve(directory, `${project}-${index}-preparation.json`),JSON.stringify(preparation),{mode:0o600});
+        activeStage = "browser-execution";
         const output = resolve(directory, `${project}-${index}`),reportPath=resolve(directory,`${project}-${index}.json`);
         const run = await captureUiChild(["node_modules/@playwright/test/cli.js", "test", `${current.file}:${current.line}`, `--project=${project}`,
           "--reporter=json", "--forbid-only", "--retries=0", "--repeat-each=1", "--trace=retain-on-failure", `--output=${output}`], {
@@ -84,6 +99,7 @@ async function main() {
         await writeFile(resolve(directory, `${project}-${index}.stdout.log`), run.stdout, { mode: 0o600 });
         await writeFile(resolve(directory, `${project}-${index}.log`), run.stderr + environment.privateLogTail(), { mode: 0o600 });
         if(run.error)throw new Error("Expansion UI runner did not complete within bounds");
+        activeStage = "browser-report";
         await privateCaptures(output);
         const report = JSON.parse(await readReporterJson(reportPath,Buffer.byteLength(run.stdout)+Buffer.byteLength(run.stderr))), diagnostic = expansionUiGlobalDiagnostic(report);
         if (diagnostic.globalErrors) console.error(JSON.stringify({ gate: "expansion-ui-runner", phase: "execution", project, file: current.file, ...diagnostic }));
@@ -93,13 +109,16 @@ async function main() {
         const counts = verifyExecutionUiReport(report, [current]);
         if (run.error || run.status !== 0 || counts.unexpected || counts.skipped || counts.flaky || counts.expected !== 1) throw new Error("Expansion UI case failed");
         passed++;ciReports.push(report);
-      } finally {
-        await environment.stop();
-        if (previousNative === undefined) delete process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY;
-        else process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY = previousNative;
-      }
-    }, { empty: true, deadlineAt: fixtureDeadline });
+        // The owned environment retires the runtime and verifies cleanup once.
+        activeStage = "owned-cleanup";
+      }, { empty: true, deadlineAt: fixtureDeadline });
+     } finally {
+      if (previousNative === undefined) delete process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY;
+      else process.env.TURAS_EXPANSION_NATIVE_FIXTURE_READY = previousNative;
+     }
     }
+    activeCase = undefined;
+    activeStage = `evidence-${project}`;
     if(process.env.GITHUB_ACTIONS==='true'&&!advice&&!smoke&&!authoring&&!decisions&&!queue&&!focused){
       const sourceCommit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',timeout:5000}).trim();if(sourceCommit!==process.env.GITHUB_SHA)throw Error('Exact actual CI source required');
       const binding=expansionCiBindingSchema.parse({sourceCommit,sourceDigest,ciRunId:process.env.GITHUB_RUN_ID,ciRunAttempt:process.env.GITHUB_RUN_ATTEMPT});
@@ -109,4 +128,8 @@ async function main() {
   if (await featureSourceDigest("011") !== sourceDigest) throw new Error("Expansion UI source changed");
   console.log(JSON.stringify({ gate: advice ? "expansion-ui-advice" : queue ? "expansion-ui-queue" : partner ? "expansion-ui-partner" : recovery ? "expansion-ui-recovery" : decisions ? "expansion-ui-decisions" : authoring ? "expansion-ui-authoring" : smoke ? "expansion-ui-smoke" : "expansion-ui-acceptance", sourceDigest, projects: projects.length, passed, fullAcceptance: !selectedProject && !advice && !smoke && !authoring && !decisions && !queue && !focused }));
 }
-main().catch(error => { console.error(error instanceof Error ? error.message : "Expansion UI check failed"); process.exitCode = 1; });
+main().catch(error => {
+  console.error(JSON.stringify({ gate: "expansion-ui", stage: activeStage, ...activeCase, categories: ownedUiFailureCategories(error) }));
+  console.error("011 UI gate incomplete; inspect the private discovery and execution reports.");
+  process.exitCode = 1;
+});

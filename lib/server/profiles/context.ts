@@ -6,6 +6,8 @@ import { withTransaction } from "../db/client";
 import type { RecordKind } from "../../contracts/profile-payloads";
 import { searchEvidence } from "../retrieval/search";
 import { contextPage } from "../../profiles/context-pages";
+import { customerAdoptionEntries, customerAdoptionVersion } from "./adoption";
+import type { readPublicInventoryReference } from "./public-inventory-reference";
 
 /** Shared governed path for new customer factual-context retrieval. */
 export async function readGovernedEvidenceContext(actor: ProfileActor, customerId: string,
@@ -21,7 +23,8 @@ export async function readGovernedEvidenceContext(actor: ProfileActor, customerI
 
 type ProfileProjection = {
   customer: { id: string; displayName: string; synthetic: boolean };
-  workloads: { id: string }[];
+  workloads: { id: string; displayName: string }[];
+  publicInventory: Awaited<ReturnType<typeof readPublicInventoryReference>>;
   acceptedFacts: Record<string, unknown>[];
   attributedResearch: Record<string, unknown>[];
   contextVersion: string;
@@ -30,7 +33,7 @@ type ProfileProjection = {
 export async function readEligibleContext(actor: ProfileActor, customerId: string,
   options: { limit?: number; query?: string; workloadId?: string; kind?: RecordKind;
     page?: number;audience?:"internal"|"delivery";customerWideOnly?:boolean;shareActorRows?:boolean;
-    staffingFence?: boolean; researchFence?:'authority'; journeyOnly?:boolean; offset?:number; citationIds?:readonly string[];includeProductIndex?:boolean } = {},
+    staffingFence?: boolean; researchFence?:'authority'; journeyOnly?:boolean; offset?:number; citationIds?:readonly string[];includeProductIndex?:boolean; adoptionOnly?:boolean } = {},
   existingClient?: PoolClient): Promise<unknown> {
   const limit = options.limit ?? 20;
   const page = options.page ?? 1;
@@ -46,6 +49,14 @@ export async function readEligibleContext(actor: ProfileActor, customerId: strin
       throw hiddenRecord();
     }
     const asOf = new Date();
+    if (options.adoptionOnly) {
+      const packed = contextPage(await customerAdoptionEntries(client, actor.workspaceId, customerId, profile), page, limit);
+      return { contractVersion: customerAdoptionVersion, customer: profile.customer,
+        contextVersion: profile.contextVersion, asOf: asOf.toISOString(), page, entries: packed.entries,
+        nextPage: packed.hasNextPage && page < 10 ? page + 1 : null,
+        coverage: 'partial',
+        notice: 'Only reviewed product records and curated public workload references. Missing or unlisted use is unknown, not non-use. Public signals describe dated scope, not current deployment. Null workload means unspecified.' };
+    }
     // Keep the compact product inventory complete independently of quotation
     // paging, using this same authorized profile generation and source checks.
     const productIndex:{products:Array<{name:string;sourceRevisionId:string;url:string|null;publishedAt:string|null;retrievedAt:string}>;complete:boolean}={products:[],complete:true};

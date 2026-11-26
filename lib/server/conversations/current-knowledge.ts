@@ -1,3 +1,4 @@
+import {adoptionReceiptsForAttempt,recheckAdoptionReceipts} from './adoption-context';
 import {readProfile} from '../profiles/read';
 import {createHash,randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
@@ -14,7 +15,7 @@ type Principal=Parameters<typeof readCustomerAccountEvidence>[1];
  * Every historical customer grant/audience is still checked, including retired
  * dependencies. Governed workflows keep their original strict fences. */
 export async function refreshOrdinaryKnowledge(db:PoolClient,actor:CurrentSession,
- principal:Principal,conversationId:string,attemptId:string){
+ principal:Principal,conversationId:string,attemptId:string,adoptionReceipts:ReturnType<typeof adoptionReceiptsForAttempt>=[]){
  if((await conversationFeature(db,conversationId)).kind!=='normal')throw hiddenRecord();
  await assertCustomerQuestionReads(db,actor,conversationId,attemptId,false);
  const customers=(await db.query<{customer_id:string}>(`SELECT customer_id FROM (
@@ -22,6 +23,13 @@ export async function refreshOrdinaryKnowledge(db:PoolClient,actor:CurrentSessio
   UNION SELECT r.customer_id FROM session_evidence_dependencies d JOIN retrieval_receipts r ON r.id=d.receipt_id WHERE d.conversation_id=$1
   UNION SELECT customer_id FROM conversations WHERE id=$1
  ) accounts WHERE customer_id IS NOT NULL ORDER BY customer_id`,[conversationId])).rows;
+ const receiptsByAccount=new Map<string,typeof adoptionReceipts>();
+ for(const receipt of adoptionReceipts){
+  const accountReceipts=receiptsByAccount.get(receipt.customer.id)??[];
+  accountReceipts.push(receipt);receiptsByAccount.set(receipt.customer.id,accountReceipts);
+ }
+ if([...receiptsByAccount.keys()].some(id=>!customers.some(row=>row.customer_id===id)))throw hiddenRecord();
+ const compact=receiptsByAccount.size>0;
  const contexts:unknown[]=[];const retiredNamed:string[]=[];let bytes=0;
  for(const {customer_id} of customers){
   // Always register a current authoritative brief, even if no facts remain.
@@ -29,13 +37,17 @@ export async function refreshOrdinaryKnowledge(db:PoolClient,actor:CurrentSessio
    WHERE a.conversation_id=$1 AND s.customer_id=$2 ORDER BY s.checked_at DESC,a.created_at DESC LIMIT 1`,[conversationId,customer_id])).rows[0]?.citation_ids??[];
   const profile=await readProfile(actor,customer_id,db,undefined,undefined,false,true) as {acceptedFacts:Array<{id:string;supportStatus:string}>;attributedResearch:Array<{sourceRevisionId:string}>};
   const eligible=new Set([...profile.acceptedFacts.filter(f=>['settled','restricted_source'].includes(f.supportStatus)).map(f=>`accepted_manual:${f.id}`),...profile.attributedResearch.map(s=>`attributed_research:${s.sourceRevisionId}`)]);
-  const context=await readCustomerAccountEvidence(db,principal,customer_id);
+  const context=await readCustomerAccountEvidence(db,principal,customer_id,compact?{adoptionOnly:true}:{});
+  const accountReceipts=receiptsByAccount.get(customer_id);
+  // Account reads meet the same sorted lock order as the ordinary refresh.
+  if(accountReceipts)await recheckAdoptionReceipts(db,principal,accountReceipts,context.entries);
   const citations=[...new Set([...previous.filter(id=>eligible.has(id)),...context.entries.map(entry=>`${entry.type}:${entry.citationId}`),...(context.publicInventory?.evidence.map(story=>'attributed_research:'+story.sourceRevisionId)??[])])];
   retiredNamed.push(...previous.filter(id=>!eligible.has(id)));
   if(citations.length>100)throw new HttpFailure(422,'scope_too_large','Narrow the current customer evidence context');
   await db.query(`UPDATE general_customer_read_scopes SET citation_ids=$3,checked_at=clock_timestamp()
    WHERE attempt_id=$1 AND customer_id=$2`,[attemptId,customer_id,citations]);
-  const body={...context,notice:'Current authorized customer knowledge. Earlier conversation evidence is dated; omitted entries require the customer evidence tools, not an inference of absence.'};
+  if(compact&&!accountReceipts)continue;
+  const body=compact?context:{...context,notice:'Current authorized customer knowledge. Earlier conversation evidence is dated; omitted entries require the customer evidence tools, not an inference of absence.'};
   const size=Buffer.byteLength(JSON.stringify(body));
   if(bytes+size<=48*1024){contexts.push(body);bytes+=size;}
   else contexts.push({customerId:customer_id,contextVersion:context.contextVersion,notice:'Additional current knowledge is available through get_customer_evidence; this packet is incomplete.'});
