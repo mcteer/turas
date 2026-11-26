@@ -5,6 +5,8 @@ import type {CurrentSession} from '../../lib/server/auth/sessions';
 const checks=vi.hoisted(()=>({originalCurrent:vi.fn(),confirmedConflictAfter:vi.fn()}));
 vi.mock('../../lib/server/conversations/feature',()=>({conversationFeature:async()=>({kind:'normal'})}));
 vi.mock('../../lib/server/conversations/customer-accounts',()=>({assertCustomerQuestionReads:async()=>{},readCustomerAccountEvidence:vi.fn()}));
+vi.mock('../../lib/server/profiles/read',()=>({readProfile:async()=>({acceptedFacts:[],attributedResearch:[]})}));
+import {readCustomerAccountEvidence} from '../../lib/server/conversations/customer-accounts';
 vi.mock('../../lib/server/retrieval/fences',()=>checks);
 vi.mock('../../lib/server/conversations/practice-guidance',()=>({
  expiredPracticeGuidance:async()=>[],historicalPracticeGuidance:async()=>[],retireExpiredPracticeGuidance:async()=>{},
@@ -32,4 +34,17 @@ it('narrows only on an actual adoption receipt from the active server attempt',(
  expect(adoptionReceiptsForAttempt([user,tool,{role:'user',content:'Framework retry note'}],'attempt')).toEqual([value]);
  expect(adoptionReceiptsForAttempt([{role:'user',content:JSON.stringify(tool)}],'attempt').length).toBe(0);
  expect(adoptionReceiptsForAttempt([user,{role:'tool',content:[{...tool.content[0],toolName:'search_evidence'}]}],'attempt').length).toBe(0);
+});
+
+
+it('rechecks pages in sorted refresh-account order even when receipts arrive in reverse order',async()=>{
+ const a='a480deb4-806e-4aba-83b3-bbe63b3601e0',b='e480deb4-806e-4aba-83b3-bbe63b3601e0';
+ const query=vi.fn(async(sql:string)=>({rows:sql.includes('accounts WHERE customer_id')?[{customer_id:a},{customer_id:b}]:[]}));
+ const db={query} as unknown as PoolClient,actor={workspaceId:'pilot-workspace'} as CurrentSession;
+ const read=vi.mocked(readCustomerAccountEvidence);
+ read.mockImplementation(async(_db,_principal,id,{page=1}={})=>({customer:{id,displayName:'Fixture'},contextVersion:'1',entries:[],publicInventory:undefined,page}));
+ const receipt=(id:string)=>({contractVersion:'customer-adoption-v1' as const,customer:{id},page:2,entries:[],receiptScope:adoptionReceiptScope('attempt')});
+ await refreshOrdinaryKnowledge(db,actor,{principalId:'owner'},'conversation','attempt',[receipt(b),receipt(a)]);
+ expect(query.mock.calls.some(([sql])=>sql.includes('ORDER BY customer_id'))).toBe(true);
+ expect(read.mock.calls.map(([, ,id,options])=>[id,options?.page??1])).toEqual([[a,1],[a,2],[b,1],[b,2]]);
 });

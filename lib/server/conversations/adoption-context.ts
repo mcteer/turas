@@ -38,15 +38,14 @@ export function adoptionReceiptsForAttempt(messages: readonly unknown[], attempt
 
 export async function recheckAdoptionReceipts(db: PoolClient,
   principal: Parameters<typeof readCustomerAccountEvidence>[1],
-  receipts: ReturnType<typeof adoptionReceiptsForAttempt>) {
-  const pages = new Map<string, unknown>();
+  receipts: ReturnType<typeof adoptionReceiptsForAttempt>, firstPageEntries: unknown) {
+  const pages = new Map<number, unknown>([[1, firstPageEntries]]);
   for (const { customer, page, entries } of receipts) {
-    const key = `${customer.id}:${page}`;
-    if (!pages.has(key)) {
+    if (!pages.has(page)) {
       const current = await readCustomerAccountEvidence(db, principal, customer.id, { adoptionOnly: true, page });
-      pages.set(key, current.entries);
+      pages.set(page, current.entries);
     }
-    if (!isDeepStrictEqual(pages.get(key), entries)) {
+    if (!isDeepStrictEqual(pages.get(page), entries)) {
       throw new HttpFailure(409, 'context_changed', 'Adoption evidence changed; ask again for current evidence');
     }
   }

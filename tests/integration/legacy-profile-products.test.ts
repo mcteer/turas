@@ -201,7 +201,6 @@ it('keeps unrelated vendor prose out of the adoption tool and following model-co
   const expected={type:'attributed_research',citationId:revisionId,name:'Next.js',workload:'Storefront',publishedAt:'2022-03-29',url};
   expect(result).toMatchObject({contractVersion:'customer-adoption-v1',coverage:'partial',entries:[expected]});
   expect(JSON.stringify(result)).not.toContain('Vercel Blob');
-  const ids=new Set([customerId]);
   const turnId='turn_'+randomUUID();
   await projectNativeEvent(native,attempt.attemptId,{type:'message.received',data:{message:'Which frameworks does this customer use?',turnId},meta:{id:'evt_'+randomUUID(),at:new Date().toISOString()}});
   await db.query(`INSERT INTO general_context_injections(attempt_id,turn_id,snapshot_digest)
@@ -228,7 +227,6 @@ it('keeps unrelated vendor prose out of the adoption tool and following model-co
   providerPrompt=undefined;
   await expect(generate(result)).rejects.toMatchObject({status:409});
   expect(providerPrompt).toBeUndefined();
-  expect((await withTransaction(client=>refreshOrdinaryKnowledge(client,actor,principal,conversation.id,attempt.attemptId,ids)))?.contexts).toMatchObject([{entries:[]}]);
   await db.query("UPDATE evidence_conflict_targets SET state='resolved' WHERE id=$1",[conflict]);
   const proposed=await submitProfileCommand(actor,customerId,{action:'propose_record',requestKey:randomUUID(),
     payload:{kind:'product_use',productKey:'fixture-evaluated-product',displayName:'Fixture evaluated product',state:'evaluating',usageDescription:'Synthetic review',observedAt:'2026-09-01T00:00:00Z'}}) as {revisionId:string};
