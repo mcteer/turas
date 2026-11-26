@@ -1,6 +1,11 @@
 import {readFileSync} from 'node:fs';
 import {expect,it} from 'vitest';
 const content=readFileSync('lib/conversations/ordinary-instructions.md','utf8');
+it('uses the returned journey cursor as the next bounded offset',()=>{
+ const posture=readFileSync('agent/skills/customer-posture/SKILL.md','utf8');
+ expect(posture).toMatch(/pass the returned `nextOffset` as `offset`/);
+ expect(posture).not.toContain('nextPage');
+});
 it('routes ordinary approved-knowledge and adoption reads through real tools without authorizing dedicated workflow writes',()=>{
  for(const tool of ['search_solution_patterns','get_solution_knowledge','review_solution_pattern','review_solution_application','get_adoption_patterns','get_learning_contribution','review_learning_contribution']){
   expect(content).toContain('`'+tool+'`');

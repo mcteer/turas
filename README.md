@@ -248,7 +248,10 @@ Disposable tests must use their own marked database and private stores. Never
 point them at Preview or Production. Live model evaluations require explicit
 opt-in, finite budgets and private captures; mocked or deterministic results are
 not actual-model acceptance. Follow the feature's quickstart before running an
-operational, recovery or paid check.
+operational, recovery or paid check. The [prompt tuning guide](docs/prompt-tuning.md)
+explains the local, synthetic-only DSPy/GEPA comparison and its promotion gates. Ordinary
+customer-adoption summaries use a scoped Eve tool with dated, attributed product
+records; original passages remain available through governed evidence search.
 
 Disposable evaluation harnesses retain Eve sandbox ownership before shutdown and
 delete only their own session containers at final teardown. Intermediate stops

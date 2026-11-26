@@ -81,13 +81,13 @@ type Context = { customer: { id: string; displayName: string }; contextVersion: 
   entries: Array<{ type: string; citationId: string }>; [key: string]: unknown };
 
 export async function readCustomerAccountEvidence(db: PoolClient, principal: Principal,
-  customerId: string, options: { query?: string; page?: number;journeyOnly?:boolean;offset?:number;citationIds?:readonly string[];includeProductIndex?:boolean } = {}) {
+  customerId: string, options: { query?: string; page?: number;journeyOnly?:boolean;offset?:number;citationIds?:readonly string[];includeProductIndex?:boolean;adoptionOnly?:boolean } = {}) {
   const scope = await customerQuestionActor(db, principal);
   if (!scope.general && scope.customerId !== customerId) throw hiddenRecord();
   await lockProfileActor(db, scope.actor, customerId, undefined, true);
   const context = await readEligibleContext(scope.actor, customerId,
     { ...options, limit: 20, shareActorRows: true }, db) as Context;
-  const publicInventory=await readPublicInventoryReference(db,scope.actor,customerId);
+  const publicInventory=options.adoptionOnly ? undefined : await readPublicInventoryReference(db,scope.actor,customerId);
   if (scope.general) {
     await db.query(`INSERT INTO general_customer_read_scopes
       (attempt_id,customer_id,audience,generation,citation_ids)

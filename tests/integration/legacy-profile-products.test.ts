@@ -1,3 +1,15 @@
+import {projectNativeEvent} from '../../lib/server/conversations/projection';
+import {wrapOrdinaryChatModel} from '../../lib/server/conversations/model-budget';
+import {submitProfileCommand} from '../../lib/server/profiles/service';
+import {authoredTool as adoptionTool} from '../../agent/tools/get_customer_adoption';
+import {isolatedChatActor} from '../fixtures/isolated-chat-actor';
+import {settleSyntheticConversationAttempts} from '../fixtures/ordinary-attempt-cleanup';
+import {importPublicCustomerInventory} from '../../lib/server/profiles/public-inventory';
+import {createOwnedConversation} from '../../lib/server/conversations/repository';
+import {claimBinding,bindNativeSession} from '../../lib/server/conversations/binding';
+import {prepareAttempt,claimDispatch} from '../../lib/server/conversations/dispatch';
+import {refreshOrdinaryKnowledge} from '../../lib/server/conversations/current-knowledge';
+import {adoptionAccountsInTurn} from '../../lib/server/conversations/adoption-context';
 import {randomUUID,createHash} from 'node:crypto';
 import {Client} from 'pg';
 import {beforeAll,expect,it,vi} from 'vitest';
@@ -155,4 +167,76 @@ it('batch recall rejects an entire requested customer set when a partner grant i
   await db.query("UPDATE customer_grants SET state='revoked' WHERE customer_id=$1 AND membership_id=$2",[customerId,partner.membershipId]);
   await expect(withTransaction(client=>recallPublicLearningForAccounts(actor,[customerId],new AbortController().signal,client))).rejects.toMatchObject({status:404});
  }finally{await db.end();}
+});
+
+
+it('keeps unrelated vendor prose out of the adoption tool and following model-context refresh',async()=>{
+ const db=new Client({connectionString:isolated});await db.connect();const owned:string[]=[];
+ try{
+  const {actor,customerId,identity}=await legacyResearchFixture(db);
+  const admin=await isolatedChatActor(db,'internal','admin',actor.workspaceId);
+  const passage='The synthetic customer uses Next.js for Storefront. A different company uses Vercel Blob.';
+  const {url,revisionId}=await legacyResearchSource(db,identity,customerId,{quote:passage,url:`https://vercel.com/customers/fixture-${randomUUID()}`});
+  expect(await importPublicCustomerInventory(admin,{version:'adoption-synthetic-v1',reviewedAt:'2026-10-01',directoryUrl:'https://vercel.com/customers',accounts:[{
+   id:'adoption-fixture',name:'Synthetic parity account',aliases:[],directoryListed:true,formalMaturity:'unknown',internalEngagement:'not_available',
+   evidence:[{url,title:'Synthetic storefront story',publishedAt:'2022-03-29',scope:'Storefront',signal:'Product adoption',products:['Next.js'],summary:'Dated storefront story.',cautions:[]}],
+  }]})).toMatchObject({boundStories:1});
+  expect(JSON.stringify(await readEligibleContext(actor,customerId))).toContain(passage);
+  await db.query("INSERT INTO maintenance_workers(environment_id,worker_id,last_seen_at) VALUES($1,'adoption-fixture',now()) ON CONFLICT(environment_id,worker_id) DO UPDATE SET last_seen_at=now()",[process.env.TURAS_ENVIRONMENT_ID]);
+  const requestKey=randomUUID(),{conversation}=await createOwnedConversation(actor,{requestKey});owned.push(conversation.id);
+  const binding=await claimBinding(actor,conversation.id,requestKey);if(binding.state!=='claimed')throw Error('Binding unavailable');
+  const native='wrun_'+randomUUID();await bindNativeSession(actor,conversation.id,binding.claimToken,native);
+  const attempt=await prepareAttempt(actor,conversation.id,native,randomUUID(),'Which frameworks does this customer use?');
+  await claimDispatch(actor,conversation.id,attempt.attemptId,0);
+  const principal={principalId:actor.principalId,attributes:{turasAttemptId:attempt.attemptId}};
+  const ctx={session:{auth:{current:principal}}} as unknown as Parameters<typeof adoptionTool.execute>[1];
+  const outsider=await isolatedChatActor(db,'partner','member',actor.workspaceId);
+  const outsiderKey=randomUUID(),{conversation:denied}=await createOwnedConversation(outsider,{requestKey:outsiderKey});owned.push(denied.id);
+  const deniedBinding=await claimBinding(outsider,denied.id,outsiderKey);if(deniedBinding.state!=='claimed')throw Error('Binding unavailable');
+  const outsiderNative='wrun_'+randomUUID();await bindNativeSession(outsider,denied.id,deniedBinding.claimToken,outsiderNative);
+  const deniedAttempt=await prepareAttempt(outsider,denied.id,outsiderNative,randomUUID(),'Which frameworks does this customer use?');
+  await claimDispatch(outsider,denied.id,deniedAttempt.attemptId,0);
+  const outsiderCtx={session:{auth:{current:{principalId:outsider.principalId,attributes:{turasAttemptId:deniedAttempt.attemptId}}}}} as unknown as Parameters<typeof adoptionTool.execute>[1];
+  await expect(adoptionTool.execute({accountId:customerId,page:1},outsiderCtx)).rejects.toMatchObject({status:404});
+  const result=await adoptionTool.execute({accountId:customerId,page:1},ctx);
+  const expected={type:'attributed_research',citationId:revisionId,name:'Next.js',workload:'Storefront',publishedAt:'2022-03-29',url};
+  expect(result).toMatchObject({contractVersion:'customer-adoption-v1',coverage:'partial',entries:[expected]});
+  expect(JSON.stringify(result)).not.toContain('Vercel Blob');
+  const ids=adoptionAccountsInTurn([{role:'user',content:'Which frameworks does this customer use?'},
+   {role:'tool',content:[{type:'tool-result',toolName:'get_customer_adoption',output:{type:'json',value:result}}]}]);
+  const turnId='turn_'+randomUUID();
+  await projectNativeEvent(native,attempt.attemptId,{type:'message.received',data:{message:'Which frameworks does this customer use?',turnId},meta:{id:'evt_'+randomUUID(),at:new Date().toISOString()}});
+  await db.query(`INSERT INTO general_context_injections(attempt_id,turn_id,snapshot_digest)
+    SELECT attempt_id,$2,snapshot_digest FROM general_context_receipts WHERE attempt_id=$1`,[attempt.attemptId,turnId]);
+  let providerPrompt:unknown;
+  const provider={specificationVersion:'v4',provider:'fixture',modelId:'fixture',supportedUrls:{},
+   async doGenerate(options:{prompt:unknown}){providerPrompt=options.prompt;return {};},
+   async doStream(){throw Error('Unused fixture stream');},
+  } as unknown as Parameters<typeof wrapOrdinaryChatModel>[0];
+  await wrapOrdinaryChatModel(provider,principal,native,turnId).doGenerate({prompt:[
+   {role:'user',content:[{type:'text',text:'Which frameworks does this customer use?'}]},
+   {role:'tool',content:[{type:'tool-result',toolName:'get_customer_adoption',toolCallId:'fixture-adoption',output:{type:'json',value:JSON.parse(JSON.stringify(result))}}]},
+  ]});
+  expect(JSON.stringify(providerPrompt)).toContain('ordinary-current-knowledge-v1');
+  expect(JSON.stringify(providerPrompt)).toContain('Next.js');
+  expect(JSON.stringify(providerPrompt)).not.toContain('Vercel Blob');
+  const ordinary=await withTransaction(client=>refreshOrdinaryKnowledge(client,actor,principal,conversation.id,attempt.attemptId));
+  expect(JSON.stringify(ordinary)).toContain(passage);
+  const conflict=randomUUID();
+  await db.query(`INSERT INTO evidence_conflict_targets(id,environment_id,scope,workspace_id,customer_id,first_kind,first_revision_id,second_kind,second_revision_id,period_start,period_end,state,rationale)
+    VALUES($1,$2,'customer',$3,$4,'verified_research',$5,'verified_research',$6,'2022-01-01','2022-12-31','confirmed','Synthetic adoption conflict')`,[conflict,identity.environmentId,identity.workspaceId,customerId,revisionId,randomUUID()]);
+  expect(await adoptionTool.execute({accountId:customerId,page:1},ctx)).toMatchObject({entries:[],coverage:'partial'});
+  expect((await withTransaction(client=>refreshOrdinaryKnowledge(client,actor,principal,conversation.id,attempt.attemptId,ids)))?.contexts).toMatchObject([{entries:[]}]);
+  await db.query("UPDATE evidence_conflict_targets SET state='resolved' WHERE id=$1",[conflict]);
+  const proposed=await submitProfileCommand(actor,customerId,{action:'propose_record',requestKey:randomUUID(),
+    payload:{kind:'product_use',productKey:'fixture-evaluated-product',displayName:'Fixture evaluated product',state:'evaluating',usageDescription:'Synthetic review',observedAt:'2026-09-01T00:00:00Z'}}) as {revisionId:string};
+  const draft=(await db.query(`SELECT v.content_digest,r.version FROM profile_revisions v JOIN profile_records r ON r.id=v.record_id WHERE v.id=$1`,[proposed.revisionId])).rows[0];
+  await submitProfileCommand(admin,customerId,{action:'accept_revision',requestKey:randomUUID(),revisionId:proposed.revisionId,digest:draft.content_digest,expectedRecordVersion:Number(draft.version),expectedAcceptedRevisionId:null,rationale:'Reviewed the synthetic evaluating state'});
+  expect(await adoptionTool.execute({accountId:customerId,page:1},ctx)).toMatchObject({entries:[{citationId:proposed.revisionId,state:'evaluating'},expected]});
+  await db.query(`INSERT INTO evidence_conflict_targets(id,environment_id,scope,workspace_id,customer_id,first_kind,first_revision_id,second_kind,second_revision_id,period_start,period_end,state,rationale)
+    VALUES($1,$2,'customer',$3,$4,'accepted_profile',$5,'accepted_profile',$6,'2026-01-01','2026-12-31','confirmed','Synthetic reviewed adoption conflict')`,[randomUUID(),identity.environmentId,identity.workspaceId,customerId,proposed.revisionId,randomUUID()]);
+  expect(await adoptionTool.execute({accountId:customerId,page:1},ctx)).toMatchObject({entries:[expected]});
+  await db.query("INSERT INTO evidence_source_events(id,source_revision_id,lifecycle_version,event_type,rationale) VALUES($1,$2,1,'withdraw','Synthetic withdrawal')",[randomUUID(),revisionId]);
+  expect(await adoptionTool.execute({accountId:customerId,page:1},ctx)).toMatchObject({entries:[],coverage:'partial'});
+ }finally{try{await settleSyntheticConversationAttempts(db,owned);}finally{await db.end();}}
 });

@@ -1,4 +1,6 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { supportSkillMarkdown } from "../../lib/support/skill-text";
 import { SUPPORT_ADVICE_LIMITS, supportSummaryToolSchema, supportActionsToolSchema, supportEvidenceToolSchema,
   supportSkillToolSchema, validateSupportAdviceResult, supportContextCharge, supportAdviceInstructions } from "../../lib/support/advice";
 
@@ -9,6 +11,14 @@ describe("bounded support advice contract", () => {
     expect(supportEvidenceToolSchema.safeParse({ sourceKeys: [] }).success).toBe(false);
     expect(supportSkillToolSchema.safeParse({ name: "research" }).success).toBe(false);
     expect(supportSkillToolSchema.safeParse({ name: "tam-support-guidance" }).success).toBe(true);
+  });
+  it("keeps the governed procedure aligned with the Eve skill on source fidelity and suggestion count", () => {
+    const eveSkill = readFileSync("agent/skills/tam-support-guidance/SKILL.md", "utf8");
+    const citationGuidance = "Cited facts describe the selected original passages and their original dates or\nquality. Keep readiness, maturity, action and engagement projection metadata in\nthe summary. Never attach a passage citation to a claim that passage does not\nestablish.";
+    for (const procedure of [supportSkillMarkdown, eveSkill]) {
+      expect(procedure).toContain(citationGuidance);
+      expect(procedure).toMatch(/at most two\s+actionSuggestions/);
+    }
   });
   it("rejects fabricated fact citations and never repairs malformed results", () => {
     const key = "00000000-0000-4000-8000-000000000001";
@@ -49,6 +59,9 @@ describe("bounded support advice contract", () => {
     const output = { contractVersion: "support-advice-v1", summary: "Confirm the operating owner", facts: [], unknowns: ["Operating owner"],
       actionSuggestions: [{ citationKeys: [], content }] };
     expect(validateSupportAdviceResult(output, [])).toEqual(output);
+    const [suggestion] = output.actionSuggestions;
+    expect(validateSupportAdviceResult({ ...output, actionSuggestions: Array(5).fill(suggestion) }, []).actionSuggestions).toHaveLength(5);
+    expect(() => validateSupportAdviceResult({ ...output, actionSuggestions: Array(6).fill(suggestion) }, [])).toThrow("malformed");
     expect(() => validateSupportAdviceResult({ ...output, actionSuggestions: [{ citationKeys: [], content: {
       ...content, basedOnAssessmentRevisionId: "00000000-0000-4000-8000-000000000001",
     } }] }, [])).toThrow("malformed");

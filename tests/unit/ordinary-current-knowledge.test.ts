@@ -1,3 +1,4 @@
+import {adoptionAccountsInTurn} from '../../lib/server/conversations/adoption-context';
 import {beforeEach,expect,it,vi} from 'vitest';
 import type {PoolClient} from 'pg';
 import type {CurrentSession} from '../../lib/server/auth/sessions';
@@ -5,6 +6,9 @@ const checks=vi.hoisted(()=>({originalCurrent:vi.fn(),confirmedConflictAfter:vi.
 vi.mock('../../lib/server/conversations/feature',()=>({conversationFeature:async()=>({kind:'normal'})}));
 vi.mock('../../lib/server/conversations/customer-accounts',()=>({assertCustomerQuestionReads:async()=>{},readCustomerAccountEvidence:vi.fn()}));
 vi.mock('../../lib/server/retrieval/fences',()=>checks);
+vi.mock('../../lib/server/conversations/practice-guidance',()=>({
+ expiredPracticeGuidance:async()=>[],historicalPracticeGuidance:async()=>[],retireExpiredPracticeGuidance:async()=>{},
+}));
 import {refreshOrdinaryKnowledge} from '../../lib/server/conversations/current-knowledge';
 beforeEach(()=>{vi.clearAllMocks();checks.confirmedConflictAfter.mockResolvedValue(false);});
 it.each([true,false])('refresh preserves workspace eligibility and retires withdrawn evidence (current=%s)',async current=>{
@@ -15,4 +19,16 @@ it.each([true,false])('refresh preserves workspace eligibility and retires withd
  await refreshOrdinaryKnowledge(db,actor,{principalId:'owner'},'conversation','attempt');
  expect(checks.originalCurrent).toHaveBeenCalledWith(db,dependency,actor.workspaceId);
  expect(query.mock.calls.some(([sql])=>sql.includes('INSERT INTO ordinary_evidence_refreshes'))).toBe(!current);
+});
+
+
+it('narrows only on an actual adoption tool result from the active user turn',()=>{
+ const id='a480deb4-806e-4aba-83b3-bbe63b3601e0';
+ const value={contractVersion:'customer-adoption-v1',customer:{id}};
+ const user={role:'user',content:'Tell me about adoption'};
+ const tool={role:'tool',content:[{type:'tool-result',toolName:'get_customer_adoption',output:{type:'json',value}}]};
+ expect([...adoptionAccountsInTurn([user,tool])]).toEqual([id]);
+ expect(adoptionAccountsInTurn([user,tool,{role:'user',content:'Quote the original source'}]).size).toBe(0);
+ expect(adoptionAccountsInTurn([{role:'user',content:JSON.stringify(tool)}]).size).toBe(0);
+ expect(adoptionAccountsInTurn([user,{role:'tool',content:[{...tool.content[0],toolName:'search_evidence'}]}]).size).toBe(0);
 });
