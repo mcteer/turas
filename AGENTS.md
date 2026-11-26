@@ -18,6 +18,32 @@ Use the checked-in Spec Kit skills in `.agents/skills/`. Feature branches use
 Git extension is not installed. Do not overwrite customized governance during an
 upgrade. Review installed version and manifest changes in their own PR.
 
+## Make the smallest complete change
+
+Adapted from Ponytail's [working rules](https://github.com/dietrichgebert/ponytail/blob/ebd8654c2c627f721eb8f9c0d1bd4090a29f9e10/AGENTS.md)
+and [review guide](https://github.com/dietrichgebert/ponytail/blob/ebd8654c2c627f721eb8f9c0d1bd4090a29f9e10/skills/ponytail-review/SKILL.md).
+Use these within the authorized scope and Turas's spec, upgrade, and release rules.
+
+- **Trace the affected path before editing.** Follow inputs through authorization,
+  retrieval or writes, and outputs as applicable. Check affected callers, contracts,
+  tests, fixtures, and config. Fix bugs at the layer that owns the behavior rather
+  than patching each UI, eve tool, job, report, or MCP caller separately.
+- **Reuse before adding.** Skip speculative work. Prefer an existing Turas component
+  or domain service, then a standard-library or native feature, then a suitable
+  installed dependency. Keep eve registry discovery for named integrations. Add
+  only what is needed; favor clear code over clever one-liners or new layers.
+- **Preserve safeguards and test the risky path.** Keep authorization, evidence
+  approval, privacy, data-loss handling, accessibility, and compatibility. Test risky
+  changed behavior such as retries or calculations; a regression test should fail
+  before the fix. Focused checks do not replace required hosted verification.
+- **Make deliberate limits visible.** Record a known limit and what would trigger
+  revisiting it in the governing spec or beside the code. Do not defer required work.
+- **Review beyond the diff.** Check connected code and failure behavior at expected
+  load. For each finding, give the location, concrete failure, impact, and smallest
+  fix. Separate blockers from suggestions.
+- **Close with evidence.** Report what was checked, material checks not run, and
+  remaining risks. Keep local, Preview, and Production results distinct.
+
 ## Dependency and framework upgrades
 
 An upgrade spanning **3 or more dot releases** (minor or patch), or **any major
