@@ -66,7 +66,7 @@ try{await withPlanEvalEnvironment(async environment=>{
  let inspectFileUi:()=>Promise<unknown>=async()=>null;
  let captureFailurePage:()=>Promise<unknown>=async()=>null;
  context.on('response',async response=>{
-  const url=new URL(response.url()),method=response.request().method(),file=url.pathname.includes('/native-uploads/'),native=url.pathname.startsWith('/eve/v1/');if(url.origin!==environment.origin||!file&&!native)return;
+  const url=new URL(response.url()),method=response.request().method(),file=/\/native-uploads(?:\/|$)/.test(url.pathname),native=url.pathname.startsWith('/eve/v1/');if(url.origin!==environment.origin||!file&&!native)return;
   const chunk=/\/chunks\/(\d+)$/.exec(url.pathname),entry={kind:file?'file' as const:'native' as const,method,status:response.status(),chunk:chunk?Number(chunk[1]):null,code:undefined as string|undefined};fileResponses.push(entry);if(fileResponses.length>64)fileResponses.shift();
   if(!response.ok())try{const body=await response.json();const code=body.error?.code??body.code;if(typeof code==='string'&&/^[a-zA-Z0-9_]{1,80}$/.test(code))entry.code=code;}catch{/* A failed transport need not contain JSON. */}
  });
@@ -111,7 +111,11 @@ try{await withPlanEvalEnvironment(async environment=>{
   if(process.argv.includes('--composer')){
    // Compile the actual thread surface before starting the paused provider.
    // This avoids measuring a cold development compile as correction latency.
-   const warmupKey=randomUUID(),warmup=await context.request.post('/api/conversations',{headers,data:{requestKey:warmupKey}});if(!warmup.ok())throw Error('Thread warmup creation failed');
+   fixturePhase='warmup_thread_creation';
+   // This first request also compiles the route on a cold Webpack server. Use
+   // the existing warmup bound, not the browser's 30-second request default.
+   const warmupKey=randomUUID(),warmup=await context.request.post('/api/conversations',{headers,data:{requestKey:warmupKey},
+    ...(boundaryMiB===4?{timeout:Math.max(1,Math.min(90000,fixtureDeadlineAt-Date.now()))}:{})});if(!warmup.ok())throw Error('Thread warmup creation failed');
    const warmupId=(await warmup.json()).data.id;
    const warmupBinding=await context.request.post('/eve/v1/session',{headers:{...headers,'x-turas-conversation-id':warmupId},data:{operationId:warmupKey}});if(!warmupBinding.ok())throw Error('Thread warmup binding failed');
    fixturePhase='warmup_thread_compile';

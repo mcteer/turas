@@ -4,7 +4,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
-import {ownedEveSandboxes} from '../../scripts/owned-eve-sandboxes';
+import {DisposableEveProcessRetirementError,ownedEveSandboxes} from '../../scripts/owned-eve-sandboxes';
 import {finishPilotEnvironment} from '../../scripts/pilot-environment-cleanup';
 
 vi.mock('node:child_process',()=>({spawnSync:vi.fn()}));
@@ -66,6 +66,13 @@ it('still retires processes when an intent is malformed and retains the root and
 it('refuses deletion when process retirement fails',async()=>{
  const f=fixture();f.container(f.intent().runId);
  await expect(f.cleanup.retire(async()=>{throw Error('Still running');})).rejects.toThrow('retirement');
+ expect(()=>f.cleanup.remove()).toThrow('retirement required');expect(docker).not.toHaveBeenCalled();
+});
+it('identifies failing runtime stop phases without publishing process details',async()=>{
+ const f=fixture();f.container(f.intent().runId);
+ const outcomes=await Promise.allSettled([Promise.reject(Error('private next failure')),Promise.resolve(),Promise.resolve(),Promise.resolve(),Promise.reject(Error('private detached process failure'))]);
+ const failure=await f.cleanup.retire(async()=>{throw new DisposableEveProcessRetirementError(outcomes);}).catch(error=>error);
+ expect(failure.message).toBe('Disposable Eve retirement or custody unverified (stop-processes, next, detached-processes)');
  expect(()=>f.cleanup.remove()).toThrow('retirement required');expect(docker).not.toHaveBeenCalled();
 });
 it('refuses the selected development app before writing custody or calling Docker',()=>{

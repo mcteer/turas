@@ -1,4 +1,4 @@
-import {ownedEveSandboxes} from './owned-eve-sandboxes';
+import {DisposableEveProcessRetirementError,ownedEveSandboxes} from './owned-eve-sandboxes';
 import {configureOwnedNextDependencyRoot} from './owned-next-config';
 import {qualityChildEnvironment} from "./pilot-quality-runtime";
 import {createServer,request as httpRequest,type Server} from 'node:http';
@@ -212,8 +212,8 @@ export async function withPlanEvalEnvironment<T>(
       if(children[0].status==='fulfilled')child=null;if(children[1].status==='fulfilled')productionEve=null;
       if(children[2].status==='fulfilled')maintenanceChild=null;
       const remaining=await Promise.allSettled([closeProductionProxy(),stopOwnedAppProcesses(appRoot)]);
-      const failures=[...children,...remaining].filter((result):result is PromiseRejectedResult=>result.status==='rejected');
-      if(failures.length)throw new AggregateError(failures.map(result=>result.reason),'Owned evaluation runtime retirement unverified');
+      const results=[...children,...remaining];
+      if(results.some(result=>result.status==='rejected'))throw new DisposableEveProcessRetirementError(results);
     }
   try {
     if(options.production){evePortLease=await reserveOwnedEvalPort();eveProxyLease=await reserveOwnedEvalPort();}

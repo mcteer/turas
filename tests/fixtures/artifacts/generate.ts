@@ -9,7 +9,8 @@ import { deflateRawSync } from "node:zlib";
 const repo = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const out = resolve(repo, "local-artifacts/004/fixtures");
 const packageRequire = createRequire(resolve(repo, "packages/artifact-extractor/package.json"));
-const { createCanvas } = packageRequire("@napi-rs/canvas") as {
+const { createCanvas, GlobalFonts } = packageRequire("@napi-rs/canvas") as {
+  GlobalFonts: { registerFromPath(path: string, alias: string): object | null };
   createCanvas(width: number, height: number): {
     getContext(kind: "2d"): {
       fillStyle: string;
@@ -22,6 +23,13 @@ const { createCanvas } = packageRequire("@napi-rs/canvas") as {
     toBuffer(type: "image/png" | "image/jpeg"): Buffer;
   };
 };
+
+// Raster OCR fixtures must not depend on the host's default sans-serif font.
+const ocrFont = "TurasOcrFixture";
+const ocrFontPath = resolve(repo, "report-templates/fonts/Geist-Regular.ttf");
+if (!GlobalFonts.registerFromPath(ocrFontPath, ocrFont)) {
+  throw new Error(`Could not register OCR fixture font: ${ocrFontPath}`);
+}
 
 type Entry = { name: string; data: Buffer; method?: 0 | 8 };
 type Fixture = { file: string; format: string; sha256: string; bytes: number; expected: Record<string, unknown> };
@@ -173,7 +181,7 @@ const context = canvas.getContext("2d");
 context.fillStyle = "white";
 context.fillRect(0, 0, 800, 300);
 context.fillStyle = "black";
-context.font = "48px sans-serif";
+context.font = `48px ${ocrFont}`;
 context.fillText("Synthetic invoice 42", 40, 160);
 const png = canvas.toBuffer("image/png");
 const jpeg = canvas.toBuffer("image/jpeg");
@@ -186,7 +194,7 @@ rotatedContext.fillRect(0, 0, 300, 800);
 rotatedContext.translate(150, 400);
 rotatedContext.rotate(Math.PI / 2);
 rotatedContext.fillStyle = "black";
-rotatedContext.font = "32px sans-serif";
+rotatedContext.font = `32px ${ocrFont}`;
 rotatedContext.fillText("ROTATED 42", -160, 0);
 put("rotated.png", rotated.toBuffer("image/png"), "png", { ocr: "ROTATED 42", orientation: 90 });
 put("scanned.pdf", imagePdf(jpeg, 400, 150), "pdf", { page: 1, ocr: "Synthetic invoice 42" });

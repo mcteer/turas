@@ -4,6 +4,18 @@ import {existsSync,lstatSync,readdirSync,readFileSync,renameSync,writeFileSync} 
 import {dirname,join,resolve} from 'node:path';
 
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+const runtimeStages=['next','eve','maintenance','proxy','detached-processes'] as const;
+
+export class DisposableEveProcessRetirementError extends AggregateError {
+ readonly failedStages: readonly typeof runtimeStages[number][];
+ constructor(results:readonly PromiseSettledResult<void>[]){
+  const failures=runtimeStages.flatMap((stage,index)=>{
+   const result=results[index];return result?.status==='rejected'?[{stage,reason:result.reason}]:[];
+  });
+  super(failures.map(item=>item.reason),'Owned evaluation runtime retirement unverified');
+  this.failedStages=failures.map(item=>item.stage);
+ }
+}
 
 /** Only for a newly created disposable app, never the retained development app.
  * Keep custody outside .eve: Eve removes its own intent on successful shutdown. */
@@ -46,13 +58,13 @@ export function ownedEveSandboxes(appRoot:string,environment:NodeJS.ProcessEnv){
   environment(){retired=false;return {EVE_DEVELOPMENT_SANDBOX_RUN_ID:runId};},
   capture,
   async retire(stopProcesses:()=>Promise<void>){
-   retired=false;const failures:unknown[]=[];
-   try{capture();}catch(error){failures.push(error);}
+   retired=false;const failures:unknown[]=[],stages:string[]=[];
+   try{capture();}catch(error){failures.push(error);stages.push('capture-before-stop');}
    // A capture failure must never prevent process retirement.
-   try{await stopProcesses();}catch(error){failures.push(error);}
-   try{capture();}catch(error){failures.push(error);}
-   if(captureFailure&&!failures.includes(captureFailure))failures.push(captureFailure);
-   if(failures.length)throw new AggregateError(failures,'Disposable Eve retirement or custody unverified');
+   try{await stopProcesses();}catch(error){failures.push(error);stages.push('stop-processes');if(error instanceof DisposableEveProcessRetirementError)stages.push(...error.failedStages);}
+   try{capture();}catch(error){failures.push(error);stages.push('capture-after-stop');}
+   if(captureFailure&&!failures.includes(captureFailure)){failures.push(captureFailure);stages.push('prior-capture');}
+   if(failures.length)throw new AggregateError(failures,`Disposable Eve retirement or custody unverified (${stages.join(', ')})`);
    retired=true;
   },
   remove(){
