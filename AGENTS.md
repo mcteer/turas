@@ -20,29 +20,57 @@ upgrade. Review installed version and manifest changes in their own PR.
 
 ## Make the smallest complete change
 
-Adapted from Ponytail's [working rules](https://github.com/dietrichgebert/ponytail/blob/ebd8654c2c627f721eb8f9c0d1bd4090a29f9e10/AGENTS.md)
-and [review guide](https://github.com/dietrichgebert/ponytail/blob/ebd8654c2c627f721eb8f9c0d1bd4090a29f9e10/skills/ponytail-review/SKILL.md).
-Use these within the authorized scope and Turas's spec, upgrade, and release rules.
+Adapted from Ponytail's [working rules], [review guide], [audit guide], and
+[shortcut convention]. Use these within Turas's spec, upgrade, and release rules.
 
-- **Trace the affected path before editing.** Follow inputs through authorization,
-  retrieval or writes, and outputs as applicable. Check affected callers, contracts,
-  tests, fixtures, and config. Fix bugs at the layer that owns the behavior rather
-  than patching each UI, eve tool, job, report, or MCP caller separately.
-- **Reuse before adding.** Skip speculative work. Prefer an existing Turas component
-  or domain service, then a standard-library or native feature, then a suitable
-  installed dependency. Keep eve registry discovery for named integrations. Add
-  only what is needed; favor clear code over clever one-liners or new layers.
-- **Preserve safeguards and test the risky path.** Keep authorization, evidence
-  approval, privacy, data-loss handling, accessibility, and compatibility. Test risky
-  changed behavior such as retries or calculations; a regression test should fail
-  before the fix. Focused checks do not replace required hosted verification.
-- **Make deliberate limits visible.** Record a known limit and what would trigger
-  revisiting it in the governing spec or beside the code. Do not defer required work.
-- **Review beyond the diff.** Check connected code and failure behavior at expected
-  load. For each finding, give the location, concrete failure, impact, and smallest
-  fix. Separate blockers from suggestions.
-- **Close with evidence.** Report what was checked, material checks not run, and
-  remaining risks. Keep local, Preview, and Production results distinct.
+- **Trace the change before choosing a fix.** Follow a real input through
+  authorization, retrieval or writes, and output. If a contract changes, find its
+  callers and check exports, fixtures, tests, and config for dependencies. Identify who
+  could receive the wrong data or lose work. Fix the rule once where it belongs
+  and update every affected caller; don't patch the UI around a domain bug.
+- **Try reuse in order.** If existing behavior meets the requirement, show it
+  rather than adding code. Otherwise try a Turas component or domain service,
+  then a standard-library or platform feature, then a suitable installed
+  dependency. Use the eve registry for named integrations. Don't add a package,
+  wrapper, flag, or conversion for a few lines of straightforward code.
+- **Simplify without changing the contract.** Keep native values and existing
+  interfaces unless the boundary needs a different representation. Remove obsolete
+  branches; merge copies of a rule that must change together. Split unrelated
+  jobs, not long functions by line count. Prefer readable code that handles edge
+  cases over a clever one-liner. Comment on non-obvious decisions, not syntax.
+- **Prove the risky behavior.** Moved or consolidated code must keep trust-boundary
+  validation, authorization, evidence approval, privacy, error handling that
+  prevents data loss, accessibility, and compatibility. For new nontrivial logic,
+  test an observable outcome: for example, retrying a write must not create a
+  second record. For a bug, show the regression test fails before the fix and
+  passes after. Focused tests do not replace required CI or hosted checks.
+- **Give deliberate shortcuts a trigger.** Beside the code, use `shortcut:` with
+  the limit and the condition that calls for a different implementation. Record
+  governed tradeoffs in the spec. When reviewing debt, flag missing or reached
+  triggers; an accepted limit is not itself a defect. Never defer required work.
+
+### Review and audit
+
+- For a review, follow the changed path beyond the diff, including unchanged
+  consumers. For an audit, map entry points, data flows, and expected load from
+  the spec and deployment config. Go deepest where mistakes cost most: customer
+  access, evidence approval, persistent writes, and jobs shared across workers.
+- Check correctness and safety first, then behavior at expected load, missing
+  tests, speed, and unnecessary code. Look for concurrent claims on the same job,
+  unbounded reads, and a query per item. State the load assumption. Before
+  calling code unused, check string references, framework discovery, and config.
+- Report findings, not style preferences. For each, name the file and line, a
+  reachable input or operating condition, what goes wrong for whom, and the
+  smallest fix. Rank blockers ahead of improvements and say what to fix first.
+  A review or audit alone does not authorize edits.
+
+Close implementation and review reports with what you checked, material checks
+not run, and remaining risk. Distinguish local, Preview, and Production evidence.
+
+[working rules]: https://github.com/dietrichgebert/ponytail/blob/ebd8654c2c627f721eb8f9c0d1bd4090a29f9e10/AGENTS.md
+[review guide]: https://github.com/dietrichgebert/ponytail/blob/ebd8654c2c627f721eb8f9c0d1bd4090a29f9e10/skills/ponytail-review/SKILL.md
+[audit guide]: https://github.com/dietrichgebert/ponytail/blob/ebd8654c2c627f721eb8f9c0d1bd4090a29f9e10/skills/ponytail-audit/SKILL.md
+[shortcut convention]: https://github.com/dietrichgebert/ponytail/blob/ebd8654c2c627f721eb8f9c0d1bd4090a29f9e10/skills/ponytail-debt/SKILL.md
 
 ## Dependency and framework upgrades
 
