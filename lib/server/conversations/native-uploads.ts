@@ -58,9 +58,9 @@ export async function createNativeUpload(actor: CurrentSession, conversationId: 
   const input = nativeUploadIntentSchema.parse(raw);
   return withTransaction(async db => {
     await scope(db, actor, conversationId);
-    // Serialize reservation across all of this owner's conversations without
-    // charging a response/model operation before a real send is admitted.
-    await db.query("SELECT id FROM principals WHERE id=$1 FOR UPDATE", [actor.principalId]);
+    // The owned binding holds the principal writer advisory lock across all
+    // conversations. Upgrading the principal row here would deadlock with a
+    // reader that already holds principal SHARE and is waiting for this binding.
     const previous = (await db.query<Upload>(`SELECT * FROM ordinary_native_uploads
       WHERE conversation_id=$1 AND request_key=$2 FOR UPDATE`, [conversationId, input.requestKey])).rows[0];
     if (previous) {
